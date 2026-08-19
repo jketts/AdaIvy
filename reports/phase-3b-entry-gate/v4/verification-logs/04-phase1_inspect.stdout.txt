@@ -1,0 +1,9 @@
+{
+  "blockers": [],
+  "content_hash": "sha256:ee299e0a6d6295dd005f0292ab5b0ac89320862ed1853935ddc0da5d5b9f96fa",
+  "dossier_id": "dossier.even_sum.phase1.v1",
+  "logical_status": "proved",
+  "schema_version": "1.0.0",
+  "semantic_alignment_status": "approved_equivalent",
+  "target_claim_id": "claim.even_sum.v1"
+}

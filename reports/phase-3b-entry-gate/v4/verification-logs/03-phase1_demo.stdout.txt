@@ -1,0 +1,13 @@
+{
+  "blockers": [],
+  "content_hash": "sha256:ee299e0a6d6295dd005f0292ab5b0ac89320862ed1853935ddc0da5d5b9f96fa",
+  "dossier_id": "dossier.even_sum.phase1.v1",
+  "dossier_path": "reports/phase-1/manual-dossier.json",
+  "logical_status": "proved",
+  "report_path": "reports/phase-1/traceable-report.md",
+  "round_trip_hash_preserved": true,
+  "schema_version": "1.0.0",
+  "semantic_alignment_status": "approved_equivalent",
+  "summary_path": "reports/phase-1/demo-summary.json",
+  "target_claim_id": "claim.even_sum.v1"
+}

@@ -1,0 +1,172 @@
+{
+  "attempt_id": "phase3b.entry-gate-repair.v4",
+  "candidate": "Lean 4 plus mathlib",
+  "conditions": {
+    "all_12_fixtures_pass_two_repeats_and_restart": true,
+    "all_156_tests_pass": true,
+    "all_executable_policy_attempts_present": true,
+    "all_nonallowlisted_and_memory_execution_rejected": true,
+    "canonical_across_repeats_and_restart": true,
+    "credential_scan_pass": true,
+    "distinct_v3_v4_runtime_manifests": true,
+    "elan_exact_release_digest_verified": true,
+    "every_acquisition_exact_and_digest_verified": true,
+    "final_executable_inventory_equals_allowlist": true,
+    "head_and_origin_unchanged": true,
+    "json_and_schema_validation_pass": true,
+    "landlock_execute_supported": true,
+    "lean_starts_and_valid_proof_checks": true,
+    "no_adaivy_model_or_api_calls": true,
+    "no_floating_or_latest_acquisition": true,
+    "no_forbidden_runtime_tools": true,
+    "no_gate_containers_remaining": true,
+    "phase0_19_checks_pass": true,
+    "protected_seals_pass": true,
+    "same_fixture_bytes_as_v3": true,
+    "v3_image_unchanged": true,
+    "v3_reports_unchanged": true,
+    "v4_image_matches_sealed_manifest": true
+  },
+  "decision": "accept ADR-0015 and produce a separate bounded production Phase 3B prompt",
+  "evidence": {
+    "acquisition": "acquisition-manifest-v4.json",
+    "credential_scan": "credential-scan-v4.json",
+    "executable_inventory": "executable-inventory-v4.json",
+    "fixture_results": "fixture-results-v4.json",
+    "replay_comparison": "replay-comparison-v4.json",
+    "repository_verification": "repository-verification-v4.json",
+    "runtime": "runtime-manifest-v4.json",
+    "v3_report_sha256": {
+      "docker-access-blocked-v2.json": "d6546544169ea05dc6ad8386d499da6e04ae7e870b71bff2d95d0bafc0ff643c",
+      "docker-entry-gate-v3.json": "232e90b95c693a3bb7ff44318e1730b5f2168af2d08855a8378a7c374f2f442f",
+      "docker-fixture-results-v3.json": "bb6d8d37543ab578445cfbfd497ede9d61f3d4f3a5a54847c21333554d9bdda4"
+    }
+  },
+  "failed_attempts_preserved": [
+    {
+      "accepted_as_candidate": false,
+      "id": "dockerfile-frontend-floating-v1",
+      "reason": "Dockerfile frontend declaration resolved the floating docker/dockerfile:1 image",
+      "repair": "removed frontend declaration; final builds used --pull=false and --network none",
+      "resolved_frontend_digest": "sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32",
+      "result": "canceled before candidate build"
+    },
+    {
+      "accepted_as_candidate": false,
+      "id": "strict-initial-landlock-v1",
+      "reason": "the kernel must execute the trusted dynamic loader to start the dynamically linked Lean binary",
+      "repair": "bootstrap policy permits exact Lean and loader, then a trusted pre-main constructor installs a nested Lean-only execute policy",
+      "result": "Lean ELF bootstrap denied with errno 13"
+    }
+  ],
+  "runtime": {
+    "executable_allowlist": [
+      "/checker/launcher",
+      "/lib/ld-linux-aarch64.so.1",
+      "/opt/lean/bin/lean"
+    ],
+    "executable_inventory": [
+      "/checker/launcher",
+      "/lib/ld-linux-aarch64.so.1",
+      "/opt/lean/bin/lean"
+    ],
+    "relevant_containers_remaining": [],
+    "v3_image_digest": "sha256:0d3a26db46d1bace987b273d59087e3e39fbc9901d2bd680bf251f190622eac3",
+    "v3_image_size_bytes": 3423169517,
+    "v4_image_digest": "sha256:ad81d799c1d9e766e0263c2b703936ca3fb8042e189e7e279b7abd1c7889c60b",
+    "v4_image_size_bytes": 651132241
+  },
+  "schema_version": "adaivy.phase3b-entry-gate.v4",
+  "scope_commit": "26942d97abe0c79cd908f7fe4561d42ddfc9d5da",
+  "scope_guards": {
+    "adaivy_external_api_calls": 0,
+    "adaivy_model_calls": 0,
+    "adr_0015_status_before_gate_decision": "proposed",
+    "commits_created": 0,
+    "formal_warrants_created": 0,
+    "production_phase3b_changes": 0,
+    "published": false,
+    "pushes": 0,
+    "tags_created": 0
+  },
+  "security": {
+    "destructive_host_escape_testing": false,
+    "docker_controls": {
+      "capabilities": [],
+      "cpus": 1,
+      "docker_socket_mount": false,
+      "host_mounts": [],
+      "memory_bytes": 1610612736,
+      "network": "none",
+      "no_new_privileges": true,
+      "nofile": 64,
+      "pids_limit": 64,
+      "rootfs": "read_only",
+      "tmpfs": "/tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777",
+      "user": "65532:65532"
+    },
+    "landlock_abi": [
+      8
+    ],
+    "ordinary_seccomp_claimed_as_path_allowlist": false,
+    "path_policy": "initial exact Lean+ELF-loader bootstrap; nested pre-main Landlock ruleset permits exact Lean only and is inherited by descendants",
+    "policy_rounds": [
+      {
+        "attempts": {
+          "/bin/bash": 2,
+          "/bin/sh": 2,
+          "/checker/launcher": 13,
+          "/lib/ld-linux-aarch64.so.1": 13,
+          "/usr/bin/env": 2,
+          "execveat": 1,
+          "memfd_create": 1,
+          "tmpfs_copy": 13,
+          "tmpfs_copy_setup": 0,
+          "tmpfs_shebang": 13,
+          "tmpfs_shebang_setup": 0
+        },
+        "landlock_abi": 8,
+        "passed": true,
+        "schema_version": "adaivy.landlock-policy-probe.v1"
+      },
+      {
+        "attempts": {
+          "/bin/bash": 2,
+          "/bin/sh": 2,
+          "/checker/launcher": 13,
+          "/lib/ld-linux-aarch64.so.1": 13,
+          "/usr/bin/env": 2,
+          "execveat": 1,
+          "memfd_create": 1,
+          "tmpfs_copy": 13,
+          "tmpfs_copy_setup": 0,
+          "tmpfs_shebang": 13,
+          "tmpfs_shebang_setup": 0
+        },
+        "landlock_abi": 8,
+        "passed": true,
+        "schema_version": "adaivy.landlock-policy-probe.v1"
+      },
+      {
+        "attempts": {
+          "/bin/bash": 2,
+          "/bin/sh": 2,
+          "/checker/launcher": 13,
+          "/lib/ld-linux-aarch64.so.1": 13,
+          "/usr/bin/env": 2,
+          "execveat": 1,
+          "memfd_create": 1,
+          "tmpfs_copy": 13,
+          "tmpfs_copy_setup": 0,
+          "tmpfs_shebang": 13,
+          "tmpfs_shebang_setup": 0
+        },
+        "landlock_abi": 8,
+        "passed": true,
+        "schema_version": "adaivy.landlock-policy-probe.v1"
+      }
+    ],
+    "seccomp": "Docker default profile plus launcher BPF denying execveat and memfd_create"
+  },
+  "status": "passed"
+}

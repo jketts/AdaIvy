@@ -1,0 +1,114 @@
+{
+  "aggregate_id": "memory.phase3a.synthetic.v1",
+  "api_call_count": 0,
+  "engine_identity": {
+    "fts5_enabled": true,
+    "sqlite_version": "3.53.3",
+    "tokenizer": "unicode61 remove_diacritics 0"
+  },
+  "hashes": {
+    "acceptance_evidence_preimage_hash": "sha256:593d989299b220d14004a0a5679be05e3b744f774d9e4b15615ec7d4a3faf7a8",
+    "corpus_index_manifest_hash": "sha256:473dadcf3f48cf4aa61e443e74dd9a9600708d712046341a8705b8d5a8e2473d",
+    "event_replay_hash": "sha256:66998142ca524886b021958c54a80cfbb77002ce1035892f4c26ea54ba362e6c",
+    "evidence_manifest_hash": "sha256:d7541ba0952407d1248b8d01ca177ebffdb95c83e8cbe02f776c84dbd73686b3",
+    "evidence_pack_manifest_hash": "sha256:0586e955336e2e7322168f784662ac5beafaaac26259e07933c1af1deb7b5631",
+    "research_memory_export_hash": "sha256:99891f3b0acd8493adae7976caad8d493995adf2c68522bca2e8da6845e21e4c",
+    "retrieval_manifest_hash": "sha256:fe5e9da683bd1c858cee102306a6818f245760ff02575471d49ec08bd3092ae1",
+    "source_manifest_hash": "sha256:8a1be7f6009b5fded8b7dc37adf473030115c73f5ef9c8f05f9675959e986d8e",
+    "traceable_report_hash": "sha256:881b2d0a85da1c9c57181c0aeb28ae6efccbc88e4a6521f6d29bd60856544ac9"
+  },
+  "licensing": {
+    "quantum_paper": "metadata_only_rights_unresolved_no_bytes",
+    "synthetic_fixture_license": {
+      "copyright_notice": "Project-authored synthetic acceptance fixtures; 2026 AdaIvy contributors",
+      "license_expression": "LicenseRef-AdaIvy-Synthetic-Fixture",
+      "redistribution_status": "allowed",
+      "usage_rights": [
+        "private_evaluation",
+        "local_retrieval",
+        "evidence_pack"
+      ]
+    }
+  },
+  "migrations": [
+    "0001",
+    "0002",
+    "0003",
+    "phase3a:0001"
+  ],
+  "provenance_round_trip": {
+    "all_exact": true,
+    "export_hash_preserved": true,
+    "schema_version": "1.0.0",
+    "spans_checked": 18
+  },
+  "quantum_metadata_content_hash": null,
+  "quantum_metadata_source_id": "source.27ae6a5ad8581ca3ac90dd89",
+  "quarantine": {
+    "contradictory": {
+      "artifact_id": "artifact.cd50a003848c060749fcaceb",
+      "quarantined": false,
+      "reasons": []
+    },
+    "malformed": {
+      "artifact_id": "artifact.ce19fe8df2158532ec2df55d",
+      "quarantined": true,
+      "reasons": [
+        "pdf_unsupported",
+        "unsupported_declared_media_type",
+        "unsupported_file_extension"
+      ]
+    },
+    "primary": {
+      "artifact_id": "artifact.f561fe3d16db4b0be1b26727",
+      "quarantined": false,
+      "reasons": []
+    },
+    "prompt_injection": {
+      "artifact_id": "artifact.54d9ff97c89131cf1a828aad",
+      "quarantined": true,
+      "reasons": [
+        "prompt_injection"
+      ]
+    },
+    "related": {
+      "artifact_id": "artifact.d66ab4323f57bab804953aeb",
+      "quarantined": false,
+      "reasons": []
+    }
+  },
+  "record_counts": {
+    "document_marker": 14,
+    "evidence_pack": 4,
+    "evidence_relation": 1,
+    "evidence_unit": 17,
+    "normalized_document": 3,
+    "parser_run": 5,
+    "retrieval_hit": 19,
+    "retrieval_query": 4,
+    "source_artifact": 5,
+    "source_reference": 6,
+    "source_span": 18
+  },
+  "retrieval_metrics": {
+    "citation_resolution_precision": 1.0,
+    "mrr": 1.0,
+    "ordered_result_hashes_by_run": [
+      "sha256:08d8f51567341a9ab17b03b913f1e5409e2b751e1aa4b60db068de72c72cbb0c",
+      "sha256:08d8f51567341a9ab17b03b913f1e5409e2b751e1aa4b60db068de72c72cbb0c",
+      "sha256:08d8f51567341a9ab17b03b913f1e5409e2b751e1aa4b60db068de72c72cbb0c",
+      "sha256:08d8f51567341a9ab17b03b913f1e5409e2b751e1aa4b60db068de72c72cbb0c"
+    ],
+    "pack_set_hashes_by_run": [
+      "sha256:0586e955336e2e7322168f784662ac5beafaaac26259e07933c1af1deb7b5631",
+      "sha256:0586e955336e2e7322168f784662ac5beafaaac26259e07933c1af1deb7b5631",
+      "sha256:0586e955336e2e7322168f784662ac5beafaaac26259e07933c1af1deb7b5631",
+      "sha256:0586e955336e2e7322168f784662ac5beafaaac26259e07933c1af1deb7b5631"
+    ],
+    "quarantined_evidence_retrieved": 0,
+    "recall_at_5": 1.0,
+    "repeat_restart_stable": true
+  },
+  "schema_version": "1.0.0",
+  "status": "passed"
+}

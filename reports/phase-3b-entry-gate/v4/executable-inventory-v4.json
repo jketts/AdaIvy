@@ -1,0 +1,38 @@
+{
+  "approved_manifest": [
+    "/checker/launcher",
+    "/lib/ld-linux-aarch64.so.1",
+    "/opt/lean/bin/lean"
+  ],
+  "executables": [
+    {
+      "bytes": 9064,
+      "executable": true,
+      "mode": "0555",
+      "path": "/checker/launcher",
+      "sha256": "a1b0c52669bf81a681420a210f29f86366923ebd7e84404416d4abde6085d58c"
+    },
+    {
+      "bytes": 202912,
+      "executable": true,
+      "mode": "0555",
+      "path": "/lib/ld-linux-aarch64.so.1",
+      "sha256": "17538b8f9889a470c061f69a8fea8124da89627311cd16546c133a89f09056df"
+    },
+    {
+      "bytes": 13824,
+      "executable": true,
+      "mode": "0555",
+      "path": "/opt/lean/bin/lean",
+      "sha256": "79fb1d26fa5a39385d59fdc48a711a14b0710ca6480271acce99b4d177cea085"
+    }
+  ],
+  "forbidden_runtime_paths": [],
+  "image": "adaivy-phase3b-gate-v4:lean-v4.32.1",
+  "image_digest": "sha256:ad81d799c1d9e766e0263c2b703936ca3fb8042e189e7e279b7abd1c7889c60b",
+  "inventory_equals_approved_manifest": true,
+  "inventory_method": "regular files reconstructed from every docker-save OCI layer; runtime-injected container files excluded",
+  "non_allowlisted_executables": [],
+  "schema_version": "adaivy.phase3b-entry-gate-executable-inventory.v4",
+  "status": "passed"
+}

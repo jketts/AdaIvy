@@ -1,0 +1,10 @@
+{
+  "ref": "refs/tags/v4.32.1",
+  "node_id": "MDM6UmVmMTI5NTcxNDM2OnJlZnMvdGFncy92NC4zMi4x",
+  "url": "https://api.github.com/repos/leanprover/lean4/git/refs/tags/v4.32.1",
+  "object": {
+    "sha": "f054605aea4b840552cca2e725580bffd1e1b704",
+    "type": "commit",
+    "url": "https://api.github.com/repos/leanprover/lean4/git/commits/f054605aea4b840552cca2e725580bffd1e1b704"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "defect_id": "phase3a.acceptance-check.fts-dirty-tree.v1",
+  "schema_version": "adaivy.defect.v1",
+  "status": "open",
+  "recorded_at": "2026-08-19T00:00:00Z",
+  "scope": "Phase 3A acceptance-check idempotency",
+  "summary": "The documented Phase 3A demo check rewrites the tracked SQLite database even when all canonical rows are unchanged.",
+  "affected_path": "reports/phase-3a/acceptance-v1/workspace.sqlite3",
+  "trigger_command": [
+    "python3",
+    "-m",
+    "math_research.cli",
+    "phase3a",
+    "demo",
+    "reports/phase-3a/acceptance-v1",
+    "--output-dir",
+    "reports/phase-3a/acceptance-v1"
+  ],
+  "tag_baseline": {
+    "tag": "phase-3a",
+    "git_blob": "a57768b513a0b4871b4225a82037db1c3ac32b51",
+    "sha256": "31ead27883fd7aa829667ffeeefd59d411fa99574e907004cd811b06d63443d4",
+    "bytes": 434176,
+    "sqlite_integrity_check": "ok"
+  },
+  "database_comparison": {
+    "schema_equal": true,
+    "canonical_table_rows_equal": true,
+    "different_tables": [
+      "evidence_fts_data",
+      "evidence_fts_idx"
+    ],
+    "different_tables_are_fts5_shadow_projection_tables": true,
+    "intentional_phase3a_artifact_change": false
+  },
+  "replay": {
+    "independent_series": 2,
+    "runs_per_series": 4,
+    "series_identical": true,
+    "sha256_sequence": [
+      "31ead27883fd7aa829667ffeeefd59d411fa99574e907004cd811b06d63443d4",
+      "599b462fba6c112c30d99031f509058e70be9e91953beac1e12b29236d09a0bb",
+      "079f2ed96cf7a3fcc1fa41e4a8c80c813fc19787f1ced92ea23147c0270927ee",
+      "d7e0a69aa88d5f00620c35a815acc555afa57c77ba45c5a2c6745ce9d2a5c8a0",
+      "6839477a3a5c6e92bcddd9e96ddf5e76b0762197b4825b4bb0f13b80a4fabb33"
+    ],
+    "classification": "deterministic but non-idempotent FTS5 projection rewrite",
+    "inherent_nondeterminism_observed": false
+  },
+  "impact": {
+    "acceptance_command_passes": true,
+    "acceptance_command_dirties_working_tree": true,
+    "phase3b_entry_gate_database_change_excluded": true
+  },
+  "recommended_remediation": [
+    "Run acceptance generation against a disposable output directory instead of a tracked artifact.",
+    "Make FTS5 projection rebuild/compaction idempotent or exclude derived SQLite pages from tracked canonical artifacts.",
+    "Add a clean-working-tree assertion around the documented acceptance check."
+  ]
+}

@@ -1,0 +1,244 @@
+{
+  "adaivy_model_api_calls_during_gate": 0,
+  "all_commands_passed": true,
+  "commands": [
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "exit_code": 0,
+      "name": "unit_tests",
+      "stderr": {
+        "bytes": 26243,
+        "path": "reports/phase-3b-entry-gate/v4/verification-logs/01-unit_tests.stderr.txt",
+        "sha256": "629c133388f508529395cef8893f5d3c96bbb21fa76aa4e43da13ce45a76f885"
+      },
+      "stdout": {
+        "bytes": 970,
+        "path": "reports/phase-3b-entry-gate/v4/verification-logs/01-unit_tests.stdout.txt",
+        "sha256": "878596edc0a8e9cafc752c5f8c25f5c3e7f21d98c786ec6802b36607a2f42836"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "phase0_harness.cli",
+        "check"
+      ],
+      "exit_code": 0,
+      "name": "phase0_checks",
+      "stderr": {
+        "bytes": 0,
+        "path": "reports/phase-3b-entry-gate/v4/verification-logs/02-phase0_checks.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 48,
+        "path": "reports/phase-3b-entry-gate/v4/verification-logs/02-phase0_checks.stdout.txt",
+        "sha256": "b71f8a149f277a3f464cde84c65292f66e3bc90b266a78eca596f70f2c324756"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "math_research.cli",
+        "demo",
+        "--output-dir",
+        "reports/phase-1"
+      ],
+      "exit_code": 0,
+      "name": "phase1_demo",
+      "stderr": {
+        "bytes": 0,
+        "path": "reports/phase-3b-entry-gate/v4/verification-logs/03-phase1_demo.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 520,
+        "path": "reports/phase-3b-entry-gate/v4/verification-logs/03-phase1_demo.stdout.txt",
+        "sha256": "b32c056e966ec4c55d27d7929fc026199a6c87ae4e4712d759016c060ab73a45"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "math_research.cli",
+        "inspect",
+        "reports/phase-1/manual-dossier.json"
+      ],
+      "exit_code": 0,
+      "name": "phase1_inspect",
+      "stderr": {
+        "bytes": 0,
+        "path": "reports/phase-3b-entry-gate/v4/verification-logs/04-phase1_inspect.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 315,
+        "path": "reports/phase-3b-entry-gate/v4/verification-logs/04-phase1_inspect.stdout.txt",
+        "sha256": "e9b026e04ad7cd1632f9430933bc413245510a2b1498dd9c8fad89305e5a2fb5"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "math_research.cli",
+        "phase2",
+        "report",
+        "reports/phase-2",
+        "run.phase2.demo.fake.v1",
+        "--output",
+        "reports/phase-2/traceable-report.md"
+      ],
+      "exit_code": 0,
+      "name": "phase2_offline_report",
+      "stderr": {
+        "bytes": 0,
+        "path": "reports/phase-3b-entry-gate/v4/verification-logs/05-phase2_offline_report.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 11982,
+        "path": "reports/phase-3b-entry-gate/v4/verification-logs/05-phase2_offline_report.stdout.txt",
+        "sha256": "11273da46edc83de71eaa1870923d39af6f9e0f5cc89129f1b611c6f141c345c"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "math_research.cli",
+        "phase3a",
+        "demo",
+        "reports/phase-3a/acceptance-v1",
+        "--output-dir",
+        "reports/phase-3a/acceptance-v1"
+      ],
+      "exit_code": 0,
+      "name": "phase3a_demo",
+      "stderr": {
+        "bytes": 0,
+        "path": "reports/phase-3b-entry-gate/v4/verification-logs/06-phase3a_demo.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 4086,
+        "path": "reports/phase-3b-entry-gate/v4/verification-logs/06-phase3a_demo.stdout.txt",
+        "sha256": "3f01211002da292b3ffecd059ed1fd09377c55ed587aa179b5a42ac74b3fbac0"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "math_research.cli",
+        "phase3a",
+        "inspect",
+        "reports/phase-3a/acceptance-v1/research-memory.json"
+      ],
+      "exit_code": 0,
+      "name": "phase3a_inspect",
+      "stderr": {
+        "bytes": 0,
+        "path": "reports/phase-3b-entry-gate/v4/verification-logs/07-phase3a_inspect.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 221,
+        "path": "reports/phase-3b-entry-gate/v4/verification-logs/07-phase3a_inspect.stdout.txt",
+        "sha256": "039a48ad5ce1a189dd2125a1abdf964aac6283eadc79e996e6c50777136db851"
+      }
+    }
+  ],
+  "credential_environment_removed": true,
+  "json_validation": {
+    "errors": [],
+    "parsed_count": 77
+  },
+  "network_environment_removed": true,
+  "phase0": {
+    "expected": 19,
+    "observed": 19
+  },
+  "phase3a_database_integrity": "ok",
+  "phase3a_model_calls": 0,
+  "schema_validation": {
+    "schema_document_count": 10,
+    "schema_documents": [
+      "schemas/backend-result.schema.json",
+      "schemas/external-backend-package-v1.schema.json",
+      "schemas/live-run-config-v1.schema.json",
+      "schemas/model-proposer-v1.schema.json",
+      "schemas/model-verifier-v1.schema.json",
+      "schemas/phase1-scenario.schema.json",
+      "schemas/pricing-snapshot-v1.schema.json",
+      "schemas/research-dossier-v1.schema.json",
+      "schemas/research-dossier.schema.json",
+      "schemas/research-memory-v1.schema.json"
+    ],
+    "semantic_validation_covered_by_unit_suite": true
+  },
+  "schema_version": "adaivy.phase3b-entry-gate-repository-verification.v4",
+  "seal_verification": {
+    "reports/phase-0/results.json": {
+      "expected_sha256": "e8166fed8063ade26d74b55f0139fc2adfd2900d2c8db4a4c3fb8c4a5b144533",
+      "observed_sha256": "e8166fed8063ade26d74b55f0139fc2adfd2900d2c8db4a4c3fb8c4a5b144533",
+      "passed": true
+    },
+    "reports/phase-2/live-openai-gpt5-mini-v2/workspace.sqlite3": {
+      "expected_sha256": "4c1c402d142a33d6529fb3991cb18bab2513bcb13dd2eddd3b30af0ab76ad064",
+      "observed_sha256": "4c1c402d142a33d6529fb3991cb18bab2513bcb13dd2eddd3b30af0ab76ad064",
+      "passed": true
+    },
+    "reports/phase-2/live-openai-gpt5-mini-v3/traceable-report.md": {
+      "expected_sha256": "ff706139a8f0415e1f1f6efc0ac714f0e588f187e94e82c7dff0af92d5da8cb9",
+      "observed_sha256": "ff706139a8f0415e1f1f6efc0ac714f0e588f187e94e82c7dff0af92d5da8cb9",
+      "passed": true
+    },
+    "reports/phase-2/live-openai-gpt5-mini-v3/workspace.sqlite3": {
+      "expected_sha256": "30e0db8d1bf9b601ce9d262fdce9459dea573c742aaca27f7af97d7895f81e94",
+      "observed_sha256": "30e0db8d1bf9b601ce9d262fdce9459dea573c742aaca27f7af97d7895f81e94",
+      "passed": true
+    },
+    "reports/phase-2/live-provider-status.json": {
+      "expected_sha256": "c29c13d80164890d0b5d1d1fdca3eeac66c56300c9683a1c4087d7bc03c1ac05",
+      "observed_sha256": "c29c13d80164890d0b5d1d1fdca3eeac66c56300c9683a1c4087d7bc03c1ac05",
+      "passed": true
+    },
+    "reports/phase-2/release-manifest.json": {
+      "expected_sha256": "90b188e134e0489318319919e09dedf52fb817f658f07b173ff4ab3d75188664",
+      "observed_sha256": "90b188e134e0489318319919e09dedf52fb817f658f07b173ff4ab3d75188664",
+      "passed": true
+    },
+    "reports/phase-3a/acceptance-v1/acceptance.json": {
+      "expected_sha256": "c0ea908f3b6f1c9fd19d83180f3e55f865238dfc4f96727048531d51bfe8c241",
+      "observed_sha256": "c0ea908f3b6f1c9fd19d83180f3e55f865238dfc4f96727048531d51bfe8c241",
+      "passed": true
+    },
+    "reports/phase-3a/acceptance-v1/research-memory.json": {
+      "expected_sha256": "f1b57c2cae96638a7545476722685f17eb7470c5b4d0a790ca788de8e8756272",
+      "observed_sha256": "f1b57c2cae96638a7545476722685f17eb7470c5b4d0a790ca788de8e8756272",
+      "passed": true
+    },
+    "reports/phase-3a/acceptance-v1/traceable-report.md": {
+      "expected_sha256": "881b2d0a85da1c9c57181c0aeb28ae6efccbc88e4a6521f6d29bd60856544ac9",
+      "observed_sha256": "881b2d0a85da1c9c57181c0aeb28ae6efccbc88e4a6521f6d29bd60856544ac9",
+      "passed": true
+    }
+  },
+  "status": "passed",
+  "unit_tests": {
+    "expected": 156,
+    "observed": 156
+  }
+}

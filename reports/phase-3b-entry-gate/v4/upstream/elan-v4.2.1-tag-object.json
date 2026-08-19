@@ -1,0 +1,24 @@
+{
+  "node_id": "TA_kwDOB6Hs-toAKDljNGY1ZDQwNGJhMDUyYWE3MjE0NmQyZDY2ZmY2Mjc3YWZkMzcwM2M",
+  "sha": "9c4f5d404ba052aa72146d2d66ff6277afd3703c",
+  "url": "https://api.github.com/repos/leanprover/elan/git/tags/9c4f5d404ba052aa72146d2d66ff6277afd3703c",
+  "tagger": {
+    "name": "Sebastian Ullrich",
+    "email": "sebasti@nullri.ch",
+    "date": "2026-03-18T12:29:29Z"
+  },
+  "object": {
+    "sha": "3d5138e1526a569a23901b8ee559032793cf445e",
+    "type": "commit",
+    "url": "https://api.github.com/repos/leanprover/elan/git/commits/3d5138e1526a569a23901b8ee559032793cf445e"
+  },
+  "tag": "v4.2.1",
+  "message": "chore: Release elan version 4.2.1\n",
+  "verification": {
+    "verified": false,
+    "reason": "unsigned",
+    "signature": null,
+    "payload": null,
+    "verified_at": null
+  }
+}

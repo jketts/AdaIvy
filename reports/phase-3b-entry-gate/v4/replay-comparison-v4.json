@@ -1,0 +1,64 @@
+{
+  "distinct_runtime_manifests": true,
+  "same_fixture_bytes": true,
+  "schema_version": "adaivy.phase3b-entry-gate-replay-comparison.v4",
+  "status": "passed",
+  "v3": {
+    "all_12_classifications_passed": true,
+    "blocked_report_sha256": "d6546544169ea05dc6ad8386d499da6e04ae7e870b71bff2d95d0bafc0ff643c",
+    "canonical_across_repeats_and_restart": true,
+    "fixture_report_sha256": "bb6d8d37543ab578445cfbfd497ede9d61f3d4f3a5a54847c21333554d9bdda4",
+    "fixture_source_sha256": {
+      "F01": "fc3d7e47e3ab21bd2411c4158ed32356ea4cc85a588eb81c0ec796e8070d14c4",
+      "F02": "37d7689d379cfc39fc2dffc784fb6320f011dcb854e8fcdfa30d76e6fe0b5ddf",
+      "F03": "4018772176523fb4c9b859d71c041e5a44af9f845d6e4c9262a0c72090a25617",
+      "F04": "43643789527c6f7e3cdb7bf29694fd539f08820bdcbe2be1be4ed83c19306155",
+      "F05": "ced3bd680803671629fc8651469bfb7db03af033536fb82e268aaeec293856b6",
+      "F06": "dcb092b6789ed41e70c285ac9e953e371c243679e68f8323d2f5bc2a74af7efc",
+      "F07": "163408ec9efc9765c06905d98bab2c032dd9bfb8b0687eee0460b37b229e2db9",
+      "F08": "c10e59739cd31e401e8fb3039aa630b118d985d56c7799b687ef6c88326bd717",
+      "F09": "73418995bc226d60e25b1f79794a852f0033bfc38da2f963f5e68d365a9273aa",
+      "F10": "31d6581746b47ba94dc7f6dc6f21fe692373b9eb227fffc5bf62cec150ef0bb9",
+      "F11": "5221a0d3c729425e25cffcf77ba047d0f76b615818569c58a9e8986bb06628e0",
+      "F12": "226bbf534555f42142d8daaf5675fc5376474f765144b09490c27eb19a2fbf84"
+    },
+    "gate_report_sha256": "232e90b95c693a3bb7ff44318e1730b5f2168af2d08855a8378a7c374f2f442f",
+    "image_digest": "sha256:0d3a26db46d1bace987b273d59087e3e39fbc9901d2bd680bf251f190622eac3",
+    "runtime_manifest": "docker-entry-gate-v3.json"
+  },
+  "v3_image_preserved": true,
+  "v4": {
+    "all_12_classifications_passed": true,
+    "canonical_across_repeats_and_restart": true,
+    "fixture_report_sha256": "508de2f212c86597cd95fc6bff8a64ea45afb6ba79b8af14b9954a4a25c17f4e",
+    "fixture_source_sha256": {
+      "F01": "fc3d7e47e3ab21bd2411c4158ed32356ea4cc85a588eb81c0ec796e8070d14c4",
+      "F02": "37d7689d379cfc39fc2dffc784fb6320f011dcb854e8fcdfa30d76e6fe0b5ddf",
+      "F03": "4018772176523fb4c9b859d71c041e5a44af9f845d6e4c9262a0c72090a25617",
+      "F04": "43643789527c6f7e3cdb7bf29694fd539f08820bdcbe2be1be4ed83c19306155",
+      "F05": "ced3bd680803671629fc8651469bfb7db03af033536fb82e268aaeec293856b6",
+      "F06": "dcb092b6789ed41e70c285ac9e953e371c243679e68f8323d2f5bc2a74af7efc",
+      "F07": "163408ec9efc9765c06905d98bab2c032dd9bfb8b0687eee0460b37b229e2db9",
+      "F08": "c10e59739cd31e401e8fb3039aa630b118d985d56c7799b687ef6c88326bd717",
+      "F09": "73418995bc226d60e25b1f79794a852f0033bfc38da2f963f5e68d365a9273aa",
+      "F10": "31d6581746b47ba94dc7f6dc6f21fe692373b9eb227fffc5bf62cec150ef0bb9",
+      "F11": "5221a0d3c729425e25cffcf77ba047d0f76b615818569c58a9e8986bb06628e0",
+      "F12": "226bbf534555f42142d8daaf5675fc5376474f765144b09490c27eb19a2fbf84"
+    },
+    "image_digest": "sha256:ad81d799c1d9e766e0263c2b703936ca3fb8042e189e7e279b7abd1c7889c60b",
+    "policy_attempts": {
+      "/bin/bash": 2,
+      "/bin/sh": 2,
+      "/checker/launcher": 13,
+      "/lib/ld-linux-aarch64.so.1": 13,
+      "/usr/bin/env": 2,
+      "execveat": 1,
+      "memfd_create": 1,
+      "tmpfs_copy": 13,
+      "tmpfs_copy_setup": 0,
+      "tmpfs_shebang": 13,
+      "tmpfs_shebang_setup": 0
+    },
+    "runtime_manifest": "v4/runtime-manifest-v4.json"
+  }
+}

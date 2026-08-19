@@ -1,42 +1,44 @@
-# Proposed Next Bounded Phase 3B Task
+# Next Bounded Production Phase 3B Task
 
-Do not begin the production Phase 3B domain model or orchestration.
+Read `README.md`, `TECHNICAL_BLUEPRINT.md`, `NOVELTY_LANDSCAPE.md`, all current
+ADRs, and the complete `reports/phase-3b-entry-gate/v4/` evidence first.
 
-First obtain explicit authorization for a networked acquisition-only step.
-Acquire elan v4.2.1, Lean `leanprover/lean4:v4.32.1`, and mathlib v4.32.1 into a
-disposable local environment without Homebrew or shell-startup edits. Resolve
-and record full commits, `lake-manifest.json`, licenses, download/source/binary
-hashes, and actual download/expanded sizes. Do not fetch during checking.
+Implement only the first production Lean formal-checking vertical slice behind
+the existing `MathTool`/verifier boundaries. Reuse the exact accepted pins and
+the sealed shell-free runtime manifest from entry-gate repair v4. Do not perform
+network acquisition, rebuild or expand the toolchain, change the Landlock or
+seccomp policy, or treat the twelve gate fixtures as a production interface. If
+the sealed runtime cannot support the bounded production input contract without
+a policy or runtime change, stop and require a fresh entry gate.
 
-Provide or select an OS/container sandbox that demonstrably enforces:
+The slice may add:
 
-- no network and no inherited secrets;
-- no repository or home-directory access;
-- read-only pinned toolchain/dependencies;
-- one disposable writable run directory;
-- CPU, wall, memory, process, output, and file-count/size limits;
-- command and import allowlists; and
-- process-group termination and cleanup.
+- one versioned restricted theorem/proof-fragment schema;
+- deterministic validation that rejects arbitrary Lean files, unknown imports,
+  placeholders, unsafe/FFI/native/evaluation features, and undeclared axioms;
+- one deterministic trusted-wrapper generator with exact source, target,
+  declaration, import, wrapper, invocation, policy, and runtime hashes;
+- one adapter invocation of the fixed launcher under the accepted offline
+  Docker/Landlock controls and bounded diagnostics;
+- proposal-only formal-check findings with distinct outcomes for kernel checked,
+  approved standard axioms, unapproved assumptions, policy rejection,
+  elaboration failure, timeout, output limit, and sandbox failure; and
+- canonical persistence/replay, CLI inspection, and acceptance fixtures for
+  valid, placeholder, axiom, malformed, mistranslated/meaning-test, and resource
+  cases.
 
-Then implement only an entry-gate spike around a generated trusted Lean wrapper
-and the twelve synthetic fixtures in `FIXTURE_RESULTS.md`. The spike must retain
-raw bounded diagnostics, exact warnings, `#print axioms`, source/wrapper/
-toolchain/invocation hashes, and canonical classifications from
-`TRUST_CLASSIFICATION_POLICY.md`. Static scanning is defense in depth, not the
-sandbox.
+The adapter must never approve semantic alignment, source applicability,
+novelty, significance, contribution, or an `EpistemicWarrant`. A kernel-checked
+result applies only to the exact hashed statement and assumptions. Meaning tests
+are diagnostic and cannot promote trust.
 
-Run every fixture twice and once after a clean restart with network disabled.
-Prove that timing/PID/temp paths do not affect canonical hashes. Run all existing
-Phase 0–3A tests, validators, seal/hash checks, and credential scans again.
+Keep all Phase 0–3A behavior and hashes compatible. Run all existing tests and
+validators plus the new adapter, restart/replay, sandbox, placeholder/axiom,
+meaning-test, and zero-network/API tests. Preserve failed attempts and bounded
+raw stdout/stderr in machine-readable records.
 
-Stop and report blocked if any of the following remains unreliable:
-
-- placeholder or axiom detection;
-- exact declaration/target identification;
-- sandbox network/filesystem/process containment;
-- deterministic canonical result replay;
-- dependency pinning or licensing.
-
-If and only if this rerun passes, amend ADR-0015 to accepted and propose a
-separate production-adapter task. Do not add Why3, SMT, other proof assistants,
-models, autonomous proof generation, or quantum convergence work.
+Do not add Why3, SMT, CAS, interval or optimization adapters, premise retrieval,
+proof search or repair, model/API calls, multi-agent orchestration, a web/HTTP
+surface, crawling, embeddings, PDF parsing, broader Phase 3B workflows, Phase 4,
+or quantum convergence work. Do not commit, tag, push, or publish unless a later
+request explicitly authorizes it.

@@ -1,6 +1,6 @@
-# ADR-0015: Propose Lean 4 plus mathlib as the first formal backend
+# ADR-0015: Use Lean 4 plus mathlib as the first formal backend
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-08-19
 - **Blueprint requirement:** sections 9.3, 19 Phase 3B, and open decision 6
 - **Decision owners:** researcher and repository maintainer
@@ -10,13 +10,14 @@
 Phase 3B needs an initial proof-assistant path selected by general-mathematics
 library fit, reproducibility, kernel checking, licensing, sandboxability, and
 honest trust classification. Phase 0 named Lean but could not execute it. The
-Phase 3B entry gate found no local elan/Lean/Lake installation or cache and no
-accepted hostile-code sandbox. It therefore did not measure checker capability.
+repaired Phase 3B v4 entry gate acquired the exact pinned releases, built a
+minimal shell-free runtime, demonstrated effective Landlock execution control,
+and measured checker behavior on the frozen fixtures.
 
 Lean provides a small-kernel checking path, exact theorem statements, explicit
-diagnostics, and `#print axioms`; mathlib provides the proposed general-
-mathematics library. Both report permissive licenses. These are reasons to
-evaluate Lean first, not evidence that the gate has passed.
+diagnostics, and `#print axioms`; mathlib provides the selected general-
+mathematics library. The v4 acquisition, runtime, executable-inventory, replay,
+and full-gate records are under `reports/phase-3b-entry-gate/v4/`.
 
 ## Options considered
 
@@ -29,17 +30,19 @@ evaluate Lean first, not evidence that the gate has passed.
 
 ## Decision
 
-Propose Lean 4 plus mathlib as the first backend to test through a narrow
-wrapper. Pin elan v4.2.1, Lean toolchain `leanprover/lean4:v4.32.1`, and mathlib
-v4.32.1, subject to full commit, lock, hash, and license capture during an
-authorized acquisition.
+Use Lean 4 plus mathlib as the first formal backend through a narrow wrapper.
+Pin elan v4.2.1, Lean `v4.32.1` at commit
+`f054605aea4b840552cca2e725580bffd1e1b704`, and mathlib `v4.32.1` at commit
+`520045ab14e26149ee970e2e617ca04b09bde5d6`.
 
-Do not adopt the backend or build a production adapter yet. Input is a
+Production implementation remains a separate bounded task. Input is a
 restricted theorem/proof fragment embedded in a trusted wrapper; arbitrary Lean
-files are outside the initial profile. Checking is offline in an OS/container
-sandbox. Placeholder, axiom, warning, unsafe/FFI/native/evaluation, import, and
-resource policies fail closed. Every result is a proposal/finding and cannot
-approve semantic alignment or mutate warrants.
+files remain outside the initial profile. Checking is offline in the sealed
+shell-free runtime with the demonstrated Landlock, seccomp, filesystem,
+privilege, and resource controls. Placeholder, axiom, warning,
+unsafe/FFI/native/evaluation, import, and resource policies fail closed. Every
+result is a proposal/finding and cannot approve semantic alignment or mutate
+warrants.
 
 Keep the architecture backend-neutral at its existing `MathTool`/verifier
 conceptual boundary, but do not add a new abstraction layer before this gate
@@ -47,10 +50,12 @@ passes. Why3, SMT, OMDoc/MMT, and other proof assistants remain deferred.
 
 ## Consequences
 
-The first formal spike can test an exact kernel-backed path without coupling
-domain entities to Lean. It also introduces a multi-gigabyte acquisition,
-transitive dependency audit, parser/version maintenance, and a substantial
-sandbox requirement because elaboration can execute metaprogramming.
+The first production formal slice may now wrap the exact kernel-backed path
+without coupling domain entities to Lean. It inherits a pinned runtime,
+transitive dependency audit, parser/version maintenance, and the demonstrated
+sandbox requirement because elaboration can execute metaprogramming. Changing
+the checker, dependency closure, launcher, hardener, or execution policy
+invalidates the sealed runtime evidence and requires the gate to be rerun.
 
 `kernel_checked`, approved-standard-axiom, and unapproved-assumption outcomes
 remain distinct. Formal checking never implies semantic fidelity, literature
@@ -64,7 +69,7 @@ the backend.
 
 ## Validation and revisit trigger
 
-Accept this ADR only after:
+This decision remains accepted only while:
 
 - exact pinned acquisition and complete direct/transitive license inventory;
 - offline execution in a demonstrated sandbox;
@@ -72,6 +77,12 @@ Accept this ADR only after:
 - placeholder and axiom parsing fail closed;
 - repeated/restart canonical result hashes match;
 - all Phase 0–3A tests, validators, protected hashes, and credential scans pass.
+
+Entry-gate repair v4 passed all of these conditions. The decisive record is
+`reports/phase-3b-entry-gate/v4/entry-gate-v4.json`; its supporting records
+preserve the exact acquisition metadata, OCI-layer executable inventory, three
+fixture/policy rounds, v3/v4 replay comparison, repository verification, and
+credential scan. The v3 reports and replay image remain distinct and unchanged.
 
 Reject or revisit if isolation is insufficient, lock/hash resolution is not
 reproducible, licensing is incompatible, axiom/placeholder detection is

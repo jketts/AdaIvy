@@ -1,0 +1,111 @@
+{
+  "acquisitions": [
+    {
+      "architecture": "aarch64-unknown-linux-gnu",
+      "asset_filename": "elan-aarch64-unknown-linux-gnu.tar.gz",
+      "byte_length": 5111101,
+      "component": "elan",
+      "digest_verified": true,
+      "exact_asset_url": "https://github.com/leanprover/elan/releases/download/v4.2.1/elan-aarch64-unknown-linux-gnu.tar.gz",
+      "github_published_digest": "sha256:bb78726ace6a912c7122a389018bcd69d9122ce04659800101392f7db380d3b3",
+      "observed_sha256": "bb78726ace6a912c7122a389018bcd69d9122ce04659800101392f7db380d3b3",
+      "release_commit": "3d5138e1526a569a23901b8ee559032793cf445e",
+      "release_tag": "v4.2.1",
+      "release_tag_object": "9c4f5d404ba052aa72146d2d66ff6277afd3703c"
+    },
+    {
+      "architecture": "linux_aarch64",
+      "asset_filename": "lean-4.32.1-linux_aarch64.tar.zst",
+      "byte_length": 563359001,
+      "component": "Lean",
+      "digest_verified": true,
+      "exact_asset_url": "https://github.com/leanprover/lean4/releases/download/v4.32.1/lean-4.32.1-linux_aarch64.tar.zst",
+      "github_published_digest": "sha256:99b51cb2ba2ae402c03185f2ca656e82b6c37d28ca99f3b07a1c2d04b58a039a",
+      "observed_sha256": "99b51cb2ba2ae402c03185f2ca656e82b6c37d28ca99f3b07a1c2d04b58a039a",
+      "release_commit": "f054605aea4b840552cca2e725580bffd1e1b704",
+      "release_tag": "v4.32.1"
+    },
+    {
+      "architecture": "source",
+      "asset_filename": "mathlib4-520045ab14e26149ee970e2e617ca04b09bde5d6.tar.gz",
+      "byte_length": 23205141,
+      "component": "mathlib",
+      "digest_verified": true,
+      "exact_asset_url": "https://github.com/leanprover-community/mathlib4/archive/520045ab14e26149ee970e2e617ca04b09bde5d6.tar.gz",
+      "github_published_digest": null,
+      "github_release_assets_available": false,
+      "observed_sha256": "e1877f6706a990048b1189a96a6285b1af84c4765ee208735e11fb503e6165d0",
+      "release_commit": "520045ab14e26149ee970e2e617ca04b09bde5d6",
+      "release_tag": "v4.32.1",
+      "verification_basis": "exact Git tag ref commit plus observed archive SHA-256; the release publishes no asset digest"
+    }
+  ],
+  "all_acquisitions_digest_verified": true,
+  "all_acquisitions_exact": true,
+  "architecture": "linux/arm64 (aarch64-unknown-linux-gnu)",
+  "elan_installer_script_used": false,
+  "floating_acquisition_urls": [],
+  "local_pinned_build_material": {
+    "digest": "sha256:0d3a26db46d1bace987b273d59087e3e39fbc9901d2bd680bf251f190622eac3",
+    "image": "adaivy-phase3b-gate:lean-v4.32.1",
+    "network_acquisition": false,
+    "purpose": "read-only source of the already compiled pinned mathlib dependency closure"
+  },
+  "metadata": [
+    {
+      "bytes": 12251,
+      "filename": "elan-v4.2.1-release.json",
+      "sha256": "21bf35d955a4c0b031d5245afaaac092a6187c7c03e16a0aaa60f20fae746864"
+    },
+    {
+      "bytes": 791,
+      "filename": "elan-v4.2.1-tag-object.json",
+      "sha256": "1f81649daf28901f1a144e354049b49ef6b5c6ec117d794655edd421b0cb9e46"
+    },
+    {
+      "bytes": 372,
+      "filename": "elan-v4.2.1-tag-ref.json",
+      "sha256": "6b8fbda52116c8a8d1cfc7d5a29affc31d8f7cb93f543e1ba2266d29a10540b5"
+    },
+    {
+      "bytes": 21991,
+      "filename": "lean-v4.32.1-release.json",
+      "sha256": "9416f142285cd7ff60938e6103083550da9603d079e88581fe677a952b225db9"
+    },
+    {
+      "bytes": 382,
+      "filename": "lean-v4.32.1-tag-ref.json",
+      "sha256": "44324f49b6b155a00d1f3b647140595f0aad9a1d3a8cc3cc7c7002ae460db6d7"
+    },
+    {
+      "bytes": 2182,
+      "filename": "mathlib-v4.32.1-release.json",
+      "sha256": "7f18170531e0707ceba5f3682535456f078e10901b772eb3f23e3c571761ad75"
+    },
+    {
+      "bytes": 408,
+      "filename": "mathlib-v4.32.1-tag-ref.json",
+      "sha256": "a7dbdb4a5e75e64968d2a2b92ea46d65aa8ddf4413975866ff1475966e6ff9dc"
+    }
+  ],
+  "recorded_at": "2026-08-19T00:00:00Z",
+  "rejected_non_candidate_attempts": [
+    {
+      "accepted_as_candidate": false,
+      "id": "dockerfile-frontend-floating-v1",
+      "reason": "Dockerfile frontend declaration resolved the floating docker/dockerfile:1 image",
+      "repair": "removed frontend declaration; final builds used --pull=false and --network none",
+      "resolved_frontend_digest": "sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32",
+      "result": "canceled before candidate build"
+    },
+    {
+      "accepted_as_candidate": false,
+      "id": "strict-initial-landlock-v1",
+      "reason": "the kernel must execute the trusted dynamic loader to start the dynamically linked Lean binary",
+      "repair": "bootstrap policy permits exact Lean and loader, then a trusted pre-main constructor installs a nested Lean-only execute policy",
+      "result": "Lean ELF bootstrap denied with errno 13"
+    }
+  ],
+  "schema_version": "adaivy.phase3b-entry-gate-acquisition.v4",
+  "status": "passed"
+}
