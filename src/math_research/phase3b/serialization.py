@@ -43,6 +43,62 @@ def canonical_hash(value: Any) -> str:
     return sha256_bytes(canonical_bytes(value))
 
 
+def semantic_execution_value(value: Any) -> Any:
+    """Return classification inputs without incidental runtime observations."""
+    result = public_value(value)
+    if isinstance(result, dict):
+        result.pop("elapsed_milliseconds", None)
+        if result.get("termination_reason") in {"timeout", "output_limit"}:
+            return {
+                "container_removed": result.get("container_removed"),
+                "termination_reason": result.get("termination_reason"),
+            }
+    return result
+
+
+def finding_hash_preimage(value: Any) -> dict[str, Any]:
+    """Build the semantic finding preimage while retaining operational output."""
+    result = public_value(value)
+    if not isinstance(result, dict):
+        raise TypeError("formal finding hash preimage must be an object")
+    result["content_hash"] = ""
+    result.pop("created_at", None)
+    execution = result.get("execution")
+    if isinstance(execution, dict):
+        result["execution"] = semantic_execution_value(execution)
+    return result
+
+
+def finding_content_hash(value: Any) -> str:
+    return canonical_hash(finding_hash_preimage(value))
+
+
+def semantic_export_hash(value: Any) -> str:
+    """Hash semantic export state while excluding operational elapsed time."""
+    result = public_value(value)
+    if not isinstance(result, dict):
+        raise TypeError("formal export hash preimage must be an object")
+    result.pop("content_hash", None)
+    result.pop("operational_hash", None)
+    findings = result.get("findings")
+    if isinstance(findings, list):
+        for finding in findings:
+            if isinstance(finding, dict):
+                finding.pop("created_at", None)
+                execution = finding.get("execution")
+                if isinstance(execution, dict):
+                    finding["execution"] = semantic_execution_value(execution)
+    return canonical_hash(result)
+
+
+def operational_export_hash(value: Any) -> str:
+    """Hash the complete export, including elapsed time and semantic hash."""
+    result = public_value(value)
+    if not isinstance(result, dict):
+        raise TypeError("formal export operational preimage must be an object")
+    result.pop("operational_hash", None)
+    return canonical_hash(result)
+
+
 def stable_id(prefix: str, value: Any) -> OpaqueId:
     return OpaqueId(f"{prefix}.{canonical_hash(value)[7:31]}")
-

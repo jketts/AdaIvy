@@ -6,7 +6,7 @@ from dataclasses import replace
 
 from .adapter import DockerLeanAdapter
 from .records import FormalCheckFinding, FormalCheckOutcome, FormalCheckRequest, PolicyRejection, SourceKind
-from .serialization import canonical_hash, sha256_bytes, stable_id
+from .serialization import finding_content_hash, sha256_bytes, stable_id
 from .validation import RequestValidationError, parse_request_bytes
 from .wrapper import generate_wrapper
 
@@ -51,4 +51,4 @@ class FormalCheckingService:
             significance_approved=False, contribution_approved=False, epistemic_warrant_created=False,
             created_at=created_at, content_hash="",
         )
-        return replace(provisional, content_hash=canonical_hash(provisional))
+        return replace(provisional, content_hash=finding_content_hash(provisional))
