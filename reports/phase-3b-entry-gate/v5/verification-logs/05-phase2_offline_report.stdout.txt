@@ -1,0 +1,304 @@
+{
+  "output": "/private/tmp/adaivy-v5-repository-cw72hn94/phase-2-report.md",
+  "report": {
+    "accepted_dossier": {
+      "blockers": [
+        "open_obligation:obligation.even_sum_proof.v1"
+      ],
+      "content_hash": "sha256:7c4a99e1b129b0bb4192094778a87cdd9c945a5d87cf0f7f6c00f6f9509408f7",
+      "dossier_id": "dossier.even_sum.phase2.open.v1",
+      "evidence_ids": [
+        "evidence.even_definition_source.v1",
+        "evidence.integer_algebra_bridge.v1"
+      ],
+      "logical_status": "unknown",
+      "obligation_ids": [
+        "obligation.even_sum_proof.v1",
+        "obligation.even_definition_applicability.v1",
+        "obligation.integer_algebra_bridge.v1"
+      ],
+      "semantic_alignment_status": "approved_equivalent",
+      "target_claim_id": "claim.even_sum.v1",
+      "warrant_ids": [
+        "warrant.even_definition_source.v1",
+        "warrant.integer_algebra_bridge.v1"
+      ]
+    },
+    "audit_replay_hash": "sha256:8c185deeb88a6e981bfd5376c868d62163a748f686bf04e5004b89c5d68bea9c",
+    "audit_timeline": [
+      {
+        "aggregate_id": "run.phase2.demo.fake.v1",
+        "created_at": "2026-08-19T08:00:00.000000Z",
+        "event_id": "event.run.phase2.demo.fake.v1.created",
+        "event_type": "run_created",
+        "idempotency_key": "run-created:run.phase2.demo.fake.v1",
+        "payload": {
+          "dossier_hash": "sha256:7c4a99e1b129b0bb4192094778a87cdd9c945a5d87cf0f7f6c00f6f9509408f7",
+          "dossier_id": "dossier.even_sum.phase2.open.v1"
+        },
+        "schema_version": "2.0.0",
+        "sequence": 1
+      },
+      {
+        "aggregate_id": "run.phase2.demo.fake.v1",
+        "created_at": "2026-08-19T08:00:00.000000Z",
+        "event_id": "event.run:run.phase2.demo.fake.v1:running",
+        "event_type": "run_running",
+        "idempotency_key": "run:run.phase2.demo.fake.v1:running",
+        "payload": {
+          "from": "queued",
+          "to": "running"
+        },
+        "schema_version": "2.0.0",
+        "sequence": 2
+      },
+      {
+        "aggregate_id": "run.phase2.demo.fake.v1",
+        "created_at": "2026-08-19T08:00:00.000000Z",
+        "event_id": "event.proposal:run.phase2.demo.fake.v1:proposer",
+        "event_type": "proposal_imported",
+        "idempotency_key": "proposal:run.phase2.demo.fake.v1:proposer",
+        "payload": {
+          "artifact_hash": "sha256:a12ed7c6f83d219c987855ca1853ef16cd6e7045bfb0a5547425e2c51d7e9afc",
+          "disposition": "proposal",
+          "proposal_id": "proposal.run.phase2.demo.fake.v1.proposer"
+        },
+        "schema_version": "2.0.0",
+        "sequence": 3
+      },
+      {
+        "aggregate_id": "run.phase2.demo.fake.v1",
+        "created_at": "2026-08-19T08:00:00.000000Z",
+        "event_id": "event.job:run.phase2.demo.fake.v1:proposer:succeeded",
+        "event_type": "job_succeeded",
+        "idempotency_key": "job:run.phase2.demo.fake.v1:proposer:succeeded",
+        "payload": {
+          "job_id": "job.run.phase2.demo.fake.v1.proposer",
+          "result_hash": "sha256:a12ed7c6f83d219c987855ca1853ef16cd6e7045bfb0a5547425e2c51d7e9afc"
+        },
+        "schema_version": "2.0.0",
+        "sequence": 4
+      },
+      {
+        "aggregate_id": "run.phase2.demo.fake.v1",
+        "created_at": "2026-08-19T08:00:00.000000Z",
+        "event_id": "event.proposal:run.phase2.demo.fake.v1:verifier",
+        "event_type": "proposal_imported",
+        "idempotency_key": "proposal:run.phase2.demo.fake.v1:verifier",
+        "payload": {
+          "artifact_hash": "sha256:a447c42bbee95c360d09cb239b3109e19c520c2b42ae913a87f6e3b00593b372",
+          "disposition": "proposal",
+          "proposal_id": "proposal.run.phase2.demo.fake.v1.verifier"
+        },
+        "schema_version": "2.0.0",
+        "sequence": 5
+      },
+      {
+        "aggregate_id": "run.phase2.demo.fake.v1",
+        "created_at": "2026-08-19T08:00:00.000000Z",
+        "event_id": "event.job:run.phase2.demo.fake.v1:verifier:succeeded",
+        "event_type": "job_succeeded",
+        "idempotency_key": "job:run.phase2.demo.fake.v1:verifier:succeeded",
+        "payload": {
+          "job_id": "job.run.phase2.demo.fake.v1.verifier",
+          "result_hash": "sha256:a447c42bbee95c360d09cb239b3109e19c520c2b42ae913a87f6e3b00593b372"
+        },
+        "schema_version": "2.0.0",
+        "sequence": 6
+      },
+      {
+        "aggregate_id": "run.phase2.demo.fake.v1",
+        "created_at": "2026-08-19T08:00:00.000000Z",
+        "event_id": "event.run:run.phase2.demo.fake.v1:awaiting_review",
+        "event_type": "run_awaiting_review",
+        "idempotency_key": "run:run.phase2.demo.fake.v1:awaiting_review",
+        "payload": {
+          "from": "running",
+          "to": "awaiting_review"
+        },
+        "schema_version": "2.0.0",
+        "sequence": 7
+      }
+    ],
+    "budget": {
+      "budget_id": "budget.run.phase2.demo.fake.v1",
+      "elapsed_milliseconds": 0,
+      "exhausted_dimensions": [],
+      "limits": {
+        "max_attempts": 6,
+        "max_cost_microusd": 10000000,
+        "max_input_tokens": 30000,
+        "max_output_tokens": 5000,
+        "max_wall_milliseconds": 600000,
+        "schema_version": "2.0.0"
+      },
+      "schema_version": "2.0.0",
+      "used_attempts": 2,
+      "used_cost_microusd": 0,
+      "used_input_tokens": 280,
+      "used_output_tokens": 170
+    },
+    "cost_estimates": [],
+    "jobs": [
+      {
+        "attempts": 1,
+        "deadline_at": "2026-08-19T08:02:00.000000Z",
+        "idempotency_key": "job:run.phase2.demo.fake.v1:proposer",
+        "job_id": "job.run.phase2.demo.fake.v1.proposer",
+        "kind": "proposer",
+        "lease_owner": null,
+        "lease_until": null,
+        "max_attempts": 2,
+        "payload_hash": "sha256:7c4a99e1b129b0bb4192094778a87cdd9c945a5d87cf0f7f6c00f6f9509408f7",
+        "result_hash": "sha256:a12ed7c6f83d219c987855ca1853ef16cd6e7045bfb0a5547425e2c51d7e9afc",
+        "run_id": "run.phase2.demo.fake.v1",
+        "schema_version": "2.0.0",
+        "status": "succeeded"
+      },
+      {
+        "attempts": 1,
+        "deadline_at": "2026-08-19T08:02:00.000000Z",
+        "idempotency_key": "job:run.phase2.demo.fake.v1:verifier",
+        "job_id": "job.run.phase2.demo.fake.v1.verifier",
+        "kind": "verifier",
+        "lease_owner": null,
+        "lease_until": null,
+        "max_attempts": 2,
+        "payload_hash": "sha256:a12ed7c6f83d219c987855ca1853ef16cd6e7045bfb0a5547425e2c51d7e9afc",
+        "result_hash": "sha256:a447c42bbee95c360d09cb239b3109e19c520c2b42ae913a87f6e3b00593b372",
+        "run_id": "run.phase2.demo.fake.v1",
+        "schema_version": "2.0.0",
+        "status": "succeeded"
+      }
+    ],
+    "model_calls": [
+      {
+        "call_id": "call.run.phase2.demo.fake.v1.proposer",
+        "capabilities_json": "[\"structured_output\",\"deterministic\"]",
+        "cost_microusd": 0,
+        "created_at": "2026-08-19T08:00:00.000000Z",
+        "estimated_cost_microusd": null,
+        "idempotency_key": "call:run.phase2.demo.fake.v1:proposer",
+        "incomplete_reason": null,
+        "input_tokens": 120,
+        "model_identifier": "scripted-v1",
+        "output_tokens": 80,
+        "pricing_snapshot_id": null,
+        "provider": "scripted",
+        "provider_request_id": null,
+        "purpose": "proposer",
+        "request_hash": "sha256:13da0a246fe0dfcd75fef723679a7873be0ad795e76a21051f1033e6b1a410d8",
+        "result_hash": "sha256:43cfa2d07af4ad71d4d7e409bb2bee19b58fd5656a69d8127c653c1f9aa14c81",
+        "retry_classification": "none",
+        "run_id": "run.phase2.demo.fake.v1",
+        "schema_version": "2.0.0",
+        "status": "succeeded",
+        "total_tokens": 0,
+        "usage_source": "legacy"
+      },
+      {
+        "call_id": "call.run.phase2.demo.fake.v1.verifier",
+        "capabilities_json": "[\"structured_output\",\"deterministic\"]",
+        "cost_microusd": 0,
+        "created_at": "2026-08-19T08:00:00.000000Z",
+        "estimated_cost_microusd": null,
+        "idempotency_key": "call:run.phase2.demo.fake.v1:verifier",
+        "incomplete_reason": null,
+        "input_tokens": 160,
+        "model_identifier": "scripted-v1",
+        "output_tokens": 90,
+        "pricing_snapshot_id": null,
+        "provider": "scripted",
+        "provider_request_id": null,
+        "purpose": "verifier",
+        "request_hash": "sha256:2258dd1a21935bc4ce5dc6f99b876e9a5edae9f38540d4ef82195b5ff143bdc1",
+        "result_hash": "sha256:a96c6444ef4237ed8136de2beb7c11312cd9c7323d1e08d9482350da65797f12",
+        "retry_classification": "none",
+        "run_id": "run.phase2.demo.fake.v1",
+        "schema_version": "2.0.0",
+        "status": "succeeded",
+        "total_tokens": 0,
+        "usage_source": "legacy"
+      }
+    ],
+    "proposals": [
+      {
+        "artifact_hash": "sha256:a12ed7c6f83d219c987855ca1853ef16cd6e7045bfb0a5547425e2c51d7e9afc",
+        "disposition": "proposal",
+        "proposal_id": "proposal.run.phase2.demo.fake.v1.proposer",
+        "proposal_kind": "proof_attempt",
+        "run_id": "run.phase2.demo.fake.v1",
+        "schema_version": "2.0.0",
+        "source_id": "call.run.phase2.demo.fake.v1.proposer",
+        "source_kind": "model",
+        "target_claim_id": "claim.even_sum.v1"
+      },
+      {
+        "artifact_hash": "sha256:a447c42bbee95c360d09cb239b3109e19c520c2b42ae913a87f6e3b00593b372",
+        "disposition": "proposal",
+        "proposal_id": "proposal.run.phase2.demo.fake.v1.verifier",
+        "proposal_kind": "verifier_finding",
+        "run_id": "run.phase2.demo.fake.v1",
+        "schema_version": "2.0.0",
+        "source_id": "call.run.phase2.demo.fake.v1.verifier",
+        "source_kind": "model",
+        "target_claim_id": "claim.even_sum.v1"
+      }
+    ],
+    "run": {
+      "budget_id": "budget.run.phase2.demo.fake.v1",
+      "created_at": "2026-08-19T08:00:00.000000Z",
+      "dossier_hash": "sha256:7c4a99e1b129b0bb4192094778a87cdd9c945a5d87cf0f7f6c00f6f9509408f7",
+      "dossier_id": "dossier.even_sum.phase2.open.v1",
+      "run_id": "run.phase2.demo.fake.v1",
+      "schema_version": "2.0.0",
+      "status": "awaiting_review",
+      "updated_at": "2026-08-19T08:00:00.000000Z"
+    },
+    "schema_version": "2.0.0",
+    "verifier_context_manifest": {
+      "context_artifact_hash": "sha256:62b67e9db2fb06b8655dc8334a7552c8453f86978eb92b2d16aeea53aae5a46a",
+      "excluded_entity_ids": [
+        "applicability.even_definition.v1",
+        "call.run.phase2.demo.fake.v1.proposer",
+        "claim.integer_algebra_encoding.v1",
+        "event.phase2.accepted_state.v1",
+        "obligation.even_definition_applicability.v1",
+        "obligation.even_sum_proof.v1",
+        "obligation.integer_algebra_bridge.v1",
+        "problem.even_sum.v1",
+        "protocol.manual_slice.v1",
+        "representation.integer_algebra.v1",
+        "verification.even_definition_applicability.v1",
+        "verification.integer_algebra_bridge.v1",
+        "warrant.even_definition_source.v1",
+        "warrant.integer_algebra_bridge.v1"
+      ],
+      "included_entity_ids": [
+        "alignment.even_sum.v1",
+        "claim.even_definition.v1",
+        "claim.even_sum.v1",
+        "evidence.even_definition_source.v1",
+        "evidence.integer_algebra_bridge.v1",
+        "formalization.even_sum.v1",
+        "proposal.run.phase2.demo.fake.v1.proposer"
+      ],
+      "independence": {
+        "context_isolated": true,
+        "deterministic_checker": false,
+        "different_model": false,
+        "different_provider": false,
+        "formal_kernel": false,
+        "independently_implemented_checker": false,
+        "schema_version": "2.0.0",
+        "separate_model_call": true
+      },
+      "manifest_id": "manifest.run.phase2.demo.fake.v1.verifier",
+      "policy_version": "phase1-trust-policy-v1",
+      "run_id": "run.phase2.demo.fake.v1",
+      "schema_version": "2.0.0",
+      "serialized_context_hash": "sha256:62b67e9db2fb06b8655dc8334a7552c8453f86978eb92b2d16aeea53aae5a46a"
+    }
+  },
+  "schema_version": "2.0.0"
+}

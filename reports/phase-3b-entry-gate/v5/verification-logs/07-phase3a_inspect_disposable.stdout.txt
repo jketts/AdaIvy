@@ -1,0 +1,7 @@
+{
+  "canonical_bytes": 68491,
+  "content_hash": "sha256:99891f3b0acd8493adae7976caad8d493995adf2c68522bca2e8da6845e21e4c",
+  "id": "memory-export.phase3a.synthetic.v1",
+  "record_count": 96,
+  "schema_version": "1.0.0"
+}

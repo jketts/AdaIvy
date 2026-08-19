@@ -1,0 +1,14 @@
+{
+  "build_network": "none",
+  "builder_image": "adaivy-phase3b-gate:lean-v4.32.1",
+  "builder_image_digest": "sha256:0d3a26db46d1bace987b273d59087e3e39fbc9901d2bd680bf251f190622eac3",
+  "network_acquisition_performed": false,
+  "network_acquisitions": [],
+  "new_dependencies": [],
+  "pull": false,
+  "runtime_base_image": "adaivy-phase3b-gate-v4:lean-v4.32.1",
+  "runtime_base_image_digest": "sha256:ad81d799c1d9e766e0263c2b703936ca3fb8042e189e7e279b7abd1c7889c60b",
+  "schema_version": "adaivy.phase3b-dynamic-input-acquisition.v5",
+  "status": "passed",
+  "toolchain_rebuilt_or_expanded": false
+}

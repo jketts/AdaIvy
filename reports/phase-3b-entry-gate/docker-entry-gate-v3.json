@@ -1,0 +1,250 @@
+{
+  "attempt_id": "phase3b.docker-entry-gate.v3",
+  "authorization": "explicit Docker Desktop socket access solely for bounded Phase 3B entry gate",
+  "blockers": [
+    "child_process_executable_allowlist_not_enforced_after_static_scan_bypass",
+    "documented_versioned_elan_bootstrap_script_resolves_latest_binary"
+  ],
+  "candidate": "Lean 4 plus mathlib",
+  "dependency_licenses": [
+    {
+      "license": "MIT",
+      "license_sha256": "f7e95706807e931782b6efd9a9d2789508a52423ad67b56ee7e5e324362d4aac",
+      "name": "Cli",
+      "revision": "88679d088c9720c27ebdf2ba4dafe17341747f94"
+    },
+    {
+      "license": "Apache-2.0",
+      "license_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "name": "LeanSearchClient",
+      "revision": "c5d5b8fe6e5158def25cd28eb94e4141ad97c843"
+    },
+    {
+      "license": "Apache-2.0",
+      "license_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "name": "Qq",
+      "revision": "38d591e778f100aec9762bb582f9c7f55f50e9dc"
+    },
+    {
+      "license": "Apache-2.0",
+      "license_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "name": "aesop",
+      "revision": "a7dbf0c63b694e47f425f3dcddbc0e178bb432d3"
+    },
+    {
+      "license": "Apache-2.0",
+      "license_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "name": "batteries",
+      "revision": "023ce7d62a0531e22a5331e20b587817a80d49ff"
+    },
+    {
+      "license": "Apache-2.0",
+      "license_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "name": "importGraph",
+      "revision": "7e9612bf0b9ee66db3cb5b9988a35afc706f5a12"
+    },
+    {
+      "license": "Apache-2.0",
+      "license_sha256": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+      "name": "mathlib",
+      "revision": "520045ab14e26149ee970e2e617ca04b09bde5d6"
+    },
+    {
+      "license": "Apache-2.0",
+      "license_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "name": "plausible",
+      "revision": "e12c1910fe855cbfc38803cd4e55543906d5fa62"
+    },
+    {
+      "license": "Apache-2.0",
+      "license_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "name": "proofwidgets",
+      "revision": "6e311e2a844da9b2cc3971187df2fe0066947b93"
+    }
+  ],
+  "docker_resources": {
+    "containers_remaining": 0,
+    "images_retained": [
+      "adaivy-phase3b-gate:lean-v4.32.1@sha256:0d3a26db46d1bace987b273d59087e3e39fbc9901d2bd680bf251f190622eac3",
+      "debian:bookworm-slim@sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241"
+    ],
+    "temporary_acquisition_image_removed": true
+  },
+  "evaluation_status": "evaluated_with_security_blocker",
+  "failed_attempts": [
+    {
+      "id": "docker-access-v2",
+      "record": "reports/phase-3b-entry-gate/docker-access-blocked-v2.json",
+      "result": "approval_service_blocked_before_docker_execution"
+    },
+    {
+      "id": "acquisition-capability-profile-v1",
+      "resources_cleaned": true,
+      "result": "apt_setgroups_failed_after_cap_drop_all"
+    },
+    {
+      "id": "checker-version-v1-v2-v3",
+      "lean_process_started": false,
+      "result": "lake_attempted_read_only_dependency_reconciliation"
+    },
+    {
+      "download_started": false,
+      "id": "offline-final-image-seal-v1",
+      "result": "network_disabled_build_stopped_when_acquisition_cache_key_was_invalidated"
+    },
+    {
+      "id": "calibration-repeat-1",
+      "record_sha256": "84216609b1dabf9b8e2110eb2f1ebdccd6c708417f9138c5d76d2115ec0f7bdf",
+      "result": "aggregate_mathlib_import_hit_wall_limit"
+    },
+    {
+      "id": "calibration-2",
+      "record_sha256": "6c8fb24eb3b954a2d7417693f821923dd9fd7ce15f1e58ac850e6670928801f7",
+      "result": "F08_not_a_prop_and_F12_below_output_limit"
+    },
+    {
+      "id": "calibration-3",
+      "record_sha256": "91601b514f1661c52de3e1f057ef79d2bf068824df72b6f2a80851269ff781f4",
+      "result": "F12_lean_max_errors_prevented_output_limit"
+    },
+    {
+      "id": "calibration-4",
+      "record_sha256": "de405e302bf92e435060e7951c5432f51b1c1d83dd5f1baa2e0ca032b65e75d0",
+      "result": "passed_and_froze_acceptance_harness"
+    },
+    {
+      "id": "tree-hash-v1",
+      "result": "sort_failed_on_read_only_tmp; empty_pipeline_hashes_rejected"
+    }
+  ],
+  "fixtures": {
+    "canonical_hashes_identical": true,
+    "fixtures_passed": 12,
+    "fixtures_total": 12,
+    "results_path": "reports/phase-3b-entry-gate/docker-fixture-results-v3.json",
+    "results_sha256": "bb6d8d37543ab578445cfbfd497ede9d61f3d4f3a5a54847c21333554d9bdda4",
+    "rounds_passed": 3,
+    "rounds_total": 3
+  },
+  "gate_profile_adjustments": [
+    "Used the exact elan v4.2.1 release archive instead of executing the reviewed tag script, because that script fetches /latest/.",
+    "Used the explicit locked mathlib HTTPS Git URL because the scoped shorthand did not replay offline under Lake 5.0.0.",
+    "Invoked the exact Lean binary with a baked Lake-resolved LEAN_PATH because lake env requires Git and attempted package reconciliation in the minimal checker image.",
+    "Used one small allowlisted mathlib module for F01 and core-only wrappers elsewhere; aggregate import Mathlib exceeded the frozen wall bound."
+  ],
+  "harness_hashes": {
+    "acquisition_dockerfile_sha256": "de689ea1912d869128eea0385cca33778d539c27ab161bb409a6c64ba853f8f3",
+    "bypass_harness_sha256": "5c050bed3481df0e2440fde07e7b92d149d51d57d9ea0d05e69c2e981c5c9c9a",
+    "checker_dockerfile_sha256": "f0751c9d674b464df37f86c56c569fa59d43c1bbbdbf4ba938663b2f7289eff4",
+    "fixture_harness_sha256": "891aab91d634c0562353d901b6700fca3e52b0f34d4768272a3ae92733890e3b"
+  },
+  "integrity": {
+    "credential_present_only_at_allowed_source": true,
+    "persisted_exact_credential_matches": 0,
+    "persisted_files_credential_scanned": 111,
+    "persisted_token_pattern_matches": 0,
+    "phase0_checks_passed": 19,
+    "phase0_checks_total": 19,
+    "phase1_cli_validation_passed": true,
+    "phase2_offline_report_passed": true,
+    "phase3a_demo_and_inspect_passed": true,
+    "protected_hashes": {
+      "phase0_raw_results": "e8166fed8063ade26d74b55f0139fc2adfd2900d2c8db4a4c3fb8c4a5b144533",
+      "phase2_accepted_v3_database": "30e0db8d1bf9b601ce9d262fdce9459dea573c742aaca27f7af97d7895f81e94",
+      "phase2_accepted_v3_report": "ff706139a8f0415e1f1f6efc0ac714f0e588f187e94e82c7dff0af92d5da8cb9",
+      "phase2_failed_v2_database": "4c1c402d142a33d6529fb3991cb18bab2513bcb13dd2eddd3b30af0ab76ad064",
+      "phase2_live_status": "c29c13d80164890d0b5d1d1fdca3eeac66c56300c9683a1c4087d7bc03c1ac05",
+      "phase2_release_manifest": "90b188e134e0489318319919e09dedf52fb817f658f07b173ff4ab3d75188664",
+      "phase3a_acceptance": "c0ea908f3b6f1c9fd19d83180f3e55f865238dfc4f96727048531d51bfe8c241",
+      "phase3a_export": "f1b57c2cae96638a7545476722685f17eb7470c5b4d0a790ca788de8e8756272",
+      "phase3a_report": "881b2d0a85da1c9c57181c0aeb28ae6efccbc88e4a6521f6d29bd60856544ac9"
+    },
+    "resource_warnings_promoted_to_errors": true,
+    "tags": {
+      "phase-2": {
+        "peeled_commit": "f8531aefc39792ecf02c61f0019cea087ebf87f2",
+        "tag_object": "730595f22b72888f7b73ed92ef874b8694637558"
+      },
+      "phase-3a": {
+        "peeled_commit": "c21374a1f2239c24b305a58c15d149db4de5fdbf",
+        "tag_object": "1b61ea26a5f9dc6b3b1a81a4f78ceced6cb25fb3"
+      }
+    },
+    "tests_passed": 156,
+    "tests_total": 156
+  },
+  "recommendation": "retain_proposed_candidate_but_do_not_accept_or_build_production_adapter",
+  "schema_version": "3b-entry-gate.2.0.0",
+  "scope_commit": "26942d97abe0c79cd908f7fe4561d42ddfc9d5da",
+  "scope_guards": {
+    "adaivy_runtime_external_api_calls": 0,
+    "adaivy_runtime_model_calls": 0,
+    "adr_0015_status": "proposed",
+    "commits_created": 0,
+    "formal_warrants_created": 0,
+    "production_phase3b_changes": 0,
+    "pushes": 0,
+    "tags_created": 0
+  },
+  "security_decision": {
+    "F10_scan_bypass_repository_read_blocked": true,
+    "F10_scan_bypass_root_write_blocked": true,
+    "F11_scan_bypass_child_process_ran": true,
+    "all_linux_capabilities_dropped": true,
+    "network_disabled_for_all_checker_processes": true,
+    "no_new_privileges": true,
+    "normal_policy_classifications_passed": true,
+    "pids_memory_cpu_tmpfs_and_wall_limits_present": true,
+    "read_only_root_for_all_checker_processes": true,
+    "reason": "Docker containment blocked host/repository filesystem effects, but did not enforce the threat model's child-process executable allowlist.",
+    "repository_and_home_mounts_absent": true,
+    "retained_output_bounded": true,
+    "safe_sandbox_demonstrated": false
+  },
+  "status": "blocked",
+  "toolchain": {
+    "base_image_digest": "sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241",
+    "checker_entrypoint": "/home/lean/.elan/toolchains/leanprover--lean4---v4.32.1/bin/lean",
+    "checker_image_api_size_bytes": 3423169517,
+    "checker_image_cli_virtual_size": "14.5GB",
+    "checker_image_digest": "sha256:0d3a26db46d1bace987b273d59087e3e39fbc9901d2bd680bf251f190622eac3",
+    "elan": {
+      "binary_sha256": "b480595a22661f4cb22b37602b0de664ab1aaf815e243c42b7e7eb51c6163b7d",
+      "bootstrap_script_issue": "ELAN_UPDATE_ROOT uses /latest/ rather than /v4.2.1/",
+      "commit": "3d5138e15",
+      "release_archive_sha256": "bb78726ace6a912c7122a389018bcd69d9122ce04659800101392f7db380d3b3",
+      "version": "4.2.1",
+      "versioned_bootstrap_script_executed": false,
+      "versioned_bootstrap_script_sha256": "4bacca9502cb89736fe63d2685abc2947cfbf34dc87673504f1bb4c43eda9264"
+    },
+    "expanded_bytes": {
+      "all_packages": 7531910570,
+      "elan_toolchains": 2982397766,
+      "gate_project": 7533358365,
+      "mathlib_build_cache": 6532397232
+    },
+    "lake": {
+      "binary_sha256": "8229bc302b0b7d0e7679e28cc2b830c5aec995ffe5714833503360252f1490ba",
+      "lake_manifest_sha256": "b98bfd297a925158d0233c8c1f14e9a58dc0640033316837603817d258663ff3",
+      "lakefile_sha256": "3102f65d84ddb144aaeaf10cc94a00b940b2ab2b523cbf0457706586df932676",
+      "version": "5.0.0-src+f054605"
+    },
+    "lean": {
+      "binary_sha256": "79fb1d26fa5a39385d59fdc48a711a14b0710ca6480271acce99b4d177cea085",
+      "full_commit": "f054605aea4b840552cca2e725580bffd1e1b704",
+      "release_archive_bytes": 563359001,
+      "release_archive_sha256": "99b51cb2ba2ae402c03185f2ca656e82b6c37d28ca99f3b07a1c2d04b58a039a",
+      "version": "4.32.1"
+    },
+    "mathlib": {
+      "all_packages_manifest_sha256": "e15594e6097655ad8272b51a12f1d35fbdc27099d320be0b71badbd6f20587b1",
+      "cache_manifest_sha256": "53a50c208fac574b5bf3043e25c051d9612bd654b36a200d39dcdc1db9bbfc6c",
+      "full_commit": "520045ab14e26149ee970e2e617ca04b09bde5d6",
+      "source_manifest_sha256": "85b3087ae82edcad58404c182d5c560e50711cfe2dc375e5d7105c49eb6a7760",
+      "version": "v4.32.1"
+    },
+    "platform": "linux/arm64",
+    "temporary_acquisition_image_digest": "sha256:deffcd571c6427f49809be184a61e93b827107591f1ce5a930d1eb7581867ee1",
+    "temporary_acquisition_image_removed": true
+  }
+}

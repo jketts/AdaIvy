@@ -1,0 +1,546 @@
+{
+  "adaivy_runtime_external_api_calls": 0,
+  "adaivy_runtime_model_calls": 0,
+  "all_expected_classifications_passed": true,
+  "canonical_hashes_by_round": {
+    "acceptance-repeat-1": {
+      "F01": "f3a7c0a5168cd64d13a675146f6162a4f20ff781d56d2e862525566a80dc193f",
+      "F02": "f05454ee705196e2366a52901939d8e66dc36c281c0b46f569b93fa2838c7b2c",
+      "F03": "b30baa65bde0971ccfbbe36350a5209a2abfddb9ce29073bd21024e83eec6101",
+      "F04": "2d03ce02b566a33b1bebd70c4ef2e0bd16bd2146501a013d4c15018127f1df91",
+      "F05": "2dc38e88abdcca8b03179f36a06ffc72e0f791bb02ea380a03f0ddd53feee8c7",
+      "F06": "5ebab31a888b16ce6675e65ae101c0b5dd546a50236d99b77b5e8a0fd0f7ffa8",
+      "F07": "b49e377f4968defa68341c66b42cf91aa9acd2b8867830880dd9accc8019ba8b",
+      "F08": "b3085f3d7e99d4fc9a323b9aa2202e69d49bf8e7e088344106ac7807e04136fd",
+      "F09": "137d36002753a4d50dca48efd5fe1a6ac2452edacfa62d74167ec3265c916431",
+      "F10": "0a484394e26a8c9ef3a87f627406c2c82bc04f886121e6bb26937a5ebc33c3d4",
+      "F11": "c2dc1497d704f4e9d2d5aa22f9268b490df5417b4e306ce2dc5d41489e8ba5a0",
+      "F12": "9c722cc3ad72fea28734703b14b6710d1ef88173b124baf85ed93904012b813b"
+    },
+    "acceptance-repeat-2": {
+      "F01": "f3a7c0a5168cd64d13a675146f6162a4f20ff781d56d2e862525566a80dc193f",
+      "F02": "f05454ee705196e2366a52901939d8e66dc36c281c0b46f569b93fa2838c7b2c",
+      "F03": "b30baa65bde0971ccfbbe36350a5209a2abfddb9ce29073bd21024e83eec6101",
+      "F04": "2d03ce02b566a33b1bebd70c4ef2e0bd16bd2146501a013d4c15018127f1df91",
+      "F05": "2dc38e88abdcca8b03179f36a06ffc72e0f791bb02ea380a03f0ddd53feee8c7",
+      "F06": "5ebab31a888b16ce6675e65ae101c0b5dd546a50236d99b77b5e8a0fd0f7ffa8",
+      "F07": "b49e377f4968defa68341c66b42cf91aa9acd2b8867830880dd9accc8019ba8b",
+      "F08": "b3085f3d7e99d4fc9a323b9aa2202e69d49bf8e7e088344106ac7807e04136fd",
+      "F09": "137d36002753a4d50dca48efd5fe1a6ac2452edacfa62d74167ec3265c916431",
+      "F10": "0a484394e26a8c9ef3a87f627406c2c82bc04f886121e6bb26937a5ebc33c3d4",
+      "F11": "c2dc1497d704f4e9d2d5aa22f9268b490df5417b4e306ce2dc5d41489e8ba5a0",
+      "F12": "9c722cc3ad72fea28734703b14b6710d1ef88173b124baf85ed93904012b813b"
+    },
+    "acceptance-restart-1": {
+      "F01": "f3a7c0a5168cd64d13a675146f6162a4f20ff781d56d2e862525566a80dc193f",
+      "F02": "f05454ee705196e2366a52901939d8e66dc36c281c0b46f569b93fa2838c7b2c",
+      "F03": "b30baa65bde0971ccfbbe36350a5209a2abfddb9ce29073bd21024e83eec6101",
+      "F04": "2d03ce02b566a33b1bebd70c4ef2e0bd16bd2146501a013d4c15018127f1df91",
+      "F05": "2dc38e88abdcca8b03179f36a06ffc72e0f791bb02ea380a03f0ddd53feee8c7",
+      "F06": "5ebab31a888b16ce6675e65ae101c0b5dd546a50236d99b77b5e8a0fd0f7ffa8",
+      "F07": "b49e377f4968defa68341c66b42cf91aa9acd2b8867830880dd9accc8019ba8b",
+      "F08": "b3085f3d7e99d4fc9a323b9aa2202e69d49bf8e7e088344106ac7807e04136fd",
+      "F09": "137d36002753a4d50dca48efd5fe1a6ac2452edacfa62d74167ec3265c916431",
+      "F10": "0a484394e26a8c9ef3a87f627406c2c82bc04f886121e6bb26937a5ebc33c3d4",
+      "F11": "c2dc1497d704f4e9d2d5aa22f9268b490df5417b4e306ce2dc5d41489e8ba5a0",
+      "F12": "9c722cc3ad72fea28734703b14b6710d1ef88173b124baf85ed93904012b813b"
+    }
+  },
+  "canonical_hashes_identical_across_repeats_and_restart": true,
+  "fixtures": [
+    {
+      "axioms": [],
+      "canonical_sha256": "f3a7c0a5168cd64d13a675146f6162a4f20ff781d56d2e862525566a80dc193f",
+      "command_sha256": "16a8358c7a616625cfa5cf4c9ebdeafa1760e17bc8300c734c1feca373d606a0",
+      "diagnostic_probe": false,
+      "exit_code": 0,
+      "expected": "kernel_checked",
+      "fixture_id": "F01",
+      "observed": "kernel_checked",
+      "output_truncated": false,
+      "passed": true,
+      "preflight_result": null,
+      "process_started": true,
+      "security": {
+        "cap_drop": [
+          "ALL"
+        ],
+        "input_read_only": true,
+        "memory": 1610612736,
+        "memory_swap": 1610612736,
+        "mount_targets": [
+          "/input"
+        ],
+        "nano_cpus": 1000000000,
+        "network_mode": "none",
+        "pids_limit": 64,
+        "proxy_environment_present": false,
+        "readonly_rootfs": true,
+        "security_opt": [
+          "no-new-privileges"
+        ],
+        "tmpfs": {
+          "/tmp": "rw,nosuid,nodev,noexec,size=64m"
+        }
+      },
+      "source_sha256": "fc3d7e47e3ab21bd2411c4158ed32356ea4cc85a588eb81c0ec796e8070d14c4",
+      "source_unchanged": true,
+      "stderr_length": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_length": 46,
+      "stdout_sha256": "2ffe37882db3ddec43c8a059d8b269f71d7975076642c05f4a8dad97f34287f8",
+      "timed_out": false
+    },
+    {
+      "axioms": [
+        "sorryAx"
+      ],
+      "canonical_sha256": "f05454ee705196e2366a52901939d8e66dc36c281c0b46f569b93fa2838c7b2c",
+      "command_sha256": "908887f51cb0599d722f68fd5c9fc39fd144f3ee8f376a0c88a22610d0a0d66a",
+      "diagnostic_probe": true,
+      "exit_code": 0,
+      "expected": "rejected_placeholder",
+      "fixture_id": "F02",
+      "observed": "rejected_placeholder",
+      "output_truncated": false,
+      "passed": true,
+      "preflight_result": "rejected_placeholder",
+      "process_started": true,
+      "security": {
+        "cap_drop": [
+          "ALL"
+        ],
+        "input_read_only": true,
+        "memory": 1610612736,
+        "memory_swap": 1610612736,
+        "mount_targets": [
+          "/input"
+        ],
+        "nano_cpus": 1000000000,
+        "network_mode": "none",
+        "pids_limit": 64,
+        "proxy_environment_present": false,
+        "readonly_rootfs": true,
+        "security_opt": [
+          "no-new-privileges"
+        ],
+        "tmpfs": {
+          "/tmp": "rw,nosuid,nodev,noexec,size=64m"
+        }
+      },
+      "source_sha256": "37d7689d379cfc39fc2dffc784fb6320f011dcb854e8fcdfa30d76e6fe0b5ddf",
+      "source_unchanged": true,
+      "stderr_length": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_length": 104,
+      "stdout_sha256": "e497c93fd03138eade19c0a41c2a66c7443b5a53807f59e98ec4325de062c5b9",
+      "timed_out": false
+    },
+    {
+      "axioms": [
+        "sorryAx"
+      ],
+      "canonical_sha256": "b30baa65bde0971ccfbbe36350a5209a2abfddb9ce29073bd21024e83eec6101",
+      "command_sha256": "86b1ea9ee90e84e55c41d725f1f35ac188a9c867f70126df13d26526905818d0",
+      "diagnostic_probe": true,
+      "exit_code": 0,
+      "expected": "rejected_placeholder",
+      "fixture_id": "F03",
+      "observed": "rejected_placeholder",
+      "output_truncated": false,
+      "passed": true,
+      "preflight_result": "rejected_placeholder",
+      "process_started": true,
+      "security": {
+        "cap_drop": [
+          "ALL"
+        ],
+        "input_read_only": true,
+        "memory": 1610612736,
+        "memory_swap": 1610612736,
+        "mount_targets": [
+          "/input"
+        ],
+        "nano_cpus": 1000000000,
+        "network_mode": "none",
+        "pids_limit": 64,
+        "proxy_environment_present": false,
+        "readonly_rootfs": true,
+        "security_opt": [
+          "no-new-privileges"
+        ],
+        "tmpfs": {
+          "/tmp": "rw,nosuid,nodev,noexec,size=64m"
+        }
+      },
+      "source_sha256": "4018772176523fb4c9b859d71c041e5a44af9f845d6e4c9262a0c72090a25617",
+      "source_unchanged": true,
+      "stderr_length": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_length": 104,
+      "stdout_sha256": "88627927e084daa78804a7bf2f561c7a575e1bd5115470fa0a0f22f7c5449f34",
+      "timed_out": false
+    },
+    {
+      "axioms": [
+        "sorryAx"
+      ],
+      "canonical_sha256": "2d03ce02b566a33b1bebd70c4ef2e0bd16bd2146501a013d4c15018127f1df91",
+      "command_sha256": "d72df3f5adcf0bb32bfaab0da9cf2845f61df76795d9d36b4b199f1ab3ea02a0",
+      "diagnostic_probe": false,
+      "exit_code": 1,
+      "expected": "elaboration_failed",
+      "fixture_id": "F04",
+      "observed": "elaboration_failed",
+      "output_truncated": false,
+      "passed": true,
+      "preflight_result": null,
+      "process_started": true,
+      "security": {
+        "cap_drop": [
+          "ALL"
+        ],
+        "input_read_only": true,
+        "memory": 1610612736,
+        "memory_swap": 1610612736,
+        "mount_targets": [
+          "/input"
+        ],
+        "nano_cpus": 1000000000,
+        "network_mode": "none",
+        "pids_limit": 64,
+        "proxy_environment_present": false,
+        "readonly_rootfs": true,
+        "security_opt": [
+          "no-new-privileges"
+        ],
+        "tmpfs": {
+          "/tmp": "rw,nosuid,nodev,noexec,size=64m"
+        }
+      },
+      "source_sha256": "43643789527c6f7e3cdb7bf29694fd539f08820bdcbe2be1be4ed83c19306155",
+      "source_unchanged": true,
+      "stderr_length": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_length": 158,
+      "stdout_sha256": "e2921c79d057e1610e256e6d08b2a22d50b3f812b3c6432b60868abcf054f6d5",
+      "timed_out": false
+    },
+    {
+      "axioms": [],
+      "canonical_sha256": "2dc38e88abdcca8b03179f36a06ffc72e0f791bb02ea380a03f0ddd53feee8c7",
+      "command_sha256": "b53ecc2ff2f82da3a80117fbbd50984f9b15fcc868578be009027e9bf4811721",
+      "diagnostic_probe": false,
+      "exit_code": 1,
+      "expected": "elaboration_failed",
+      "fixture_id": "F05",
+      "observed": "elaboration_failed",
+      "output_truncated": false,
+      "passed": true,
+      "preflight_result": null,
+      "process_started": true,
+      "security": {
+        "cap_drop": [
+          "ALL"
+        ],
+        "input_read_only": true,
+        "memory": 1610612736,
+        "memory_swap": 1610612736,
+        "mount_targets": [
+          "/input"
+        ],
+        "nano_cpus": 1000000000,
+        "network_mode": "none",
+        "pids_limit": 64,
+        "proxy_environment_present": false,
+        "readonly_rootfs": true,
+        "security_opt": [
+          "no-new-privileges"
+        ],
+        "tmpfs": {
+          "/tmp": "rw,nosuid,nodev,noexec,size=64m"
+        }
+      },
+      "source_sha256": "ced3bd680803671629fc8651469bfb7db03af033536fb82e268aaeec293856b6",
+      "source_unchanged": true,
+      "stderr_length": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_length": 68,
+      "stdout_sha256": "140a6b4398688e9919997158b6680d2c9ee752668aef866f974dd52eb2aebd0d",
+      "timed_out": false
+    },
+    {
+      "axioms": [],
+      "canonical_sha256": "5ebab31a888b16ce6675e65ae101c0b5dd546a50236d99b77b5e8a0fd0f7ffa8",
+      "command_sha256": null,
+      "diagnostic_probe": false,
+      "exit_code": null,
+      "expected": "rejected_policy_violation",
+      "fixture_id": "F06",
+      "observed": "rejected_policy_violation",
+      "output_truncated": false,
+      "passed": true,
+      "preflight_result": "rejected_policy_violation",
+      "process_started": false,
+      "security": null,
+      "source_sha256": "dcb092b6789ed41e70c285ac9e953e371c243679e68f8323d2f5bc2a74af7efc",
+      "source_unchanged": true,
+      "stderr_length": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_length": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "axioms": [
+        "AdaIvyGateAssumption"
+      ],
+      "canonical_sha256": "b49e377f4968defa68341c66b42cf91aa9acd2b8867830880dd9accc8019ba8b",
+      "command_sha256": "c870c79f650188f97b5fe37daf106a2652928d983fd64ebaaacf67531202d19b",
+      "diagnostic_probe": false,
+      "exit_code": 0,
+      "expected": "kernel_checked_with_unapproved_assumptions",
+      "fixture_id": "F07",
+      "observed": "kernel_checked_with_unapproved_assumptions",
+      "output_truncated": false,
+      "passed": true,
+      "preflight_result": null,
+      "process_started": true,
+      "security": {
+        "cap_drop": [
+          "ALL"
+        ],
+        "input_read_only": true,
+        "memory": 1610612736,
+        "memory_swap": 1610612736,
+        "mount_targets": [
+          "/input"
+        ],
+        "nano_cpus": 1000000000,
+        "network_mode": "none",
+        "pids_limit": 64,
+        "proxy_environment_present": false,
+        "readonly_rootfs": true,
+        "security_opt": [
+          "no-new-privileges"
+        ],
+        "tmpfs": {
+          "/tmp": "rw,nosuid,nodev,noexec,size=64m"
+        }
+      },
+      "source_sha256": "163408ec9efc9765c06905d98bab2c032dd9bfb8b0687eee0460b37b229e2db9",
+      "source_unchanged": true,
+      "stderr_length": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_length": 58,
+      "stdout_sha256": "76ffd6ae2395785680d0896ca1e2f61f71ac08a6cb1c7fd8d66fcea622f46947",
+      "timed_out": false
+    },
+    {
+      "axioms": [
+        "Classical.choice",
+        "Quot.sound",
+        "propext"
+      ],
+      "canonical_sha256": "b3085f3d7e99d4fc9a323b9aa2202e69d49bf8e7e088344106ac7807e04136fd",
+      "command_sha256": "ef0aa2389b20b255ef54c0880b8fe7d53c3e3606f6debc3d4e91fe7a194e059d",
+      "diagnostic_probe": false,
+      "exit_code": 0,
+      "expected": "kernel_checked_with_approved_classical_axioms",
+      "fixture_id": "F08",
+      "observed": "kernel_checked_with_approved_classical_axioms",
+      "output_truncated": false,
+      "passed": true,
+      "preflight_result": null,
+      "process_started": true,
+      "security": {
+        "cap_drop": [
+          "ALL"
+        ],
+        "input_read_only": true,
+        "memory": 1610612736,
+        "memory_swap": 1610612736,
+        "mount_targets": [
+          "/input"
+        ],
+        "nano_cpus": 1000000000,
+        "network_mode": "none",
+        "pids_limit": 64,
+        "proxy_environment_present": false,
+        "readonly_rootfs": true,
+        "security_opt": [
+          "no-new-privileges"
+        ],
+        "tmpfs": {
+          "/tmp": "rw,nosuid,nodev,noexec,size=64m"
+        }
+      },
+      "source_sha256": "c10e59739cd31e401e8fb3039aa630b118d985d56c7799b687ef6c88326bd717",
+      "source_unchanged": true,
+      "stderr_length": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_length": 75,
+      "stdout_sha256": "41fbecb80208795487f7127884565c9e9c72de0e3f296c1fd8dda8395b208dd6",
+      "timed_out": false
+    },
+    {
+      "axioms": [],
+      "canonical_sha256": "137d36002753a4d50dca48efd5fe1a6ac2452edacfa62d74167ec3265c916431",
+      "command_sha256": "a0c538956a24a8ced05e7a81a94ca0c2f94de0b5f6daec63f5444043266e6809",
+      "diagnostic_probe": false,
+      "exit_code": 1,
+      "expected": "resource_limit_exceeded",
+      "fixture_id": "F09",
+      "observed": "resource_limit_exceeded",
+      "output_truncated": false,
+      "passed": true,
+      "preflight_result": null,
+      "process_started": true,
+      "security": {
+        "cap_drop": [
+          "ALL"
+        ],
+        "input_read_only": true,
+        "memory": 1610612736,
+        "memory_swap": 1610612736,
+        "mount_targets": [
+          "/input"
+        ],
+        "nano_cpus": 1000000000,
+        "network_mode": "none",
+        "pids_limit": 64,
+        "proxy_environment_present": false,
+        "readonly_rootfs": true,
+        "security_opt": [
+          "no-new-privileges"
+        ],
+        "tmpfs": {
+          "/tmp": "rw,nosuid,nodev,noexec,size=64m"
+        }
+      },
+      "source_sha256": "73418995bc226d60e25b1f79794a852f0033bfc38da2f963f5e68d365a9273aa",
+      "source_unchanged": true,
+      "stderr_length": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_length": 290,
+      "stdout_sha256": "4ca0c2cce9dae379c64c7ed4a4737b8830f333aad477cf6c0c457405629ebac1",
+      "timed_out": false
+    },
+    {
+      "axioms": [],
+      "canonical_sha256": "0a484394e26a8c9ef3a87f627406c2c82bc04f886121e6bb26937a5ebc33c3d4",
+      "command_sha256": null,
+      "diagnostic_probe": false,
+      "exit_code": null,
+      "expected": "rejected_policy_violation",
+      "fixture_id": "F10",
+      "observed": "rejected_policy_violation",
+      "output_truncated": false,
+      "passed": true,
+      "preflight_result": "rejected_policy_violation",
+      "process_started": false,
+      "security": null,
+      "source_sha256": "31d6581746b47ba94dc7f6dc6f21fe692373b9eb227fffc5bf62cec150ef0bb9",
+      "source_unchanged": true,
+      "stderr_length": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_length": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "axioms": [],
+      "canonical_sha256": "c2dc1497d704f4e9d2d5aa22f9268b490df5417b4e306ce2dc5d41489e8ba5a0",
+      "command_sha256": null,
+      "diagnostic_probe": false,
+      "exit_code": null,
+      "expected": "rejected_policy_violation",
+      "fixture_id": "F11",
+      "observed": "rejected_policy_violation",
+      "output_truncated": false,
+      "passed": true,
+      "preflight_result": "rejected_policy_violation",
+      "process_started": false,
+      "security": null,
+      "source_sha256": "5221a0d3c729425e25cffcf77ba047d0f76b615818569c58a9e8986bb06628e0",
+      "source_unchanged": true,
+      "stderr_length": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_length": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "axioms": [],
+      "canonical_sha256": "9c722cc3ad72fea28734703b14b6710d1ef88173b124baf85ed93904012b813b",
+      "command_sha256": "81b5c6d3c24ab7405070badf56ba37e677eb21e603794ff3fc19d7ec76a81fca",
+      "diagnostic_probe": false,
+      "exit_code": 1,
+      "expected": "resource_limit_exceeded",
+      "fixture_id": "F12",
+      "observed": "resource_limit_exceeded",
+      "output_truncated": true,
+      "passed": true,
+      "preflight_result": null,
+      "process_started": true,
+      "security": {
+        "cap_drop": [
+          "ALL"
+        ],
+        "input_read_only": true,
+        "memory": 1610612736,
+        "memory_swap": 1610612736,
+        "mount_targets": [
+          "/input"
+        ],
+        "nano_cpus": 1000000000,
+        "network_mode": "none",
+        "pids_limit": 64,
+        "proxy_environment_present": false,
+        "readonly_rootfs": true,
+        "security_opt": [
+          "no-new-privileges"
+        ],
+        "tmpfs": {
+          "/tmp": "rw,nosuid,nodev,noexec,size=64m"
+        }
+      },
+      "source_sha256": "226bbf534555f42142d8daaf5675fc5376474f765144b09490c27eb19a2fbf84",
+      "source_unchanged": true,
+      "stderr_length": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_length": 70084,
+      "stdout_sha256": "c4ae1cb7128924b69ba03b029271b288c748e07d8e5eaf50504d6db08ae221bd",
+      "timed_out": false
+    }
+  ],
+  "formal_warrants_created": 0,
+  "image_digest": "sha256:0d3a26db46d1bace987b273d59087e3e39fbc9901d2bd680bf251f190622eac3",
+  "lake_manifest_sha256": "b98bfd297a925158d0233c8c1f14e9a58dc0640033316837603817d258663ff3",
+  "rounds": [
+    "acceptance-repeat-1",
+    "acceptance-repeat-2",
+    "acceptance-restart-1"
+  ],
+  "sandbox_policy": {
+    "capabilities": "drop_all",
+    "home_mount": false,
+    "input_mount": "single disposable fixture directory, read-only",
+    "memory_bytes": 1610612736,
+    "memory_swap_bytes": 1610612736,
+    "nano_cpus": 1000000000,
+    "network": "none",
+    "no_new_privileges": true,
+    "output_retention_limit_bytes": 65536,
+    "pids_limit": 64,
+    "repository_mount": false,
+    "root_filesystem": "read_only",
+    "tmpfs": {
+      "/tmp": "rw,nosuid,nodev,noexec,size=64m"
+    },
+    "wall_timeout_seconds": 20
+  },
+  "sandbox_policy_sha256": "8bddb5ca74f84d17ce3e477075d5a8960670ad0157eca4879e113c2efc40a719",
+  "schema_version": "3b-entry-gate.fixture-results.2.0.0",
+  "status": "passed"
+}

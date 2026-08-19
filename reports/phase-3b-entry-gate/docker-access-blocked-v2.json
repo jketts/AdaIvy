@@ -1,0 +1,26 @@
+{
+  "schema_version": "3b-entry-gate.1.0.0",
+  "attempt_id": "phase3b.docker-access.v2",
+  "recorded_at": "2026-08-19T00:00:00Z",
+  "status": "blocked",
+  "scope_commit": "26942d97abe0c79cd908f7fe4561d42ddfc9d5da",
+  "authorization": "explicit_bounded_docker_socket_access",
+  "commands": [
+    {
+      "command": "docker info",
+      "purpose": "pre-mutation runtime verification",
+      "docker_execution_started": false,
+      "result": "blocked_by_approval_service",
+      "diagnostic_code": "organization_verification_required_for_approval_review"
+    }
+  ],
+  "inventory_completed": false,
+  "acquisition_started": false,
+  "docker_resources_created": [],
+  "docker_resources_removed": [],
+  "adaivy_runtime_model_calls": 0,
+  "adaivy_runtime_external_api_calls": 0,
+  "production_phase3b_changes": 0,
+  "adr_0015_status": "proposed",
+  "blocker": "Codex cannot access the existing Docker Desktop socket because the approval service rejected the required escalation before command execution."
+}

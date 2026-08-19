@@ -1,0 +1,67 @@
+{
+  "architecture": "arm64",
+  "base_image": "adaivy-phase3b-gate-v4:lean-v4.32.1",
+  "base_image_digest": "sha256:ad81d799c1d9e766e0263c2b703936ca3fb8042e189e7e279b7abd1c7889c60b",
+  "compiler_or_linker_present": false,
+  "docker_save_bytes": 651152384,
+  "docker_save_sha256": "ee8b5e23c0b4ec18a25e94cf0e2ac19f5e87325e24f7a9b6faee3dfdd362abef",
+  "dynamic_fixture_embedded_in_image": false,
+  "elan_present": false,
+  "entrypoint": [
+    "/checker/launcher"
+  ],
+  "executable_inventory_report": "executable-inventory-v5.json",
+  "fixed_input_contract": {
+    "container_path": "/tmp/adaivy-input.lean",
+    "creation_flags": [
+      "O_CREAT",
+      "O_EXCL",
+      "O_NOFOLLOW",
+      "O_CLOEXEC"
+    ],
+    "final_mode": "0400",
+    "max_input_bytes": 262144,
+    "path_arguments_allowed": false,
+    "tmpfs": "/tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777",
+    "transport": "stdin"
+  },
+  "image": "adaivy-phase3b-gate-v5:lean-v4.32.1",
+  "image_digest": "sha256:39457cf097e89537ac90e7ddee08cbda8f7f2d49e443cc60a87d6d02d8cb896f",
+  "inherited_v4_rootfs_diff_ids": [
+    "sha256:f68ac9dbe8eba5abe20d2866420085f951251a99ec3a847e5fb40aebf454e07c",
+    "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
+  ],
+  "lake_present": false,
+  "os": "linux",
+  "regular_file_bytes": 2338999967,
+  "regular_file_count": 12407,
+  "rootfs_diff_ids": [
+    "sha256:f68ac9dbe8eba5abe20d2866420085f951251a99ec3a847e5fb40aebf454e07c",
+    "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+    "sha256:5a0d6e660ff5d45739573ec625d780c503d666a0afcd6fdcce011c626438e3fb",
+    "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
+  ],
+  "saved_layer_blobs": [
+    "blobs/sha256/1d29ee2478d1fcf11d8fcdfe6d3200cdf5b5be1f1a01180926f4f749e4b83f61",
+    "blobs/sha256/4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+    "blobs/sha256/fd95bf6674a5819956514e44f43bda7d80947f98892521a779e3601fc4429c01",
+    "blobs/sha256/4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1"
+  ],
+  "schema_version": "adaivy.phase3b-dynamic-input-runtime.v5",
+  "selected_file_hashes": {
+    "/checker/landlock_hardener.so": "fe417325ca052bb09a08d5df8d171bdf5e78d5c6e46f70b83594c7925abf4821",
+    "/checker/launcher": "c28ce0608e8addf0994b08e8ce0fe48ed83ebf5cb664712e789558c0f11a2325",
+    "/lib/ld-linux-aarch64.so.1": "17538b8f9889a470c061f69a8fea8124da89627311cd16546c133a89f09056df",
+    "/opt/lean/bin/lean": "79fb1d26fa5a39385d59fdc48a711a14b0710ca6480271acce99b4d177cea085"
+  },
+  "shell_present": false,
+  "source_hashes": {
+    "Dockerfile": "de7dd9dcb4e602547f829691472ebc80914f91c348552c2d65ab8ae0ff3ed0f2",
+    "aarch64_start.S": "5b36428a05f4969c140abe0b6d78a858b264983c2c21f27f197948c324dd6698",
+    "landlock_launcher.c": "0b00daef0c9a3f9f25d2db74c652166309c1974cf9cfd9e588ddccf29e8dafa3",
+    "run_gate.py": "e63df28bae9d04b42dd6417897eb72d8a063e72639262f222bab3cd13f0128a7"
+  },
+  "status": "passed",
+  "user": "65532:65532",
+  "working_directory": "/trusted"
+}
