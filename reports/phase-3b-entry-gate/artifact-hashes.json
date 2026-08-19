@@ -1,0 +1,22 @@
+{
+  "schema_version": "3b-entry-gate.1.0.0",
+  "hash_algorithm": "sha256",
+  "artifacts": [
+    {"path": "docs/adrs/0015-lean-first-formal-backend.md", "sha256": "00d683909030f53ca96a31f7e598c4c8e751c110d17bfebfdd9a440ff9766a9e"},
+    {"path": "docs/phase-3b/BLOCKERS.md", "sha256": "0bc5887089addc93bbc17f939d6681afe598bc46c09a6f489b9f2b8c463f9237"},
+    {"path": "docs/phase-3b/BOOTSTRAP_COMMANDS.md", "sha256": "b3bd7303b4f294e6582005cb14086fd2c3f1f2b204e15e66fd365d740e0bb0f7"},
+    {"path": "docs/phase-3b/BOUNDED_IMPLEMENTATION_PROMPT.md", "sha256": "3651a04b6667d339b5d729576dc1542ab051ef8a028ae2ff579725e638bc4f80"},
+    {"path": "docs/phase-3b/ENTRY_GATE_REPORT.md", "sha256": "5408b55504b3f23002a3245191037e019af8a3033c12a26ec130e4229041d708"},
+    {"path": "docs/phase-3b/FIXTURE_RESULTS.md", "sha256": "7c4a532e4c2b8bb29c8e4119ca257e52dc4a9a4ab31c0f7cd7006ec1f88a88c7"},
+    {"path": "docs/phase-3b/FORMAL_CHECKER_THREAT_MODEL.md", "sha256": "46f445f7320fe9419af10b7c0126118278a2b2892fcf5f95b8e43bc0d6cc9a3b"},
+    {"path": "docs/phase-3b/LEAN_MATHLIB_SCORECARD.md", "sha256": "76a1abcc477d25ffcc70235af79d4d5891914264a6bdda05802693886afc8034"},
+    {"path": "docs/phase-3b/LICENSING_DEPENDENCY_REPORT.md", "sha256": "6b171fa9557dad96078ca93e43377d429be4d42d1cb8e5f29b9e369ea1ee0275"},
+    {"path": "docs/phase-3b/PROPOSED_TOOLCHAIN_MANIFEST.json", "sha256": "1af4b76bf50ab05c77c79f02ac7f9570a2fa0b63952181122250028d6b55fe4d"},
+    {"path": "docs/phase-3b/README.md", "sha256": "f88e6945fde9db9ec67a3ec14081725607f1ee26e77c76339b197f74fe328cec"},
+    {"path": "docs/phase-3b/REPRODUCIBILITY_EVIDENCE.md", "sha256": "819a3313868b32952e5f0db399505dc1b908e18303eb3ec1ce580a1b5afdf702"},
+    {"path": "docs/phase-3b/RESEARCH_MEMORY_LINKAGE.md", "sha256": "2cf021f24797f63c5cb5db9e05dca77b41a9946757f9574693ad989c3611ac3a"},
+    {"path": "docs/phase-3b/TRUST_CLASSIFICATION_POLICY.md", "sha256": "98da61948dc1ea37842fc740ae70e72333a10d69a8917a217f5e36ebb9f64fdf"},
+    {"path": "reports/phase-3b-entry-gate/entry-gate.json", "sha256": "993ae16346efd31ca675116f4203482db9208b4c425880a21621fb10046f4a8b"},
+    {"path": "reports/phase-3b-entry-gate/fixture-results.json", "sha256": "519822eb45b49d504160798fd98f6e537f126dac4bfb5ecdd8aa732a5dbf3ed9"}
+  ]
+}
