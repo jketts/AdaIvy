@@ -6,6 +6,9 @@ checked for applicability or the claims are proved independently
 Scope: benchmark-local research material; no core type, solver, numerical
 experiment, or Lean implementation is introduced here
 
+The normative, numbered targets extracted from this analysis are in
+`BENCHMARK_STATEMENTS.md`.
+
 ## 1. Executive finding
 
 The unrestricted target
