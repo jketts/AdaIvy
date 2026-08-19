@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaivy.local/schemas/model-verifier-v1.schema.json",
+  "title": "Phase 2 verifier result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "result_type", "target_claim_id", "candidate_artifact_hash", "findings", "declared_rationale", "recommendation"],
+  "properties": {
+    "schema_version": {"const": "2.0.0"},
+    "result_type": {"enum": ["finding", "inconclusive", "failure"]},
+    "target_claim_id": {"type": "string", "minLength": 1},
+    "candidate_artifact_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "outcome", "detail", "referenced_entity_ids"],
+        "properties": {
+          "code": {"type": "string"},
+          "outcome": {"enum": ["supports", "contradicts", "unresolved"]},
+          "detail": {"type": "string"},
+          "referenced_entity_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+        }
+      }
+    },
+    "declared_rationale": {"type": "string", "maxLength": 2000},
+    "recommendation": {"enum": ["manual_review", "reject", "unresolved"]}
+  }
+}

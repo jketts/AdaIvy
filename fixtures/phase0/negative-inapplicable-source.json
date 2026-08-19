@@ -1,0 +1,16 @@
+{
+  "fixture_version": 1,
+  "base": "reference-dossier.json",
+  "description": "A source card cannot hide its applicability obligation.",
+  "mutations": [
+    {
+      "path": "source_cards.0.implication_obligation_id",
+      "value": "obligation.missing"
+    },
+    {
+      "path": "source_cards.0.applicability_status",
+      "value": "checked"
+    }
+  ],
+  "expected_issue_codes": ["applicability"]
+}

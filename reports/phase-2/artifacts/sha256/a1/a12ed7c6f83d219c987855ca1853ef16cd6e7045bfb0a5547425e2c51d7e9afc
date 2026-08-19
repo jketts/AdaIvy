@@ -1,0 +1,1 @@
+{"mathematical_payload":{"statement":"Let a=2k and b=2l; then a+b=2(k+l), so a+b is even.","steps":["Expand both even integers by the accepted definition.","Factor 2 from their sum."],"witness":"k+l"},"referenced_entity_ids":["claim.even_definition.v1"],"result_type":"proof_attempt","schema_version":"2.0.0","target_claim_id":"claim.even_sum.v1"}

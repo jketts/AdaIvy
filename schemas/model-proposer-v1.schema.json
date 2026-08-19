@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaivy.local/schemas/model-proposer-v1.schema.json",
+  "title": "Phase 2 proposer result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "result_type", "target_claim_id", "mathematical_payload", "declared_rationale", "referenced_entity_ids"],
+  "properties": {
+    "schema_version": {"const": "2.0.0"},
+    "result_type": {"enum": ["candidate_claim", "proof_attempt", "counterexample", "failure"]},
+    "target_claim_id": {"type": "string", "minLength": 1},
+    "mathematical_payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["statement", "steps", "witness"],
+      "properties": {
+        "statement": {"type": "string"},
+        "steps": {"type": "array", "items": {"type": "string"}},
+        "witness": {"type": ["string", "null"]}
+      }
+    },
+    "declared_rationale": {"type": "string", "maxLength": 2000},
+    "referenced_entity_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+  }
+}

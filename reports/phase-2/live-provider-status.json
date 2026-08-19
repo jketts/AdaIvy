@@ -1,0 +1,111 @@
+{
+  "calls": [
+    {
+      "call_id": "call.run.phase2.live.openai.gpt5-mini.v3.proposer.attempt.1",
+      "capabilities_json": "[\"responses_api\",\"structured_output\",\"refusal\"]",
+      "cost_microusd": 1927,
+      "created_at": "2026-08-19T08:59:18.234439Z",
+      "estimated_cost_microusd": 1927,
+      "idempotency_key": "call:run.phase2.live.openai.gpt5-mini.v3:proposer:attempt:1",
+      "incomplete_reason": null,
+      "input_tokens": 955,
+      "model_identifier": "gpt-5-mini-2025-08-07",
+      "output_tokens": 844,
+      "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+      "provider": "openai",
+      "provider_request_id": "resp_07822df2a3cc157a016a85705b263c87d082e6f2679308368d",
+      "purpose": "proposer",
+      "request_hash": "sha256:2d0682bf1ef97532a46a8fea12fd6213504f99ceeb20843626b63ce00bc6d49b",
+      "result_hash": "sha256:d99e2288bb804bb233ca7063bd98049bf2a9db96da6b725f1402591fbf421c17",
+      "retry_classification": "none",
+      "run_id": "run.phase2.live.openai.gpt5-mini.v3",
+      "schema_version": "2.0.0",
+      "status": "succeeded",
+      "total_tokens": 1799,
+      "usage_source": "api_reported"
+    },
+    {
+      "call_id": "call.run.phase2.live.openai.gpt5-mini.v3.verifier.attempt.1",
+      "capabilities_json": "[\"responses_api\",\"structured_output\",\"refusal\"]",
+      "cost_microusd": 2313,
+      "created_at": "2026-08-19T08:59:32.070687Z",
+      "estimated_cost_microusd": 2313,
+      "idempotency_key": "call:run.phase2.live.openai.gpt5-mini.v3:verifier:attempt:1",
+      "incomplete_reason": null,
+      "input_tokens": 1412,
+      "model_identifier": "gpt-5-mini-2025-08-07",
+      "output_tokens": 980,
+      "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+      "provider": "openai",
+      "provider_request_id": "resp_0124dadfd2b93e8c016a8570668f9487d0b7c38ed0bb2b302a",
+      "purpose": "verifier",
+      "request_hash": "sha256:e3e2b4e2a572213157bdaad9f972606f63732f9d35be700077397d0115ff4b46",
+      "result_hash": "sha256:f2d77bdf4c7fdca6eb8ec14ceef39dc139387938e27e357be144db27b8dd5873",
+      "retry_classification": "none",
+      "run_id": "run.phase2.live.openai.gpt5-mini.v3",
+      "schema_version": "2.0.0",
+      "status": "succeeded",
+      "total_tokens": 2392,
+      "usage_source": "api_reported"
+    }
+  ],
+  "configuration_id": "config.phase2.live.gpt5-mini.v3",
+  "credential_leak_matches": 0,
+  "estimated_cost_microusd": 4240,
+  "event_replay_hash": "sha256:d5bb8e34704404aa3f69e44f4f19c32787a747fd5a2d70ab323028e998fcd24c",
+  "fixture": "known-valid-even-sum",
+  "history": [
+    {
+      "blocker": "live gate stopped after 1 model call(s)",
+      "call_statuses": [
+        "failed"
+      ],
+      "calls_recorded": 1,
+      "history": [
+        {
+          "blocker": "live gate stopped after 1 model call(s)",
+          "call_statuses": [
+            "failed"
+          ],
+          "calls_recorded": 1,
+          "history": [
+            {
+              "blocker": "live provider configuration is incomplete",
+              "calls_recorded": 0,
+              "cost_microusd": null,
+              "missing_environment_variables": [
+                "ADAIVY_MODEL_PROVIDER",
+                "ADAIVY_OPENAI_MODEL",
+                "OPENAI_API_KEY",
+                "ADAIVY_OPENAI_INPUT_MICROUSD_PER_MILLION",
+                "ADAIVY_OPENAI_OUTPUT_MICROUSD_PER_MILLION"
+              ],
+              "schema_version": "2.0.0",
+              "status": "blocked"
+            }
+          ],
+          "response_ids": [
+            null
+          ],
+          "schema_version": "2.0.0",
+          "status": "failed"
+        }
+      ],
+      "response_ids": [
+        "req_32c9c66a4fb1414292df36cb4c031aad"
+      ],
+      "schema_version": "2.0.0",
+      "status": "failed"
+    }
+  ],
+  "manifest_hash": "sha256:e625dcfdbe8ddab1f266ebb74935e0311ba2f1f3a11acf55920277c5b9e0bdd0",
+  "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+  "report_hash": "sha256:ff706139a8f0415e1f1f6efc0ac714f0e588f187e94e82c7dff0af92d5da8cb9",
+  "response_ids": [
+    "resp_07822df2a3cc157a016a85705b263c87d082e6f2679308368d",
+    "resp_0124dadfd2b93e8c016a8570668f9487d0b7c38ed0bb2b302a"
+  ],
+  "run_id": "run.phase2.live.openai.gpt5-mini.v3",
+  "schema_version": "2.0.0",
+  "status": "passed"
+}

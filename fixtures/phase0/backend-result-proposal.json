@@ -1,0 +1,34 @@
+{
+  "schema_version": "0.1.0-phase0",
+  "backend": {
+    "name": "reference-file-backend",
+    "version": "0.1.0",
+    "configuration_hash": "sha256:7b19790338ebc5f0b6008223532c30a22f22b131d62fe8ea4f79a0af7470dcfd"
+  },
+  "input_dossier_hash": "sha256:7feee534fc70bf082846f1306d6e9ac652b136f0ba91eda10b1f085a9a057fbf",
+  "status": "partial",
+  "candidate_artifacts": [
+    {
+      "id": "candidate.proof_attempt.1",
+      "kind": "proof_attempt",
+      "disposition": "proposal",
+      "content_hash": "sha256:83c02d1040f00b05e62c2673e0d7d8a88ceeb691e9b70eecf7325bd0b86b86d7"
+    }
+  ],
+  "failures": [
+    {
+      "code": "UNVERIFIED_CANDIDATE",
+      "message": "The candidate has not passed local semantic, applicability, or proof policy."
+    }
+  ],
+  "cost": {
+    "wall_ms": 0,
+    "external_processes": 0
+  },
+  "run_manifest": {
+    "network_used": false,
+    "credentials_used": false,
+    "complete_trace_exported": true
+  },
+  "export_hash": "sha256:93fec1510f7390c860b7ac1170f17ae80dd4e5aaa316568214de8b37312e394c"
+}

@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0.0",
+  "scenario_id": "false-universal-square-less-than-self",
+  "kind": "false_universal_exact_counterexample",
+  "target": "For every integer n, n squared is strictly less than n.",
+  "condition": {"counterexample": "n = 0 gives 0 < 0, which is false", "arithmetic": "exact"},
+  "expected": {"target_logical_status": "disproved"}
+}

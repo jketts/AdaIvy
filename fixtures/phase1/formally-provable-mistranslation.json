@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0.0",
+  "scenario_id": "even-sum-weakened-to-zero",
+  "kind": "formally_provable_mistranslation",
+  "target": "For all even integers a and b, a + b is even.",
+  "condition": {"proved_translation": "For a = 0 and b = 0, a + b is even.", "strength_relation": "weaker"},
+  "expected": {"translated_claim_logical_status": "proved", "target_logical_status": "unknown"}
+}

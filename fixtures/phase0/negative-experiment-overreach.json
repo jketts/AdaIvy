@@ -1,0 +1,22 @@
+{
+  "fixture_version": 1,
+  "base": "reference-dossier.json",
+  "description": "A universal target may not be declared proved by an experimental warrant.",
+  "mutations": [
+    {
+      "path": "claims.1.truth_status",
+      "value": "proved"
+    },
+    {
+      "path": "claims.1.warrants",
+      "value": [
+        {
+          "kind": "experimentally_observed",
+          "scope": "100 sampled integer pairs",
+          "status": "active"
+        }
+      ]
+    }
+  ],
+  "expected_issue_codes": ["experimental_overreach"]
+}

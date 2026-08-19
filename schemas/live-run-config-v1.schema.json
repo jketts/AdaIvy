@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaivy.local/schemas/live-run-config-v1.schema.json",
+  "title": "AdaIvy Phase 2 live-run configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "configuration_id",
+    "provider",
+    "model_identifier",
+    "pricing_snapshot_id",
+    "call_timeout_milliseconds",
+    "per_call_input_token_reserve",
+    "per_call_output_token_reserve",
+    "budget",
+    "content_hash"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "configuration_id": {"type": "string", "minLength": 1},
+    "provider": {"const": "openai"},
+    "model_identifier": {"type": "string", "minLength": 1},
+    "pricing_snapshot_id": {"type": "string", "minLength": 1},
+    "call_timeout_milliseconds": {"type": "integer", "minimum": 1},
+    "per_call_input_token_reserve": {"type": "integer", "minimum": 1},
+    "per_call_output_token_reserve": {"type": "integer", "minimum": 1},
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_input_tokens", "max_output_tokens", "max_cost_microusd", "max_wall_milliseconds", "max_attempts"],
+      "properties": {
+        "max_input_tokens": {"type": "integer", "minimum": 0},
+        "max_output_tokens": {"type": "integer", "minimum": 0},
+        "max_cost_microusd": {"type": "integer", "minimum": 0},
+        "max_wall_milliseconds": {"type": "integer", "minimum": 0},
+        "max_attempts": {"type": "integer", "minimum": 0}
+      }
+    },
+    "content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  }
+}

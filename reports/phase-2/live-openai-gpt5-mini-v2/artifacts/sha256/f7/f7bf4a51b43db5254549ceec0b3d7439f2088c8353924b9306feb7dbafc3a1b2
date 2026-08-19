@@ -1,0 +1,27 @@
+# OpenAI Structured Outputs Compatibility Report
+
+- Compatible: yes
+- Projection: `openai-strict-schema-projection/1.0.0`
+- Canonical schema hash: `sha256:29a9a65656f50cecefd40b0f11ff8750e5d164549b85d153177bb13ac4a238ce`
+- Provider schema hash: `sha256:295e849ba754d74f4e4ecc5324bd8f2d0a989ddba1641f5282fa0dcd37e2a2e7`
+- Documentation: https://developers.openai.com/api/docs/guides/structured-outputs
+- Object properties: 9/5000
+- Nesting depth: 4/10
+- Enum values: 4/1000
+- String budget: 174/120000
+
+## Issues
+
+- None.
+
+## Transformations
+
+- `removed` `/$id`: canonical schema identity is retained outside the provider projection; post-validation `canonical.schema.identity_and_metadata_retained`.
+- `removed` `/$schema`: JSON Schema dialect metadata is not part of the provider response contract; post-validation `canonical.schema.identity_and_metadata_retained`.
+- `removed` `/properties/declared_rationale/maxLength`: constraint is not in the documented provider allowlist and remains locally enforced; post-validation `canonical.string.max_length`.
+- `removed` `/properties/referenced_entity_ids/uniqueItems`: constraint is not in the documented provider allowlist and remains locally enforced; post-validation `canonical.array.unique_items`.
+- `removed` `/properties/target_claim_id/minLength`: constraint is not in the documented provider allowlist and remains locally enforced; post-validation `canonical.string.min_length`.
+- `rewritten` `/required`: OpenAI Structured Outputs requires every object property to be required; post-validation `canonical.object.original_required_and_optional_semantics`.
+- `removed` `/title`: display metadata is not needed by the provider response contract; post-validation `canonical.schema.identity_and_metadata_retained`.
+
+The projected schema is provider-specific and is not a canonical trust schema. Every response is parsed and validated again against the unchanged canonical schema before trust-policy checks or proposal-only import.

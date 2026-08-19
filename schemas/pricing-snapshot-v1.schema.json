@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaivy.local/schemas/pricing-snapshot-v1.schema.json",
+  "title": "AdaIvy pinned pricing snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "snapshot_id",
+    "provider",
+    "model_identifier",
+    "source",
+    "captured_at",
+    "currency",
+    "units",
+    "input_microusd_per_million_tokens",
+    "output_microusd_per_million_tokens",
+    "content_hash"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "snapshot_id": {"type": "string", "minLength": 1},
+    "provider": {"const": "openai"},
+    "model_identifier": {"type": "string", "minLength": 1},
+    "source": {"type": "string", "minLength": 1},
+    "captured_at": {"type": "string", "format": "date-time"},
+    "currency": {"const": "USD"},
+    "units": {"const": "micro-USD per 1,000,000 tokens"},
+    "input_microusd_per_million_tokens": {"type": "integer", "minimum": 0},
+    "output_microusd_per_million_tokens": {"type": "integer", "minimum": 0},
+    "content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  }
+}

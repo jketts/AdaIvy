@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='utf-8'?>
+<omdoc xmlns="http://omdoc.org/ns" xml:id="dossier.even_sum.v1" version="1.2">
+  <theory xml:id="formalization.even_sum.v1">
+    <assertion xml:id="claim.even_definition" type="definition" status="unknown">
+      <CMP>An integer n is even iff there exists an integer k such that n = 2k.</CMP>
+    </assertion>
+    <assertion xml:id="claim.even_sum" type="theorem" status="unknown" role="target">
+      <CMP>For all integers a and b, if a and b are even, then a + b is even.</CMP>
+    </assertion>
+    <assertion xml:id="claim.integer_to_why3_encoding" type="equivalence" status="unknown">
+      <CMP>The dossier integer/even notation is represented by Why3 int and the predicate exists k:int. n=2*k.</CMP>
+    </assertion>
+    <omtext xml:id="obligation.proof" type="proof-obligation">
+      <CMP>Provide a complete derivation or formal proof of the target.</CMP>
+    </omtext>
+    <omtext xml:id="obligation.source_applicability" type="proof-obligation">
+      <CMP>Check that the cited definition uses the same integer domain and local meaning of even.</CMP>
+    </omtext>
+    <omtext xml:id="obligation.why3_bridge" type="proof-obligation">
+      <CMP>Verify that the Why3 encoding preserves integer multiplication, addition, and existential quantification.</CMP>
+    </omtext>
+  </theory>
+</omdoc>

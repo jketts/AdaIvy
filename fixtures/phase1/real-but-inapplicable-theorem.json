@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0.0",
+  "scenario_id": "characteristic-two-theorem-used-over-integers",
+  "kind": "real_but_inapplicable_theorem",
+  "target": "An integer identity follows from a theorem restricted to fields of characteristic two.",
+  "condition": {"citation_real": true, "source_hypothesis": "characteristic = 2", "local_hypothesis": "integer ring of characteristic 0"},
+  "expected": {"can_close_obligation": false, "reason": "source_hypotheses_incompatible"}
+}

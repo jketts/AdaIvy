@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0.0",
+  "scenario_id": "division-encoding-drops-zero",
+  "kind": "representation_bridge_drops_edge_case",
+  "target": "A rational identity holds for every denominator.",
+  "condition": {"dropped_edge_case": "denominator = 0", "bridge_status": "partially_verified"},
+  "expected": {"target_logical_status": "unknown", "blocker_prefix": "representation_map_not_verified"}
+}

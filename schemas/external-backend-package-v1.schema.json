@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaivy.local/schemas/external-backend-package-v1.schema.json",
+  "title": "Phase 2 external backend output package",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "input_dossier_hash", "input_manifest_hash", "artifacts"],
+  "properties": {
+    "schema_version": {"const": "2.0.0"},
+    "input_dossier_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "input_manifest_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256", "kind", "target_claim_id"],
+        "properties": {
+          "path": {"type": "string"},
+          "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+          "kind": {"enum": ["candidate_claim", "proof_attempt", "counterexample", "explicit_failure"]},
+          "target_claim_id": {"type": "string"}
+        }
+      }
+    }
+  }
+}

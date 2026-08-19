@@ -1,0 +1,181 @@
+{
+  "schema_version": "0.1.0-phase0",
+  "dossier_id": "dossier.even_sum.v1",
+  "problem": {
+    "id": "problem.even_sum",
+    "version": 1,
+    "title": "Sum of two even integers",
+    "informal_statement": "For all integers a and b, if a and b are even, then a + b is even.",
+    "problem_type": "prove",
+    "statement_hash": "sha256:f24381d9c42f5a34579eb2d1508dee8133bf05fdc456ad2850574d1b98e439fc"
+  },
+  "formalization": {
+    "id": "formalization.even_sum.v1",
+    "problem_id": "problem.even_sum",
+    "version": 1,
+    "statement": "For every a,b in Z, (exists k in Z, a=2k) and (exists l in Z, b=2l) implies exists m in Z, a+b=2m.",
+    "formal_language": "informal_math",
+    "quantifiers": ["forall a in Z", "forall b in Z"],
+    "assumptions": ["claim.even_definition"],
+    "target_claim_id": "claim.even_sum",
+    "approval_status": "approved"
+  },
+  "semantic_alignment": {
+    "id": "alignment.even_sum.v1",
+    "problem_id": "problem.even_sum",
+    "formalization_id": "formalization.even_sum.v1",
+    "compared_claim_id": "claim.even_sum",
+    "quantifier_mapping": {"a": "integer a", "b": "integer b"},
+    "definition_mapping": {"even": "exists integer k such that n = 2k"},
+    "assumption_delta": [],
+    "edge_case_delta": [],
+    "strength_relation": "equivalent",
+    "status": "researcher_approved",
+    "approved_by": "actor.reference_reviewer"
+  },
+  "claims": [
+    {
+      "id": "claim.even_definition",
+      "kind": "definition",
+      "statement": "An integer n is even iff there exists an integer k such that n = 2k.",
+      "assumption_claim_ids": [],
+      "truth_status": "unknown",
+      "warrants": [],
+      "origin": "source"
+    },
+    {
+      "id": "claim.even_sum",
+      "kind": "theorem",
+      "statement": "For all integers a and b, if a and b are even, then a + b is even.",
+      "assumption_claim_ids": ["claim.even_definition"],
+      "truth_status": "unknown",
+      "warrants": [],
+      "origin": "user"
+    },
+    {
+      "id": "claim.integer_to_why3_encoding",
+      "kind": "equivalence",
+      "statement": "The dossier integer/even notation is represented by Why3 int and the predicate exists k:int. n=2*k.",
+      "assumption_claim_ids": ["claim.even_definition"],
+      "truth_status": "unknown",
+      "warrants": [],
+      "origin": "tool"
+    }
+  ],
+  "open_obligations": [
+    {
+      "id": "obligation.proof",
+      "claim_id": "claim.even_sum",
+      "description": "Provide a complete derivation or formal proof of the target.",
+      "category": "logical_gap",
+      "status": "open"
+    },
+    {
+      "id": "obligation.source_applicability",
+      "claim_id": "claim.even_definition",
+      "description": "Check that the cited definition uses the same integer domain and local meaning of even.",
+      "category": "literature_applicability",
+      "status": "open"
+    },
+    {
+      "id": "obligation.why3_bridge",
+      "claim_id": "claim.integer_to_why3_encoding",
+      "description": "Verify that the Why3 encoding preserves integer multiplication, addition, and existential quantification.",
+      "category": "representation_bridge",
+      "status": "open"
+    }
+  ],
+  "source_cards": [
+    {
+      "id": "source_card.even_definition",
+      "local_claim_id": "claim.even_definition",
+      "source_span": {
+        "id": "span.even_definition",
+        "document_id": "document.local_even_definition",
+        "locator": "line 1",
+        "raw_content": "Definition 1. An integer n is even when there exists an integer k such that n = 2k.",
+        "content_hash": "sha256:03dc640d7cc87b48c2dd54e1d97dacff32997eb001df544c0166aadd59ef48f9",
+        "parser_name": "manual-reference-fixture",
+        "parser_version": "1"
+      },
+      "imported_statement": "An integer n is even when there exists an integer k such that n = 2k.",
+      "imported_hypotheses": ["n is an integer"],
+      "definition_correspondences": [],
+      "scope_and_exceptions": ["Integers only"],
+      "implication_obligation_id": "obligation.source_applicability",
+      "bibliographic_status": "confirmed",
+      "applicability_status": "unresolved"
+    }
+  ],
+  "representation_maps": [
+    {
+      "id": "representation_map.why3",
+      "source": "informal integer arithmetic",
+      "target": "Why3 int theory",
+      "encoding_claim_id": "claim.integer_to_why3_encoding",
+      "preserved_property_claim_ids": [],
+      "exceptional_case_claim_ids": [],
+      "bridge_obligation_ids": ["obligation.why3_bridge"],
+      "status": "proposed"
+    }
+  ],
+  "capabilities": ["deterministic_json", "local_file_source", "subprocess_probe"],
+  "evaluation_protocol": {
+    "id": "evaluation.phase0.reference.v1",
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": ["target_fidelity", "applicability_separation", "trace_retention", "replay_determinism", "wall_time_ms"],
+    "success_criteria": ["File baseline round-trips without semantic loss", "Every missing integration emits a blocker"],
+    "stopping_rules": ["One bounded run and one replay per component", "No network installation"],
+    "frozen_at": "2026-08-19T00:00:00Z",
+    "frozen_by": "actor.phase0_owner"
+  },
+  "budget": {
+    "wall_seconds": 30,
+    "external_processes": 1
+  },
+  "artifact_manifest": {
+    "id": "manifest.even_sum.v1",
+    "artifacts": [
+      {
+        "id": "artifact.source_definition",
+        "path": "fixtures/phase0/source/even-definition.txt",
+        "media_type": "text/plain",
+        "content_hash": "sha256:03dc640d7cc87b48c2dd54e1d97dacff32997eb001df544c0166aadd59ef48f9"
+      },
+      {
+        "id": "artifact.failed_route",
+        "path": "fixtures/phase0/source/failed-route.txt",
+        "media_type": "text/plain",
+        "content_hash": "sha256:d84513a4ea903eb3bc4f7a6b5434785b4d211af847ca3a5c2e2c4f395940b5a0"
+      },
+      {
+        "id": "artifact.proposer_narrative",
+        "path": "fixtures/phase0/source/proposer-narrative.txt",
+        "media_type": "text/plain",
+        "content_hash": "sha256:c24bb21531ddf062375443a64e04e1d7a460611cef2198dd6cf6e69b08fca4f3"
+      }
+    ]
+  },
+  "failed_routes": [
+    {
+      "id": "failed_route.finite_sampling",
+      "target_claim_id": "claim.even_sum",
+      "strategy": "Check finitely many integer pairs and claim universal proof.",
+      "status": "failed",
+      "failure_reason": "Finite testing cannot establish an unrestricted universal theorem.",
+      "artifact_ids": ["artifact.failed_route"]
+    }
+  ],
+  "verifier_context_manifest": {
+    "id": "verifier_context.even_sum.v1",
+    "target_claim_ids": ["claim.even_sum"],
+    "premise_claim_ids": ["claim.even_definition"],
+    "source_span_ids": ["span.even_definition"],
+    "candidate_artifact_ids": [],
+    "excluded_artifact_ids": ["artifact.proposer_narrative"],
+    "isolation_policy_id": "policy.exclude_proposer_narrative.v1",
+    "serialized_context_hash": "sha256:b18d159aa795ed55f014e83076c2a9321789bf0f9ad90b005aaae92aec83ed7c"
+  },
+  "content_hash": "sha256:7feee534fc70bf082846f1306d6e9ac652b136f0ba91eda10b1f085a9a057fbf"
+}

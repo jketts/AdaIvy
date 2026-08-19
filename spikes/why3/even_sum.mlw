@@ -1,0 +1,9 @@
+theory EvenSum
+  use int.Int
+
+  predicate even (n: int) = exists k: int. n = 2 * k
+
+  goal even_sum:
+    forall a b: int. even a -> even b -> even (a + b)
+end
+

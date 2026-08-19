@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaivy.local/schemas/phase1-scenario-1.0.0.json",
+  "title": "Phase 1 adversarial scenario fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "scenario_id", "kind", "target", "condition", "expected"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "scenario_id": {"type": "string", "minLength": 1},
+    "kind": {"enum": ["known_valid_theorem", "false_universal_exact_counterexample", "formally_provable_mistranslation", "real_but_inapplicable_theorem", "representation_bridge_drops_edge_case"]},
+    "target": {"type": "string", "minLength": 1},
+    "condition": {"type": "object"},
+    "expected": {"type": "object"}
+  }
+}

@@ -1,0 +1,3 @@
+The proposer confidently asserts that the result is obvious and already proved.
+This narrative is intentionally excluded from the verifier context.
+

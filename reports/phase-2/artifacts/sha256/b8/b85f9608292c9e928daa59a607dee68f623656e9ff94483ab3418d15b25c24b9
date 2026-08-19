@@ -1,0 +1,1 @@
+{"command":["/opt/homebrew/opt/python@3.14/bin/python3.14","/Users/joshuakettlewell/Documents/GitHub/AdaIvy/fixtures/phase2/external_backend_fixture.py","traversal"],"platform":"macOS-26.5.2-arm64-arm-64bit-Mach-O","python":"3.14.4","schema_version":"2.0.0","working_directory_role":"isolated_backend_run"}

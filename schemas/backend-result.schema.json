@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaivy.local/schemas/backend-result-0.1.0-phase0.json",
+  "title": "Phase 0 BackendResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "backend", "input_dossier_hash", "status", "candidate_artifacts", "failures", "cost", "run_manifest", "export_hash"],
+  "properties": {
+    "schema_version": {"const": "0.1.0-phase0"},
+    "backend": {"type": "object", "required": ["name", "version", "configuration_hash"], "properties": {"name": {"type": "string"}, "version": {"type": ["string", "null"]}, "configuration_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}}, "additionalProperties": false},
+    "input_dossier_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "status": {"enum": ["succeeded", "failed", "blocked", "partial"]},
+    "candidate_artifacts": {"type": "array", "items": {"type": "object", "required": ["id", "kind", "disposition", "content_hash"], "properties": {"id": {"type": "string"}, "kind": {"type": "string"}, "disposition": {"const": "proposal"}, "content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}}, "additionalProperties": false}},
+    "failures": {"type": "array", "items": {"type": "object", "required": ["code", "message"], "properties": {"code": {"type": "string"}, "message": {"type": "string"}, "stderr": {"type": "string"}}, "additionalProperties": false}},
+    "cost": {"type": "object"},
+    "run_manifest": {"type": "object"},
+    "export_hash": {"oneOf": [{"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, {"type": "null"}]}
+  }
+}

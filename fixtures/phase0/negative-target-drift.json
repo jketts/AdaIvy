@@ -1,0 +1,12 @@
+{
+  "fixture_version": 1,
+  "base": "reference-dossier.json",
+  "description": "An alignment for another claim must not approve the active target.",
+  "mutations": [
+    {
+      "path": "semantic_alignment.compared_claim_id",
+      "value": "claim.even_definition"
+    }
+  ],
+  "expected_issue_codes": ["target_fidelity"]
+}

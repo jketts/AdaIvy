@@ -1,0 +1,3 @@
+# Optional live-provider boundary only; offline Phase 0-2 checks do not install it.
+# PyPI wheel SHA-256: ded6b2112e6d299c7a2573ff6f165dc92fb64ceaa4d7daa42345f091157bd373
+openai==3.3.0

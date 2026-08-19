@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaivy.local/schemas/research-dossier-1.0.0.json",
+  "title": "Phase 1 ResearchDossier interchange",
+  "type": "object",
+  "required": ["schema_version", "object_type", "id", "created_at", "created_by", "problem", "formalization", "semantic_alignment", "claims", "warrants", "evidence", "source_applicability", "obligations", "representation_maps", "verification_records", "evaluation_protocol", "audit_events", "capabilities", "content_hash"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "object_type": {"const": "ResearchDossier"},
+    "id": {"$ref": "#/$defs/id"},
+    "created_at": {"$ref": "#/$defs/timestamp"},
+    "created_by": {"$ref": "#/$defs/id"},
+    "problem": {"$ref": "#/$defs/ResearchProblem"},
+    "formalization": {"$ref": "#/$defs/Formalization"},
+    "semantic_alignment": {"$ref": "#/$defs/SemanticAlignmentRecord"},
+    "claims": {"type": "array", "items": {"$ref": "#/$defs/Claim"}},
+    "warrants": {"type": "array", "items": {"$ref": "#/$defs/EpistemicWarrant"}},
+    "evidence": {"type": "array", "items": {"$ref": "#/$defs/Evidence"}},
+    "source_applicability": {"type": "array", "items": {"$ref": "#/$defs/SourceApplicabilityRecord"}},
+    "obligations": {"type": "array", "items": {"$ref": "#/$defs/ProofObligation"}},
+    "representation_maps": {"type": "array", "items": {"$ref": "#/$defs/RepresentationMap"}},
+    "verification_records": {"type": "array", "items": {"$ref": "#/$defs/VerificationRecord"}},
+    "evaluation_protocol": {"$ref": "#/$defs/EvaluationProtocol"},
+    "audit_events": {"type": "array", "items": {"$ref": "#/$defs/AuditEvent"}},
+    "capabilities": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "content_hash": {"$ref": "#/$defs/hash"}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._:-]*$"},
+    "hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "pairs": {"type": "array", "items": {"type": "array", "prefixItems": [{"type": "string"}, {"type": "string"}], "items": false}},
+    "ResearchProblem": {"$ref": "#/$defs/publicObject"},
+    "Formalization": {"$ref": "#/$defs/publicObject"},
+    "SemanticAlignmentRecord": {"$ref": "#/$defs/publicObject"},
+    "Claim": {"$ref": "#/$defs/publicObject"},
+    "EpistemicWarrant": {"$ref": "#/$defs/publicObject"},
+    "Evidence": {"$ref": "#/$defs/publicObject"},
+    "SourceApplicabilityRecord": {"$ref": "#/$defs/publicObject"},
+    "ProofObligation": {"$ref": "#/$defs/publicObject"},
+    "RepresentationMap": {"$ref": "#/$defs/publicObject"},
+    "VerificationRecord": {"$ref": "#/$defs/publicObject"},
+    "EvaluationProtocol": {"$ref": "#/$defs/publicObject"},
+    "AuditEvent": {"$ref": "#/$defs/publicObject"},
+    "publicObject": {
+      "type": "object",
+      "required": ["schema_version", "object_type", "id", "created_at", "created_by"],
+      "properties": {
+        "schema_version": {"const": "1.0.0"},
+        "object_type": {"type": "string"},
+        "id": {"$ref": "#/$defs/id"},
+        "created_at": {"$ref": "#/$defs/timestamp"},
+        "created_by": {"$ref": "#/$defs/id"}
+      }
+    }
+  }
+}
