@@ -317,6 +317,17 @@ result remains a proposal: it cannot approve semantic alignment, source
 applicability, novelty, significance, contribution, or create an
 `EpistemicWarrant`. Meaning tests are diagnostic only.
 
+Formal finding IDs and semantic content hashes exclude recorded timestamps and
+measured elapsed milliseconds. For forced timeout/output-limit termination,
+they also exclude
+race-dependent exit and partial-stream observations that occur after the
+classification boundary. All excluded values remain present in exported
+operational metadata and are covered by a separate operational hash. This
+prevents runtime scheduling variance from changing semantic replay identity
+without discarding or leaving operational metadata unaudited. Completed-checker
+exit codes and full stream hashes remain semantic inputs. Legacy full-record
+Phase 3B exports remain importable under their implicit original hash profile.
+
 This slice adds no model/API call, network acquisition, proof search or repair,
 premise retrieval, Why3/SMT/CAS/numerical adapter, web surface, broader Phase 3B
 workflow, Phase 4 feature, or quantum implementation.

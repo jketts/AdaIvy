@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from ..domain.entities import OpaqueId
-from . import SCHEMA_VERSION
+from . import HASH_PROFILE, SCHEMA_VERSION
 
 
 class SourceKind(str, Enum):
@@ -138,5 +138,5 @@ class FormalCheckFinding:
     epistemic_warrant_created: bool
     created_at: str
     content_hash: str
+    hash_profile: str = HASH_PROFILE
     schema_version: str = SCHEMA_VERSION
-

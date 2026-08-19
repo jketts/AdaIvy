@@ -20,7 +20,10 @@ from .records import (
     ExecutionLimits, FormalCheckFinding, FormalCheckOutcome, FormalCheckRequest,
     GeneratedWrapper, RawExecution, StreamCapture,
 )
-from .serialization import canonical_hash, public_value, sha256_bytes, stable_id
+from .serialization import (
+    canonical_hash, finding_content_hash, public_value, semantic_execution_value,
+    sha256_bytes, stable_id,
+)
 from .validation import parse_request
 from .wrapper import DOCKER_CREATE_OPTIONS, DOCKER_START_OPTIONS, INVOCATION, POLICY
 
@@ -221,7 +224,11 @@ class DockerLeanAdapter:
     def verify_output(self, request: FormalCheckRequest, wrapper: GeneratedWrapper, execution: RawExecution, *, created_at: str) -> FormalCheckFinding:
         outcome, approved, unapproved = classify_execution(request, wrapper, execution)
         provisional = FormalCheckFinding(
-            id=stable_id("formal-finding", {"request": wrapper.manifest.source_hash, "wrapper": wrapper.manifest.wrapper_hash, "execution": execution}),
+            id=stable_id("formal-finding", {
+                "request": wrapper.manifest.source_hash,
+                "wrapper": wrapper.manifest.wrapper_hash,
+                "execution": semantic_execution_value(execution),
+            }),
             request_id=request.request_id, claim_id=request.claim_id, semantic_alignment_id=request.semantic_alignment_id,
             source_kind=request.source_kind, outcome=outcome, disposition="proposal", trust_effect="none",
             exact_statement_only=True, approved_axioms=approved, unapproved_assumptions=unapproved,
@@ -230,7 +237,7 @@ class DockerLeanAdapter:
             novelty_approved=False, significance_approved=False, contribution_approved=False,
             epistemic_warrant_created=False, created_at=created_at, content_hash="",
         )
-        return replace(provisional, content_hash=canonical_hash(provisional))
+        return replace(provisional, content_hash=finding_content_hash(provisional))
 
 
 def _messages(execution: RawExecution) -> tuple[dict[str, object], ...]:

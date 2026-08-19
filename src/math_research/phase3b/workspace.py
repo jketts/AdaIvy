@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 
 from ..phase2.sqlite_workspace import SQLiteWorkspace
-from dataclasses import replace
 
 from .records import FormalCheckFinding, FormalCheckOutcome
-from .serialization import canonical_hash, canonical_json, sha256_bytes
+from .serialization import canonical_hash, canonical_json, finding_content_hash, sha256_bytes
 from .validation import RequestValidationError, parse_request_bytes
 
 
@@ -65,7 +65,7 @@ class FormalCheckWorkspace:
         return self.durable.migration_versions + phase3b
 
     def save_attempt(self, request_bytes: bytes, finding: FormalCheckFinding) -> None:
-        if finding.content_hash != canonical_hash(replace(finding, content_hash="")):
+        if finding.content_hash != finding_content_hash(finding):
             raise ValueError("formal finding content hash mismatch")
         if (
             finding.disposition != "proposal" or finding.trust_effect != "none"
@@ -96,7 +96,9 @@ class FormalCheckWorkspace:
             existing = connection.execute("SELECT canonical_json FROM formal_check_attempts WHERE finding_id=?", (finding.id.value,)).fetchone()
             if existing:
                 if existing["canonical_json"] != payload:
-                    raise ValueError("formal finding ID cannot be rewritten")
+                    existing_value = json.loads(existing["canonical_json"])
+                    if finding_content_hash(existing_value) != finding.content_hash:
+                        raise ValueError("formal finding ID cannot be rewritten")
                 return
             connection.execute(
                 "INSERT INTO formal_check_attempts VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -113,11 +115,9 @@ class FormalCheckWorkspace:
             )
 
     def canonical_findings(self) -> tuple[dict[str, object], ...]:
-        import json
         return tuple(json.loads(row[0]) for row in self.connection.execute("SELECT canonical_json FROM formal_check_attempts ORDER BY finding_id"))
 
     def finding(self, finding_id: str) -> dict[str, object]:
-        import json
         row = self.connection.execute("SELECT canonical_json FROM formal_check_attempts WHERE finding_id=?", (finding_id,)).fetchone()
         if row is None:
             raise KeyError(finding_id)
