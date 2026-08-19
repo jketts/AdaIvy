@@ -1,0 +1,184 @@
+{
+  "authority": {
+    "architecture_baseline": "TECHNICAL_BLUEPRINT.md revision 0.3",
+    "phase_sequence_decision": "ADR-0012",
+    "phase4_exit_criteria_source": "TECHNICAL_BLUEPRINT.md section 19",
+    "quantum_phase": "Phase 5"
+  },
+  "baseline": {
+    "branch_created": "codex/phase-4",
+    "evidence_ancestor": "6945d8aa206d79c3dc0bd7d7a50aea662414b8e8",
+    "evidence_ancestor_confirmed": true,
+    "initial_branch": "main",
+    "initial_upstream": "origin/main",
+    "origin_main": "226b47863f565c9c5a7dc7ac9ac08d490420ecf2",
+    "phase3b_commit": "226b47863f565c9c5a7dc7ac9ac08d490420ecf2",
+    "phase3b_tag_object": "9c464ba2b93ec9c80e6fc95421f53e3b54c6ab4c",
+    "phase3b_tree": "5c300820521c0b83b7d19c644ca42f327ef21407",
+    "preflight_clean": true
+  },
+  "decision": {
+    "phase4_production_authorized": false,
+    "reason": "Phase 4 has no accepted bounded specification or passed entry gate; mandatory policy decisions remain unresolved; and independent Phase 3B runs produce different canonical hashes because elapsed timing is included in canonical finding records.",
+    "required_next_step": "Run the bounded Phase 4 entry gate and obtain human acceptance before generating an active production prompt.",
+    "status": "blocked_entry_gate_required"
+  },
+  "document_hashes": {
+    "AGENTS.md": "sha256:157b977ba1b70175373ce2ed36ae48aaa8009f5ea03fca82948f84fe4f7f2700",
+    "NOVELTY_LANDSCAPE.md": "sha256:a1cfbd8555fb4ee71905fc64181629c0b701380beee827f063fb6aed3a59d3ac",
+    "README.md": "sha256:ddce1ce947c7e0c6396ab633d1f4563cf74222e9a2a01dedf55ce13360806426",
+    "TECHNICAL_BLUEPRINT.md": "sha256:a0757a219915187923130f7ff2a612c472580cea1c69c572b0a5d20c236995f8",
+    "docs/adrs/0003-component-adoption-decisions.md": "sha256:d67442b888be097414f6f5692663be33e85990e2eb7e7bea4f87deec871dcc48",
+    "docs/adrs/0012-phase3a-research-memory-roadmap.md": "sha256:276795aa9110662ad66aad9ca2ae4f858a92fab9ff83def63af7fd69fa7cb8cd",
+    "docs/adrs/0013-phase3-canonical-memory-and-fts.md": "sha256:0b3a74b97356c4f2c2343170260053841d87602da671dd4f542f456f5121b2d9",
+    "docs/adrs/0014-phase3-source-authority-and-memory-interchange.md": "sha256:6463aa16c9febebdcb6535785cd9d84468bc63489fd32641a856751d64e56f21",
+    "docs/phase-3b/BOUNDED_IMPLEMENTATION_PROMPT_V5.md": "sha256:23dfcb9d5a79e65f4b5316aa9eb8ceba3e01e54f13fe8a668918ad1fe0b27659",
+    "reports/phase-3b-entry-gate/v5/entry-gate-v5.json": "sha256:f464489006ea29137e3a7338bff752f987b723e71d09805768023de2c0dfab88"
+  },
+  "entry_gate_conditions": {
+    "accepted_bounded_slice": false,
+    "accepted_schema_and_migration_plan": false,
+    "acquisition_policy": false,
+    "dependency_and_license_lock": false,
+    "embedding_boundary": false,
+    "exact_verification_protocol": false,
+    "frozen_fixtures_and_thresholds": false,
+    "parser_selection_and_containment": false,
+    "phase3b_cross_run_canonical_hashes_stable": false,
+    "rights_approved_corpus": false,
+    "source_applicability_and_novelty_mapping": false,
+    "threat_model": false
+  },
+  "provenance": {
+    "content_hash": "sha256:f48f770c026be574e8685b31b37680fdc3b5aa3e3be7f1d3c50b8089f47f1964",
+    "content_hash_preimage_rule": "canonical JSON with provenance.content_hash set to null",
+    "generated_at": "2026-08-19",
+    "schema_version": "adaivy.phase4-entry-gate.v1"
+  },
+  "quantum_inventory": {
+    "branch": "codex/quantum-discrimination-dossier",
+    "copied_or_merged": false,
+    "head": "b9c06d8fb42d690542cc23712c25fde8fe44ef50",
+    "merge_base_with_phase3b": "1342827a4ec9736e47cc20d32475b71100c68496",
+    "phase3b_is_ancestor": false,
+    "worktree": "/private/tmp/adaivy-quantum-discrimination",
+    "worktree_clean": true
+  },
+  "scope_guards": {
+    "adaivy_external_api_calls": 0,
+    "adaivy_model_calls": 0,
+    "commits_created": 0,
+    "external_sources_acquired": 0,
+    "phase4_production_paths_changed": 0,
+    "published": false,
+    "pull_requests_opened": 0,
+    "pushes": 0,
+    "quantum_paths_changed": 0,
+    "tags_created_or_moved": 0
+  },
+  "verification": {
+    "commands": [
+      "env -u OPENAI_API_KEY PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -W error::ResourceWarning -m unittest discover -s tests -q",
+      "env -u OPENAI_API_KEY PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m phase0_harness.cli check",
+      "env -u OPENAI_API_KEY PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli demo --output-dir <disposable-phase1>",
+      "env -u OPENAI_API_KEY PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli inspect <disposable-phase1>/manual-dossier.json",
+      "env -u OPENAI_API_KEY PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase2 report reports/phase-2 run.phase2.demo.fake.v1 --output <disposable-phase2-report>",
+      "env -u OPENAI_API_KEY PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase3a demo <disposable-phase3a-workspace> --output-dir <disposable-phase3a-output>",
+      "env -u OPENAI_API_KEY PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase3a inspect <disposable-phase3a-output>/research-memory.json",
+      "env -u OPENAI_API_KEY PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase3b demo <disposable-phase3b-workspace> --output-dir <disposable-phase3b-output>",
+      "env -u OPENAI_API_KEY PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase3b inspect <disposable-phase3b-output>/formal-checking.json",
+      "git diff --check",
+      "python3 -m tabnanny src tests"
+    ],
+    "credential_scan": {
+      "exact_credential_matches": 0,
+      "files_scanned": 202,
+      "token_pattern_matches": 0
+    },
+    "environment": {
+      "git": "git version 2.50.1 (Apple Git-155)",
+      "kernel": "Darwin 25.5.0 arm64",
+      "os": "macOS 26.5.2 build 25F84",
+      "python": "Python 3.14.4",
+      "sqlite": "3.53.3 with FTS5"
+    },
+    "phase0": {
+      "exit_code": 0,
+      "passed": 19
+    },
+    "phase1": {
+      "content_hash": "sha256:ee299e0a6d6295dd005f0292ab5b0ac89320862ed1853935ddc0da5d5b9f96fa",
+      "exit_codes": [
+        0,
+        0
+      ],
+      "round_trip_hash_preserved": true
+    },
+    "phase2": {
+      "exit_code": 0,
+      "report_sha256": "adef3d2d42999f24a877cf512f015c09316a719a163b9899faeb717b69a28b55",
+      "tracked_report_byte_identical": true
+    },
+    "phase3a": {
+      "acceptance_file_sha256_both_runs": "c0ea908f3b6f1c9fd19d83180f3e55f865238dfc4f96727048531d51bfe8c241",
+      "api_calls_both_runs": 0,
+      "canonical_export_hash_both_runs": "sha256:99891f3b0acd8493adae7976caad8d493995adf2c68522bca2e8da6845e21e4c",
+      "event_replay_hash_both_runs": "sha256:66998142ca524886b021958c54a80cfbb77002ce1035892f4c26ea54ba362e6c",
+      "exit_codes": [
+        0,
+        0
+      ],
+      "research_memory_file_sha256_both_runs": "f1b57c2cae96638a7545476722685f17eb7470c5b4d0a790ca788de8e8756272",
+      "traceable_report_sha256_both_runs": "881b2d0a85da1c9c57181c0aeb28ae6efccbc88e4a6521f6d29bd60856544ac9"
+    },
+    "phase3b": {
+      "acceptance_file_sha256": [
+        "eaaf1d49d92e968bacd30e44a77da570fd3c6d397878b1febc63b286b0c26fd0",
+        "058a843a572a243dbd8fc64a7d3311518da570a90d94722a461746ca1b63ce49"
+      ],
+      "all_nine_outcomes_passed_both_runs": true,
+      "canonical_export_hash": [
+        "sha256:bd942606af74f9b2705d98123828a760284326f23992bbf0f60fc421e5f85c25",
+        "sha256:6f34bec8c69aa99b6cf666981c7d2fd64df586d4e81b2f9e649b48067ab7f3bf"
+      ],
+      "cross_run_canonical_hashes_stable": false,
+      "difference_source": "elapsed_milliseconds changes finding content hashes, finding IDs, export ordering, and export content hash",
+      "exit_codes": [
+        0,
+        0
+      ],
+      "export_file_sha256": [
+        "b6fd0d1a7b1f116ac32018e6dc5c2fd971a4d54ecfbff5f2d864d61136e14fb4",
+        "cf69c13adc3b3857749ec271bbf7333425a6cd02cf5d8589c9c8f08e6981d5fb"
+      ],
+      "findings_equal_after_excluding_ids_hashes_and_elapsed": true,
+      "model_and_external_api_calls_both_runs": 0,
+      "restart_replay_preserved_both_runs": true,
+      "runtime_digest_both_runs": "sha256:39457cf097e89537ac90e7ddee08cbda8f7f2d49e443cc60a87d6d02d8cb896f",
+      "trust_promotions_both_runs": 0
+    },
+    "unit_tests": {
+      "exit_code": 0,
+      "passed": 173,
+      "resource_warnings_as_errors": true
+    },
+    "validation": {
+      "ast_parsed_python_files": 77,
+      "credential_scan_passed": true,
+      "diff_check_passed": true,
+      "expected_invalid_json_fixtures": [
+        "fixtures/phase3b/malformed.json"
+      ],
+      "json_paths_total": 98,
+      "json_valid": 97,
+      "mypy_configured_or_installed": false,
+      "phase0_phase2_phase3a_seals_passed": true,
+      "ruff_configured_or_installed": false,
+      "schema_documents": 11,
+      "tabnanny_passed": true,
+      "v4_artifact_files_preserved": 53,
+      "v5_conditions_passed": 29
+    }
+  },
+  "status": "blocked"
+}
