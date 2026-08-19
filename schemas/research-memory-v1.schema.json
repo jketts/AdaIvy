@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaivy.local/schemas/research-memory-v1.schema.json",
+  "title": "ResearchMemoryExport v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "source_references",
+    "source_artifacts",
+    "source_version_relations",
+    "parser_runs",
+    "normalized_documents",
+    "source_spans",
+    "markers",
+    "evidence_units",
+    "evidence_relations",
+    "retrieval_queries",
+    "retrieval_hits",
+    "evidence_packs",
+    "audit_event_ids",
+    "content_hash",
+    "created_at",
+    "created_by"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0.0"},
+    "id": {"$ref": "#/$defs/opaqueId"},
+    "source_references": {"type": "array", "items": {"$ref": "#/$defs/publicRecord"}},
+    "source_artifacts": {"type": "array", "items": {"$ref": "#/$defs/publicRecord"}},
+    "source_version_relations": {"type": "array", "items": {"$ref": "#/$defs/publicRecord"}},
+    "parser_runs": {"type": "array", "items": {"$ref": "#/$defs/publicRecord"}},
+    "normalized_documents": {"type": "array", "items": {"$ref": "#/$defs/publicRecord"}},
+    "source_spans": {"type": "array", "items": {"$ref": "#/$defs/publicRecord"}},
+    "markers": {"type": "array", "items": {"$ref": "#/$defs/publicRecord"}},
+    "evidence_units": {"type": "array", "items": {"$ref": "#/$defs/publicRecord"}},
+    "evidence_relations": {"type": "array", "items": {"$ref": "#/$defs/publicRecord"}},
+    "retrieval_queries": {"type": "array", "items": {"$ref": "#/$defs/publicRecord"}},
+    "retrieval_hits": {"type": "array", "items": {"$ref": "#/$defs/publicRecord"}},
+    "evidence_packs": {"type": "array", "items": {"$ref": "#/$defs/publicRecord"}},
+    "audit_event_ids": {"type": "array", "items": {"$ref": "#/$defs/opaqueId"}, "uniqueItems": true},
+    "content_hash": {"$ref": "#/$defs/sha256"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "created_by": {"$ref": "#/$defs/opaqueId"}
+  },
+  "$defs": {
+    "opaqueId": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._:-]*$"},
+    "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "publicRecord": {
+      "type": "object",
+      "required": ["schema_version", "id"],
+      "properties": {
+        "schema_version": {"type": "string", "const": "1.0.0"},
+        "id": {"$ref": "#/$defs/opaqueId"}
+      }
+    }
+  }
+}

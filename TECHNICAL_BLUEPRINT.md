@@ -1,7 +1,8 @@
 # Technical Blueprint: Verification-First Mathematical Research System
 
-**Document status:** Architecture baseline 0.2 — revised after public prior-art
-and failure-mode review dated 19 August 2026
+**Document status:** Architecture baseline 0.3 — Phase 3A/3B/4 sequencing
+accepted on 19 August 2026 after the revision 0.2 prior-art and failure-mode
+review. ADR-0012 preserves the superseded roadmap history.
 
 **Audience:** Implementers, mathematical researchers, evaluators, and AI-system
 operators
@@ -1778,7 +1779,44 @@ Exit criteria:
 - external artifacts import as proposals with complete backend provenance;
 - the baseline’s cost, variance, and review time are measured.
 
-### Phase 3 — Mathematical tools and early formal grounding
+The revision 0.2 roadmap placed mathematical tools in Phase 3 and literature
+memory in Phase 4. ADR-0012 supersedes that order without rewriting the
+historical record: bounded research memory is Phase 3A, formal grounding is
+Phase 3B, and broader acquisition and research automation are Phase 4.
+
+### Phase 3A — Bounded manually supplied research memory
+
+Build:
+
+- manual local ingestion of supported UTF-8 plain text through the internal,
+  versioned `plain-text-v1` parser;
+- opaque metadata-only URI records with local syntax validation only, null
+  content hashes, unresolved status, and no evidence production;
+- immutable source artifacts, versions, normalized documents, exact byte spans,
+  source-derived evidence proposals, and explicit evidence relations;
+- deterministic SQLite FTS5/BM25 retrieval, retrieval manifests, bounded
+  evidence packs, exact citation validation, and canonical interchange;
+- quarantine for malformed, prompt-injection, PDF, and other unsupported inputs;
+- project-authored synthetic primary, related, contradictory, malformed, and
+  prompt-injection acceptance fixtures.
+
+Exit criteria:
+
+- Recall@5 is 1.0 and MRR is at least 0.75 on fixed gold queries;
+- citation resolution precision is 1.0 and no quarantined evidence is retrieved;
+- ordered evidence IDs and evidence-pack hashes are identical over three
+  repeated runs and one restart (raw BM25 floats need not compare equal across
+  platforms);
+- provenance survives canonical export/import and durable replay;
+- all Phase 0–2 checks continue to pass and Phase 3A makes zero network, model,
+  or external API calls.
+
+Phase 3A contains no crawler, embeddings, embedding-provider port, PDF parser,
+formal tools, proof assistant, quantum convergence work, or Phase 4 automation.
+The quantum-state-discrimination paper may be represented as metadata only
+until licensed local inputs are available.
+
+### Phase 3B — Mathematical tools and early formal grounding
 
 Build:
 
@@ -1798,15 +1836,16 @@ Exit criteria:
   unapproved;
 - resource and network limits pass adversarial tests.
 
-### Phase 4 — Literature, applicability, and novelty
+### Phase 4 — Broader acquisition and research automation
 
 Build:
 
-- source acquisition and immutable archive;
-- math-aware parsing and hybrid retrieval;
+- licensed source acquisition, crawling, and immutable archives;
+- richer math-aware/PDF parsing, embeddings, and hybrid retrieval;
 - evidence cards and source-applicability review;
 - terminology/notation expansion, citation traversal, and novelty assessment;
-- source-injection and misquotation evaluations.
+- source-injection and misquotation evaluations;
+- broader research automation and the deferred embedding-provider boundary.
 
 Exit criteria:
 

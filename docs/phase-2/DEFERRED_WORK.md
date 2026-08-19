@@ -27,6 +27,11 @@ not a backlog authorization.
 
 ## Phase 3 and later
 
+This is the immutable Phase 2 closeout view. ADR-0012 subsequently sequenced a
+bounded manual research-memory slice as Phase 3A, formal tooling as Phase 3B,
+and broader acquisition/crawling/embeddings as Phase 4. That accepted sequencing
+does not retroactively change what Phase 2 deferred.
+
 - Web UI, HTTP API, crawler, literature retrieval, embeddings, immutable source
   ingestion, formula search, and novelty search.
 - Symbolic, numerical, interval, SMT, Lean, Why3, CAS, PaperQA2, Albilich,

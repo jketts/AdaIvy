@@ -6,17 +6,20 @@ current ADRs before changing architecture or phase scope.
 
 ## Current phase
 
-Phase 2 is the durable workspace and one bounded baseline model loop. Allowed
-deliverables are persistence/artifact/job adapters behind ports, versioned
-migrations, a provider-neutral model gateway with deterministic and opt-in
-live adapters, one proposer/verifier workflow, one filesystem/process
-interchange adapter, minimal CLI extensions, and durable replay evidence.
+Phase 3A is the completed bounded, manually supplied research-memory vertical
+slice. Stop before Phase 3B unless a later explicit request authorizes it.
+Allowed deliverables are immutable local source/provenance records, opaque
+metadata-only URI records, the internal `plain-text-v1` UTF-8 parser,
+quarantine records, exact source spans, source-derived evidence proposals,
+deterministic SQLite FTS5/BM25 retrieval, bounded evidence packs, citation
+validation, canonical interchange, CLI/reporting, and acceptance evidence.
 
-The Phase 1 domain and trust-policy semantics remain the authority. Do not add
-a web UI or HTTP API, crawler or retrieval stack, symbolic/formal/numerical
-tool integration, multi-agent or evolutionary search, automated novelty or
-significance assessment, PostgreSQL without measured need and an ADR, Phase 3
-features, or the quantum convergence implementation in Phase 2.
+The Phase 1 domain and trust-policy semantics and sealed Phase 2 evidence remain
+authoritative. Do not add a web UI or HTTP API, crawler, network acquisition,
+embeddings or an embedding-provider port, PDF parsing, model or external API
+calls, symbolic/formal/numerical tools, multi-agent or evolutionary search,
+automated novelty or significance assessment, Phase 3B/4 features, or the
+quantum convergence implementation.
 
 ## Engineering rules
 
@@ -24,8 +27,7 @@ features, or the quantum convergence implementation in Phase 2.
 - Compare every component with the file-based baseline using the same fixture.
 - Never turn retrieval, experiments, or model agreement into proof status.
 - Preserve failed attempts and missing-tool results in machine-readable output.
-- Keep Phase 0, Phase 1, and the deterministic Phase 2 path runnable without
-  network access.
+- Keep Phase 0 through Phase 3A runnable without network access.
 - Pin direct runtime/development dependencies and record licenses before adding
   them. Prefer the standard library for the harness.
 - Record any necessary departure from the blueprint in `docs/adrs/`; do not
@@ -36,9 +38,9 @@ features, or the quantum convergence implementation in Phase 2.
 
 ## Checks
 
-Run the repository check command documented in `README.md`. Phase 2 is not
-complete unless Phase 0 and Phase 1 compatibility checks plus Phase 2
-migration, recovery, budget, model-boundary, context-isolation,
-external-package, CLI, replay, and report-consistency tests pass. A configured
-live-provider demonstration is an explicit acceptance gate; when credentials
-are absent, record that gate as blocked rather than fabricating success.
+Run the repository check command documented in `README.md`. Phase 3A is not
+complete unless every Phase 0–2 test and validator still passes and Phase 3A
+schema, migration, ingestion, quarantine, provenance, retrieval, citation,
+interchange, restart/replay, metrics, report-consistency, and zero-network/API
+checks pass. Acceptance requires the frozen ADR-0013 retrieval thresholds over
+three repeats and one restart.

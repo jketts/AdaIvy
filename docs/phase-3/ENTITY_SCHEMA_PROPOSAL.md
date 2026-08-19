@@ -1,6 +1,6 @@
-# Proposed Phase 3 Entities and Interchange Schemas
+# Phase 3A Entities and Interchange Schemas
 
-Status: design proposal only  
+Status: accepted for bounded implementation
 Date: 2026-08-19
 
 ## Compatibility rules
@@ -41,12 +41,14 @@ SourceReference:
     evidence_uri: string | null
     reviewed_by: ActorId | null
   acquisition_status: metadata_only | bytes_available | rejected
+  content_hash: sha256 | null
   created_at: datetime
   created_by: ActorId
 ```
 
-`metadata_only` records are quarantined references and cannot produce spans or
-evidence units.
+`metadata_only` records are unresolved references with `content_hash: null` and
+cannot produce source artifacts, spans, or evidence units. Their URI is an
+opaque locator subject only to local syntax validation; it is never resolved.
 
 ```yaml
 SourceArtifact:
@@ -55,8 +57,8 @@ SourceArtifact:
   source_reference_id: SourceReferenceId
   artifact_hash: sha256
   byte_length: integer
-  declared_media_type: string
-  detected_media_type: string
+  declared_media_type: text/plain
+  detected_media_type: text/plain | unsupported
   acquisition_method: local_file | operator_supplied_bytes
   acquired_at: datetime
   acquisition_adapter: string
@@ -91,8 +93,8 @@ ParserRunRecord:
   schema_version: "1.0.0"
   id: ParserRunId
   source_artifact_id: SourceArtifactId
-  parser_name: string
-  parser_version: string
+  parser_name: plain-text-v1
+  parser_version: "1.0.0"
   parser_configuration_hash: sha256
   dependency_environment_hash: sha256
   input_hash: sha256
@@ -135,13 +137,13 @@ SourceSpan:
   page_number: integer | null     # one-based human page locator
   section_path: [string]
   original_locator:
-    locator_kind: text_bytes | page_region | parser_tokens | unknown
+    locator_kind: text_bytes
     page_number: integer | null
-    region_microunits: [integer, integer, integer, integer] | null
+    region_microunits: null
     original_start: integer | null
     original_end: integer | null
-    parser_token_start: integer | null
-    parser_token_end: integer | null
+    parser_token_start: null
+    parser_token_end: null
   exact_text_hash: sha256
   original_quote_hash: sha256 | null
   content_hash: sha256
@@ -339,7 +341,6 @@ ResearchMemoryExportRepository
 DocumentParser
 RetrievalIndex
 EvidencePackBuilder
-EmbeddingProvider (optional)
 ```
 
 All append operations are idempotent by canonical content hash and command

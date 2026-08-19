@@ -1,4 +1,4 @@
-# Proposed Phase 3A Deferred Work
+# Phase 3A Deferred Work
 
 This list is a stop line, not authorization.
 
@@ -10,19 +10,23 @@ This list is a stop line, not authorization.
   retrieval, counterexample certification, and formal warrants;
 - the original blueprint Phase 3 exit criteria for tools/formal grounding.
 
-## Acquisition and retrieval beyond the smallest slice
+## Phase 4 acquisition and research automation
 
 - autonomous crawler, recursive URL fetching, DOI/arXiv/publisher API clients,
   scheduled refresh, robots/rate-limit operations, and authenticated sources;
-- OCR, scanned-document support, broad HTML/EPUB/Office parsing, image/figure
-  understanding, table semantics, and robust mathematical formula parsing;
-- vector database, required embeddings, semantic/formula/citation-graph hybrid
-  retrieval, learned reranking, and cross-encoder services;
+- PDF parsing, OCR, scanned-document support, broad HTML/EPUB/Office parsing,
+  image/figure understanding, table semantics, and robust mathematical formula
+  parsing;
+- P3-024, every embedding-provider port/dependency/configuration/API call,
+  vector databases, semantic/formula/citation-graph hybrid retrieval, learned
+  reranking, and cross-encoder services;
 - PaperQA2 or another literature-agent integration;
 - automated source applicability, novelty, significance, or contribution
   assessment;
 - corpus-wide entity resolution, author disambiguation, retraction monitoring,
   and publisher metadata reconciliation.
+- real academic-corpus retrieval acceptance using the quantum paper or a related
+  paper, until licensed local inputs are available.
 
 ## Product and operations
 

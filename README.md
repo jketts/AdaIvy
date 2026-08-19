@@ -12,11 +12,13 @@ warrant.
 
 > Status: Phase 2 durable workspace and bounded baseline model loop implemented;
 > the two-call live-provider acceptance gate passed on the proposal-only v3 run.
-> Phase 3 has not begun.
+> The bounded Phase 3A research-memory slice is implemented with offline
+> acceptance evidence; Phase 3B and Phase 4 have not begun.
 > See
 > [TECHNICAL_BLUEPRINT.md](./TECHNICAL_BLUEPRINT.md) for the build contract and
 > [NOVELTY_LANDSCAPE.md](./NOVELTY_LANDSCAPE.md) for the prior-art review that
-> informed architecture revision 0.2.
+> informed architecture revision 0.2. ADR-0012 records the accepted revision
+> 0.3 delivery sequence while preserving the superseded roadmap history.
 
 ## Why this exists
 
@@ -171,13 +173,18 @@ leak into the core claim, evidence, workflow, or verification abstractions.
    auditable report.
 3. **Durable baseline loop:** persistent state, jobs, one proposer, one isolated
    verifier, and one external research-backend adapter.
-4. **Tools and early formal grounding:** symbolic/exact/interval/SMT tools, a
-   minimal proof-assistant adapter, meaning tests, and counterexample workflows.
-5. **Literature and novelty:** immutable sources, math-aware retrieval,
-   applicability review, and reproducible prior-art search.
-6. **Adaptive search and benchmark:** branching and more complex agent regimes
+4. **Phase 3A — bounded research memory:** manual local UTF-8 text ingestion,
+   opaque metadata-only URI records, immutable source spans, deterministic
+   SQLite FTS5/BM25 retrieval, evidence packs, and citation validation.
+5. **Phase 3B — tools and formal grounding:** symbolic/exact/interval/SMT tools,
+   a minimal proof-assistant adapter, meaning tests, and counterexample
+   workflows.
+6. **Phase 4 — broader research acquisition:** crawling, licensed corpus
+   ingestion, richer parsing, embeddings, hybrid retrieval, and research
+   automation.
+7. **Adaptive search and benchmark:** branching and more complex agent regimes
    only where they beat the simple baseline.
-7. **Confirmatory evaluation:** held-out tests, contribution reporting,
+8. **Confirmatory evaluation:** held-out tests, contribution reporting,
    clean-room replay, and release hardening.
 
 Each phase has concrete exit criteria in the technical blueprint. Do not begin
@@ -203,6 +210,8 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m phase0_harness.cli check
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli demo --output-dir reports/phase-1
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli inspect reports/phase-1/manual-dossier.json
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase2 report reports/phase-2 run.phase2.demo.fake.v1 --output reports/phase-2/traceable-report.md
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase3a demo reports/phase-3a/acceptance-v1 --output-dir reports/phase-3a/acceptance-v1
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase3a inspect reports/phase-3a/acceptance-v1/research-memory.json
 ```
 
 Optional integrations are never installed by the check. Configure an Albilich
@@ -256,6 +265,27 @@ The minimal durable CLI is available below `math_research.cli phase2`; use
 review, export, timeline, and report commands. Phase 2 intentionally contains
 no retrieval, formal or symbolic tool, web/API surface, multi-agent search,
 quantum solver, or automated novelty/significance assessment.
+
+## Phase 3A bounded research memory
+
+Phase 3A adds only a manually supplied, local research-memory vertical slice.
+Supported content is UTF-8 plain text parsed by the internal, versioned
+`plain-text-v1` parser. Immutable source bytes, source versions, normalized
+documents, exact byte spans, source-derived evidence proposals, deterministic
+FTS5/BM25 retrieval manifests, bounded evidence packs, and citation validation
+remain separate from model-proposed claims and Phase 1 trust warrants.
+
+Metadata-only URI records are opaque user-supplied locators. They receive local
+syntax validation only, have no content hash, remain unresolved, and cannot
+produce evidence. Phase 3A performs no DNS, HTTP, redirect, availability, or
+content check. PDFs and other unsupported media are quarantined without
+extraction. The quantum paper is metadata-only until licensed local content is
+available; acceptance uses project-authored synthetic sources.
+
+There are no network, model, or external API calls, crawler, embeddings,
+embedding-provider port, PDF parser, formal-tool integration, or Phase 3B/4
+features in this phase. Retrieval acceptance and the roadmap transition are
+frozen in ADR-0013, ADR-0014, and `docs/phase-3/`.
 
 ## Suggested implementation defaults
 

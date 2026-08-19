@@ -1,6 +1,6 @@
-# ADR-0012: Re-sequence research memory as proposed Phase 3A
+# ADR-0012: Re-sequence research memory as Phase 3A
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-08-19
 - **Blueprint requirement:** §§7 and 19; explicit roadmap governance
 - **Decision owners:** researcher and repository maintainer
@@ -28,35 +28,38 @@ tool/model work using the accepted Phase 2 durability and proposal boundaries.
 | Name memory Phase 3A and tools Phase 3B | Bounded design and existing modular ports | Preserves both scopes and makes ordering explicit | Documentation/version complexity | Human approval and coordinated roadmap update |
 | Combine memory and tools in one Phase 3 | Blueprint sections 7 and 9 | Broader capability | Too large; dependencies and acceptance signals confound | Violates bounded-slice principle |
 
-## Proposed decision
+## Decision
 
-Designate the bounded research-memory slice as Phase 3A. Retain the existing
-tool/formal-grounding scope unchanged as Phase 3B. Phase 3A may supply evidence
-packs to the existing scripted proposer/verifier loop, but no live call or tool
-integration is required.
+Use this sequence:
 
-After approval, update README, blueprint roadmap, deferred-work records, and
-`AGENTS.md` together in a dedicated architecture commit before implementation.
-Until then, those files remain authoritative and this ADR is only a proposal.
+- **Phase 3A:** bounded, manually supplied research-memory vertical slice;
+- **Phase 3B:** formal-tool and proof-assistant grounding; and
+- **Phase 4:** broader acquisition, crawling, embeddings, and research
+  automation.
+
+Phase 3A may supply evidence packs to the existing scripted proposer/verifier
+loop, but no live call or tool integration is required. Update README, blueprint
+roadmap, deferred-work records, and `AGENTS.md` together before Phase 3A
+implementation so the accepted sequence is not represented inconsistently.
 
 ## Consequences
 
 Source provenance and deterministic retrieval become available earlier. Lean,
 Why3, CAS, interval, optimization, SMT, meaning tests, and certified
-counterexamples are delayed in sequence but not rejected. Automated literature
-acquisition and novelty assessment remain later work. Phase numbers must use the
-3A/3B labels consistently to avoid misleading release claims.
+counterexamples remain Phase 3B. Broader acquisition, crawling, embeddings,
+literature automation, and research automation remain Phase 4. Phase numbers
+must use the 3A/3B labels consistently to avoid misleading release claims.
 
 ## Blueprint deviation
 
-Proposed deviation: swap a bounded subset of existing Phase 4 ahead of existing
-Phase 3 without combining their implementations. Necessity is the explicit
-operator-selected vertical slice. Revisit if source-memory work cannot be
-completed without the deferred tool stack or if the researcher prefers the
-original ordering.
+Accepted deviation: move a bounded, manually supplied research-memory subset
+ahead of the existing formal-tool work without combining their implementations.
+Necessity is the explicit researcher-approved vertical slice. Revisit if
+source-memory work cannot be completed without the deferred tool stack.
 
 ## Validation and revisit trigger
 
-Approve only with a frozen Phase 3A requirement matrix, corpus-rights decision,
-dependency spike, and continued Phase 0–2 compatibility. Revisit before any
-crawler, automated novelty workflow, formal tool, or Phase 3B implementation.
+Keep the decision only with a frozen Phase 3A requirement matrix, explicit
+corpus-rights treatment, a recorded parser/dependency decision, and continued
+Phase 0–2 compatibility. Revisit before Phase 3B implementation or any Phase 4
+crawler, embedding, or research-automation work.

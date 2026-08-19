@@ -1,41 +1,35 @@
-# Phase 3A Decisions Requiring Human Approval
+# Phase 3A Decision Record
 
-Status: unresolved  
+Status: entry gate resolved
 Date: 2026-08-19
 
-1. Approve ADR-0012's roadmap resequencing, reject it, or retain tools/formal
-   grounding as Phase 3 and name research memory Phase 4.
-2. Decide whether the old tool phase becomes Phase 3B or retains another public
-   version number; update the blueprint, README, deferred lists, and `AGENTS.md`
-   together only after approval.
-3. Choose and publish a repository software/documentation license, or explicitly
-   retain an all-rights-reserved private-repository policy.
-4. Verify and approve redistribution/context rights for the 2002 quantum paper.
-5. Select the related gold source and verify its exact version and rights.
-6. Select the PDF parser after the common-fixture spike; approve every direct
-   and transitive license and a fully pinned lock.
-7. Decide whether a deterministic normalized-text companion supplied by a human
-   is acceptable when PDF extraction cannot preserve equations/coordinates.
-8. Approve the UTF-8 byte/page-region coordinate convention and expected
-   behavior when a parser cannot supply original coordinates.
-9. Freeze the human relevance judgments and numerical retrieval thresholds
-   before implementation results are inspected.
-10. Approve exact source-diversity, deduplication, contradiction, rights, and
-    prompt-injection pack policies.
-11. Decide which parser-derived structures can be accepted deterministically and
-    which require explicit human review.
-12. Decide whether source-explicit citation edges can be marked accepted as
-    faithful extraction without suggesting mathematical applicability.
-13. Choose separate `ResearchMemoryExport` v1 versus a later ResearchDossier v2.
-    This proposal recommends the separate export for Phase 3A.
-14. Define copyright/retention rules for exact spans in model prompts, logs,
-    reports, and exported packs before any restricted source is used.
-15. Decide whether Phase 3A includes any live model demonstration. It is not
-    required by this design and would need separate authorization and budget.
-16. Decide how strictly SQLite/tokenizer versions must match for cross-machine
-    replay and what constitutes an acceptable explicit blocker.
-17. Define a human proposal-review/disposition workflow if live-test or Phase 3A
-    proposals are ever to be evaluated. Phase 2 intentionally lacks one.
+## Resolved Phase 3A decisions
 
-No unresolved decision authorizes a permissive default. Rights, trust,
-compatibility, and engine-version ambiguity fail closed.
+1. ADR-0012 through ADR-0014 are accepted.
+2. Phase sequence is Phase 3A research memory, Phase 3B formal tools, and Phase 4
+   broader acquisition/crawling/embeddings/research automation.
+3. URI metadata is opaque, local-only, unresolved, null-hash, and non-evidentiary.
+4. Phase 3A contains no embeddings or embedding-provider port.
+5. The only parser is internal `plain-text-v1`; PDFs/unsupported media are
+   quarantined without extraction.
+6. The quantum paper is metadata-only; its PDF/text is not committed.
+7. Infrastructure acceptance uses five project-authored synthetic fixtures.
+8. Retrieval thresholds are Recall@5 1.0, MRR at least 0.75, citation precision
+   1.0, zero quarantined hits, and identical ordered IDs/pack hashes over three
+   runs and one restart. Raw BM25 float equality is not cross-platform.
+9. Research memory uses a separate `ResearchMemoryExport` v1; ResearchDossier v1
+   remains unchanged.
+10. No model/external API call is part of Phase 3A.
+
+## Decisions deferred beyond Phase 3A
+
+- repository/publication licensing and real-paper redistribution rights;
+- real related academic source selection and licensed academic-corpus replay;
+- PDF/OCR parser selection;
+- embedding/hybrid retrieval and its evaluation;
+- human promotion of model/parser proposals;
+- multi-user retention, legal hold, and restricted-source context policy;
+- Phase 3B formal-tool selection.
+
+Deferred ambiguity fails closed and does not block the synthetic, private,
+plain-text Phase 3A acceptance slice.

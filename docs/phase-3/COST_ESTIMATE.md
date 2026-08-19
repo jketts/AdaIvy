@@ -1,14 +1,13 @@
-# Proposed Phase 3A Cost and Storage Budget
+# Phase 3A Cost and Storage Budget
 
-Status: design estimate only  
+Status: accepted budget
 Date: 2026-08-19
 
 ## Acceptance baseline
 
-The required Phase 3A acceptance path uses manual files, local SQLite FTS5, the
-local CAS, and scripted model fixtures. Required model/API cost is therefore
-exactly `$0.00`. No crawler, embedding provider, remote parser, or live model is
-needed.
+The Phase 3A acceptance path uses manual files, local SQLite FTS5, the local CAS,
+and static citation-value fixtures. Model/external API cost is exactly `$0.00`.
+No crawler, embedding provider, PDF/remote parser, or model call is permitted.
 
 Local monetary storage cost is `$0.00` incremental on the existing workstation;
 capacity is still bounded:
@@ -30,9 +29,9 @@ No cloud/object-storage price is estimated because no provider, region,
 retention class, or egress policy is selected. Any later cloud estimate requires
 a versioned non-secret pricing snapshot analogous to ADR-0008.
 
-## Optional model exercise
+## Future model exercise
 
-An optional, separately authorized proposer/verifier exercise may reuse the
+Any future, separately authorized proposer/verifier exercise may reuse the
 existing pinned snapshot
 `pricing.openai.gpt5-mini.2026-08-19.v1` only while its configured model matches.
 At the existing reservation of 10,000 input and 2,048 output tokens per call,
@@ -42,10 +41,9 @@ two calls reserve:
 - 4,096 output tokens at 2,000,000 micro-USD per million: 8,192 micro-USD;
 - total estimate: 13,192 micro-USD (`$0.013192`).
 
-This is a pinned-snapshot estimate, not a bill. API-reported usage and estimated
-cost remain separate, billed cost remains unknown unless independently supplied,
-and no price may be fetched during a run. Larger evidence packs require a new
-explicit run configuration and budget rather than silent expansion.
+This historical calculation is not a Phase 3A authorization. It is a
+pinned-snapshot estimate, not a bill. Any later model exercise belongs to a
+separately authorized phase and requires a new explicit run configuration.
 
-Embeddings have no approved provider, model, dimensions, price, or acceptance
-role. Their budget is therefore `not approved`, not zero-cost.
+Embeddings and their provider port are deferred to Phase 4. Their budget is
+`not approved`, not zero-cost.

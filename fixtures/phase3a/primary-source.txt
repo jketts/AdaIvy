@@ -1,0 +1,11 @@
+[SECTION:Core provenance]
+[DEFINITION:provenance] Immutable provenance links every source-derived evidence unit to exact UTF-8 byte spans.
+[THEOREM:deterministic-retrieval] Deterministic retrieval preserves ordered evidence identifiers across restart.
+[ASSUMPTION:local-input] The operator supplies a reviewed local plain-text source.
+[EQUATION:identity] source_hash = SHA256(original_bytes)
+[PROOF:replay-step] Rebuilding the derived index from canonical records preserves the ordered identifiers.
+
+[SECTION:Audit surface]
+[TABLE:policy-table] Quarantined inputs produce zero evidence units and remain outside retrieval.
+[REFERENCE:memory-contract] AdaIvy Phase 3A canonical research-memory contract.
+[RESULT:repeat-run] Three repeated retrieval runs and one restart return the same ordered identifiers.

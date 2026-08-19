@@ -39,11 +39,16 @@ def main(argv: list[str] | None = None) -> int:
     demo.add_argument("--output-dir", type=Path, required=True)
     phase2 = subparsers.add_parser("phase2", help="Phase 2 durable workspace commands")
     phase2.add_argument("phase2_args", nargs=argparse.REMAINDER)
+    phase3a = subparsers.add_parser("phase3a", help="bounded Phase 3A research-memory commands")
+    phase3a.add_argument("phase3a_args", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
 
     if args.command == "phase2":
         from .phase2_cli import main as phase2_main
         return phase2_main(args.phase2_args)
+    if args.command == "phase3a":
+        from .phase3a_cli import main as phase3a_main
+        return phase3a_main(args.phase3a_args)
 
     if args.command == "create":
         dossier = InMemoryTrustStore().append_dossier(build_known_valid_theorem_dossier())

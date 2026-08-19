@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0.0",
+  "supplied_uri": "arxiv:quant-ph/0201109",
+  "title": "Finding optimal strategies for minimum-error quantum-state discrimination",
+  "authors": ["M. Jezek", "J. Rehacek", "J. Fiurasek"],
+  "publication_metadata": {
+    "identifier": "arXiv:quant-ph/0201109",
+    "fixture_role": "metadata-only generic future demonstration anchor"
+  },
+  "license_metadata": {
+    "license_expression": null,
+    "copyright_notice": null,
+    "usage_rights": ["metadata_recording"],
+    "redistribution_status": "unresolved",
+    "evidence_uri": null,
+    "reviewed_by": null
+  },
+  "acquisition_status": "metadata_only",
+  "content_hash": null
+}

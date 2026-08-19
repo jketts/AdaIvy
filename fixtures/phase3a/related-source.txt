@@ -1,0 +1,4 @@
+[SECTION:Citation discipline]
+[PROPOSITION:pack-membership] Exact citation pack membership requires every cited evidence identifier to occur in the supplied evidence pack.
+[PASSAGE:applicability-boundary] Citation identity does not establish mathematical applicability or create an epistemic warrant.
+[DEFINITION:source-derived] Source-derived evidence preserves original byte coordinates and remains distinct from a model-proposed claim.

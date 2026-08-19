@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0.0",
+  "fixture_license": {
+    "license_expression": "LicenseRef-AdaIvy-Synthetic-Fixture",
+    "copyright_notice": "Project-authored synthetic acceptance fixtures; 2026 AdaIvy contributors",
+    "usage_rights": [
+      "private_evaluation",
+      "local_retrieval",
+      "evidence_pack"
+    ],
+    "redistribution_status": "allowed"
+  },
+  "sources": [
+    {"class": "primary", "path": "primary-source.txt", "declared_media_type": "text/plain", "expected_state": "eligible_for_parsing"},
+    {"class": "related", "path": "related-source.txt", "declared_media_type": "text/plain", "expected_state": "eligible_for_parsing"},
+    {"class": "contradictory", "path": "contradictory-source.txt", "declared_media_type": "text/plain", "expected_state": "eligible_for_parsing"},
+    {"class": "malformed", "path": "malformed-source.pdf", "declared_media_type": "application/pdf", "expected_state": "quarantined"},
+    {"class": "prompt_injection", "path": "prompt-injection-source.txt", "declared_media_type": "text/plain", "expected_state": "quarantined"}
+  ],
+  "queries": [
+    {"id": "gold.provenance", "query": "immutable provenance exact UTF-8 byte spans", "relevant_label": "provenance"},
+    {"id": "gold.retrieval", "query": "deterministic retrieval ordered evidence identifiers restart", "relevant_label": "deterministic-retrieval"},
+    {"id": "gold.citation", "query": "exact citation pack membership cited evidence identifier", "relevant_label": "pack-membership"},
+    {"id": "gold.contradiction", "query": "contradictory mutable source records silently overwritten", "relevant_label": "mutable-overwrite"}
+  ],
+  "thresholds": {
+    "recall_at_5": 1.0,
+    "mrr_minimum": 0.75,
+    "citation_resolution_precision": 1.0,
+    "quarantined_evidence_retrieved": 0,
+    "repeated_runs": 3,
+    "restart_runs": 1
+  }
+}

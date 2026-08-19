@@ -1,0 +1,3 @@
+[SECTION:Contradictory policy]
+[PROPOSITION:mutable-overwrite] A contradictory policy says mutable source records may be silently overwritten after retrieval.
+[PASSAGE:contradiction-note] This source conflicts with the immutable provenance rule and is retained rather than reconciled away.

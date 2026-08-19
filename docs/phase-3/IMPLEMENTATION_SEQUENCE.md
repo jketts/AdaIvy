@@ -1,21 +1,24 @@
-# Proposed Phase 3A Implementation Sequence
+# Phase 3A Implementation Sequence
 
-Status: design proposal only  
+Status: Phase 3A sequence completed; stop line active
 Date: 2026-08-19
 
-This is a bounded sequence, not implementation authorization.
+This is the authorized bounded sequence.
 
 ## Entry gates
 
 Before code changes:
 
-1. approve or reject ADR-0012 through ADR-0014;
-2. decide the repository license and corpus redistribution policy;
-3. identify the related gold source and record rights for both papers;
-4. freeze the corpus manifest, retrieval judgments, acceptance thresholds, and
-   storage limits;
-5. select and pin one parser after a license/export/coordinate spike;
-6. update `AGENTS.md` from Phase 2 only after the roadmap decision; and
+1. record ADR-0012 through ADR-0014 as accepted;
+2. retain the repository and real-paper redistribution status as unresolved and
+   commit no unlicensed corpus bytes;
+3. freeze the five project-authored synthetic fixtures and quantum metadata-only
+   record;
+4. freeze Recall@5, MRR, citation precision, quarantine, repeated-order, and
+   pack-hash thresholds from the accepted matrix;
+5. use only the dependency-free internal `plain-text-v1` parser;
+6. update `AGENTS.md`, README, blueprint, and Phase 3A documents to the accepted
+   roadmap; and
 7. record complete hashes of Phase 2 protected evidence and rerun all 101 tests
    plus 19 Phase 0 checks.
 
@@ -44,23 +47,25 @@ blob, and replay tests pass without changing accepted Phase 2 databases.
 
 ### 3. Manual source acquisition
 
-Implement local regular-file import and metadata-only URI import. Hash before
-parse, validate media type and rights metadata, store bytes once in CAS, append
-source/version events, and quarantine by default where facts are unresolved.
+Implement local regular-file import and opaque metadata-only URI import. Perform
+local syntax validation without DNS, HTTP, redirects, availability, or content
+checks. Hash local bytes before parsing, validate media type and rights metadata,
+store supported bytes once in CAS, append source/version events, and quarantine
+unsupported/malformed input. Metadata-only records retain null content hashes
+and cannot produce evidence.
 
 Exit: identical bytes are idempotent; changed bytes create an explicit version;
 unsafe inputs cannot escape the selected boundary.
 
 ### 4. One normalization adapter
 
-Select the smallest parser that passes the coordinate/export spike. Run it in a
-bounded no-network process, retain process provenance, and emit normalized UTF-8
-text, structure markers, location maps, warnings, and a deterministic hash.
-Support plain UTF-8 text and exactly one approved PDF path; unsupported media is
-quarantined.
+Use the internal deterministic `plain-text-v1` parser and emit normalized UTF-8
+text, structure markers, byte-location maps, warnings, and a deterministic hash.
+Support valid UTF-8 `text/plain` only; PDFs, invalid UTF-8, and all other media
+are quarantined without extraction.
 
-Exit: gold spans round-trip; malformed PDF/text cannot import evidence; parser
-version changes create a distinct derived artifact.
+Exit: synthetic gold spans round-trip; malformed/unsupported text cannot import
+evidence; parser-version changes create a distinct derived artifact.
 
 ### 5. Typed evidence and relation import
 
@@ -110,7 +115,8 @@ honest report and no quantum convergence claim.
 
 ## Stop line
 
-Stop before embeddings, remote fetching/crawling, novelty/significance
-automation, PaperQA2, vector databases, formal/numeric/symbolic tools, the
-pre-existing Phase 3B tool roadmap, multi-agent search, web/API surfaces, or a
-quantum solver. Any such change needs a new bounded plan and ADR where material.
+Stop before embeddings or an embedding port, PDF parsing, remote
+fetching/crawling, novelty/significance automation, PaperQA2, vector databases,
+formal/numeric/symbolic tools, the Phase 3B tool roadmap, multi-agent search,
+web/API surfaces, the real academic-corpus demonstration, or a quantum solver.
+Any such change needs a new bounded plan and ADR where material.

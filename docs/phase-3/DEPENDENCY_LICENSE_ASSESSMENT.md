@@ -1,9 +1,9 @@
-# Proposed Phase 3A Dependency and Licensing Assessment
+# Phase 3A Dependency and Licensing Assessment
 
-Status: design proposal only  
+Status: implemented for bounded Phase 3A
 Date: 2026-08-19
 
-No dependency is added by this design task.
+No dependency is added by Phase 3A.
 
 ## Baseline dependencies
 
@@ -12,40 +12,27 @@ No dependency is added by this design task.
 | Python standard library | Domain records, hashing, JSON, files, jobs | Existing Phase 0–2 offline baseline | Retain |
 | `sqlite3` / SQLite FTS5 | Durable adapter and derived BM25 index | Current `.venv` Python reports SQLite 3.53.3 and FTS5 enabled | Wrap behind ports; record runtime/version/compile option |
 | Existing CAS and SQLite workspace | Source/derived artifacts, events, jobs, budgets | Accepted Phase 2 implementation and tests | Extend through new ports/migration; never alter accepted v2/v3 DBs |
-| OpenAI SDK 3.3.0 | Optional later model exercise only | Existing Apache-2.0 Phase 2 pin and wheel hash | Not required for Phase 3A acceptance; no call in baseline |
+| OpenAI SDK 3.3.0 | Existing Phase 2 adapter only | Existing Apache-2.0 Phase 2 pin and wheel hash | Phase 3A does not import or call it |
 
 SQLite is public-domain software and Python is distributed under PSF-compatible
 terms, but a release inventory must record the actual runtime distribution and
 not infer rights for bundled operating-system components.
 
-## Parser candidates requiring a bounded spike
+## Parser decision
 
-| Candidate | Likely license requiring primary-source verification | Strength | Risk/decision |
-|---|---|---|---|
-| `pypdf` | BSD-3-Clause | Small pure-Python page text extraction | Candidate for smallest PDF path; coordinate fidelity/equations may fail |
-| `pdfminer.six` | MIT | Character/layout-oriented extraction | Candidate if stable location mapping materially beats `pypdf`; larger surface |
-| `pdfplumber` | MIT plus transitive dependencies | Higher-level page/layout access | Evaluate only if lower-level options cannot meet span tests |
-| GROBID | Apache-2.0 plus JVM/runtime dependencies | Strong scholarly structure/metadata | Defer unless the small parser spike fails; operationally too large by default |
-| PyMuPDF | AGPL/commercial licensing model | Strong rendering/layout | Do not adopt without explicit legal decision and distribution analysis |
-
-These license labels are design-review recollections, not a completed license
-inventory. Before adoption, record the exact version, official license file,
-upstream URL, artifact hash, transitive lock, owner, reason, and removal path as
-required by the Phase 0 dependency policy. A package is rejected if its current
-primary-source license or transitive obligations are incompatible.
-
-The preferred experiment compares the standard-library file/text baseline,
-`pypdf`, and one layout-oriented candidate on the same four-source gold corpus.
-Select the smallest option that preserves stable page/span mappings and explicit
-warnings. Parser output remains untrusted regardless of license or score.
+Phase 3A uses the internal standard-library parser `plain-text-v1`, version
+`1.0.0`, and accepts valid UTF-8 `text/plain` only. PDFs and every unsupported
+media type are quarantined without extraction. PDF/OCR/parser packages and
+their license evaluations are deferred to Phase 4. Parser output remains
+derived and cannot award mathematical trust.
 
 ## Gold-corpus rights
 
 The repository does not currently contain a license or a source-rights
 manifest. The redistribution license for the paper identified as
 arXiv:quant-ph/0201109 is not recorded locally. ArXiv availability does not by
-itself establish permission to redistribute the paper bytes. The related source
-has not yet been selected.
+itself establish permission to redistribute the paper bytes. The real related
+academic source has not yet been selected.
 
 Before committing source bytes:
 
@@ -57,13 +44,18 @@ Before committing source bytes:
    permitted separately; and
 5. obtain human approval.
 
-If redistribution remains unresolved, keep paper bytes outside Git, import them
-manually into the local CAS, and version only a metadata/expected-hash manifest.
-Offline acceptance is then conditional on operator-provided licensed bytes and
-must report a blocker when they are absent.
+While redistribution remains unresolved, keep paper bytes outside Git and
+version only a metadata-only record whose `content_hash` is null. Phase 3A does
+not require or parse operator-provided academic PDFs; that demonstration is
+deferred to Phase 4.
 
-Repository-authored malformed, contradictory, and prompt-injection fixtures
-should carry explicit fixture licensing once the repository license is chosen.
+Project-authored primary, related, malformed, contradictory, and
+prompt-injection fixtures are used only in the private repository acceptance
+suite. Their frozen manifest records
+`LicenseRef-AdaIvy-Synthetic-Fixture`, contributor copyright notice, allowed
+redistribution, and explicit private-evaluation/local-retrieval/evidence-pack
+rights. This internal fixture license reference does not choose a public
+repository license or grant rights for any academic corpus.
 
 ## Publishing gate
 

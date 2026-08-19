@@ -1,15 +1,15 @@
-# Proposed Phase 3 Requirement-to-Test Matrix
+# Phase 3A Requirement-to-Test Matrix
 
-Status: acceptance design only  
+Status: implemented and passing for bounded Phase 3A acceptance
 Date: 2026-08-19
 
-Test names are proposed identifiers. None is implemented by this design task.
+These identifiers are the required implementation acceptance map.
 
-| ID | Requirement | Proposed acceptance test/evidence |
+| ID | Requirement | Acceptance test/evidence (implemented) |
 |---|---|---|
 | P3-001 | Preserve Phase 1 trust semantics and Phase 2 durability | Run all existing 101 tests unchanged before and after Phase 3A; prohibit edits that weaken them |
 | P3-002 | Manual local-file import only | `SourceAcquisitionTests.test_regular_local_file_import_is_content_addressed` |
-| P3-003 | Manual URL metadata import without autonomous fetch | `SourceAcquisitionTests.test_url_metadata_import_performs_no_network_access_and_stays_metadata_only` |
+| P3-003 | Opaque metadata-only URI with local syntax validation and no resolution/fetch | `SourceAcquisitionTests.test_uri_metadata_import_performs_no_network_access_has_null_hash_and_stays_unresolved` |
 | P3-004 | Identical source has identical identity/hash | `SourceIdentityTests.test_identical_bytes_are_idempotent_across_paths_and_restarts` |
 | P3-005 | Changed source creates a distinct version | `SourceIdentityTests.test_changed_bytes_create_distinct_artifact_with_explicit_version_edge` |
 | P3-006 | Source metadata, timestamps, media type, parser, and rights retained | `SourceAcquisitionTests.test_complete_metadata_and_rights_round_trip` |
@@ -17,7 +17,7 @@ Test names are proposed identifiers. None is implemented by this design task.
 | P3-008 | Symlink/path/device and oversized input rejected | `SourceAcquisitionAdversarialTests.test_unsafe_local_inputs_never_reach_cas_or_parser` |
 | P3-009 | Original source remains authoritative | `NormalizationTests.test_normalized_document_is_derived_and_cannot_replace_source_bytes` |
 | P3-010 | Deterministic normalization/export | `NormalizationTests.test_same_source_parser_and_config_produce_identical_bytes_and_hash` |
-| P3-011 | Page/section and typed marker retention | `NormalizationTests.test_page_section_equation_theorem_definition_proof_table_and_reference_markers` |
+| P3-011 | Plain-text page/section and typed marker retention | `NormalizationTests.test_formfeed_page_section_equation_theorem_definition_proof_table_and_reference_markers` |
 | P3-012 | Stable source-span round trip | `SpanCoordinateTests.test_every_gold_span_maps_to_exact_original_locator_and_back` |
 | P3-013 | Extraction warnings/confidence do not confer trust | `NormalizationTrustTests.test_confidence_is_diagnostic_and_unsupported_output_stays_quarantined` |
 | P3-014 | All required evidence-unit types are immutable/versioned | `EvidenceUnitTests.test_required_unit_types_are_frozen_versioned_and_origin_checked` |
@@ -30,7 +30,7 @@ Test names are proposed identifiers. None is implemented by this design task.
 | P3-021 | Exact retrieval evidence returned | `RetrievalTests.test_hits_include_unit_source_span_score_method_version_query_hash` |
 | P3-022 | Deterministic tie-breaking | `RetrievalTests.test_equal_scores_order_by_source_span_and_unit_id` |
 | P3-023 | Complete retrieval manifest | `RetrievalTests.test_manifest_reconstructs_exact_query_index_and_result_order` |
-| P3-024 | Optional embeddings cannot own canonical state | `EmbeddingPortTests.test_dropping_embedding_projection_preserves_export_and_fts_acceptance` |
+| P3-024 | Embeddings and embedding-provider port | **Deferred to Phase 4; prohibited from Phase 3A code, configuration, dependencies, and tests except scope guard** |
 | P3-025 | Deterministic pack construction and hash | `EvidencePackTests.test_same_query_corpus_policy_and_budget_produce_identical_pack_hash` |
 | P3-026 | Byte/token budgets enforced | `EvidencePackTests.test_budget_exclusions_are_complete_and_deterministic` |
 | P3-027 | Deterministic deduplication and source diversity | `EvidencePackTests.test_duplicates_removed_and_per_source_cap_applied_before_fill` |
@@ -52,13 +52,16 @@ Test names are proposed identifiers. None is implemented by this design task.
 | P3-043 | Cancelled/timed-out work cannot commit later | `ResearchMemoryBudgetTests.test_late_parser_or_model_success_is_rejected` |
 | P3-044 | Deterministic canonical import/export | `ResearchMemoryInterchangeTests.test_export_import_preserves_ids_meaning_bytes_and_content_hash` |
 | P3-045 | Foreign memory imports as proposals only | `ResearchMemoryInterchangeTests.test_external_export_cannot_write_accepted_memory` |
-| P3-046 | Gold corpus has four required classes | `GoldCorpusTests.test_manifest_contains_primary_related_contradictory_and_injection_sources` |
+| P3-046 | Synthetic corpus has primary, related, contradictory, malformed, and injection classes | `GoldCorpusTests.test_manifest_contains_five_project_authored_fixture_classes` |
 | P3-047 | Quantum paper is generic fixture only | `ScopeGuardTests.test_core_has_no_quantum_specific_import_type_or_solver` |
 | P3-048 | No crawler/vector DB/required embeddings/tools/UI/API/multi-agent scope | `ScopeGuardTests.test_phase3a_forbidden_dependencies_and_features_absent` |
 | P3-049 | Clean report/provenance regeneration | `ResearchMemoryReportTests.test_report_is_reproducible_from_durable_canonical_state` |
 | P3-050 | Credential scan remains clean | `ResearchMemorySecurityTests.test_no_secret_in_sources_indexes_packs_events_logs_database_or_reports` |
 | P3-051 | Rights policy controls export/context | `RightsPolicyTests.test_restricted_source_span_is_excluded_with_manifest_reason` |
-| P3-052 | No live/model API needed for acceptance | Full acceptance suite runs with network disabled and scripted model adapter only |
+| P3-052 | No model or external API call | Full acceptance suite runs with network disabled; citation fixtures are values and no model gateway is invoked |
+| P3-053 | Quantum paper remains metadata-only | `GoldCorpusTests.test_quantum_paper_has_null_content_hash_and_no_committed_pdf_or_extracted_text` |
+| P3-054 | Retrieval quality thresholds are frozen and met | `RetrievalEvaluationTests.test_recall_at_5_mrr_and_citation_precision_meet_frozen_thresholds` |
+| P3-055 | Repeated/restart ordering and pack hashes are deterministic | `RetrievalEvaluationTests.test_three_repeats_and_one_restart_have_identical_ids_and_pack_hashes` |
 
 ## Measurable acceptance thresholds
 
@@ -67,15 +70,25 @@ Test names are proposed identifiers. None is implemented by this design task.
   `model_proposed_claim` type.
 - 100% of citations in imported model proposals resolve to IDs in the exact
   supplied evidence-pack manifest.
-- Repeated import, normalization, FTS rebuild, retrieval, pack construction,
-  export/import, restart replay, and report rendering produce identical bytes or
-  explicitly recorded engine-version blockers.
+- Recall@5 is 1.0 on the fixed gold queries; MRR is at least 0.75; citation
+  resolution precision is 1.0; zero quarantined evidence units are retrieved.
+- Three repeated runs and one restart produce identical ordered evidence IDs and
+  evidence-pack hashes. Raw floating-point BM25 scores have no cross-platform
+  equality requirement.
 - Zero automatic warrants, obligation discharges, or accepted claims result
   from parser, retrieval, relation, summary, proposer, or verifier output.
 - Zero credential matches and zero unauthorized network requests occur.
 - All Phase 0–2 tests and checks pass unchanged.
 
-Thresholds for semantic retrieval quality, such as necessary-passage recall,
-must be frozen with a human-authored relevance judgment set before Phase 3A
-implementation acceptance. They are an unresolved approval item; no favorable
-threshold is invented after viewing results.
+The project-authored query/relevance fixture is frozen before executing the
+acceptance evaluation. Phase 3A contains no embedding requirement or port;
+P3-024 remains reserved as a Phase 4 identifier.
+
+## Recorded execution
+
+The completed Phase 3A implementation adds 55 requirement tests in
+`tests/test_phase3a_memory.py`. Together with the unchanged 101 Phase 0–2
+tests, all 156 tests pass. The offline Phase 0 harness additionally reports all
+19 checks passed. Canonical acceptance evidence is stored under
+`reports/phase-3a/acceptance-v1/`; no test or demonstration invoked a model,
+external API, DNS, or HTTP operation.

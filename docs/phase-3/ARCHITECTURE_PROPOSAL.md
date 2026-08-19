@@ -1,6 +1,6 @@
-# Proposed Phase 3 Research-Memory Architecture
+# Phase 3A Research-Memory Architecture
 
-Status: design proposal only  
+Status: accepted for bounded implementation
 Date: 2026-08-19
 
 ## Bounded goal
@@ -10,11 +10,12 @@ provenance-preserving evidence units that can be deterministically retrieved
 and supplied to proposer/verifier jobs without treating extracted or
 model-generated summaries as source truth.
 
-The 2002 quantum-state-discrimination paper is a generic document/provenance
-acceptance fixture. No quantum-specific entity, retrieval rule, solver, or
-convergence claim belongs in the core.
+The 2002 quantum-state-discrimination paper is retained only as a generic
+metadata record and future demonstration anchor. Project-authored synthetic
+sources are the Phase 3A acceptance corpus. No quantum-specific entity,
+retrieval rule, solver, or convergence claim belongs in the core.
 
-## Roadmap reconciliation
+## Roadmap reconciliation and history
 
 This goal conflicts with the architecture baseline rather than merely refining
 it.
@@ -28,11 +29,11 @@ it.
 | Phase 2 deferred work | Groups both categories as Phase 3 and later | Selects research memory first | Compatible only at a broad stop-line level |
 | `AGENTS.md` | Phase 2 remains current and forbids Phase 3 features | Design only now; implementation later | Instructions must change only after human approval |
 
-ADR-0012 proposes a visible resolution: designate the requested slice as
-Phase 3A and retain the existing tool/formal-grounding work as Phase 3B. This
-does not authorize either implementation and does not edit the baseline roadmap.
-Automated crawling, automated novelty assessment, embeddings as an acceptance
-dependency, and quantum convergence work remain later phases.
+The table above preserves the superseded revision-0.2 roadmap conflict. Accepted
+ADR-0012 resolves it: the bounded slice is Phase 3A, formal-tool and
+proof-assistant grounding is Phase 3B, and broader acquisition, crawling,
+embeddings, and research automation are Phase 4. Quantum convergence work is
+not part of Phase 3A.
 
 ## Architectural boundaries
 
@@ -64,21 +65,24 @@ accepted source-derived memory ----> rebuildable SQLite FTS5 projection
 
 Canonical source bytes, source metadata, normalized derived artifacts, evidence
 units, relations, and pack manifests are immutable records. The FTS index,
-embeddings, rankings, and rendered context are rebuildable projections. Domain
-entities and trust policy do not import SQLite, parser, model, CLI, or vector
-database packages.
+rankings, and rendered context are rebuildable projections. Phase 3A contains no
+embedding boundary. Domain entities and trust policy do not import SQLite,
+parser, model, CLI, or vector-database packages.
 
 ## 1. Source acquisition boundary
 
 The only Phase 3A acquisition actions are explicit operator commands:
 
 - import a local regular file with separately supplied metadata;
-- import URL/DOI/arXiv metadata without dereferencing it; or
+- import an opaque user-supplied URI metadata record without dereferencing it;
+  or
 - associate manually acquired bytes with an existing metadata-only record.
 
 There is no autonomous crawler, recursive link following, browser automation,
-or scheduled refresh. A metadata-only URL record is quarantined and is not a
-`SourceArtifact` until bytes exist and their SHA-256 is verified.
+or scheduled refresh. A metadata-only URI receives local syntax validation only:
+no DNS, HTTP, redirect, availability, or content check occurs. Its
+`content_hash` remains null, its status is unresolved, and it cannot produce a
+`SourceArtifact`, span, or evidence unit.
 
 A source import must record:
 
@@ -102,13 +106,14 @@ cannot be hashed completely fail or remain quarantined before parsing.
 The original source artifact remains authoritative. Normalization produces a
 separate content-addressed derived artifact with parser provenance.
 
-The normalized representation is deterministic UTF-8 text plus a canonical
-structure map. It records:
+The sole Phase 3A parser is the internal, versioned `plain-text-v1` parser. It
+accepts valid UTF-8 plain text only. PDFs and other media types are stored in
+quarantine without extraction. The normalized representation is deterministic
+UTF-8 text plus a canonical structure map. It records:
 
 - page and hierarchical section boundaries;
 - zero-based, half-open UTF-8 byte coordinates in normalized text;
-- original page, region/bounding-box, parser-token, and quote-hash locators when
-  the media type supplies them;
+- original UTF-8 byte offsets and quote hashes;
 - equation, theorem/proposition, definition, proof, table, figure, footnote,
   and bibliographic-reference markers;
 - a segment-by-segment original-to-normalized location map;
@@ -190,12 +195,13 @@ by an index-manifest hash. Retrieval records:
 
 Cross-runtime byte identity is claimed only for a pinned SQLite/tokenizer
 identity. A version mismatch is an explicit reproducibility blocker, not an
-opportunity to silently rebuild different rankings.
+opportunity to silently rebuild different rankings. No cross-platform equality
+is required for raw floating-point BM25 scores. Acceptance requires Recall@5 of
+1.0, MRR of at least 0.75, citation-resolution precision of 1.0, zero
+quarantined evidence retrieved, and identical ordered evidence IDs and pack
+hashes over three repeated runs and one restart.
 
-An optional `EmbeddingProvider` port may return candidate evidence-unit IDs and
-versioned scores. It cannot own canonical memory, replace exact spans, or be
-required for Phase 3A acceptance. Its model, dimensions, normalization,
-provider, input hashes, and cost must be recorded.
+Embeddings and an embedding-provider port are wholly deferred to Phase 4.
 
 ## 6. Evidence-pack construction
 
@@ -235,29 +241,22 @@ The verifier receives a deterministic pack/context assembled independently of
 the proposer narrative. Agreement by a same-model, same-provider verifier does
 not change claim status and retains the Phase 2 independence dimensions.
 
-No live model call is required for Phase 3A acceptance. Scripted fixtures are
-the default model-boundary tests; an optional live exercise requires a distinct
-authorization, configuration, pricing snapshot, and budget.
+No model or external API call is permitted in Phase 3A. Scripted value fixtures
+exercise citation validation without invoking a model gateway.
 
 ## Gold corpus design
 
-The acceptance corpus contains:
+Infrastructure acceptance uses five project-authored synthetic plain-text
+fixtures: primary, related, contradictory, malformed, and prompt injection. The
+fixed queries and relevance judgments are frozen with the metric thresholds
+above.
 
-1. M. Jezek, J. Rehacek, and J. Fiurasek, “Finding optimal strategies for
-   minimum-error quantum-state discrimination,” arXiv:quant-ph/0201109;
-2. at least one related source chosen and approved by a human curator;
-3. one repository-authored contradictory or malformed source fixture; and
-4. one repository-authored source containing prompt-like malicious text.
-
-The paper is a document fixture only. Acceptance demonstrates import,
-normalization, exact-span retrieval, citation resolution, contradiction
-retention, quarantine, replay, and evidence-pack construction. It does not
-attempt to prove convergence of the paper’s iterative algorithm.
-
-Paper bytes must not be committed until redistribution rights are recorded.
-Until then, the gold-corpus manifest contains expected identity/metadata and the
-operator supplies local bytes. Missing licensed bytes are an explicit fixture
-blocker, not fabricated content.
+M. Jezek, J. Rehacek, and J. Fiurasek, “Finding optimal strategies for
+minimum-error quantum-state discrimination,” arXiv:quant-ph/0201109, is retained
+as a metadata-only generic fixture. Its `content_hash` is null and no PDF or
+extracted text is committed until redistribution rights are confirmed. The
+real-academic-corpus demonstration is Phase 4 work. Phase 3A does not attempt to
+prove convergence of the paper’s iterative algorithm.
 
 ## Acceptance stop line
 
@@ -265,5 +264,5 @@ Phase 3A stops after one manually supplied corpus can be imported, normalized,
 indexed, deterministically retrieved, packed, replayed after restart, and
 passed through proposal-only citation validation. It includes no crawler,
 automatic novelty/significance assessment, vector database, required embedding
-service, formal/math tool, web/API surface, multi-agent search, quantum solver,
-or Phase 3B implementation.
+service or port, PDF parser, formal/math tool, web/API surface, multi-agent
+search, quantum solver, or Phase 3B/Phase 4 implementation.
