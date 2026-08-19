@@ -1,0 +1,1 @@
+{"assumptions":[],"claim_id":"claim.phase3b.valid","declaration_name":"AdaIvyValid","imports":[],"meaning_tests":[],"proof_fragment":"by rfl","request_id":"request.phase3b.valid","schema_version":"1.0.0","semantic_alignment_id":"alignment.phase3b.valid.proposed","source_kind":"operator","target_statement":"(n : Nat) : n = n"}

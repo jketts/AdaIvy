@@ -41,6 +41,8 @@ def main(argv: list[str] | None = None) -> int:
     phase2.add_argument("phase2_args", nargs=argparse.REMAINDER)
     phase3a = subparsers.add_parser("phase3a", help="bounded Phase 3A research-memory commands")
     phase3a.add_argument("phase3a_args", nargs=argparse.REMAINDER)
+    phase3b = subparsers.add_parser("phase3b", help="bounded Phase 3B Lean formal-checking commands")
+    phase3b.add_argument("phase3b_args", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
 
     if args.command == "phase2":
@@ -49,6 +51,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "phase3a":
         from .phase3a_cli import main as phase3a_main
         return phase3a_main(args.phase3a_args)
+    if args.command == "phase3b":
+        from .phase3b_cli import main as phase3b_main
+        return phase3b_main(args.phase3b_args)
 
     if args.command == "create":
         dossier = InMemoryTrustStore().append_dossier(build_known_valid_theorem_dossier())

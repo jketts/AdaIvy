@@ -1,0 +1,1 @@
+{"assumptions":[],"claim_id":"claim.phase3b.approved-axioms","declaration_name":"AdaIvyApprovedAxioms","imports":[],"meaning_tests":[],"proof_fragment":"Classical.em p","request_id":"request.phase3b.approved-axioms","schema_version":"1.0.0","semantic_alignment_id":null,"source_kind":"operator","target_statement":"(p : Prop) : p ∨ ¬p"}

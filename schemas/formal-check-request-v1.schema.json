@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaivy.invalid/schemas/formal-check-request-v1.schema.json",
+  "title": "AdaIvy restricted Lean theorem and proof fragment request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "request_id", "claim_id", "semantic_alignment_id", "source_kind",
+    "declaration_name", "imports", "assumptions", "target_statement",
+    "proof_fragment", "meaning_tests", "schema_version"
+  ],
+  "properties": {
+    "request_id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._:-]*$"},
+    "claim_id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._:-]*$"},
+    "semantic_alignment_id": {"type": ["string", "null"], "pattern": "^[A-Za-z][A-Za-z0-9._:-]*$"},
+    "source_kind": {"enum": ["operator", "model", "external"]},
+    "declaration_name": {"type": "string", "pattern": "^AdaIvy[A-Za-z0-9_]{1,63}$"},
+    "imports": {
+      "type": "array", "uniqueItems": true,
+      "items": {"enum": ["Mathlib.Data.Nat.Basic"]}
+    },
+    "assumptions": {
+      "type": "array", "maxItems": 16,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["name", "type_expression"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^AdaIvyAssumption[A-Za-z0-9_]{1,48}$"},
+          "type_expression": {"type": "string", "minLength": 1, "maxLength": 8192}
+        }
+      }
+    },
+    "target_statement": {"type": "string", "minLength": 1, "maxLength": 65536},
+    "proof_fragment": {"type": "string", "minLength": 1, "maxLength": 131072},
+    "meaning_tests": {
+      "type": "array", "maxItems": 16,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["test_id", "statement", "proof_fragment"],
+        "properties": {
+          "test_id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._:-]{0,63}$"},
+          "statement": {"type": "string", "minLength": 1, "maxLength": 8192},
+          "proof_fragment": {"type": "string", "minLength": 1, "maxLength": 16384}
+        }
+      }
+    },
+    "schema_version": {"const": "1.0.0"}
+  }
+}
+

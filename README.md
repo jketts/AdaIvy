@@ -13,7 +13,9 @@ warrant.
 > Status: Phase 2 durable workspace and bounded baseline model loop implemented;
 > the two-call live-provider acceptance gate passed on the proposal-only v3 run.
 > The bounded Phase 3A research-memory slice is implemented with offline
-> acceptance evidence; Phase 3B and Phase 4 have not begun.
+> acceptance evidence. The first bounded Phase 3B production slice is a
+> restricted, proposal-only Lean checker using the sealed v5 stdin runtime;
+> broader Phase 3B tooling and Phase 4 have not begun.
 > See
 > [TECHNICAL_BLUEPRINT.md](./TECHNICAL_BLUEPRINT.md) for the build contract and
 > [NOVELTY_LANDSCAPE.md](./NOVELTY_LANDSCAPE.md) for the prior-art review that
@@ -214,6 +216,16 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase3a de
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase3a inspect reports/phase-3a/acceptance-v1/research-memory.json
 ```
 
+The bounded Phase 3B acceptance additionally requires the exact local image
+sealed by ADR-0016. Run it only against a disposable workspace so the repository
+and the Phase 3A acceptance state remain unchanged:
+
+```bash
+phase3b_check_root="$(mktemp -d /tmp/adaivy-phase3b-check.XXXXXX)"
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase3b demo "$phase3b_check_root/workspace" --output-dir "$phase3b_check_root/output"
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase3b inspect "$phase3b_check_root/output/formal-checking.json"
+```
+
 Optional integrations are never installed by the check. Configure an Albilich
 checkout with `ALBILICH_ROOT`; place Why3 or Lean on `PATH`; or install PaperQA2
 in a separately pinned environment. Missing prerequisites produce explicit
@@ -286,6 +298,28 @@ There are no network, model, or external API calls, crawler, embeddings,
 embedding-provider port, PDF parser, formal-tool integration, or Phase 3B/4
 features in this phase. Retrieval acceptance and the roadmap transition are
 frozen in ADR-0013, ADR-0014, and `docs/phase-3/`.
+
+## Phase 3B bounded Lean formal checking
+
+The first Phase 3B production slice accepts one versioned restricted theorem
+and proof-fragment request. A fail-closed validator rejects arbitrary Lean
+files, unknown imports, placeholders, undeclared axioms, evaluation and native
+features, package commands, and side-effect APIs. The trusted wrapper and its
+statement, declaration, imports, invocation, policy, runtime, and source are
+hashed before only the wrapper bytes are sent on stdin to the exact ADR-0016 v5
+image. No host path or mount is exposed to the container.
+
+The adapter bounds time and streamed output, retains full-stream hashes and
+lengths with bounded diagnostics, removes its container, persists every result
+append-only, and supports canonical export/replay and CLI inspection. Kernel
+checking is scoped only to the exact hashes and disclosed assumptions. Every
+result remains a proposal: it cannot approve semantic alignment, source
+applicability, novelty, significance, contribution, or create an
+`EpistemicWarrant`. Meaning tests are diagnostic only.
+
+This slice adds no model/API call, network acquisition, proof search or repair,
+premise retrieval, Why3/SMT/CAS/numerical adapter, web surface, broader Phase 3B
+workflow, Phase 4 feature, or quantum implementation.
 
 ## Suggested implementation defaults
 

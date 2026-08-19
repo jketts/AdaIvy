@@ -1,0 +1,1 @@
+{"assumptions":[],"claim_id":"claim.phase3b.sandbox","declaration_name":"AdaIvySandbox","imports":[],"meaning_tests":[],"proof_fragment":"by rfl","request_id":"request.phase3b.sandbox","schema_version":"1.0.0","semantic_alignment_id":null,"source_kind":"operator","target_statement":"(n : Nat) : n = n"}
