@@ -1,0 +1,80 @@
+{
+  "schema_version": "3b-entry-gate.1.0.0",
+  "gate_id": "phase3b.lean.entry-gate.v1",
+  "status": "blocked",
+  "recorded_at": "2026-08-19T00:00:00Z",
+  "candidate": "Lean 4 plus mathlib",
+  "recommendation": "propose_wrap_after_successful_gate",
+  "evaluation_status": "not_evaluated",
+  "runnability": "blocked",
+  "capability_score": null,
+  "integrity": {
+    "tests_passed": 156,
+    "tests_total": 156,
+    "phase0_checks_passed": 19,
+    "phase0_checks_total": 19,
+    "tracked_json_parsed": 51,
+    "schema_documents_parsed": 10,
+    "semantic_validation_issues": 0,
+    "persisted_files_credential_scanned": 110,
+    "credential_leak_matches": 0
+  },
+  "host": {
+    "os": "macOS 26.5.2",
+    "build": "25F84",
+    "kernel": "Darwin 25.5.0",
+    "architecture": "arm64",
+    "git_version": "2.50.1 (Apple Git-155)",
+    "free_disk_gib": 623
+  },
+  "prerequisites": {
+    "elan": null,
+    "lean": null,
+    "lake": null,
+    "lean_cache_present": false,
+    "mathlib_cache_present": false,
+    "container_runtime": null,
+    "sandbox_exec_path": "/usr/bin/sandbox-exec",
+    "safe_sandbox_demonstrated": false
+  },
+  "proposed_pin": {
+    "elan": "v4.2.1",
+    "lean_toolchain": "leanprover/lean4:v4.32.1",
+    "mathlib": "v4.32.1",
+    "mathlib_release_commit_prefix": "520045a",
+    "adaivy_lake_manifest_hash": null
+  },
+  "sealed_hashes": {
+    "phase0_raw_results": "sha256:e8166fed8063ade26d74b55f0139fc2adfd2900d2c8db4a4c3fb8c4a5b144533",
+    "phase2_live_status": "sha256:c29c13d80164890d0b5d1d1fdca3eeac66c56300c9683a1c4087d7bc03c1ac05",
+    "phase2_failed_v2_database": "sha256:4c1c402d142a33d6529fb3991cb18bab2513bcb13dd2eddd3b30af0ab76ad064",
+    "phase2_accepted_v3_database": "sha256:30e0db8d1bf9b601ce9d262fdce9459dea573c742aaca27f7af97d7895f81e94",
+    "phase2_accepted_v3_report": "sha256:ff706139a8f0415e1f1f6efc0ac714f0e588f187e94e82c7dff0af92d5da8cb9",
+    "phase3a_acceptance": "sha256:c0ea908f3b6f1c9fd19d83180f3e55f865238dfc4f96727048531d51bfe8c241",
+    "phase3a_export": "sha256:f1b57c2cae96638a7545476722685f17eb7470c5b4d0a790ca788de8e8756272",
+    "phase3a_report": "sha256:881b2d0a85da1c9c57181c0aeb28ae6efccbc88e4a6521f6d29bd60856544ac9"
+  },
+  "tags": {
+    "phase-2": {
+      "tag_object": "730595f22b72888f7b73ed92ef874b8694637558",
+      "peeled_commit": "f8531aefc39792ecf02c61f0019cea087ebf87f2"
+    },
+    "phase-3a": {
+      "tag_object": "1b61ea26a5f9dc6b3b1a81a4f78ceced6cb25fb3",
+      "peeled_commit": "c21374a1f2239c24b305a58c15d149db4de5fdbf"
+    }
+  },
+  "blockers": [
+    "lean_toolchain_unavailable",
+    "mathlib_unavailable",
+    "full_lock_and_binary_hashes_unavailable",
+    "safe_sandbox_not_demonstrated",
+    "fixtures_not_executed"
+  ],
+  "adaivy_runtime_model_calls": 0,
+  "adaivy_runtime_external_api_calls": 0,
+  "lean_processes": 0,
+  "official_documentation_web_lookup": true,
+  "toolchain_downloads": 0,
+  "production_phase3b_changes": 0
+}

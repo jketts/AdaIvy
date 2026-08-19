@@ -1,0 +1,109 @@
+{
+  "schema_version": "3b-entry-gate.1.0.0",
+  "manifest_id": "toolchain.lean-mathlib.proposed.v1",
+  "status": "proposed_unacquired",
+  "recorded_at": "2026-08-19T00:00:00Z",
+  "host": {
+    "operating_system": "macOS 26.5.2 (25F84)",
+    "kernel": "Darwin 25.5.0",
+    "architecture": "arm64",
+    "free_disk_gib": 623
+  },
+  "toolchain_manager": {
+    "name": "elan",
+    "release": "v4.2.1",
+    "release_commit_prefix": "3d5138e",
+    "installed": false,
+    "binary_sha256": null,
+    "license_expression": "Apache-2.0 OR MIT",
+    "source": "https://github.com/leanprover/elan/releases/tag/v4.2.1"
+  },
+  "lean": {
+    "toolchain_identifier": "leanprover/lean4:v4.32.1",
+    "release": "v4.32.1",
+    "release_commit_prefix": "f054605",
+    "installed": false,
+    "binary_sha256": null,
+    "license_expression": "Apache-2.0",
+    "source": "https://github.com/leanprover/lean4/releases/tag/v4.32.1"
+  },
+  "lake": {
+    "distribution": "bundled with the pinned Lean release",
+    "version": null,
+    "installed": false,
+    "binary_sha256": null,
+    "license_expression": "Apache-2.0",
+    "source": "https://github.com/leanprover/lean4/tree/v4.32.1/src/lake"
+  },
+  "mathlib": {
+    "repository": "https://github.com/leanprover-community/mathlib4",
+    "release": "v4.32.1",
+    "release_commit_prefix": "520045a",
+    "full_commit": null,
+    "release_lean_toolchain": "leanprover/lean4:v4.32.1",
+    "installed": false,
+    "source_tree_sha256": null,
+    "license_expression": "Apache-2.0",
+    "release_source": "https://github.com/leanprover-community/mathlib4/releases/tag/v4.32.1"
+  },
+  "lean_toolchain_contents": "leanprover/lean4:v4.32.1\n",
+  "lakefile_toml_contents": "name = \"adaivy_phase3b_gate\"\nversion = \"0.1.0\"\ndefaultTargets = [\"AdaIvyPhase3BGate\"]\n\n[[lean_lib]]\nname = \"AdaIvyPhase3BGate\"\n\n[[require]]\nname = \"mathlib\"\nscope = \"leanprover-community\"\nrev = \"v4.32.1\"\n",
+  "upstream_mathlib_lock": {
+    "manifest_format_version": "1.2.0",
+    "fixed_toolchain": true,
+    "packages_directory": ".lake/packages",
+    "dependencies": [
+      {
+        "name": "plausible",
+        "revision": "e12c1910fe855cbfc38803cd4e55543906d5fa62"
+      },
+      {
+        "name": "LeanSearchClient",
+        "revision": "c5d5b8fe6e5158def25cd28eb94e4141ad97c843"
+      },
+      {
+        "name": "importGraph",
+        "revision": "7e9612bf0b9ee66db3cb5b9988a35afc706f5a12"
+      },
+      {
+        "name": "proofwidgets",
+        "revision": "6e311e2a844da9b2cc3971187df2fe0066947b93"
+      },
+      {
+        "name": "aesop",
+        "revision": "a7dbf0c63b694e47f425f3dcddbc0e178bb432d3"
+      },
+      {
+        "name": "Qq",
+        "revision": "38d591e778f100aec9762bb582f9c7f55f50e9dc"
+      },
+      {
+        "name": "batteries",
+        "revision": "023ce7d62a0531e22a5331e20b587817a80d49ff"
+      },
+      {
+        "name": "Cli",
+        "revision": "88679d088c9720c27ebdf2ba4dafe17341747f94"
+      }
+    ],
+    "source": "https://raw.githubusercontent.com/leanprover-community/mathlib4/v4.32.1/lake-manifest.json"
+  },
+  "adaivy_generated_lock": {
+    "lake_manifest_sha256": null,
+    "status": "must_be_generated_and_reviewed_during_authorized_acquisition"
+  },
+  "resource_plan": {
+    "minimum_free_disk_reserve_gib": 8,
+    "expected_download": "multi-gigabyte; measure during acquisition",
+    "expected_expanded_disk": "at least 5 GiB for the mathlib cache plus toolchain and sources; reserve 8 GiB",
+    "measured_download_bytes": null,
+    "measured_expanded_bytes": null
+  },
+  "acceptance_requirements": [
+    "resolve and pin full Lean and mathlib commits",
+    "record installer, toolchain, cache, source, and lock hashes",
+    "audit every resolved dependency license",
+    "run all checking with networking disabled",
+    "never run lake update or cache acquisition during checking"
+  ]
+}

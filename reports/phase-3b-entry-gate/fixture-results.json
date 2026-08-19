@@ -1,0 +1,22 @@
+{
+  "schema_version": "3b-entry-gate.1.0.0",
+  "status": "not_evaluated",
+  "reason": "lean_toolchain_unavailable",
+  "fixtures": [
+    {"id": "F01", "name": "valid_complete_proof", "expected": "kernel_checked", "observed": null, "blockers": ["lean_toolchain_unavailable"]},
+    {"id": "F02", "name": "sorry_placeholder", "expected": "rejected_placeholder", "observed": null, "blockers": ["lean_toolchain_unavailable"]},
+    {"id": "F03", "name": "admit_placeholder", "expected": "rejected_placeholder", "observed": null, "blockers": ["lean_toolchain_unavailable"]},
+    {"id": "F04", "name": "false_theorem", "expected": "elaboration_failed", "observed": null, "blockers": ["lean_toolchain_unavailable"]},
+    {"id": "F05", "name": "syntax_error", "expected": "elaboration_failed", "observed": null, "blockers": ["lean_toolchain_unavailable"]},
+    {"id": "F06", "name": "unknown_import", "expected": "rejected_policy_violation", "observed": null, "blockers": ["lean_toolchain_unavailable"]},
+    {"id": "F07", "name": "newly_declared_axiom", "expected": "kernel_checked_with_unapproved_assumptions", "observed": null, "blockers": ["lean_toolchain_unavailable"]},
+    {"id": "F08", "name": "approved_classical_reasoning", "expected": "kernel_checked_with_approved_classical_axioms", "observed": null, "blockers": ["lean_toolchain_unavailable"]},
+    {"id": "F09", "name": "resource_exhaustion", "expected": "resource_limit_exceeded", "observed": null, "blockers": ["lean_toolchain_unavailable", "safe_sandbox_not_demonstrated"]},
+    {"id": "F10", "name": "filesystem_access", "expected": "rejected_policy_violation", "observed": null, "blockers": ["lean_toolchain_unavailable", "safe_sandbox_not_demonstrated"]},
+    {"id": "F11", "name": "network_or_process_action", "expected": "rejected_policy_violation", "observed": null, "blockers": ["lean_toolchain_unavailable", "safe_sandbox_not_demonstrated"]},
+    {"id": "F12", "name": "oversized_output", "expected": "resource_limit_exceeded", "observed": null, "blockers": ["lean_toolchain_unavailable", "safe_sandbox_not_demonstrated"]}
+  ],
+  "adaivy_runtime_model_calls": 0,
+  "adaivy_runtime_external_api_calls": 0,
+  "lean_processes": 0
+}
