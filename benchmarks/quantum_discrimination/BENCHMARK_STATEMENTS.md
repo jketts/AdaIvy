@@ -248,7 +248,7 @@ or a different initialization is a different benchmark statement.
   5. Objective gap:
 
      \[
-       P_{\rm succ}(M)=\frac13,qquad
+       P_{\rm succ}(M)=\frac13,\qquad
        P_{\rm succ}((0,1))=\frac23,qquad
        P_*=\frac23.
      \]
@@ -356,9 +356,10 @@ or a different initialization is a different benchmark statement.
 
 ## 6. Theorem ladder
 
-Each rung states its full additional hypotheses. A later rung may be attempted
-only after its dependencies are available or are repeated as explicit
-premises.
+QD-L00--QD-L14 are theorem rungs, and each states its full additional
+hypotheses. A later theorem rung may be attempted only after its dependencies
+are available or are repeated as explicit premises. QD-L15 is not a theorem
+rung: it is a bounded conjecture-family and statement-construction target.
 
 ### QD-L00 — a finite optimum exists
 
@@ -519,15 +520,19 @@ premises.
 - Statement: QD-REJ-01.
 - Rejection dependency: QD-CE-01.
 
-### QD-L15 — pure-state support-conditioned convergence
+### QD-L15 — bounded pure-state statement-construction target
 
-- Disposition: `DEFERRED`.
-- Requires: S01--S08, all states pure, and the exact initialization/support
-  hypotheses from the cited 2026 theorem after full-text acquisition and
-  semantic-alignment review.
-- Statement: intentionally not frozen yet.
-- Gate: the paper abstract is not sufficient to import the theorem, and its
-  hypotheses must not be reconstructed from secondary descriptions.
+- Disposition: `DEFERRED`; not a theorem statement or proof benchmark.
+- Bounded family: pure-state, support-conditioned convergence questions for the
+  exact algorithm variant in S08.
+- Statement-construction target: after full-text acquisition and
+  semantic-alignment review, construct one or more exact candidate statements
+  that specify S01--S08, purity, initialization, support, topology, and the
+  precise convergence conclusion.
+- Statement status: intentionally not frozen. No member of the family is an
+  imported premise or an admissible proof target yet.
+- Gate: the published abstract is not sufficient to import the theorem, and
+  its hypotheses must not be reconstructed from secondary descriptions.
 
 ## 7. Dependency summary
 
@@ -563,8 +568,10 @@ This pass is complete when review confirms all of the following:
    square roots, with pseudoinverse completion excluded.
 4. QD-YKL-01--QD-YKL-06 keep dual feasibility, complementary slackness, and
    global optimality logically distinct.
-5. Every rung QD-L00--QD-L15 lists its assumptions, dependencies, disposition,
-   and excluded stronger conclusions.
+5. Every theorem rung QD-L00--QD-L14 lists its assumptions, dependencies,
+   disposition, and excluded stronger conclusions. QD-L15 remains separately
+   labeled as a bounded conjecture-family and statement-construction target,
+   with no frozen theorem statement.
 6. No numerical stopping rule, finite experiment, source citation, or formal
    checker result is treated as proof.
 7. No solver, numerical search, Lean implementation, runtime dependency, core
