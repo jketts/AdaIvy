@@ -1,0 +1,18 @@
+{
+  "acceptance_facts": {
+    "applicability_decision_count": 1,
+    "evidence_card_count": 1,
+    "external_cost_usd": 0,
+    "lifecycle_action_count": 1,
+    "local_source_count": 1,
+    "network_model_api_calls": 0,
+    "rights_decision_count": 4
+  },
+  "expected_record_count": 9,
+  "expected_semantic_export_hash": "sha256:1d4819b08292ed490c13b45eea84e1255d38b479a6a1710c314d50a607460e4c",
+  "export_profile": "phase4-review-v1",
+  "fixture_sha256": "sha256:7ffcffe96c76cf1f1dabb0b048f2561a6cc412809f25dc04d65faf3c9336658e",
+  "record_schema_version": "adaivy.phase4a-record.v1",
+  "schema_sha256": "sha256:f166aae343997433370c7d61c08e47c52787d51b59af05edae152b074612537a",
+  "schema_version": "adaivy.phase4a-production-fixture-manifest.v1"
+}

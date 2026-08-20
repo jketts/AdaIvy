@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaivy.invalid/schemas/phase4-review-v1.schema.json",
+  "title": "AdaIvy Phase 4A closed production review envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "profile", "record_schema_version", "policy_versions", "records", "content_hash", "operational", "operational_hash"],
+  "properties": {
+    "schema_version": {"const": "adaivy.phase4-review.v1"},
+    "profile": {"const": "phase4-review-v1"},
+    "record_schema_version": {"const": "adaivy.phase4a-record.v1"},
+    "policy_versions": {"const": ["phase4a-rights-v1", "phase4a-applicability-v1", "phase4a-lifecycle-v1", "phase4a-canonical-identity-v1"]},
+    "records": {"type": "array", "maxItems": 256, "items": {"$ref": "#/$defs/record"}},
+    "content_hash": {"$ref": "#/$defs/hash"},
+    "operational": {"$ref": "#/$defs/operational"},
+    "operational_hash": {"$ref": "#/$defs/hash"}
+  },
+  "$defs": {
+    "id": {"type": "string", "minLength": 3, "maxLength": 128, "pattern": "^[a-z][a-z0-9_.-]+$"},
+    "hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "timestamp": {"type": "string", "minLength": 20, "maxLength": 20, "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z$"},
+    "nullable_id": {"oneOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]},
+    "nullable_timestamp": {"oneOf": [{"$ref": "#/$defs/timestamp"}, {"type": "null"}]},
+    "string_512": {"type": "string", "minLength": 1, "maxLength": 512},
+    "string_8192": {"type": "string", "maxLength": 8192},
+    "ids": {"type": "array", "maxItems": 16, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}},
+    "strings": {"type": "array", "maxItems": 32, "uniqueItems": true, "items": {"$ref": "#/$defs/string_8192"}},
+    "record": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "record_type", "subject_id", "sequence", "actor_id", "actor_kind", "authority", "reason_code", "reason_detail", "evidence_refs", "recorded_at", "policy_snapshot_id", "predecessor_id", "supersedes", "payload", "content_hash", "schema_version"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "record_type": {"enum": ["phase4_policy_snapshot", "source_provenance", "source_rights_decision", "source_lifecycle_action", "evidence_card", "applicability_review"]},
+        "subject_id": {"$ref": "#/$defs/id"},
+        "sequence": {"type": "integer", "minimum": 0, "maximum": 256},
+        "actor_id": {"$ref": "#/$defs/id"},
+        "actor_kind": {"enum": ["human", "automation", "model", "system"]},
+        "authority": {"enum": ["source_provenance", "human_final", "proposal", "deterministic_policy"]},
+        "reason_code": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+        "reason_detail": {"$ref": "#/$defs/string_512"},
+        "evidence_refs": {"$ref": "#/$defs/ids"},
+        "recorded_at": {"$ref": "#/$defs/timestamp"},
+        "policy_snapshot_id": {"$ref": "#/$defs/id"},
+        "predecessor_id": {"$ref": "#/$defs/nullable_id"},
+        "supersedes": {"$ref": "#/$defs/nullable_id"},
+        "payload": {"oneOf": [{"$ref": "#/$defs/policy"}, {"$ref": "#/$defs/provenance"}, {"$ref": "#/$defs/rights"}, {"$ref": "#/$defs/lifecycle"}, {"$ref": "#/$defs/card"}, {"$ref": "#/$defs/review"}]},
+        "content_hash": {"$ref": "#/$defs/hash"},
+        "schema_version": {"const": "adaivy.phase4a-record.v1"}
+      },
+      "allOf": [
+        {"if": {"properties": {"record_type": {"const": "phase4_policy_snapshot"}}, "required": ["record_type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/policy"}}}},
+        {"if": {"properties": {"record_type": {"const": "source_provenance"}}, "required": ["record_type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/provenance"}}}},
+        {"if": {"properties": {"record_type": {"const": "source_rights_decision"}}, "required": ["record_type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/rights"}}}},
+        {"if": {"properties": {"record_type": {"const": "source_lifecycle_action"}}, "required": ["record_type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/lifecycle"}}}},
+        {"if": {"properties": {"record_type": {"const": "evidence_card"}}, "required": ["record_type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/card"}}}},
+        {"if": {"properties": {"record_type": {"const": "applicability_review"}}, "required": ["record_type"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/review"}}}}
+      ]
+    },
+    "policy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_sha256", "rights_policy_version", "applicability_policy_version", "lifecycle_policy_version", "canonical_identity_policy_version"],
+      "properties": {
+        "schema_sha256": {"$ref": "#/$defs/hash"},
+        "rights_policy_version": {"const": "phase4a-rights-v1"},
+        "applicability_policy_version": {"const": "phase4a-applicability-v1"},
+        "lifecycle_policy_version": {"const": "phase4a-lifecycle-v1"},
+        "canonical_identity_policy_version": {"const": "phase4a-canonical-identity-v1"}
+      }
+    },
+    "provenance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_identity", "source_name", "content_object_id", "artifact_hash", "byte_length", "media_type", "encoding", "quarantined", "quarantine_reasons", "content_retained", "tombstone"],
+      "properties": {
+        "source_identity": {"$ref": "#/$defs/id"}, "source_name": {"type": "string", "minLength": 1, "maxLength": 255},
+        "content_object_id": {"$ref": "#/$defs/id"},
+        "artifact_hash": {"$ref": "#/$defs/hash"}, "byte_length": {"type": "integer", "minimum": 0, "maximum": 2097152},
+        "media_type": {"const": "text/plain"}, "encoding": {"const": "utf-8"}, "quarantined": {"type": "boolean"},
+        "quarantine_reasons": {"type": "array", "maxItems": 16, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"}},
+        "content_retained": {"type": "boolean"}, "tombstone": {"type": "boolean"}
+      }
+    },
+    "rights": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_id", "intended_use", "value", "valid_from", "valid_until", "lifecycle_id"],
+      "properties": {
+        "source_id": {"$ref": "#/$defs/id"},
+        "intended_use": {"enum": ["acquisition", "storage_and_retention", "parsing", "excerpting", "embedding", "model_context", "redistribution", "publication"]},
+        "value": {"enum": ["allowed", "prohibited", "unresolved"]},
+        "valid_from": {"$ref": "#/$defs/timestamp"}, "valid_until": {"$ref": "#/$defs/nullable_timestamp"}, "lifecycle_id": {"$ref": "#/$defs/id"}
+      }
+    },
+    "lifecycle": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_id", "action", "target_record_id", "previous_event_id", "original_semantic_hash", "content_retained", "legal_hold"],
+      "properties": {
+        "source_id": {"$ref": "#/$defs/id"}, "action": {"enum": ["correction", "revocation", "takedown", "suppression", "restore", "legal_hold", "deletion_request", "deletion_completion"]},
+        "target_record_id": {"$ref": "#/$defs/id"}, "previous_event_id": {"$ref": "#/$defs/nullable_id"}, "original_semantic_hash": {"$ref": "#/$defs/hash"},
+        "content_retained": {"type": "boolean"}, "legal_hold": {"type": "boolean"}
+      }
+    },
+    "card": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_id", "artifact_id", "evidence_unit_id", "span_ids", "span_byte_ranges", "bibliographic_identity_hash", "bibliographic_identity_bytes", "imported_statement_hash", "imported_statement_bytes", "hypotheses_hash", "hypotheses_count", "definitions_hash", "definitions_count", "scope_hash", "scope_count", "exceptions_hash", "exceptions_count", "content_exported"],
+      "properties": {
+        "source_id": {"$ref": "#/$defs/id"}, "artifact_id": {"$ref": "#/$defs/id"}, "evidence_unit_id": {"$ref": "#/$defs/id"}, "span_ids": {"$ref": "#/$defs/ids"},
+        "span_byte_ranges": {"type": "array", "minItems": 1, "maxItems": 16, "items": {"$ref": "#/$defs/span"}},
+        "bibliographic_identity_hash": {"$ref": "#/$defs/hash"}, "bibliographic_identity_bytes": {"type": "integer", "minimum": 0, "maximum": 8192},
+        "imported_statement_hash": {"$ref": "#/$defs/hash"}, "imported_statement_bytes": {"type": "integer", "minimum": 0, "maximum": 8192},
+        "hypotheses_hash": {"$ref": "#/$defs/hash"}, "hypotheses_count": {"type": "integer", "minimum": 0, "maximum": 32},
+        "definitions_hash": {"$ref": "#/$defs/hash"}, "definitions_count": {"type": "integer", "minimum": 0, "maximum": 32},
+        "scope_hash": {"$ref": "#/$defs/hash"}, "scope_count": {"type": "integer", "minimum": 0, "maximum": 32},
+        "exceptions_hash": {"$ref": "#/$defs/hash"}, "exceptions_count": {"type": "integer", "minimum": 0, "maximum": 32},
+        "content_exported": {"const": false}
+      }
+    },
+    "span": {
+      "type": "object", "additionalProperties": false,
+      "required": ["start", "end", "span_hash"],
+      "properties": {
+        "start": {"type": "integer", "minimum": 0, "maximum": 2097152},
+        "end": {"type": "integer", "minimum": 1, "maximum": 2097152},
+        "span_hash": {"$ref": "#/$defs/hash"}
+      }
+    },
+    "review": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_id", "evidence_card_id", "status", "outcome", "bibliographic_identity_checked", "hypotheses_checked", "definitions_checked", "scope_exceptions_checked", "implication_checked"],
+      "properties": {
+        "source_id": {"$ref": "#/$defs/id"}, "evidence_card_id": {"$ref": "#/$defs/id"},
+        "status": {"enum": ["proposed", "checked", "rejected", "unresolved"]}, "outcome": {"enum": ["applicable", "rejected", "unresolved"]},
+        "bibliographic_identity_checked": {"type": "boolean"}, "hypotheses_checked": {"type": "boolean"}, "definitions_checked": {"type": "boolean"},
+        "scope_exceptions_checked": {"type": "boolean"}, "implication_checked": {"type": "boolean"}
+      }
+    },
+    "operational": {
+      "type": "object", "additionalProperties": false,
+      "required": ["exported_at", "exporter_version", "external_cost_usd", "external_calls", "elapsed_milliseconds", "source_path_hashes"],
+      "properties": {
+        "exported_at": {"$ref": "#/$defs/timestamp"}, "exporter_version": {"const": "phase4a-exporter-v1"},
+        "external_cost_usd": {"const": 0}, "external_calls": {"type": "array", "maxItems": 0}, "elapsed_milliseconds": {"type": "integer", "minimum": 0},
+        "source_path_hashes": {"type": "object", "maxProperties": 256, "propertyNames": {"$ref": "#/$defs/id"}, "additionalProperties": {"$ref": "#/$defs/hash"}}
+      }
+    }
+  }
+}
