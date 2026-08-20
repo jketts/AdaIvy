@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaivy.local/schemas/material-partial-result-event-v1.schema.json",
+  "title": "AdaIvy Material Partial Result Event Envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "record_type", "event", "content_hash"],
+  "properties": {
+    "schema_version": {"const": "adaivy.material-partial-result-event.v1"},
+    "record_type": {"const": "material_partial_result_event"},
+    "event": {"$ref": "#/$defs/event"},
+    "content_hash": {"$ref": "#/$defs/hash"}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._:-]{0,255}$"},
+    "hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "timestamp": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})$", "maxLength": 64},
+    "policy_version": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._:-]{0,127}$"},
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference_id", "reference_kind", "content_hash"],
+      "properties": {
+        "reference_id": {"$ref": "#/$defs/id"},
+        "reference_kind": {"type": "string", "enum": ["evidence", "certificate", "proof", "verified_artifact"]},
+        "content_hash": {"$ref": "#/$defs/hash"}
+      }
+    },
+    "result_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["statement", "object_id", "domain", "evidence_snapshot_hash", "canonicalization_version", "result_digest"],
+      "properties": {
+        "statement": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "object_id": {"$ref": "#/$defs/id"},
+        "domain": {"type": "string", "minLength": 1, "maxLength": 256},
+        "evidence_snapshot_hash": {"$ref": "#/$defs/hash"},
+        "canonicalization_version": {"$ref": "#/$defs/policy_version"},
+        "result_digest": {"$ref": "#/$defs/hash"}
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "method", "verification_record_ids", "policy_id", "policy_version"],
+      "properties": {
+        "status": {"const": "verified"},
+        "method": {"type": "string", "enum": ["human_review", "deterministic_check", "formal_kernel", "rigorous_certificate", "exact_counterexample"]},
+        "verification_record_ids": {"type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}},
+        "policy_id": {"$ref": "#/$defs/id"},
+        "policy_version": {"$ref": "#/$defs/policy_version"}
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id", "event_type", "semantic_idempotency_key", "objective_id", "run_id", "branch_id",
+        "classification", "result_identity", "materiality_explanation", "materiality_assessment_id",
+        "evidence_references", "verification", "originating_principal_id", "created_by_principal_id",
+        "capability_id", "required_capability", "created_at", "causal_parent_ids", "policy_id", "policy_version",
+        "main_objective_incomplete", "available_steering_actions"
+      ],
+      "properties": {
+        "event_id": {"$ref": "#/$defs/id"},
+        "event_type": {"const": "research.material_partial_result_surfaced"},
+        "semantic_idempotency_key": {"type": "string", "minLength": 1, "maxLength": 256},
+        "objective_id": {"$ref": "#/$defs/id"},
+        "run_id": {"$ref": "#/$defs/id"},
+        "branch_id": {"oneOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]},
+        "classification": {"type": "string", "enum": ["refutes", "restricts", "strengthens", "generalizes", "redirects"]},
+        "result_identity": {"$ref": "#/$defs/result_identity"},
+        "materiality_explanation": {"type": "string", "minLength": 1, "maxLength": 8192},
+        "materiality_assessment_id": {"$ref": "#/$defs/id"},
+        "evidence_references": {"type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true, "items": {"$ref": "#/$defs/reference"}},
+        "verification": {"$ref": "#/$defs/verification"},
+        "originating_principal_id": {"$ref": "#/$defs/id"},
+        "created_by_principal_id": {"$ref": "#/$defs/id"},
+        "capability_id": {"$ref": "#/$defs/id"},
+        "required_capability": {"const": "surface_verified_result"},
+        "created_at": {"$ref": "#/$defs/timestamp"},
+        "causal_parent_ids": {"type": "array", "maxItems": 64, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}},
+        "policy_id": {"$ref": "#/$defs/id"},
+        "policy_version": {"$ref": "#/$defs/policy_version"},
+        "main_objective_incomplete": {"const": true},
+        "available_steering_actions": {
+          "type": "array", "minItems": 5, "uniqueItems": true,
+          "items": {"type": "string", "enum": ["continue_objective", "investigate_result", "redirect_objective", "acknowledge", "dismiss"]}
+        }
+      }
+    }
+  }
+}
