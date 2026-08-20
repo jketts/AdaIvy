@@ -1,0 +1,116 @@
+{
+  "actors": {
+    "curator": "actor.fixture-curator",
+    "operator": "actor.fixture-operator",
+    "owner": "actor.fixture-owner",
+    "policy": "actor.fixture-policy",
+    "reviewer": "actor.fixture-reviewer"
+  },
+  "applicability_decisions": [
+    {
+      "actor": "reviewer",
+      "checks": {
+        "bibliographic_identity_checked": true,
+        "definitions_checked": true,
+        "hypotheses_checked": true,
+        "implication_checked": true,
+        "scope_exceptions_checked": true
+      },
+      "evidence_card": "fixture-card",
+      "evidence_refs": ["fixture-card"],
+      "outcome": "applicable",
+      "reason_code": "applicable",
+      "reason_detail": "all fixture applicability dimensions checked by the named human",
+      "recorded_at": "2026-08-20T00:00:04Z",
+      "status": "checked"
+    }
+  ],
+  "evidence_cards": [
+    {
+      "actor": "curator",
+      "bibliographic_identity": "AdaIvy canonical Phase 4A fixture",
+      "definitions": ["n is an integer"],
+      "exceptions": [],
+      "hypotheses": ["n = 1"],
+      "imported_statement": "if n = 1 then n + 1 = 2",
+      "logical_id": "fixture-card",
+      "reason_detail": "exact source-derived canonical fixture statement",
+      "recorded_at": "2026-08-20T00:00:03Z",
+      "scope": ["canonical local fixture"]
+    }
+  ],
+  "exported_at": "2026-08-20T00:00:06Z",
+  "lifecycle_actions": [
+    {
+      "action": "correction",
+      "actor": "owner",
+      "authority": "human_final",
+      "evidence_refs": ["evidence.fixture-correction"],
+      "reason_code": "provenance_corrected",
+      "reason_detail": "reviewed metadata-only fixture correction",
+      "recorded_at": "2026-08-20T00:00:05Z",
+      "target": "source-provenance"
+    }
+  ],
+  "policies": {
+    "applicability": "phase4a-applicability-v1",
+    "canonical_identity": "phase4a-canonical-identity-v1",
+    "lifecycle": "phase4a-lifecycle-v1",
+    "rights": "phase4a-rights-v1"
+  },
+  "profile": "phase4a-canonical-workflow-v1",
+  "rights_decisions": [
+    {
+      "evidence_refs": ["evidence.fixture-acquisition"],
+      "intended_use": "acquisition",
+      "lifecycle_id": "rights-lifecycle.fixture-acquisition",
+      "reason_code": "permitted",
+      "reason_detail": "fixture owner permits explicit local acquisition",
+      "recorded_at": "2026-08-20T00:00:00Z",
+      "valid_from": "2026-08-20T00:00:00Z",
+      "valid_until": null,
+      "value": "allowed"
+    },
+    {
+      "evidence_refs": ["evidence.fixture-storage"],
+      "intended_use": "storage_and_retention",
+      "lifecycle_id": "rights-lifecycle.fixture-storage",
+      "reason_code": "permitted",
+      "reason_detail": "fixture owner permits bounded local storage",
+      "recorded_at": "2026-08-20T00:00:00Z",
+      "valid_from": "2026-08-20T00:00:00Z",
+      "valid_until": null,
+      "value": "allowed"
+    },
+    {
+      "evidence_refs": ["evidence.fixture-parsing"],
+      "intended_use": "parsing",
+      "lifecycle_id": "rights-lifecycle.fixture-parsing",
+      "reason_code": "permitted",
+      "reason_detail": "fixture owner permits plain-text parsing",
+      "recorded_at": "2026-08-20T00:00:00Z",
+      "valid_from": "2026-08-20T00:00:00Z",
+      "valid_until": null,
+      "value": "allowed"
+    },
+    {
+      "evidence_refs": ["evidence.fixture-excerpting"],
+      "intended_use": "excerpting",
+      "lifecycle_id": "rights-lifecycle.fixture-excerpting",
+      "reason_code": "permitted",
+      "reason_detail": "fixture owner permits exact bounded excerpting",
+      "recorded_at": "2026-08-20T00:00:00Z",
+      "valid_from": "2026-08-20T00:00:00Z",
+      "valid_until": null,
+      "value": "allowed"
+    }
+  ],
+  "schema_version": "adaivy.phase4a-canonical-workflow.v1",
+  "source": {
+    "content": "Theorem: if n = 1 then n + 1 = 2.\n",
+    "filename": "canonical-source.txt",
+    "id": "source.canonical-fixture",
+    "intake_recorded_at": "2026-08-20T00:00:02Z",
+    "title": "Canonical Phase 4A local source"
+  }
+}
