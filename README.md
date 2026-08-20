@@ -332,6 +332,31 @@ This slice adds no model/API call, network acquisition, proof search or repair,
 premise retrieval, Why3/SMT/CAS/numerical adapter, web surface, broader Phase 3B
 workflow, Phase 4 feature, or quantum implementation.
 
+## Phase 5 exact adaptive quantum benchmark
+
+Phase 5 provides a restart-safe exact commuting/diagonal implementation of the
+normalization-corrected JRF iteration. It runs the frozen boundary
+counterexample and componentwise-full-support `QD-FS-01` fixtures, checks POVM
+feasibility and objective monotonicity in rational arithmetic, and compares the
+trajectory with an independent exact diagonal primal/dual optimum certificate.
+The workflow requires a falsification branch, records priorities and duplicate
+dead ends, retains all checked findings, and keeps search tiers 2--4 disabled
+until a cost-adjusted gain is measured.
+
+The exact boundary result is surfaced through the production material-partial-
+result event stream and can be steered by an authorized human. Checked results
+remain distinct from graph admission, semantic alignment, source
+applicability, and stronger mathematical warrants.
+
+```bash
+phase5_root="$(mktemp -d /tmp/adaivy-phase5.XXXXXX)"
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase5 run \
+  "$phase5_root/workspace" fixtures/phase5/quantum-diagonal-v1.json \
+  2026-08-20T12:00:00Z --output "$phase5_root/run.json"
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase5 list-results \
+  "$phase5_root/workspace"
+```
+
 ## Suggested implementation defaults
 
 - Python for orchestration and mathematical tooling
