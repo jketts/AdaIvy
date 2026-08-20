@@ -1,0 +1,116 @@
+# AdaIvy repository checks.
+#
+# `make check` is the single documented offline entrypoint. It needs no network,
+# no model provider, no container runtime, and no third-party package.
+#
+# Targets that need more than that are separate and named for what they need:
+#   check-sealed  requires the ADR-0016 v5 container image
+#   check-gate    requires the disposable Draft 2020-12 validator environment
+#   check-all     runs everything available
+
+PY ?= python3
+export PYTHONDONTWRITEBYTECODE := 1
+export PYTHONPATH := src
+
+# Frozen instants. The acceptance paths are deterministic, so these are inputs,
+# never `date` output; a moving clock would break byte-reproducibility.
+PHASE5_INSTANT ?= 2026-08-20T12:00:00Z
+PHASE6_INSTANT ?= 2026-08-20T14:00:00Z
+
+TMPROOT ?= $(shell printf '%s' "$${TMPDIR:-/tmp}")
+
+.PHONY: check check-all check-sealed check-gate test phase0 phase1 phase2 \
+        phase3a phase3b phase5 phase6 clean help
+
+help:
+	@printf 'Targets:\n'
+	@printf '  check         offline suite: tests + phases 0,1,2,3A,5,6 (no network, no Docker)\n'
+	@printf '  check-sealed  phase 3B Lean formal checking (requires the ADR-0016 v5 image)\n'
+	@printf '  check-gate    phase 4 gate tests (requires the disposable jsonschema env)\n'
+	@printf '  check-all     check + check-sealed\n'
+	@printf '  clean         remove __pycache__ and stray sqlite journals\n'
+
+check: test phase0 phase1 phase2 phase3a phase5 phase6
+	@printf '\n== offline check complete ==\n'
+
+check-all: check check-sealed
+	@printf '\n== full check complete ==\n'
+
+test:
+	@printf '\n== unit/integration/adversarial suite ==\n'
+	$(PY) -m unittest discover -s tests
+
+phase0:
+	@printf '\n== phase 0 adoption harness ==\n'
+	$(PY) -m phase0_harness.cli check
+
+phase1:
+	@printf '\n== phase 1 manual trust core ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-p1.XXXXXX") && \
+	  $(PY) -m math_research.cli demo --output-dir "$$d" >/dev/null && \
+	  $(PY) -m math_research.cli inspect "$$d/manual-dossier.json" >/dev/null && \
+	  rm -rf "$$d" && printf 'phase 1 ok\n'
+
+phase2:
+	@printf '\n== phase 2 durable baseline loop ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-p2.XXXXXX") && \
+	  $(PY) -m math_research.cli phase2 report reports/phase-2 run.phase2.demo.fake.v1 \
+	    --output "$$d/traceable-report.md" >/dev/null && \
+	  rm -rf "$$d" && printf 'phase 2 ok\n'
+
+phase3a:
+	@printf '\n== phase 3A bounded research memory ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-p3a.XXXXXX") && \
+	  $(PY) -m math_research.cli phase3a demo "$$d/workspace" --output-dir "$$d/out" >/dev/null && \
+	  $(PY) -m math_research.cli phase3a inspect "$$d/out/research-memory.json" >/dev/null && \
+	  rm -rf "$$d" && printf 'phase 3A ok\n'
+
+# Separate from `check`: needs the exact ADR-0016 v5 container image. Without it
+# the adapter fails closed and this target reports a failed status by design.
+phase3b check-sealed:
+	@printf '\n== phase 3B sealed Lean runtime (requires ADR-0016 v5 image) ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-p3b.XXXXXX") && \
+	  $(PY) -m math_research.cli phase3b demo "$$d/workspace" --output-dir "$$d/out" >/dev/null && \
+	  $(PY) -m math_research.cli phase3b inspect "$$d/out/formal-checking.json" >/dev/null && \
+	  rm -rf "$$d" && printf 'phase 3B ok\n'
+
+phase5:
+	@printf '\n== phase 5 exact adaptive quantum benchmark ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-p5.XXXXXX") && \
+	  $(PY) -m math_research.cli phase5 run "$$d/workspace" \
+	    fixtures/phase5/quantum-diagonal-v1.json $(PHASE5_INSTANT) \
+	    --output "$$d/run.json" >/dev/null && \
+	  $(PY) -m math_research.cli phase5 list-results "$$d/workspace" >/dev/null && \
+	  rm -rf "$$d" && printf 'phase 5 ok\n'
+
+phase6:
+	@printf '\n== phase 6 confirmatory evaluation and release ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-p6.XXXXXX") && \
+	  $(PY) -m math_research.cli phase6 demo "$$d/workspace" \
+	    fixtures/phase6/confirmatory-protocol-v1.json \
+	    fixtures/phase5/quantum-diagonal-v1.json \
+	    $(PHASE5_INSTANT) $(PHASE6_INSTANT) --output-dir "$$d/out" >/dev/null && \
+	  $(PY) -m math_research.cli phase6 inspect "$$d/out/phase6-export.json" >/dev/null && \
+	  rm -rf "$$d" && printf 'phase 6 ok\n'
+
+# The 15 gate tests skip themselves unless `jsonschema` is importable. They are
+# meant to run inside the disposable environment described in
+# docs/phase-4/DEPENDENCY_LICENSE_ASSESSMENT.md -- never the ordinary .venv.
+# Acquisition needs network, so this target never installs anything; point PY at
+# an interpreter that already has the pinned validator.
+check-gate:
+	@printf '\n== phase 4 gate tests (disposable validator environment) ==\n'
+	@$(PY) -c 'import importlib.util,sys; sys.exit(0 if importlib.util.find_spec("jsonschema") else 1)' \
+	  || { \
+	    printf 'jsonschema is not importable for %s, so all 15 gate tests would skip.\n' '$(PY)'; \
+	    printf 'Build the disposable environment from the pinned manifest first:\n'; \
+	    printf '  requirements-phase4-gate-py314-macos-arm64.txt\n'; \
+	    printf 'then re-run: make check-gate PY=/path/to/gate-venv/bin/python\n'; \
+	    exit 1; \
+	  }
+	$(PY) -m unittest tests.test_phase4_gate \
+	  tests.test_phase4a_schema_conformance tests.test_material_partial_result_contract
+
+clean:
+	find . -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
+	find . -name '*.sqlite3-shm' -o -name '*.sqlite3-wal' | xargs rm -f 2>/dev/null || true

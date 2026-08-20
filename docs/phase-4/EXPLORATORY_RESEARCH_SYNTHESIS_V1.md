@@ -186,7 +186,7 @@ This proposal activates no remote crawl, download, converter, or parser.
 ## 4. Structured result and relation model
 
 A future `StructuredResearchResult` contains the exact statement; normalized
-and original notation; assumptions; domains and types; quantifiers; conclusion;
+and original notation; assumptions; domains, codomains, and types; quantifiers; conclusion;
 scope; proof technique; dependencies; limitations; source anchors and version;
 all four state axes; non-authoritative confidence proposal; extraction method;
 known counterexamples; and orthogonal novelty status. Notation normalization has

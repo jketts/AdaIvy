@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adaivy"
+version = "0.6.0"
+description = "Verification-first mathematical research system"
+readme = "README.md"
+license = "LicenseRef-AdaIvy-Proprietary"
+requires-python = ">=3.14"
+dependencies = []
+
+# Deliberately empty. The runtime is standard-library only. ADR-0026 permits
+# production dependencies for a slice that needs one, held to the Phase 4A gate
+# standard: exact pinned wheels, recorded SHA-256 digests, licenses, and offline
+# --require-hashes installation.
+#
+# requires-python is >=3.14 because CPython 3.14.4 is the only interpreter the
+# suite has been executed against, and the Phase 4A gate manifest is pinned to
+# the cpython-314-darwin ABI. Widen this only after running `make check-all` on
+# the lower version.
+
+[project.scripts]
+adaivy = "math_research.cli:main"
+adaivy-phase0 = "phase0_harness.cli:main"
+
+[project.optional-dependencies]
+# The disposable Draft 2020-12 gate validator environment. Never installed into
+# the ordinary development environment; see docs/phase-4/DEPENDENCY_LICENSE_ASSESSMENT.md.
+gate = []
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["math_research*", "phase0_harness*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json"]

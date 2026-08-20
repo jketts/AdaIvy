@@ -1,0 +1,10 @@
+Quasi Stochastic Majorisation: A Contrasting Route
+
+Proposition D. Every quasi stochastic rescaling on a finite index set induces a
+majorisation ordering, and the ordering is preserved under composition.
+
+Proof sketch. Majorisation is characterised by partial sums of the ordered
+vector, and quasi stochastic rescaling acts monotonically on those partial sums.
+
+Remark. This route reaches a comparable conclusion without any cadence
+hypothesis, and therefore contrasts with the primary statement.

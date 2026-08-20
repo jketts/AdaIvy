@@ -1,0 +1,20 @@
+{
+  "policy_version": "synthesis-budget-v1",
+  "retrieval_iterations": 4,
+  "citation_dependency_hops": 4,
+  "query_fan_out": 32,
+  "results_per_query": 5,
+  "unique_discovered_sources": 64,
+  "graph_nodes": 128,
+  "graph_edges": 256,
+  "branch_count": 8,
+  "branch_generation_attempts": 8,
+  "wall_clock_seconds": 600,
+  "acquired_sources": 0,
+  "acquired_bytes": 0,
+  "branch_depth": 2,
+  "model_calls": 0,
+  "tool_calls": 0,
+  "exploration_reserve_numerator": 1,
+  "exploration_reserve_denominator": 4
+}

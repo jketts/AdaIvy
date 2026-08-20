@@ -68,7 +68,7 @@ until separate source-applicability, extraction-fidelity, mathematical-warrant,
 and policy-admission records establish their exact scopes. No one axis implies
 another. Extracted summaries never replace exact source statements. The derived
 result/claim graph is research state, not primary evidence and not mathematical
-truth. Synthesis must compare assumptions, quantifiers, domains, types, scope,
+truth. Synthesis must compare assumptions, quantifiers, domains, codomains, types, scope,
 and conclusions before proposing composition. A bridge-lemma candidate records
 a locally minimal missing claim under a finite declared comparison rule; it is
 not a theorem, proof-obligation discharge, global minimum, or novelty claim.
