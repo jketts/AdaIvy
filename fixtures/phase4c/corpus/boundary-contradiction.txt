@@ -1,0 +1,1 @@
+Project-authored counterexample. A zero prior weight violates the full-support assumption. At this boundary the convergence conclusion fails, providing a counterexample to the unrestricted universal statement.

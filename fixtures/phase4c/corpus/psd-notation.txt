@@ -1,0 +1,1 @@
+Project-authored notation record. The PSD cone consists of positive semidefinite matrices. The Loewner order writes A less than or equal to B when B minus A belongs to this matrix cone.

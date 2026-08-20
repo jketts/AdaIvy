@@ -1,0 +1,1 @@
+{"case_id":"p4b.acquisition.allowed-direct","expected_outcome":"untrusted_candidate","scenario":"authorized direct HTTPS response"}

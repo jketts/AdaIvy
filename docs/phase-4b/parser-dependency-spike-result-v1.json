@@ -1,0 +1,94 @@
+{
+  "activation": "disabled",
+  "artifacts_committed": false,
+  "assessment_date": "2026-08-20",
+  "install": {
+    "download": {
+      "hashes_verified": true,
+      "require_hashes": true,
+      "result": "passed",
+      "wheels": [
+        {
+          "filename": "pylatexenc-2.11-py2.py3-none-any.whl",
+          "sha256": "sha256:e78e7391d6c104f1ed150e21cfaa58016cdb50aa54406a2eecb793649ffdfdd0"
+        },
+        {
+          "filename": "pypdf-6.16.1-py3-none-any.whl",
+          "sha256": "sha256:63fec31c4092ae50b6729beedcb469055b60d20c834bde1c402df241f371f644"
+        }
+      ]
+    },
+    "installed_inventory": [
+      {
+        "file_count": 42,
+        "license_file": "pylatexenc-2.11.dist-info/licenses/LICENSE.txt",
+        "name": "pylatexenc",
+        "requires": [],
+        "version": "2.11"
+      },
+      {
+        "file_count": 121,
+        "license_file": "pypdf-6.16.1.dist-info/licenses/LICENSE",
+        "name": "pypdf",
+        "requires": [],
+        "version": "6.16.1"
+      }
+    ],
+    "no_deps": true,
+    "no_index": true,
+    "result": "passed_disposable_only"
+  },
+  "overall_result": "blocked",
+  "probes": {
+    "pylatexenc": {
+      "nesting": {
+        "depth_128": "completed",
+        "depth_129": "completed_false_admission_against_phase4b_limit",
+        "depth_1000": "RecursionError"
+      },
+      "result": "failed_gate",
+      "unicode_anchor": {
+        "direct_offsets_are": "unicode_code_points",
+        "prefix_encoding_can_derive_bytes": true,
+        "source_bytes": 33,
+        "source_characters": 32
+      }
+    },
+    "pypdf": {
+      "exact_source_byte_offsets": false,
+      "fixture_results": [
+        {
+          "fixture": "fixtures/phase4b/parsing/born-digital.pdf",
+          "outcome": "PdfReadError:startxref_not_found"
+        },
+        {
+          "fixture": "fixtures/phase4b/parsing/hostile.pdf",
+          "outcome": "PdfReadError:startxref_not_found"
+        },
+        {
+          "fixture": "fixtures/phase4b/acceptance/parsing/malformed.pdf",
+          "outcome": "PdfReadError:startxref_not_found"
+        },
+        {
+          "fixture": "fixtures/phase4b/acceptance/parsing/warning.pdf",
+          "outcome": "PdfReadError:startxref_not_found"
+        }
+      ],
+      "result": "failed_gate"
+    }
+  },
+  "requirements_file": "docs/phase-4b/preferred-parser-spike-requirements-v1.txt",
+  "schema_version": "adaivy.phase4b-parser-dependency-spike-result.v1",
+  "target": {
+    "implementation": "CPython",
+    "platform": "Darwin-arm64",
+    "python": "3.14.4"
+  },
+  "unclosed_evidence": [
+    "production_parser_adapter",
+    "parser_connected_os_sandbox",
+    "memory_cpu_open_file_limits",
+    "full_hostile_fixture_corpus",
+    "exact_source_byte_anchor_round_trip"
+  ]
+}

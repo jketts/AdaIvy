@@ -1,0 +1,53 @@
+{
+  "schema_version": "adaivy.phase5-noncommuting-sdp-fixtures.v1",
+  "cases": [
+    {
+      "schema_version": "adaivy.phase5-noncommuting-sdp-spike.v1",
+      "case_id": "commuting-exact-control",
+      "weighted_states": [
+        [["1/2", 0], [0, 0]],
+        [[0, 0], [0, "1/2"]]
+      ],
+      "primal_povm": [
+        [[1, 0], [0, 0]],
+        [[0, 0], [0, 1]]
+      ],
+      "dual_gamma": [["1/2", 0], [0, "1/2"]],
+      "expected_noncommuting": false,
+      "expected_zero_gap": true
+    },
+    {
+      "schema_version": "adaivy.phase5-noncommuting-sdp-spike.v1",
+      "case_id": "real-noncommuting-rational-candidate",
+      "weighted_states": [
+        [["1/2", 0], [0, 0]],
+        [["1/4", "1/4"], ["1/4", "1/4"]]
+      ],
+      "primal_povm": [
+        [[1, 0], [0, 0]],
+        [[0, 0], [0, 1]]
+      ],
+      "dual_gamma": [["1/2", 0], [0, "1/2"]],
+      "expected_noncommuting": true,
+      "expected_zero_gap": false
+    },
+    {
+      "schema_version": "adaivy.phase5-noncommuting-sdp-spike.v1",
+      "case_id": "complex-noncommuting-rational-candidate",
+      "weighted_states": [
+        [["1/2", 0], [0, 0]],
+        [
+          ["1/4", {"re": "0", "im": "-1/4"}],
+          [{"re": "0", "im": "1/4"}, "1/4"]
+        ]
+      ],
+      "primal_povm": [
+        [[1, 0], [0, 0]],
+        [[0, 0], [0, 1]]
+      ],
+      "dual_gamma": [["1/2", 0], [0, "1/2"]],
+      "expected_noncommuting": true,
+      "expected_zero_gap": false
+    }
+  ]
+}

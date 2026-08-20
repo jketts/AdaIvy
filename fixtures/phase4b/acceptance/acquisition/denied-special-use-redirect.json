@@ -1,0 +1,1 @@
+{"case_id":"p4b.acquisition.denied-special-use-redirect","expected_outcome":"denied","scenario":"redirect resolves to a special-use address"}

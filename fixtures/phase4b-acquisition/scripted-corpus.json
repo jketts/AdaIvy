@@ -1,0 +1,32 @@
+{
+  "schema_version": "adaivy.phase4b-acquisition-script.v1",
+  "responses": {
+    "https://papers.example/start": {
+      "status": 302,
+      "headers": {"location": "https://archive.example/paper-v1"},
+      "body": "",
+      "elapsed_ms": 3
+    },
+    "https://archive.example/paper-v1": {
+      "status": 200,
+      "headers": {"content-type": "text/plain"},
+      "body": "Project-authored source bytes for the acquisition spike.\n",
+      "elapsed_ms": 7
+    },
+    "https://papers.example/missing": {
+      "error": "scripted connection failure"
+    },
+    "https://papers.example/oversized": {
+      "status": 200,
+      "headers": {"content-type": "text/plain"},
+      "body": "0123456789ABCDEF",
+      "elapsed_ms": 1
+    },
+    "https://papers.example/slow": {
+      "status": 200,
+      "headers": {"content-type": "text/plain"},
+      "body": "late",
+      "elapsed_ms": 101
+    }
+  }
+}

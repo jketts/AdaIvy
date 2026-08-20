@@ -1,0 +1,1 @@
+{"case_id":"p4b.lifecycle.deletion-restart","expected_outcome":"absence_reconciled_after_restart","scenario":"interrupted deletion followed by restart reconciliation"}

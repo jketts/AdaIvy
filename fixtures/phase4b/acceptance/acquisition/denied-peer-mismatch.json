@@ -1,0 +1,1 @@
+{"case_id":"p4b.acquisition.denied-peer-mismatch","expected_outcome":"denied","scenario":"connected peer differs from approved resolution"}

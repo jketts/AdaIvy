@@ -1,0 +1,1 @@
+Project-authored source. A spectral theorem for an unbounded self-adjoint operator uses a projection-valued measure and domain conditions. It does not provide a finite eigenbasis without compact resolvent and is inapplicable to a finite-matrix eigenbasis claim as stated.

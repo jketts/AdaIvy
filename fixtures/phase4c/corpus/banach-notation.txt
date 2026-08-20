@@ -1,0 +1,1 @@
+Project-authored notation record. A Banach space is a complete normed vector space: every Cauchy sequence converges in the norm. The alternate phrase complete normed space denotes the same definition.

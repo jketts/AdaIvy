@@ -45,6 +45,8 @@ def main(argv: list[str] | None = None) -> int:
     phase3b.add_argument("phase3b_args", nargs=argparse.REMAINDER)
     phase4a = subparsers.add_parser("phase4a", help="bounded Phase 4A local rights/review commands")
     phase4a.add_argument("phase4a_args", nargs=argparse.REMAINDER)
+    phase4b = subparsers.add_parser("phase4b", help="bounded Phase 4B offline candidate-metadata commands")
+    phase4b.add_argument("phase4b_args", nargs=argparse.REMAINDER)
     phase5 = subparsers.add_parser("phase5", help="adaptive quantum benchmark and steering commands")
     phase5.add_argument("phase5_args", nargs=argparse.REMAINDER)
     phase6 = subparsers.add_parser("phase6", help="confirmatory evaluation and release commands")
@@ -65,6 +67,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "phase4a":
         from .phase4a_cli import main as phase4a_main
         return phase4a_main(args.phase4a_args)
+    if args.command == "phase4b":
+        from .phase4b_cli import main as phase4b_main
+        return phase4b_main(args.phase4b_args)
     if args.command == "phase5":
         from .phase5_cli import main as phase5_main
         return phase5_main(args.phase5_args)

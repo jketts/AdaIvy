@@ -1,0 +1,1 @@
+Project-authored source. The finite-dimensional spectral theorem states that a self-adjoint matrix has an orthonormal eigenbasis. Its finite dimension and matrix hypotheses match the local operator claim.

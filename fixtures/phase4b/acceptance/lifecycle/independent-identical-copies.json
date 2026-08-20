@@ -1,0 +1,1 @@
+{"case_id":"p4b.lifecycle.independent-identical-copies","expected_outcome":"one_copy_removed_one_retained","scenario":"identical bytes stored as independently deletable source objects"}

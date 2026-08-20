@@ -1,0 +1,1 @@
+Project-authored counterexample. One exact iteration makes the objective decrease, contradicting the claimed monotonic improvement. The rational witness refutes the universal monotonicity claim.

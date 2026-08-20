@@ -1,0 +1,1 @@
+Project-authored historical record. The finite-subcover principle says that every open covering of the closed bounded interval admits finitely many members that still cover it. This older formulation is the prior result relevant to the renamed query.

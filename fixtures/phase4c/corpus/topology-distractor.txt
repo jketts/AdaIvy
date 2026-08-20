@@ -1,0 +1,1 @@
+Project-authored informal note. Compact notation can shorten a topological calculation, but this note states no theorem, hypotheses, or applicable proof.

@@ -1,0 +1,20 @@
+{
+  "schema_version": "adaivy.phase4c-corpus.v1",
+  "fixture_license": "LicenseRef-AdaIvy-Synthetic-Fixture",
+  "documents": [
+    {"id":"compactness-lemma","path":"corpus/compactness-lemma.txt","source_class":"primary","applicability":"applicable","contradiction":false,"duplicate_group":null},
+    {"id":"spectral-lemma","path":"corpus/spectral-lemma.txt","source_class":"primary","applicability":"applicable","contradiction":false,"duplicate_group":null},
+    {"id":"separation-lemma","path":"corpus/separation-lemma.txt","source_class":"primary","applicability":"applicable","contradiction":false,"duplicate_group":null},
+    {"id":"unbounded-spectral-mismatch","path":"corpus/unbounded-spectral-mismatch.txt","source_class":"secondary","applicability":"incompatible_hypotheses","contradiction":false,"duplicate_group":null},
+    {"id":"finite-dimensional-spectral","path":"corpus/finite-dimensional-spectral.txt","source_class":"primary","applicability":"applicable","contradiction":false,"duplicate_group":null},
+    {"id":"boundary-contradiction","path":"corpus/boundary-contradiction.txt","source_class":"primary","applicability":"applicable","contradiction":true,"duplicate_group":null},
+    {"id":"monotonicity-contradiction","path":"corpus/monotonicity-contradiction.txt","source_class":"primary","applicability":"applicable","contradiction":true,"duplicate_group":null},
+    {"id":"banach-notation","path":"corpus/banach-notation.txt","source_class":"primary","applicability":"applicable","contradiction":false,"duplicate_group":null},
+    {"id":"psd-notation","path":"corpus/psd-notation.txt","source_class":"primary","applicability":"applicable","contradiction":false,"duplicate_group":null},
+    {"id":"renamed-cover-result","path":"corpus/renamed-cover-result.txt","source_class":"historical","applicability":"applicable","contradiction":false,"duplicate_group":null},
+    {"id":"duplicate-certificate-a","path":"corpus/duplicate-certificate-a.txt","source_class":"primary","applicability":"applicable","contradiction":false,"duplicate_group":"dual-certificate"},
+    {"id":"duplicate-certificate-b","path":"corpus/duplicate-certificate-b.txt","source_class":"secondary","applicability":"applicable","contradiction":false,"duplicate_group":"dual-certificate"},
+    {"id":"topology-distractor","path":"corpus/topology-distractor.txt","source_class":"informal","applicability":"insufficient_evidence","contradiction":false,"duplicate_group":null},
+    {"id":"optimization-distractor","path":"corpus/optimization-distractor.txt","source_class":"informal","applicability":"insufficient_evidence","contradiction":false,"duplicate_group":null}
+  ]
+}
