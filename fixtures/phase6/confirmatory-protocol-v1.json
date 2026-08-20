@@ -1,0 +1,30 @@
+{
+  "schema_version": "adaivy.confirmatory-protocol.v1",
+  "protocol_id": "protocol.qd-fs-01.confirmatory-v1",
+  "version": 1,
+  "phase": "confirmatory",
+  "benchmark_id": "QD-FS-01",
+  "phase5_fixture_hash": "sha256:a2fa89d5ceea218fe5d777f0c97aef8566a7bc3aa44b7307511cf88056b4b382",
+  "heldout_case_ids": ["qd-fs-01-orthogonal-2d"],
+  "allowed_capabilities": [
+    "execute_exact_diagonal_case",
+    "read_frozen_case_only",
+    "write_confirmatory_result"
+  ],
+  "metrics": [
+    "exact_feasibility",
+    "independent_primal_dual_agreement",
+    "generality_control_rejection_rate",
+    "restart_replay_identity"
+  ],
+  "success_criteria": {
+    "exact_feasibility": true,
+    "independent_primal_dual_agreement": true,
+    "generality_control_rejection_rate": "1",
+    "restart_replay_identity": true
+  },
+  "stopping_rule": "one_pass_no_adaptation",
+  "baseline": "arithmetic_only_without_trust_controls",
+  "frozen_at": "2026-08-20T13:00:00Z",
+  "frozen_by": "principal.phase5.owner"
+}

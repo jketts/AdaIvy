@@ -47,6 +47,8 @@ def main(argv: list[str] | None = None) -> int:
     phase4a.add_argument("phase4a_args", nargs=argparse.REMAINDER)
     phase5 = subparsers.add_parser("phase5", help="adaptive quantum benchmark and steering commands")
     phase5.add_argument("phase5_args", nargs=argparse.REMAINDER)
+    phase6 = subparsers.add_parser("phase6", help="confirmatory evaluation and release commands")
+    phase6.add_argument("phase6_args", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
 
     if args.command == "phase2":
@@ -64,6 +66,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "phase5":
         from .phase5_cli import main as phase5_main
         return phase5_main(args.phase5_args)
+    if args.command == "phase6":
+        from .phase6_cli import main as phase6_main
+        return phase6_main(args.phase6_args)
 
     if args.command == "create":
         dossier = InMemoryTrustStore().append_dossier(build_known_valid_theorem_dossier())
