@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaivy.local/schemas/material-partial-result-event-v1.schema.json",
+  "title": "AdaIvy Material Partial Result Envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "record_type", "event", "steering_records", "content_hash"],
+  "properties": {
+    "schema_version": {"const": "adaivy.material-partial-result-event.v1"},
+    "record_type": {"const": "material_partial_result_envelope"},
+    "event": {"$ref": "#/$defs/event"},
+    "steering_records": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {"$ref": "#/$defs/steering_record"}
+    },
+    "content_hash": {"$ref": "#/$defs/hash"}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._:-]{0,255}$"},
+    "hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "timestamp": {"type": "string", "format": "date-time", "maxLength": 64},
+    "actor_type": {
+      "enum": ["human", "model", "tool", "formal_system", "external_system", "system"]
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor_id", "actor_type", "authority_id", "authority_type"],
+      "properties": {
+        "actor_id": {"$ref": "#/$defs/id"},
+        "actor_type": {"$ref": "#/$defs/actor_type"},
+        "authority_id": {"$ref": "#/$defs/id"},
+        "authority_type": {"type": "string", "enum": ["result_origin", "surface_verified_result", "steer_research"]}
+      }
+    },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference_id", "reference_kind", "content_hash"],
+      "properties": {
+        "reference_id": {"$ref": "#/$defs/id"},
+        "reference_kind": {"enum": ["evidence", "certificate", "proof", "verified_artifact"]},
+        "content_hash": {"$ref": "#/$defs/hash"}
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "method", "verification_record_ids", "policy_id"],
+      "properties": {
+        "status": {"const": "verified"},
+        "method": {"enum": ["human_review", "deterministic_check", "formal_kernel", "rigorous_certificate", "exact_counterexample"]},
+        "verification_record_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}
+        },
+        "policy_id": {"$ref": "#/$defs/id"}
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id", "event_type", "semantic_idempotency_key", "objective_id", "run_id",
+        "classification", "statement", "materiality_explanation", "materiality_assessment_id",
+        "evidence_references", "verification", "origin", "created_by", "created_at",
+        "causal_parent_ids", "main_objective_incomplete", "available_steering_actions"
+      ],
+      "properties": {
+        "event_id": {"$ref": "#/$defs/id"},
+        "event_type": {"const": "research.material_partial_result_surfaced"},
+        "semantic_idempotency_key": {"type": "string", "minLength": 1, "maxLength": 256},
+        "objective_id": {"$ref": "#/$defs/id"},
+        "run_id": {"$ref": "#/$defs/id"},
+        "classification": {"enum": ["refutes", "restricts", "strengthens", "generalizes", "redirects"]},
+        "statement": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "materiality_explanation": {"type": "string", "minLength": 1, "maxLength": 8192},
+        "materiality_assessment_id": {"$ref": "#/$defs/id"},
+        "evidence_references": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/reference"}
+        },
+        "verification": {"$ref": "#/$defs/verification"},
+        "origin": {
+          "allOf": [
+            {"$ref": "#/$defs/authority"},
+            {"properties": {"authority_type": {"const": "result_origin"}}}
+          ]
+        },
+        "created_by": {
+          "allOf": [
+            {"$ref": "#/$defs/authority"},
+            {"properties": {"actor_type": {"enum": ["human", "system"]}, "authority_type": {"const": "surface_verified_result"}}}
+          ]
+        },
+        "created_at": {"$ref": "#/$defs/timestamp"},
+        "causal_parent_ids": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}
+        },
+        "main_objective_incomplete": {"const": true},
+        "available_steering_actions": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {"enum": ["continue_objective", "investigate_result", "redirect_objective", "acknowledge", "dismiss"]},
+          "allOf": [
+            {"contains": {"const": "continue_objective"}},
+            {"contains": {"const": "investigate_result"}},
+            {"contains": {"const": "redirect_objective"}},
+            {"contains": {"const": "acknowledge"}},
+            {"contains": {"const": "dismiss"}}
+          ]
+        }
+      }
+    },
+    "steering_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action_id", "event_id", "event_type", "action", "actor", "created_at", "idempotency_key", "target_objective_id", "supersedes_action_id"],
+      "properties": {
+        "action_id": {"$ref": "#/$defs/id"},
+        "event_id": {"$ref": "#/$defs/id"},
+        "event_type": {"const": "research.material_partial_result_steering_recorded"},
+        "action": {"enum": ["continue_objective", "investigate_result", "redirect_objective", "acknowledge", "dismiss"]},
+        "actor": {
+          "allOf": [
+            {"$ref": "#/$defs/authority"},
+            {"properties": {"actor_type": {"const": "human"}, "authority_type": {"const": "steer_research"}}}
+          ]
+        },
+        "created_at": {"$ref": "#/$defs/timestamp"},
+        "idempotency_key": {"type": "string", "minLength": 1, "maxLength": 256},
+        "target_objective_id": {"oneOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]},
+        "supersedes_action_id": {"oneOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"action": {"enum": ["investigate_result", "redirect_objective"]}}, "required": ["action"]},
+          "then": {"properties": {"target_objective_id": {"$ref": "#/$defs/id"}}},
+          "else": {"properties": {"target_objective_id": {"type": "null"}}}
+        }
+      ]
+    }
+  }
+}
