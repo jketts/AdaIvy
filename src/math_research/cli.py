@@ -43,6 +43,8 @@ def main(argv: list[str] | None = None) -> int:
     phase3a.add_argument("phase3a_args", nargs=argparse.REMAINDER)
     phase3b = subparsers.add_parser("phase3b", help="bounded Phase 3B Lean formal-checking commands")
     phase3b.add_argument("phase3b_args", nargs=argparse.REMAINDER)
+    phase4a = subparsers.add_parser("phase4a", help="bounded Phase 4A local rights/review commands")
+    phase4a.add_argument("phase4a_args", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
 
     if args.command == "phase2":
@@ -54,6 +56,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "phase3b":
         from .phase3b_cli import main as phase3b_main
         return phase3b_main(args.phase3b_args)
+    if args.command == "phase4a":
+        from .phase4a_cli import main as phase4a_main
+        return phase4a_main(args.phase4a_args)
 
     if args.command == "create":
         dossier = InMemoryTrustStore().append_dossier(build_known_valid_theorem_dossier())
