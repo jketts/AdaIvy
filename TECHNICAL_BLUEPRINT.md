@@ -1,8 +1,10 @@
 # Technical Blueprint: Verification-First Mathematical Research System
 
-**Document status:** Architecture baseline 0.3 — Phase 3A/3B/4 sequencing
-accepted on 19 August 2026 after the revision 0.2 prior-art and failure-mode
-review. ADR-0012 preserves the superseded roadmap history.
+**Document status:** Architecture baseline 0.4 — bounded local Phase 5 and
+Phase 6 slices accepted and implemented on 20 August 2026. Phases 0--4A remain
+preserved; noncommuting SDP, higher adaptive-search tiers, broader Phase 4
+acquisition, exploratory synthesis, and external evaluation remain deferred.
+ADR-0012 preserves the superseded roadmap history.
 
 **Audience:** Implementers, mathematical researchers, evaluators, and AI-system
 operators
@@ -207,9 +209,9 @@ restart.
 
 ### Proposed C17. Exploratory synthesis preserves authority and history (inactive)
 
-C17 is a proposed refinement, not part of baseline 0.3. It cannot become active
-until the branch is rebased onto the approved, effective forward prerequisites
-and the combined architecture passes an independent audit. The proposal keeps
+C17 is a proposed refinement, not part of baseline 0.4. Its prerequisites are
+integrated, but it cannot become active until the combined architecture passes
+an independent audit and a dedicated owner-approved entry gate. The proposal keeps
 source applicability, extraction fidelity, mathematical warrant, and graph admission
 as independent axes; requires finite run bounds; and preserves negative and
 abandoned branches. Source correction, revocation, takedown, deletion, changed
@@ -1009,8 +1011,8 @@ The branch portfolio should include direct proof, counterexample search,
 restricted cases, computational experiments, alternative formulations,
 cross-domain transfer, multi-paper composition, and formalization/verification
 when applicable. Human steering appends decisions and never overwrites earlier
-branch history. This lifecycle remains inactive pending the forward integration
-prerequisites and independent re-audit. The authoritative proposed contract is
+branch history. This lifecycle remains inactive pending an independent re-audit
+and dedicated owner-approved entry gate. The authoritative proposed contract is
 `docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md`.
 ---
 
@@ -1482,8 +1484,8 @@ ID, entity IDs, and a schema-versioned payload.
 
 Proposed future exploratory branch, graph, synthesis, bridge, correction,
 invalidation, and steering records must use this same semantic event store and
-durable run timeline. They require the effective forward partial-result
-lifecycle and a separately approved production vocabulary and replay contract;
+durable run timeline. They require the existing partial-result lifecycle and a
+separately approved production vocabulary and replay contract;
 this proposal creates no event implementation or parallel notification system.
 Correction, revocation, takedown, deletion, changed rights applicability, and a
 superseding `ApplicabilityReview` append semantic closure/invalidation records.
@@ -2027,7 +2029,7 @@ Build:
 Exploratory multi-result synthesis is not part of the implemented or active
 Phase 4A rights/applicability slice. Phase 4 may establish separately gated
 source, parser, and hybrid-retrieval prerequisites, but it cannot represent the
-ADR-0023 synthesis capability as operational.
+ADR-0025 synthesis capability as operational.
 
 Exit criteria:
 
@@ -2040,10 +2042,26 @@ Exit criteria:
 
 ### Phase 5 — Adaptive search and quantum benchmark
 
-Build:
+Implemented bounded local slice (ADR-0023):
 
-- after the approved, effective forward prerequisites, a successful integration
-  re-audit, and a dedicated owner-approved entry gate, the proposed ADR-0023
+- exact rational commuting/diagonal `QD-FS-01` and boundary-control execution;
+- prioritized verification and falsification branches, duplicate dead-end
+  detection, and complete checked-finding retention;
+- independent exact diagonal primal/dual optimum certificates;
+- restart-safe SQLite state, canonical export, and authorized human steering;
+- search tiers 2--4 recorded but disabled pending measured cost-adjusted gain.
+
+Bounded-slice acceptance:
+
+- exact full-support and boundary fixtures pass without numerical tolerance;
+- source-derived evidence fails closed without current Phase 4A applicability;
+- nonhuman steering fails closed;
+- run, restart, steering, and export are byte-reproducible.
+
+Deferred expansion:
+
+- after a successful independent integration re-audit and dedicated
+  owner-approved entry gate, the proposed ADR-0025
   bounded exploratory multi-result synthesis pipeline and deterministic result-graph
   interchange;
 - representation comparison, structured-result proposals, multi-hop hybrid
@@ -2055,7 +2073,7 @@ Build:
 - quantum-state-discrimination plugin and independent SDP/numerical checks;
 - comparative dashboards and full failure-route retention.
 
-Exit criteria:
+Deferred exit criteria:
 
 - proposed scenarios `ERS-AC-01` through `ERS-AC-12` in
   `docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md` pass on the actual bounded
@@ -2075,7 +2093,23 @@ Exit criteria:
 
 ### Phase 6 — Confirmatory evaluation and research hardening
 
-Build:
+Implemented bounded local slice (ADR-0024):
+
+- one content-hashed held-out commuting/diagonal case with an immutable method,
+  metric set, capability allowlist, success criteria, and one-pass stop rule;
+- a Phase 5 material-result prerequisite and exactly one held-out access;
+- five deterministic generality trust controls;
+- orthogonal novelty, significance, and contribution records;
+- restart-safe canonical release package and traceable report.
+
+Bounded-slice acceptance:
+
+- held-out feedback cannot adapt the frozen protocol;
+- fixture or capability expansion fails before confirmatory execution;
+- restart and repeated execution produce identical canonical results;
+- novelty and significance remain explicitly `not_assessed`.
+
+Deferred expansion:
 
 - held-out capability boundaries and frozen confirmatory protocols;
 - the generality control suite from Section 18.4;
@@ -2083,7 +2117,7 @@ Build:
 - clean-room replay and release packaging;
 - security, cost, and expert-review operations.
 
-Exit criteria:
+Deferred exit criteria:
 
 - no confirmatory result was selected using held-out feedback;
 - complete traces expose negative and superseded attempts;
@@ -2193,8 +2227,8 @@ disagreement, locally scoped bridge proposals, material-result handling,
 rights-excluded influence, correction/revocation/takedown/deletion and changed
 applicability propagation (including a superseding `ApplicabilityReview`),
 proposal-digest replay, abandoned-branch deduplication, and append-only human
-steering. The suite is inactive until the forward prerequisites are integrated
-and the combined architecture passes an independent re-audit.
+steering. The suite is inactive until the combined architecture passes an
+independent re-audit and dedicated owner-approved entry gate.
 ---
 
 ## 21. Implementation guidance for Codex

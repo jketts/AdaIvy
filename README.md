@@ -341,10 +341,10 @@ The workflow requires a falsification branch, records priorities and duplicate
 dead ends, retains all checked findings, and keeps search tiers 2--4 disabled
 until a cost-adjusted gain is measured.
 
-The exact boundary result is surfaced through the production material-partial-
+The exact boundary result is surfaced through the bounded local material-partial-
 result event stream and can be steered by an authorized human. Checked results
 remain distinct from graph admission, semantic alignment, source
-applicability, and stronger mathematical warrants.
+applicability, and stronger mathematical warrants. ADR-0023 freezes this slice.
 
 ```bash
 phase5_root="$(mktemp -d /tmp/adaivy-phase5.XXXXXX)"
@@ -364,6 +364,7 @@ outcome. It consumes the persisted Phase 5 run and material event, executes the
 five generality trust controls, records novelty and significance as separate
 unassessed dimensions, attributes contributions, and writes a canonical
 restart-safe release package plus a traceable report.
+ADR-0024 freezes this slice and its explicit limitations.
 
 Run the complete offline Phase 5 → Phase 6 workflow:
 

@@ -1,7 +1,7 @@
-# ADR-0023: Define exploratory multi-result research synthesis as a future gated capability
+# ADR-0025: Define exploratory multi-result research synthesis as a future gated capability
 
-- **Status:** proposed (architecture only; inactive pending integration and
-  re-audit)
+- **Status:** proposed (architecture only; inactive pending independent
+  re-audit and a dedicated owner-approved entry gate)
 - **Date:** 2026-08-20
 - **Blueprint requirement:** C1-C17 (C17 proposed), research lifecycle,
   retrieval, verification, and Phase 5
@@ -25,18 +25,16 @@ laundering retrieval or model output into mathematical authority. A vague
 assumption mismatches, failed branches, and the distinction between a proposed
 composition and a verified result.
 
-This ADR is numbered 0023 because ADR-0019 is reserved by the material-partial-
-result work and the parallel Phase 4A work reserves ADR-0020 through ADR-0022.
-None of ADR-0019 through ADR-0022 or their normative artifacts is present in
-this branch ancestry. They are forward integration prerequisites, not effective
-local predecessors. This branch is based on the exact committed Phase 4A HEAD
-and does not copy, modify, or activate those parallel changes.
+This proposal was drafted in parallel under the provisional number ADR-0023.
+Integration assigns ADR-0023 to the accepted bounded Phase 5 quantum slice and
+ADR-0024 to the accepted bounded Phase 6 confirmatory slice, so this inactive
+proposal is canonically renumbered ADR-0025.
 
-Before this ADR can become effective, it must be rebased onto approved,
-effective versions of ADR-0019, ADR-0020, ADR-0021, and ADR-0022; the Material
-Partial Result Surfacing v1 contract; and the applicable stable
-protected-evidence manifest. The rebased combination must then receive an
-independent architecture audit.
+Approved versions of ADR-0019 through ADR-0022, the Material Partial Result
+Surfacing v1 contract, and the stable protected-evidence manifest are now in the
+integrated ancestry. Their presence does not activate this proposal. ADR-0025
+still requires an independent architecture audit and a dedicated owner-approved
+entry gate before any implementation work begins.
 
 ## Options considered
 
@@ -125,9 +123,9 @@ search-complexity ladder. It does not advance implementation phase scope.
 
 ## Validation and revisit trigger
 
-Make this proposal effective only after the forward integration prerequisites
-are present, the combined architecture is independently re-audited, and the future
-implementation plan satisfies all twelve
+Make this proposal effective only after the integrated architecture is
+independently re-audited, a dedicated owner-approved entry gate passes, and the
+future implementation plan satisfies all twelve
 acceptance scenarios in the normative contract, preserves the Phase 4A
 fail-closed rights model and human-only applicability authority, reuses the
 existing append-only event/run timeline, and reproduces policy-admitted

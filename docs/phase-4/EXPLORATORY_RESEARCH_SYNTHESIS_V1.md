@@ -1,21 +1,20 @@
 # Exploratory Multi-Result Research Synthesis v1
 
-Status: **proposed normative architecture contract; inactive pending
-predecessor integration and re-audit**
+Status: **proposed normative architecture contract; inactive pending an
+independent re-audit and dedicated owner-approved entry gate**
 
 This contract proposes the earliest safe architecture for exploratory,
 multi-result mathematical research synthesis. It creates no operational
 discovery, acquisition, parsing, retrieval, extraction, graph, exploration,
 synthesis, verification, event, or steering path.
 
-This branch does not contain the decisions and artifacts on which activation
-depends. Forward integration prerequisites are approved, effective versions of
-ADR-0019, ADR-0020, ADR-0021, ADR-0022, Material Partial Result Surfacing v1,
-and the applicable stable protected-evidence manifest. ADR-0023 cannot become effective
-until it is rebased onto those effective predecessors and the combined result is
-independently re-audited. No local Markdown link is used for absent artifacts.
+The integrated repository contains approved, effective versions of ADR-0019
+through ADR-0024, Material Partial Result Surfacing v1, and the applicable
+stable protected-evidence manifest. Their presence does not activate this
+contract. ADR-0025 cannot become effective until the combined architecture is
+independently re-audited and a dedicated owner-approved entry gate passes.
 
-After integration, Phase 1 trust semantics, Phase 2 append-only semantic events
+Within the integrated architecture, Phase 1 trust semantics, Phase 2 append-only semantic events
 and run timeline, Phase 3 provenance, Phase 4A rights/applicability and content
 lifecycle, and ADR-0019 material-result semantics remain authoritative. This
 contract must reuse them rather than create parallel provenance, content,
