@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaivy.local/schemas/material-partial-result-lifecycle-v1.schema.json",
+  "title": "AdaIvy Material Partial Result Lifecycle Envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "record_type", "lifecycle", "content_hash"],
+  "properties": {
+    "schema_version": {"const": "adaivy.material-partial-result-lifecycle.v1"},
+    "record_type": {"const": "material_partial_result_lifecycle"},
+    "lifecycle": {"$ref": "#/$defs/lifecycle"},
+    "content_hash": {"$ref": "#/$defs/hash"}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._:-]{0,255}$"},
+    "hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "timestamp": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})$", "maxLength": 64},
+    "policy_version": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._:-]{0,127}$"},
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lifecycle_id", "event_type", "idempotency_key", "material_result_event_id", "objective_id", "run_id", "change_kind", "derived_state", "principal_id", "effective_actor_kind", "authority", "capability_id", "required_capability", "affected_evidence_ids", "source_record_ids", "applicability_review_ids", "reason", "created_at", "causal_predecessor_id", "superseding_event_id", "policy_id", "policy_version", "sequence"],
+      "properties": {
+        "lifecycle_id": {"$ref": "#/$defs/id"},
+        "event_type": {"const": "research.material_partial_result_lifecycle_recorded"},
+        "idempotency_key": {"type": "string", "minLength": 1, "maxLength": 256},
+        "material_result_event_id": {"$ref": "#/$defs/id"},
+        "objective_id": {"$ref": "#/$defs/id"},
+        "run_id": {"$ref": "#/$defs/id"},
+        "change_kind": {"type": "string", "enum": ["correction", "supersession", "revocation", "takedown", "deletion", "withdrawal", "rights_applicability_changed", "applicability_review_changed"]},
+        "derived_state": {"type": "string", "enum": ["corrected", "superseded", "invalidated"]},
+        "principal_id": {"$ref": "#/$defs/id"},
+        "effective_actor_kind": {"type": "string", "enum": ["human", "automation", "model", "system"]},
+        "authority": {"type": "string", "enum": ["source_provenance", "human_final", "proposal", "deterministic_policy"]},
+        "capability_id": {"$ref": "#/$defs/id"},
+        "required_capability": {"const": "review_result_lifecycle"},
+        "affected_evidence_ids": {"type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}},
+        "source_record_ids": {"type": "array", "maxItems": 64, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}},
+        "applicability_review_ids": {"type": "array", "maxItems": 64, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}},
+        "reason": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "created_at": {"$ref": "#/$defs/timestamp"},
+        "causal_predecessor_id": {"$ref": "#/$defs/id"},
+        "superseding_event_id": {"oneOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]},
+        "policy_id": {"$ref": "#/$defs/id"},
+        "policy_version": {"$ref": "#/$defs/policy_version"},
+        "sequence": {"type": "integer", "minimum": 1, "maximum": 256}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"change_kind": {"const": "supersession"}}, "required": ["change_kind"]},
+          "then": {"properties": {"derived_state": {"const": "superseded"}, "superseding_event_id": {"$ref": "#/$defs/id"}}},
+          "else": {"properties": {"superseding_event_id": {"type": "null"}}}
+        },
+        {
+          "if": {"properties": {"change_kind": {"const": "correction"}}, "required": ["change_kind"]},
+          "then": {"properties": {"derived_state": {"const": "corrected"}}}
+        },
+        {
+          "if": {"properties": {"change_kind": {"enum": ["revocation", "takedown", "deletion", "withdrawal", "rights_applicability_changed", "applicability_review_changed"]}}, "required": ["change_kind"]},
+          "then": {"properties": {"derived_state": {"const": "invalidated"}}}
+        }
+      ]
+    }
+  }
+}

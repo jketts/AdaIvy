@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaivy.local/schemas/material-partial-result-steering-action-v1.schema.json",
+  "title": "AdaIvy Material Partial Result Steering Action Envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "record_type", "action", "content_hash"],
+  "properties": {
+    "schema_version": {"const": "adaivy.material-partial-result-steering-action.v1"},
+    "record_type": {"const": "material_partial_result_steering_action"},
+    "action": {"$ref": "#/$defs/action"},
+    "content_hash": {"$ref": "#/$defs/hash"}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._:-]{0,255}$"},
+    "hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "timestamp": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})$", "maxLength": 64},
+    "policy_version": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._:-]{0,127}$"},
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action_id", "event_type", "idempotency_key", "material_result_event_id", "objective_id", "run_id", "branch_id", "action", "principal_id", "effective_actor_kind", "authority", "capability_id", "required_capability", "created_at", "causal_predecessor_id", "target_objective_id", "target_branch_id", "policy_id", "policy_version", "sequence"],
+      "properties": {
+        "action_id": {"$ref": "#/$defs/id"},
+        "event_type": {"const": "research.material_partial_result_steering_recorded"},
+        "idempotency_key": {"type": "string", "minLength": 1, "maxLength": 256},
+        "material_result_event_id": {"$ref": "#/$defs/id"},
+        "objective_id": {"$ref": "#/$defs/id"},
+        "run_id": {"$ref": "#/$defs/id"},
+        "branch_id": {"oneOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]},
+        "action": {"type": "string", "enum": ["continue_objective", "investigate_result", "redirect_objective", "acknowledge", "dismiss"]},
+        "principal_id": {"$ref": "#/$defs/id"},
+        "effective_actor_kind": {"type": "string", "enum": ["human", "automation", "model", "system"]},
+        "authority": {"type": "string", "enum": ["source_provenance", "human_final", "proposal", "deterministic_policy"]},
+        "capability_id": {"$ref": "#/$defs/id"},
+        "required_capability": {"const": "steer_research"},
+        "created_at": {"$ref": "#/$defs/timestamp"},
+        "causal_predecessor_id": {"$ref": "#/$defs/id"},
+        "target_objective_id": {"oneOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]},
+        "target_branch_id": {"oneOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]},
+        "policy_id": {"$ref": "#/$defs/id"},
+        "policy_version": {"$ref": "#/$defs/policy_version"},
+        "sequence": {"type": "integer", "minimum": 1, "maximum": 256}
+      },
+      "allOf": [{
+        "if": {"properties": {"action": {"enum": ["investigate_result", "redirect_objective"]}}, "required": ["action"]},
+        "then": {"anyOf": [
+          {"required": ["target_objective_id"], "properties": {"target_objective_id": {"$ref": "#/$defs/id"}}},
+          {"required": ["target_branch_id"], "properties": {"target_branch_id": {"$ref": "#/$defs/id"}}}
+        ]},
+        "else": {"properties": {"target_objective_id": {"type": "null"}, "target_branch_id": {"type": "null"}}}
+      }]
+    }
+  }
+}

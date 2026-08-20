@@ -15,11 +15,19 @@ Without that contract, a refutation, restriction, strengthening,
 generalization, or redirection can remain buried in a run timeline until final
 reporting.
 
-The Phase 4 entry gate is passed, but its approved production boundary contains
-only the five Phase 4A rights and applicability concepts. Phase 4 production
-persistence, export, replay, restart, and user interfaces do not exist. Adding
-an active trusted event path to that gate would introduce a new record meaning,
-authority check, and production interface beyond ADR-0017 and ADR-0018.
+At the time of the original decision, the Phase 4 entry gate had passed but the
+approved Phase 4A production implementation did not yet exist. Adding an active
+trusted event path then would have introduced a new record meaning, authority
+check, and production interface beyond ADR-0017 and ADR-0018.
+
+### Current integration context
+
+Phase 4A now exists in this branch's ancestry. Its durable persistence,
+verified export/import/replay, restart recovery, rights decisions,
+ApplicabilityReview records, and source lifecycle are authoritative. ADR-0019
+integrates with those capabilities; it does not predate, replace, or weaken
+them. Material-result production activation remains deferred because Phase 4A
+does not produce or accept the three ADR-0019 record types.
 
 ## Options considered
 
@@ -28,7 +36,7 @@ authority check, and production interface beyond ADR-0017 and ADR-0018.
 | Treat the result as progress text | Existing reports and timelines | No new contract | Not durable, steerable, or reliably visible | Rejected |
 | Add a separate notification subsystem | No production UI exists | Familiar UI model | Duplicates event identity, persistence, replay, and deduplication | Rejected |
 | Extend the existing semantic-event/run model | Phase 2 append-only events and run identity | Reuses durable causality and idempotency | Needs event-specific authority and replay validation | Selected |
-| Activate the event in the approved Phase 4A slice now | Phase 4A has no production implementation | Immediate runtime path | Expands the approved gate and trusted boundary | Prohibited without a new gate decision |
+| Activate the event in the approved Phase 4A slice now | Phase 4A did not then have a production implementation | Immediate runtime path | Expands the approved gate and trusted boundary | Prohibited without a new gate decision |
 
 ## Decision
 
@@ -36,24 +44,41 @@ Add correctness invariant C16 and the normative contract in
 `docs/phase-4/MATERIAL_PARTIAL_RESULT_V1.md`. A material partial result is an
 immutable semantic event classified as exactly one of `refutes`, `restricts`,
 `strengthens`, `generalizes`, or `redirects`. It references an active objective
-and run, independent verification, evidence or certified artifacts, originating
-actor, authorized creator, causality, and an explicit assertion that the main
+and run, an exact content-addressed result identity, independent verification,
+eligible evidence or certified artifacts, originating principal, authorized
+creator capability, causality, and an explicit assertion that the main
 objective remains incomplete.
 
 The event reuses the existing append-only semantic event abstraction and run
-timeline. User actions are separate append-only steering records. They can
-continue the objective, investigate the result, redirect the objective,
-acknowledge the event, or dismiss its current presentation. Acknowledgement or
-dismissal never deletes or rewrites the event. Stable event and action IDs plus
-idempotency keys define deduplication.
+timeline. User actions are separate immutable append-only steering records.
+They can continue the objective, investigate the result, redirect the
+objective, acknowledge the event, or dismiss its current presentation.
+Acknowledgement or dismissal never deletes or rewrites the event. Stable event
+and action IDs plus idempotency keys define deduplication.
 
-This change establishes a schema and executable contract vectors only. It does
-not create a production table, migration, repository, service, CLI command,
-notification channel, or trust promotion. The next owner-approved production
-gate that activates the contract must bind actor and authority resolution,
-verification eligibility, incremental bounded import/export, persistence,
-replay, restart, deduplication, and steering-state projection to the actual
-production path.
+Source correction, supersession, revocation, takedown, deletion, withdrawal,
+changed rights applicability, and unresolved or rejected applicability review
+are represented by separate append-only lifecycle records. The current
+validity and steering view is a deterministic projection of the original event
+plus later lifecycle and steering records. No record mutates the original.
+
+Actor kind and authority are resolved from trusted Phase 4A context using its
+existing `ActorKind` and `Authority` vocabularies. `surface_verified_result`,
+`steer_research`, and `review_result_lifecycle` are capabilities, not new
+authority values. Human-only steering and lifecycle review require a trusted
+human principal with Phase 4A `human_final` authority; an envelope cannot
+self-authorize by changing its recorded effective actor kind or authority.
+Acceptance re-resolves both from the trusted principal. Phase 4A's human-only
+final applicability authority remains unchanged.
+
+This change establishes closed schemas and executable contract vectors only.
+It does not create a production table, migration, repository, service, CLI
+command, notification channel, or trust promotion. The next owner-approved
+production gate that activates the contract must bind trusted
+principal/capability resolution, exact result identity, materiality,
+verification, evidence applicability and lifecycle, incremental bounded
+import/export, persistence, replay, restart, deduplication, and deterministic
+steering/lifecycle projection to the actual production path.
 
 ## Consequences
 
@@ -74,14 +99,16 @@ production path.
 
 None. The decision extends the existing negative-result, human-authority,
 append-only event, and idempotent orchestration rules. Runtime activation is
-deferred because the appropriate Phase 4 production layer does not yet exist.
+deferred because the Phase 4A production layer does not implement this event,
+steering-action, or lifecycle contract and has not been authorized to do so.
 
 ## Validation and revisit trigger
 
-Keep this decision only while the schema and contract tests cover all five
-classifications, verified-only creation, actor/authority rejection, evidence
-round trips, replay/restart deduplication, durable steering history, incomplete
-parent status, and bounded raw input. Revisit before runtime activation, or if
-the implementation would require a parallel event store, a new authority type,
-weaker verification, a larger resource boundary, or modification of the passed
-Phase 4 gate evidence.
+Keep this decision only while the closed schemas and contract tests cover all
+five classifications, exact result/evidence/materiality/verification binding,
+trusted actor/capability rejection, replay/restart deduplication, separately
+appended steering, lifecycle invalidation, incomplete parent status, and the
+bounded fail-closed raw boundary. Revisit before runtime activation, or if the
+implementation would require a parallel event/status store, a new authority
+type, weaker verification, a larger resource boundary, or modification of the
+passed Phase 4 gate evidence.

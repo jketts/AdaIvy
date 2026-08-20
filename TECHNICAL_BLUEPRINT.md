@@ -195,10 +195,14 @@ No projection may silently infer one of these properties from another.
 Whenever verified work materially refutes, restricts, strengthens,
 generalizes, or redirects an active research objective, the system must append
 and expose a durable, steerable research event even when the objective remains
-incomplete. The event must retain its objective/run identity, verification and
-evidence references, actor and authority, causality, and available steering
-actions. It cannot be created from an unverified proposal, silently complete the
-parent objective, or disappear through acknowledgement, dismissal, replay, or
+incomplete. The event must retain its exact content-addressed result identity,
+objective/run/branch identity, independently verified evidence snapshot,
+materiality decision, trusted principal capability, policy, causality, and
+available steering actions. Later steering and evidence-lifecycle changes are
+separate immutable append-only records whose deterministic projection cannot
+rewrite or erase the original event. The event cannot be created from an
+unverified proposal, silently complete the parent objective, or disappear
+through correction, invalidation, acknowledgement, dismissal, replay, or
 restart.
 
 ### Proposed C17. Exploratory synthesis preserves authority and history (inactive)
@@ -213,7 +217,6 @@ rights applicability, or a superseding `ApplicabilityReview` must append
 closure/invalidation records through affected derived projections without
 erasing audit history. The authoritative proposed contract is
 `docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md`.
-
 ---
 
 ## 3. System context
@@ -740,20 +743,35 @@ forming a parallel notification system.
 ```yaml
 MaterialPartialResultEvent:
   id: EventId
+  semantic_idempotency_key: string
   objective_id: ProblemId
   run_id: RunId
+  branch_id: BranchId | null
   classification: refutes | restricts | strengthens | generalizes | redirects
-  statement: string
+  result_identity:
+    statement: string
+    object_id: opaque_id
+    domain: string
+    evidence_snapshot_hash: sha256
+    canonicalization_version: string
+    result_digest: sha256
   materiality_explanation: string
   materiality_assessment_id: opaque_id
-  evidence_or_verified_artifact_refs: [opaque_id]
-  verification_status: verified
-  verification_method: string
-  verification_record_ids: [VerificationId]
-  originating_actor_id: ActorId
-  creation_authority_id: opaque_id
+  evidence_refs: [{id: opaque_id, kind: string, content_hash: sha256}]
+  verification:
+    status: verified
+    method: string
+    verification_record_ids: [VerificationId]
+    policy_id: opaque_id
+    policy_version: string
+  originating_principal_id: ActorId
+  created_by_principal_id: ActorId
+  capability_id: opaque_id
+  required_capability: surface_verified_result
   created_at: datetime
   causal_parent_ids: [opaque_id]
+  policy_id: opaque_id
+  policy_version: string
   main_objective_incomplete: true
   available_steering_actions:
     - continue_objective
@@ -764,8 +782,15 @@ MaterialPartialResultEvent:
 ```
 
 Acknowledgement, dismissal, and steering choices are separate append-only
-records. They do not mutate or delete the surfaced event. The normative v1
-interchange and deferred production boundary are defined in ADR-0019 and
+`MaterialPartialResultSteeringAction` records. Source correction,
+supersession, revocation, takedown, deletion, withdrawal, changed rights
+applicability, and unresolved/rejected ApplicabilityReview append
+`MaterialPartialResultLifecycle` records. Current steering and validity are
+deterministic projections; neither record mutates or deletes the surfaced
+event. Actor kind and authority resolve through the Phase 4A vocabularies,
+while surfacing, steering, and lifecycle review are capabilities bound to
+trusted principals. The normative v1 interchanges and deferred production
+boundary are defined in ADR-0019 and
 `docs/phase-4/MATERIAL_PARTIAL_RESULT_V1.md`.
 
 ### Proposed future synthesis records (inactive)
@@ -779,7 +804,6 @@ recorded finite candidate set; failure to find prior literature is never a
 novelty conclusion. See
 `docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md` for the authoritative fields
 and state semantics.
-
 ---
 
 ## 5. Trust and verification model
@@ -988,7 +1012,6 @@ when applicable. Human steering appends decisions and never overwrites earlier
 branch history. This lifecycle remains inactive pending the forward integration
 prerequisites and independent re-audit. The authoritative proposed contract is
 `docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md`.
-
 ---
 
 ## 7. Knowledge acquisition and retrieval
@@ -1445,6 +1468,7 @@ job.failed
 verification.recorded
 research.material_partial_result_surfaced
 research.material_partial_result_steering_recorded
+research.material_partial_result_lifecycle_recorded
 evaluation_protocol.frozen
 evaluation_protocol.deviation_recorded
 novelty_assessment.recorded
@@ -1992,8 +2016,10 @@ Build:
 - licensed source acquisition, crawling, and immutable archives;
 - richer math-aware/PDF parsing, embeddings, and hybrid retrieval;
 - evidence cards and source-applicability review;
-- durable material partial-result surfacing and steering over verified work,
-  activated only after its actor/authority and replay boundary is approved;
+- durable material partial-result surfacing, append-only steering, and
+  evidence-lifecycle projection over exactly bound verified work, activated
+  only after its principal/capability, applicability, and replay boundary is
+  approved;
 - terminology/notation expansion, citation traversal, and novelty assessment;
 - source-injection and misquotation evaluations;
 - broader research automation and the deferred embedding-provider boundary.
@@ -2169,7 +2195,6 @@ applicability propagation (including a superseding `ApplicabilityReview`),
 proposal-digest replay, abandoned-branch deduplication, and append-only human
 steering. The suite is inactive until the forward prerequisites are integrated
 and the combined architecture passes an independent re-audit.
-
 ---
 
 ## 21. Implementation guidance for Codex
@@ -2260,8 +2285,9 @@ At any moment, an independent researcher should be able to ask:
 - Who or what contributed each material part?
 - Was the result produced under the frozen evaluation protocol, and were there
   deviations?
-- Which verified incomplete results materially changed the objective, and what
-  steering action did the user choose?
+- Which verified incomplete results materially changed the objective, what
+  steering action did the user choose, and do later evidence lifecycle or
+  applicability records still permit relying on them?
 
 If the system cannot answer these from structured state without reconstructing a
 chat transcript, the architecture has drifted from its purpose.

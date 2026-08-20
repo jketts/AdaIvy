@@ -3,9 +3,11 @@
 Status: **normative architecture contract; production activation deferred**
 
 This document defines the earliest safe interface for material partial-result
-surfacing. It is additive to the passed Phase 4 entry gate. It does not alter or
-authorize the Phase 4A rights/applicability production slice and is not evidence
-that a production notification or persistence path exists.
+surfacing. It is additive to the passed Phase 4 entry gate and the Phase 4A
+production implementation now present in ancestry. It does not alter or
+authorize the Phase 4A rights/applicability slice and is not evidence that a
+production material-result producer, endpoint, migration, notification path,
+or persistence path exists.
 
 ## Requirement
 
@@ -19,149 +21,230 @@ objective or choice of what to investigate next. An ordinary progress update,
 intermediate lemma, failed attempt, speculative observation, retrieved claim,
 model agreement, or unverified proposal is not a material partial result.
 
-## Integration point
+## Integration and record model
 
 The production integration point is the existing append-only semantic event
-stream keyed by the durable Phase 2 run and the Phase 1 `ResearchProblem`.
-`research.material_partial_result_surfaced` is an immutable semantic event, not
-a mutable notification and not a new trust projection. The event references
-existing verification/evidence/proof artifacts; it does not create a warrant.
+stream and run timeline keyed by the durable Phase 2 run and Phase 1
+`ResearchProblem`. The contract defines three immutable record envelopes:
 
-Steering is recorded separately as
-`research.material_partial_result_steering_recorded`. Current acknowledgement,
-dismissal, and selected direction are projections over the ordered steering
-records. Reprocessing the same IDs and canonical content is idempotent;
-reusing an ID or idempotency key for different content fails closed.
+| Schema | Semantic event | Purpose |
+|---|---|---|
+| `schemas/material-partial-result-event-v1.schema.json` | `research.material_partial_result_surfaced` | Append the verified result exactly once. |
+| `schemas/material-partial-result-steering-action-v1.schema.json` | `research.material_partial_result_steering_recorded` | Append a later human steering choice. |
+| `schemas/material-partial-result-lifecycle-v1.schema.json` | `research.material_partial_result_lifecycle_recorded` | Append correction, supersession, or invalidation caused by later evidence state. |
 
-## Normative envelope
+These are typed payloads in the existing semantic stream, not a notification,
+provenance, authority, steering, lifecycle, or status subsystem. A current view
+is a deterministic projection of the original event plus ordered steering and
+lifecycle records. The original event never embeds later records and is never
+rewritten. Acknowledgement and dismissal affect presentation only; lifecycle
+records affect current validity but retain the original event and its causal
+history.
 
-`schemas/material-partial-result-event-v1.schema.json` defines the canonical
-interchange envelope. Its semantic content contains:
+## Exact result identity
 
-- stable event ID and semantic idempotency key;
-- active objective and research-run IDs;
-- one classification: `refutes`, `restricts`, `strengthens`, `generalizes`, or
-  `redirects`;
-- a concise result statement and materiality explanation;
-- at least one evidence, certificate, proof, or verified-artifact reference;
-- verification status `verified`, a named method, and verification-record IDs;
-- originating actor and the separately authorized event creator;
-- creation time and bounded causal/parent references;
-- `main_objective_incomplete: true`;
-- all five available steering actions; and
-- append-only steering records, including acknowledgement and dismissal.
+The event binds a result to all of the following:
 
-Canonical hashing covers all semantic fields except the envelope hash itself.
-Operational sequence numbers, database rows, delivery attempts, display state,
-and elapsed time are not event identity. They remain separately auditable in
-the production event store.
+- non-empty statement, object identity, and domain;
+- objective, run, and optional branch;
+- the ordered canonical evidence-reference snapshot and its SHA-256 digest;
+- a named canonicalization version; and
+- a result digest computed over the statement, object, domain, objective, run,
+  branch, evidence snapshot, and canonicalization version.
 
-## Creation and acceptance rules
+Every evidence reference carries its local record ID, kind, and stored content
+hash. Acceptance resolves the record and requires the hash to match, the record
+to belong to the same objective/run, and its effective lifecycle, rights, and
+ApplicabilityReview state to permit use. Deleted, suppressed, revoked,
+withdrawn, inapplicable, or unresolved evidence fails closed.
 
-Creation, import, replay, restart, and fresh-process recovery must all traverse
-one strict raw-byte acceptance boundary in this order:
+Every verification record must independently verify the same result digest,
+objective, run, evidence set, method, and policy identity/version. Every
+materiality assessment must name the same result digest, objective, and policy.
+Causal parents must resolve to allowed semantic record types in the same
+objective/run. Bare membership in an untyped ID set is insufficient.
 
-1. reject more than 2,097,152 input bytes before decoding or materializing an
+Allowed verification method labels are `human_review`,
+`deterministic_check`, `formal_kernel`, `rigorous_certificate`, and
+`exact_counterexample`. The resolved policy, not the label alone, decides
+whether the method is sufficient. Retrieval, out-of-scope experiments, model
+agreement, and confidence scores never satisfy verification.
+
+## Event envelope
+
+The event contains a stable event ID and semantic idempotency key; active
+objective/run/branch identities; exactly one material classification; exact
+result identity; materiality explanation and assessment ID; content-addressed
+evidence references; verification record references; originating and creating
+principal IDs; creating capability; timestamp; causal parents; policy
+identity/version; `main_objective_incomplete: true`; and all five available
+steering actions.
+
+The event is immutable after acceptance. Reimporting exactly the same event ID,
+idempotency key, and canonical content returns the accepted snapshot. Reusing
+either identity with different content fails closed.
+
+## Authority and capabilities
+
+Trusted context resolves principals through the established Phase 4A
+`ActorKind` values (`human`, `automation`, `model`, `system`) and `Authority`
+values (`source_provenance`, `human_final`, `proposal`,
+`deterministic_policy`). This contract defines no parallel authority enum.
+
+`surface_verified_result`, `steer_research`, and
+`review_result_lifecycle` are named capabilities. A capability record binds one
+operation to one authenticated principal. Steering and lifecycle envelopes
+record the effective Phase 4A actor kind and authority for audit, but acceptance
+re-resolves the principal and requires exact equality; the recorded values
+cannot authorize themselves. A surfacing creator must resolve to an authorized
+`human_final` or `deterministic_policy` principal. Steering and lifecycle review
+are human-only: the principal must resolve to both Phase 4A `human` actor kind
+and `human_final` authority. A model or system cannot relabel itself human by
+changing payload bytes. Phase 4A's human-only final ApplicabilityReview
+authority remains controlling and unchanged.
+
+Origin and creation authority are distinct. A model may originate a proposal
+that later becomes independently verified, but it cannot verify or authorize
+its own material event merely by being the origin.
+
+## Steering action envelope
+
+A steering action is appended only after its target material-result event is
+accepted and still valid. It contains:
+
+- stable action ID and idempotency key;
+- target event, objective, run, and branch identities;
+- one of `continue_objective`, `investigate_result`, `redirect_objective`,
+  `acknowledge`, or `dismiss`;
+- authenticated principal, trusted effective Phase 4A actor kind/authority,
+  and granted `steer_research` capability IDs;
+- timestamp, policy identity/version, causal predecessor, and strict integer
+  sequence; and
+- optional target objective/branch, required for an investigation or redirect
+  and prohibited for the other actions.
+
+The first action causally follows the immutable result event. Each later action
+follows the prior action with the next sequence number. Redirect targets must
+resolve to existing active permitted objectives or branches with consistent
+identity. The old objective is never mutated. Exact replay is idempotent;
+identity or idempotency-key reuse with changed content fails closed.
+
+## Lifecycle correction and invalidation
+
+Phase 4A source lifecycle, rights decisions, and ApplicabilityReview records
+remain authoritative. A later correction, supersession, revocation, takedown,
+deletion, withdrawal, rights-applicability change, or unresolved/rejected
+ApplicabilityReview deterministically re-evaluates every dependent material
+event. It appends a lifecycle record to the same semantic stream; it does not
+mutate the event or create a parallel status store.
+
+The lifecycle record names the target event, objective/run, change kind,
+derived state (`corrected`, `superseded`, or `invalidated`), affected evidence,
+source lifecycle records, applicability reviews, trusted reviewer capability,
+reason, timestamp, causal predecessor, policy, and sequence. Supersession alone
+requires a resolvable superseding event. The first lifecycle record causally
+follows the original event and later records form an ordered chain.
+
+Current validity is derived from the last accepted lifecycle record. A result
+whose evidence has become ineligible cannot support a new surfacing event or a
+new steering action. Correction never overwrites the old statement or evidence;
+a corrected result is a new event linked through lifecycle causality.
+
+## Closed raw-byte acceptance boundary
+
+Creation, import, replay, restart, and fresh-process recovery must traverse one
+strict boundary in this order:
+
+1. reject more than 2,097,152 bytes before decoding or materializing an
    unbounded payload;
-2. decode UTF-8 and JSON strictly, rejecting duplicate keys and non-finite
-   values;
-3. validate the exact closed v1 envelope and field bounds;
-4. resolve every actor, authority, objective, run, evidence, verification,
-   causal, and steering reference against accepted local state;
-5. require the objective to be active and the run to belong to it;
-6. require applicable independent verification and prohibit a proposal from
-   presenting itself as verified;
-7. require explicit materiality assessment under the recorded policy;
-8. validate unique IDs, idempotency keys, append-only steering order, and
-   causal acyclicity;
-9. verify the canonical envelope hash last; and
-10. return a detached accepted snapshot before an atomic semantic commit.
+2. decode UTF-8 and JSON strictly, rejecting malformed JSON, duplicate object
+   keys, and non-finite numbers;
+3. validate the applicable Draft 2020-12 closed schema, including its strict
+   timestamp offset pattern;
+4. reject missing or unknown properties at every object level, empty or
+   malformed identifiers/idempotency keys, malformed hashes/policies,
+   timezone-less or invalid RFC-3339 timestamps, wrong constants/enums, boolean
+   values used as integers, bounds violations, duplicate references, and failed
+   conditional or union constraints;
+5. resolve objective, run, branch, principal, capability, policy, exact result,
+   materiality, verification, evidence, causal, event, and redirect references
+   against typed accepted local state;
+6. enforce active/permitted identity relationships, independent verification,
+   Phase 4A rights/applicability/lifecycle eligibility, human-only operations,
+   and append-only causal sequence;
+7. verify the canonical content hash last; and
+8. return a detached accepted snapshot before an atomic semantic commit.
+
+The JSON Schemas enforce interchange shape and timestamp lexical form. Because
+Draft 2020-12 `format` is annotation-only unless a format vocabulary and
+implementation are explicitly enabled, this contract does not pretend that an
+unavailable optional format plugin validates dates. The executable contract's
+handwritten semantic boundary separately calendar-validates strict RFC-3339
+timestamps and resolves semantic references; neither check is represented as
+standards-conforming JSON Schema validation. The schema oracle must run under
+the owner-approved standards-conforming validator and must not be counted as
+passing if skipped.
+
+Canonical JSON is UTF-8 with sorted keys, no insignificant whitespace, and no
+non-finite values. Each envelope's `content_hash` is SHA-256 over the canonical
+envelope with the `content_hash` member omitted. All arrays and strings use the
+smaller bounds declared in the schemas; an action or lifecycle chain is limited
+to 256 records.
 
 The active job/run deadline must be checked throughout reading, validation,
-reference resolution, hashing, persistence, export, and replay. A check after
-execution is not deadline enforcement. Export must incrementally encode, count,
-hash, and write within the existing 67,108,864-byte Phase 4 output ceiling and
-publish atomically only after complete verification.
+reference resolution, hashing, persistence, export, and replay. Export must
+incrementally encode, count, hash, and write within the existing
+67,108,864-byte Phase 4 output ceiling and publish atomically only after full
+verification.
 
-The v1 envelope permits at most 256 steering records, matching the accepted
-Phase 4 record bound. Strings and reference collections have the smaller limits
-declared in the schema. The envelope carries references, not unbounded proof or
-source payloads.
+## Deferred application boundary
 
-## Authority and verification
-
-The originating actor may be human, model, tool, formal system, external
-system, or system process. The event creator must be a named human or system
-principal with `surface_verified_result` authority. Origin and creation
-authority are distinct: a model may originate a proposal that later becomes
-independently verified, but it cannot authorize or verify its own material
-event.
-
-At least one referenced verification record must apply to the exact result and
-active objective. Allowed method labels are `human_review`,
-`deterministic_check`, `formal_kernel`, `rigorous_certificate`, and
-`exact_counterexample`. The trust policy, not the label alone, decides whether
-the method is sufficient. Retrieval, experiments outside their valid scope,
-model agreement, and confidence scores never satisfy this rule.
-
-## Steering interface for later user-facing work
-
-The application boundary must eventually expose these operations without
-requiring a specific UI:
+A later application boundary may expose these operations without requiring a
+specific UI:
 
 ```text
 list_material_partial_results(run_id, state_filter, cursor, limit)
 get_material_partial_result(event_id)
-record_material_partial_result_action(event_id, action, actor, authority,
-                                      idempotency_key, optional_target_id)
+record_material_partial_result_action(event_id, action, principal,
+                                      capability_id, idempotency_key,
+                                      optional_target_id)
 ```
 
-Actions are:
-
-- `continue_objective` — retain the active objective and continue research;
-- `investigate_result` — open or select a bounded investigation linked to the
-  surfaced event;
-- `redirect_objective` — create/select a new objective version through the
-  existing human-authority workflow;
-- `acknowledge` — mark the event seen without changing research direction; and
-- `dismiss` — suppress current presentation without deleting history.
-
-Redirect never mutates the old objective. Continue, acknowledge, and dismiss do
-not complete it. An authorized later action may supersede a prior steering
-choice while retaining the full chain.
-
-## Production activation boundary
-
-No current Phase 4 production schema, migration, repository, export, or CLI
-exists to host this event safely. The generic Phase 2 `semantic_events` table
-does not itself validate actors, authorities, verification eligibility, or
-event-specific replay semantics. Runtime activation is therefore assigned to a
-new owner-approved production gate after, or explicitly alongside, Phase 4A.
-
-That gate must decide whether the event rows remain in the general semantic
-event table with typed payload repositories or receive additive tables behind
-the same event-store port. It must not create a parallel event framework or
+No such endpoint is activated here. The existing Phase 4A SQLite schema,
+repository, export/import, CLI, and trust path do not produce, persist, or
+accept these record types. Activation requires a new owner-approved production
+gate and production-path tests for bounded import/export, persistence, replay,
+restart, deduplication, exact semantic binding, Phase 4A lifecycle integration,
+and projections. It must use the existing event-store abstraction and must not
 reinterpret Phase 0-3B exports.
 
 ## Acceptance contract
 
-`tests/test_material_partial_result_contract.py` is an executable preproduction
-contract, not a production-path test. It freezes these required cases:
+`tests/test_material_partial_result_contract.py` is an executable
+preproduction model, not a production-path test. Its vectors freeze these
+invariant groups:
 
-1. verified refutation surfaces while the parent remains incomplete;
-2. all five classifications are accepted;
-3. ordinary intermediate work is ineligible;
-4. unverified proposals are rejected;
-5. missing or altered actor/authority data is rejected at creation, import,
-   replay, and restart boundaries;
-6. evidence and verification references round-trip;
-7. stable identity deduplicates replay/restart;
-8. acknowledgement and steering history round-trip;
-9. surfacing never completes the parent objective;
-10. malformed, duplicate-key, oversized, and over-record-limit envelopes fail
-    closed; and
-11. the passed Phase 4 gate hashes and prior contracts remain unchanged.
+1. a verified event accepts all five material classifications while leaving the
+   parent objective incomplete;
+2. steering is appended only after the immutable event, exact replay is
+   idempotent, and projection is deterministic;
+3. conflicting event/action identities and idempotency keys fail closed;
+4. model and system principals cannot self-declare human authority;
+5. exact result, materiality, verification, evidence, causal, and policy
+   bindings reject substitutions;
+6. deleted, suppressed, revoked, withdrawn, rights-blocked, and inapplicable
+   evidence is ineligible;
+7. dangling event, causal, investigation, and redirect targets fail closed;
+8. every schema constraint class is mutation-tested, including closure,
+   required fields, formats, patterns, arrays, enums, constants, numeric types,
+   unions, and conditionals;
+9. correction, deletion, revocation, and applicability reversal append
+   lifecycle records and deterministically invalidate without mutation;
+10. malformed, duplicate-key, non-finite, invalid UTF-8, and oversized raw
+    envelopes fail closed; and
+11. authoritative Phase 4 gate evidence and all frozen prior contracts remain
+    byte-identical.
 
-The same cases must be rerun against the actual production service, SQLite
-adapter, canonical export/import, and fresh-process restart before the feature
-can be called implemented.
+The same vectors must pass with zero schema/oracle skips against the actual
+production service, SQLite adapter, canonical export/import, and fresh-process
+restart before this feature can be called implemented.

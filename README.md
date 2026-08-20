@@ -10,12 +10,10 @@ evidence, hypotheses, experiments, and proof obligations. Model output is
 treated as a proposal until an applicable verifier grants a precisely scoped
 warrant.
 
-> Status: Phase 2 durable workspace and bounded baseline model loop implemented;
-> the two-call live-provider acceptance gate passed on the proposal-only v3 run.
-> The bounded Phase 3A research-memory slice is implemented with offline
-> acceptance evidence. The first bounded Phase 3B production slice is a
-> restricted, proposal-only Lean checker using the sealed v5 stdin runtime;
-> broader Phase 3B tooling and Phase 4 have not begun.
+> Status: Phases 0--4A are preserved; the bounded Phase 5 exact commuting
+> quantum benchmark and Phase 6 local confirmatory/release slice are
+> implemented. Noncommuting SDP, higher adaptive-search tiers, broader Phase 4
+> acquisition, and external evaluation remain deferred.
 > See
 > [TECHNICAL_BLUEPRINT.md](./TECHNICAL_BLUEPRINT.md) for the build contract and
 > [NOVELTY_LANDSCAPE.md](./NOVELTY_LANDSCAPE.md) for the prior-art review that
@@ -331,6 +329,54 @@ Phase 3B exports remain importable under their implicit original hash profile.
 This slice adds no model/API call, network acquisition, proof search or repair,
 premise retrieval, Why3/SMT/CAS/numerical adapter, web surface, broader Phase 3B
 workflow, Phase 4 feature, or quantum implementation.
+
+## Phase 5 exact adaptive quantum benchmark
+
+Phase 5 provides a restart-safe exact commuting/diagonal implementation of the
+normalization-corrected JRF iteration. It runs the frozen boundary
+counterexample and componentwise-full-support `QD-FS-01` fixtures, checks POVM
+feasibility and objective monotonicity in rational arithmetic, and compares the
+trajectory with an independent exact diagonal primal/dual optimum certificate.
+The workflow requires a falsification branch, records priorities and duplicate
+dead ends, retains all checked findings, and keeps search tiers 2--4 disabled
+until a cost-adjusted gain is measured.
+
+The exact boundary result is surfaced through the production material-partial-
+result event stream and can be steered by an authorized human. Checked results
+remain distinct from graph admission, semantic alignment, source
+applicability, and stronger mathematical warrants.
+
+```bash
+phase5_root="$(mktemp -d /tmp/adaivy-phase5.XXXXXX)"
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase5 run \
+  "$phase5_root/workspace" fixtures/phase5/quantum-diagonal-v1.json \
+  2026-08-20T12:00:00Z --output "$phase5_root/run.json"
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase5 list-results \
+  "$phase5_root/workspace"
+```
+
+## Phase 6 confirmatory evaluation and release
+
+Phase 6 freezes the held-out case, exact method, metrics, capability allowlist,
+success criteria, and stopping rule before execution. Its one-pass evaluator
+can see only the preregistered case and cannot adapt after observing the
+outcome. It consumes the persisted Phase 5 run and material event, executes the
+five generality trust controls, records novelty and significance as separate
+unassessed dimensions, attributes contributions, and writes a canonical
+restart-safe release package plus a traceable report.
+
+Run the complete offline Phase 5 → Phase 6 workflow:
+
+```bash
+phase6_root="$(mktemp -d /tmp/adaivy-phase6.XXXXXX)"
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase6 demo \
+  "$phase6_root/workspace" fixtures/phase6/confirmatory-protocol-v1.json \
+  fixtures/phase5/quantum-diagonal-v1.json \
+  2026-08-20T12:00:00Z 2026-08-20T14:00:00Z \
+  --output-dir "$phase6_root/output"
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase6 inspect \
+  "$phase6_root/output/phase6-export.json"
+```
 
 ## Suggested implementation defaults
 
