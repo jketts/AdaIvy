@@ -1,0 +1,818 @@
+{
+  "schema_version": "adaivy.phase4-entry-gate.v2",
+  "content_hash": "sha256:caa8bc0802d2907f773ed8066372520d19c0d97310ae760f4c5a40b39ef228da",
+  "evaluated_at": "2026-08-20",
+  "status": "passed",
+  "reason": "The repaired baseline, owner-approved Phase 4A decisions, accepted ADRs and control inventories, 16 hashed fixtures, one strict raw-byte verification boundary, real bounded streaming output, cooperative and hard deadline evidence, dependencies/licenses, and complete Phase 0-3B verification satisfy all gate conditions.",
+  "history": {
+    "previous_evaluated_at": "2026-08-19",
+    "previous_status": "blocked",
+    "previous_baseline_commit": "226b47863f565c9c5a7dc7ac9ac08d490420ecf2",
+    "previous_report_sha256": "sha256:1cd5b4f55e9fe0cc4d216e4cf842364df48c309103af626e28c6416d4488aac1",
+    "previous_machine_file_sha256": "sha256:5baf3a1fce46a9ab072d63b271811a7eca9a8366d78338cb6f8e2a0b2ed4133c",
+    "previous_reasons": [
+      "No accepted Phase 4 specification or owner decisions existed.",
+      "Independent Phase 3B runs had unstable canonical semantic identities."
+    ],
+    "resolved_reason": {
+      "name": "phase3b_cross_run_canonical_stability",
+      "repair_commit": "beae447cf38328d7021643e6adbbb75cc42e97e1",
+      "main_merge_commit": "e7db0ffa2d3fe4609c8a62642ec70fc5343776e3",
+      "repair_tag": "phase-3b-canonical-stability-v1",
+      "status": "resolved"
+    },
+    "remaining_reasons_are_independent": true
+  },
+  "baseline": {
+    "branch": "codex/phase-4",
+    "branch_head": "7832f9f5f7d0cd504a28107fbf0b489522652e46",
+    "branch_upstream": null,
+    "rebased_from_commit": "17baf546",
+    "main_commit": "e7db0ffa2d3fe4609c8a62642ec70fc5343776e3",
+    "merge_base": "e7db0ffa2d3fe4609c8a62642ec70fc5343776e3",
+    "ahead": 1,
+    "behind": 0,
+    "repair_commit": "beae447cf38328d7021643e6adbbb75cc42e97e1",
+    "repair_tag": {
+      "name": "phase-3b-canonical-stability-v1",
+      "target": "e7db0ffa2d3fe4609c8a62642ec70fc5343776e3"
+    },
+    "original_tag": {
+      "name": "phase-3b",
+      "target": "226b47863f565c9c5a7dc7ac9ac08d490420ecf2",
+      "unchanged": true
+    }
+  },
+  "gate_artifacts": {
+    "preapproval_report_sha256": "sha256:ccd382ebab45eb6eab574ed0794c9252d60829ae20aa12ba270d92a20b8f7d56",
+    "preapproval_machine_file_sha256": "sha256:89544036e7f300851277b46b1b5403672ca1a6f2a8887366ffb8445b9d3fc117",
+    "final_report_sha256": "sha256:a41eac43cccdabfd6c6910931317cb29c1d8304022c0422f69a07f0f002f8c33",
+    "adr_0017_sha256": "sha256:78719c5723dd13a4f401c477b8dcc8ecce368ff83faea843acb07ae22761e659",
+    "adr_0018_sha256": "sha256:b5321b3846029bfbd203adcd73e18e77640820ee6fd15cbc95c1546801da53f4",
+    "security_control_inventory_sha256": "sha256:91e33b025dc65414d51735bfaf978a36eb26c064f0bc81470930f47d2f55001b",
+    "acceptance_threshold_inventory_sha256": "sha256:1d28107aa339caff20bbd706a41dc267bea70a79d8f05031825e9ded387a6283",
+    "dependency_license_assessment_sha256": "sha256:9d60becb5e49ec601a46d90cbf097a2919029b3567b228a693cabf5c6af30a83",
+    "requirement_test_matrix_sha256": "sha256:b0e7df79fa0e05986c69fccdf215dc7ae5f9c419bce69706fe462ff7be4fb61c",
+    "gate_requirements_sha256": "sha256:5467b0a521e823b183622961ad4a18aa8536a9172afd2c3ecffb10ffc5436295",
+    "fixture_corpus_file_sha256": "sha256:d168974199b17a847c4280a6ad2c6affee87188e198603b970251723abebb524",
+    "fixture_manifest_file_sha256": "sha256:aff0338510b876df4c727b2f048272e1f28af8bbad6a448d90f878494c3623e7",
+    "fixture_case_file_sha256": "sha256:638b8705695239c63087b0232790cd4351d873ccd65f3dd6bf4f1fa7b7d8c7f3",
+    "fixture_schema_file_sha256": "sha256:ad52d76139362380d89bea28c2399cd703cc2ab7dab298fa175b40b086537858",
+    "candidate_spike_file_sha256": "sha256:c7c9af20db5c8d80d9c3a3d585170aa6a1237d956ff751c65352de9aff214832",
+    "candidate_test_file_sha256": "sha256:b3a0815bfe68ae378574972c4fe41fb40f183a57ce2e5f7703641525a9e2907f",
+    "bounded_production_prompt_sha256": "sha256:da1ab3a700d8926abc51849983b1b8ee5ddcf5127251f80de330ab13fcc420c2"
+  },
+  "selected_slice": {
+    "name": "phase4a_local_rights_and_source_applicability_review",
+    "status": "accepted_prospective_not_implemented",
+    "input_boundary": "manually supplied local regular UTF-8 text/plain files eligible for the existing plain-text-v1 parser",
+    "capabilities": [
+      "per-use human rights decisions",
+      "append-only source lifecycle and takedown actions",
+      "source-derived evidence cards",
+      "human source-applicability review",
+      "content-hashed policy snapshots",
+      "separate phase4-review-v1 interchange"
+    ],
+    "excluded": [
+      "network acquisition",
+      "crawling and URI resolution",
+      "rich parsers and archives",
+      "embeddings and vector indexes",
+      "model or provider calls",
+      "research automation and publication authority"
+    ],
+    "proposed_records": [
+      "SourceRightsDecision",
+      "SourceLifecycleAction",
+      "EvidenceCard",
+      "ApplicabilityReview",
+      "Phase4PolicySnapshot"
+    ],
+    "proposed_ports": [
+      "SourceRightsPolicy",
+      "EvidenceCardRepository"
+    ],
+    "proposed_migration": "phase4/0001_rights_applicability_review.sql",
+    "proposed_export_schema": "phase4-review-v1",
+    "production_artifacts_created": false
+  },
+  "policies": {
+    "acquisition": {
+      "phase4a": "local_only",
+      "regular_files_only": true,
+      "symlinks_and_special_files": "reject",
+      "max_source_bytes": 2097152,
+      "network_default": "disabled",
+      "future_adapter": "separately_authorized_outside_trusted_core"
+    },
+    "network_and_crawling": {
+      "phase4a_enabled": false,
+      "future_scheme": "https",
+      "future_port": 443,
+      "origin_allowlist_required": true,
+      "uri_userinfo": "reject",
+      "ambient_proxies": "disabled",
+      "redirect_limit": 5,
+      "redirect_revalidation": true,
+      "cross_origin_auth_or_cookies": "prohibited",
+      "special_use_private_loopback_link_local_multicast_unspecified_addresses": "reject_every_resolution_and_connection"
+    },
+    "robots_and_terms": {
+      "robots_standard": "RFC9309",
+      "robots_is_authorization": false,
+      "robots_cache_max_seconds": 86400,
+      "missing_unreachable_invalid_ambiguous_4xx_5xx": "deny",
+      "explicit_disallow": "deny",
+      "terms_snapshot": [
+        "url",
+        "retrieval_time",
+        "content_hash",
+        "applicable_actor_and_use",
+        "reviewer",
+        "decision"
+      ],
+      "changed_or_unavailable_terms": "suspend_origin"
+    },
+    "rights": {
+      "decision_values": [
+        "allowed",
+        "prohibited",
+        "unresolved"
+      ],
+      "actions": [
+        "acquisition",
+        "storage_and_retention",
+        "parsing",
+        "excerpting",
+        "embedding",
+        "model_context",
+        "redistribution",
+        "publication"
+      ],
+      "unresolved_behavior": "block_action",
+      "human_review_required": true,
+      "spdx_role": "recording_vocabulary_not_legal_interpretation",
+      "academic_corpus_bytes": "not_authorized"
+    },
+    "provenance_and_takedown": {
+      "original_bytes_authoritative": true,
+      "actions_append_only": true,
+      "takedown": "immediate_suppression_from_parsing_retrieval_context_export_publication",
+      "derived_indexes": "rebuild_without_suppressed_source",
+      "prior_reports": "retain_hash_and_visible_unavailable_state",
+      "legal_hold_blocks_physical_deletion": true,
+      "physical_deletion": "distinct_approved_retention_job_with_completion_event",
+      "restore": "new_human_reviewed_action"
+    },
+    "parsing": {
+      "phase4a_parser": "plain-text-v1_only",
+      "unsupported_formats": "quarantine_without_extraction",
+      "future_isolation": {
+        "non_root": true,
+        "network": "disabled",
+        "input": "read_only",
+        "temp_directory": "new_empty_bounded",
+        "active_content_external_references_macros_javascript": "disabled",
+        "exact_byte_mapping_or_quarantine": true
+      },
+      "future_limits": {
+        "input_bytes": 2097152,
+        "decoded_bytes": 8388608,
+        "max_expansion_ratio": 20,
+        "wall_seconds": 30,
+        "memory_bytes": 536870912,
+        "temporary_storage_bytes": 67108864
+      },
+      "htmlparser_candidate": "rejected_as_insufficient_for_exact_semantic_structure_and_mapping"
+    },
+    "archives": {
+      "phase4a_enabled": false,
+      "future_max_nesting": 1,
+      "future_max_members": 128,
+      "future_max_member_bytes": 2097152,
+      "future_max_total_decoded_bytes": 16777216,
+      "future_max_expansion_ratio": 20,
+      "future_max_name_bytes": 255,
+      "reject": [
+        "absolute_paths",
+        "path_traversal",
+        "duplicate_or_case_colliding_names",
+        "links",
+        "devices",
+        "pipes",
+        "encrypted_members",
+        "unknown_sizes",
+        "nested_archives"
+      ]
+    },
+    "hostile_content": {
+      "source_content_is_instruction": false,
+      "retain_original_for_provenance": true,
+      "label_untrusted": true,
+      "may_change_policy_or_invoke_tools_or_reveal_secrets_or_grant_trust": false,
+      "evidence_pack_delimiting_and_attribution": true,
+      "human_applicability_review_required": true
+    },
+    "embeddings": {
+      "phase4a_enabled": false,
+      "future_candidate": {
+        "model": "sentence-transformers/all-MiniLM-L6-v2",
+        "revision": "b9db1e8a0d3a51769172ba8546f282a73f066e47",
+        "status": "documentation_only_unapproved",
+        "model_card_license_label": "Apache-2.0",
+        "known_truncation_wordpieces": 256,
+        "downloaded": false
+      },
+      "future_execution": "local_offline_cpu_only",
+      "future_artifacts": "pinned_safetensors_with_all_blob_tokenizer_config_hashes",
+      "dynamic_code_auto_download_external_provider_quantization_nondeterministic_kernels": "prohibited",
+      "external_provider": "requires_separate_rights_retention_credentials_cost_reproducibility_decision"
+    },
+    "indexes_and_hybrid": {
+      "lexical_baseline": "SQLite FTS5 BM25",
+      "runtime_manifest": [
+        "SQLite version",
+        "compile options",
+        "tokenizer",
+        "corpus manifest",
+        "query",
+        "semantic ID tie-break"
+      ],
+      "indexes_are_canonical_state": false,
+      "future_embedding_manifest": [
+        "source and evidence-unit hashes",
+        "input text hash",
+        "model runtime and blob hashes",
+        "dimension",
+        "dtype",
+        "normalization",
+        "batch policy"
+      ],
+      "future_hybrid": {
+        "method": "exact_rational_reciprocal_rank_fusion",
+        "k": 60,
+        "lexical_weight": 1,
+        "vector_weight": 1,
+        "max_candidates_each": 50,
+        "comparison": "integer_arithmetic_over_common_denominators",
+        "tie_break": [
+          "source_artifact_id",
+          "byte_start",
+          "byte_end",
+          "evidence_unit_id"
+        ],
+        "raw_floating_scores": "operational_only"
+      }
+    },
+    "applicability": {
+      "statuses": [
+        "proposed",
+        "checked",
+        "rejected",
+        "unresolved"
+      ],
+      "reason_codes": [
+        "applicable",
+        "incompatible_hypotheses",
+        "definition_mismatch",
+        "scope_or_exception",
+        "misquotation",
+        "contradiction",
+        "insufficient_evidence",
+        "rights_blocked",
+        "source_withdrawn",
+        "malicious_content"
+      ],
+      "checked_applicable_authority": "named_human_reviewer_only",
+      "deterministic_code": "may_reject_malformed_or_policy_blocked_inputs_but_not_approve",
+      "retrieval_parser_embedding_model_formal_checking": "non_authoritative"
+    },
+    "automation_and_stop_conditions": {
+      "phase4a_autonomous_actions": false,
+      "future_planner_authority": "proposal_only",
+      "human_authorization_required_for": [
+        "origin_or_crawl_run",
+        "rights change",
+        "checked applicability",
+        "publication"
+      ],
+      "stop_on": [
+        "robots_terms_or_rights_uncertainty",
+        "origin_or_run_budget_exhaustion",
+        "redirect_or_DNS_policy_failure",
+        "credential exposure",
+        "policy hash mismatch",
+        "parser quarantine",
+        "repeated failure"
+      ]
+    },
+    "scheduling_and_budgets": {
+      "phase4a": {
+        "max_review_records": 256,
+        "max_derived_bytes": 67108864,
+        "max_wall_seconds": 600,
+        "external_cost_usd": 0
+      },
+      "future_network": {
+        "concurrency_per_origin": 1,
+        "requests_per_second_per_origin": 1,
+        "global_concurrency": 4,
+        "max_requests": 100,
+        "max_decoded_bytes": 67108864,
+        "max_wall_seconds": 1800,
+        "retry_methods": [
+          "GET"
+        ],
+        "max_retries": 2,
+        "retry_conditions": [
+          "transport_error",
+          "408",
+          "429",
+          "5xx"
+        ],
+        "max_retry_after_seconds": 86400
+      }
+    },
+    "secrets_and_audit": {
+      "phase4a_secrets": false,
+      "future_credentials": "explicit_per_adapter_environment_input",
+      "secrets_in_uris_records_logs_subprocesses_artifacts": "prohibited",
+      "tls_verification": "mandatory",
+      "audit_includes": [
+        "sanitized request metadata",
+        "destination and resolved address",
+        "redirect chain",
+        "response status and allowed headers",
+        "body hash",
+        "robots and terms decision IDs",
+        "budgets retries failures and policy version"
+      ],
+      "audit_excludes": [
+        "authorization",
+        "cookies",
+        "secret-bearing query values"
+      ]
+    },
+    "dependencies_and_reproducibility": {
+      "phase4a_new_dependencies": [],
+      "gate_validator": {
+        "scope": "entry_gate_only_disposable_offline_environment",
+        "owner_approval_sha256": "sha256:98244f19de93af73e220dd0d57b0a9b70921f0b8381e0e7b2cc2c2fa47b8846b",
+        "manifest": "requirements-phase4-gate-py314-macos-arm64.txt",
+        "manifest_sha256": "sha256:5467b0a521e823b183622961ad4a18aa8536a9172afd2c3ecffb10ffc5436295",
+        "implementation": "jsonschema.validators.Draft202012Validator",
+        "version": "4.26.0",
+        "platform": {
+          "python": "CPython 3.14.4",
+          "abi": "cpython-314-darwin",
+          "os": "macOS 26.5.2",
+          "architecture": "arm64",
+          "pip": "26.0.1"
+        },
+        "wheel_count": 5,
+        "wheel_inventory_sha256": "sha256:ee7e03544b123fd6a647bd0d8e5f87b0a2fcff25442fe216aee02677eb431962",
+        "all_licenses": "MIT",
+        "provenance_endpoints_http_200": 5,
+        "attestation_bundles_per_wheel": 1,
+        "source_builds": 0,
+        "unexpected_files": 0,
+        "offline_install_inventory_exact": true,
+        "production_imports": 0,
+        "remote_schema_retrievals": 0
+      },
+      "required_before_future_install": [
+        "exact version or revision",
+        "source wheel or blob hashes",
+        "complete transitive licenses and notices",
+        "training-data and model-license assessment",
+        "supported-platform manifest",
+        "offline rebuild proof",
+        "runtime and network behavior",
+        "vulnerability review",
+        "cost",
+        "removal and rollback plan"
+      ],
+      "floating_versions_or_aliases": "reject",
+      "failed_and_missing_candidates": "retain_machine_readable"
+    },
+    "canonical_identity": {
+      "include": [
+        "schema and policy versions",
+        "semantic IDs and hashes",
+        "rights values",
+        "reason codes",
+        "reviewer identity",
+        "signed review content"
+      ],
+      "exclude": [
+        "timestamps",
+        "elapsed time",
+        "process IDs",
+        "temporary paths",
+        "row order",
+        "database layout",
+        "scheduler state",
+        "measured scores"
+      ],
+      "excluded_values_audited_by_operational_hash": true
+    }
+  },
+  "fixtures_and_thresholds": {
+    "status": "accepted_hashed_and_passed",
+    "case_count": 16,
+    "cases": {
+      "applicable": 4,
+      "incompatible_hypotheses": 4,
+      "definition_mismatch": 2,
+      "scope_or_exception": 2,
+      "misquotation": 1,
+      "contradiction": 1,
+      "prompt_injection": 1,
+      "rights_or_takedown": 1
+    },
+    "additional_variants": [
+      "renamed_result",
+      "malicious_markup_or_archive_quarantine",
+      "restart",
+      "replay",
+      "index_rebuild"
+    ],
+    "thresholds": {
+      "provenance_and_span_validation": 1.0,
+      "human_review_coverage_for_checked_applicability": 1.0,
+      "false_applicability_accepts": 0,
+      "prohibited_rights_actions": 0,
+      "quarantine_escapes": 0,
+      "rejection_reason_accuracy": 1.0,
+      "canonical_repeat_count": 3,
+      "canonical_restart_replay_rebuild_equality": true,
+      "fts5_necessary_lemma_recall_at_5_minimum": 1.0,
+      "fts5_mrr_minimum": 0.75
+    }
+  },
+  "candidate_spike": {
+    "status": "passed",
+    "kind": "nonproduction_owner_approved_draft202012_contract_validation",
+    "valid_fixture_count": 16,
+    "adversarial_and_contract_case_count": 31,
+    "fully_rehashed_actor_authority_mutation_count": 7,
+    "actor_outcome_matrix_cells": 20,
+    "nonhuman_actor_outcome_matrix_cells": 15,
+    "human_actor_outcome_matrix_cells": 5,
+    "audit_export_record_count": 68,
+    "fixture_manifest_canonical_hash": "sha256:a4125f09770a65250784e873fbf42a6cff248b3f4776f34783e67af110d27854",
+    "candidate_export_hash": "sha256:b9120dacc09262594932bee8bc535e51f0f6a2ea2b94b8c4e0e32d63bbe4a7ed",
+    "independent_run_file_hashes": [
+      "sha256:c4bc5606647604855a6f3a3e1cfd3acdc3bb0e607173cb74dd52b5e7db342aff",
+      "sha256:a58b151d2270a37e6259d88225fb4117b59da9f8aeb234576c0f4a300323f3ce"
+    ],
+    "restart_run_file_hash": "sha256:9a69351c8370ddcf60700ce27940bb241224e7e03d276f8db623dd458eb1a175",
+    "repeat_export_hashes": [
+      "sha256:b9120dacc09262594932bee8bc535e51f0f6a2ea2b94b8c4e0e32d63bbe4a7ed",
+      "sha256:b9120dacc09262594932bee8bc535e51f0f6a2ea2b94b8c4e0e32d63bbe4a7ed",
+      "sha256:b9120dacc09262594932bee8bc535e51f0f6a2ea2b94b8c4e0e32d63bbe4a7ed"
+    ],
+    "schema_validation": {
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "validator": "jsonschema.validators.Draft202012Validator",
+      "validator_version": "4.26.0",
+      "check_schema_passed": true,
+      "external_references": 0,
+      "remote_retrievals": 0,
+      "deterministic_error_order": true,
+      "format_extras": 0,
+      "fixture_and_whole_export_envelope_validation": true,
+      "schema_validation_is_not_domain_acceptance": true
+    },
+    "metrics": {
+      "fixture_count": 16,
+      "provenance_and_span_validation": 1.0,
+      "human_review_coverage_for_checked_applicability": 1.0,
+      "false_applicability_accepts": 0,
+      "prohibited_rights_actions": 0,
+      "quarantine_escapes": 0,
+      "rejection_reason_accuracy": 1.0
+    },
+    "controls": {
+      "complete_audit_export": true,
+      "duplicate_ids_and_dangling_links_rejected": true,
+      "broken_chains_cycles_reorder_and_mutation_rejected": true,
+      "unknown_version_rejected": true,
+      "mixed_version_rejected": true,
+      "proposal_only_nonhuman_all_outcomes": true,
+      "unknown_actor_rejected": true,
+      "missing_rights_fail_closed": true,
+      "explicitly_prohibited_rights_fail_closed": true,
+      "expired_rights_fail_closed": true,
+      "revoked_rights_fail_closed": true,
+      "incompatible_rights_fail_closed": true,
+      "append_only_correction_revocation_deletion_takedown_history_preserved": true,
+      "prohibited_source_content_absent_from_export": true,
+      "audit_tombstones_and_hashes_retained": true,
+      "strict_duplicate_key_decoding": true,
+      "separate_export_version": true,
+      "replay_preserved": true,
+      "restart_preserved": true,
+      "index_rebuild_preserved": true,
+      "strict_raw_export_boundary_for_initial_import_replay_restart_and_fresh_process": true,
+      "verified_snapshot_detached_from_caller_data": true,
+      "fully_rehashed_actor_authority_mutations_rejected_through_replay_and_restart": true,
+      "streaming_output_enforced_by_real_exporter": true,
+      "complete_output_not_prebuilt_before_limit_decision": true,
+      "failed_output_not_published": true,
+      "cooperative_monotonic_deadline_enforced": true,
+      "parent_timeout_is_independent_hard_wall": true
+    },
+    "rights_states": [
+      "permitted",
+      "explicitly_prohibited",
+      "missing",
+      "expired",
+      "revoked",
+      "incompatible"
+    ],
+    "resource_limits": {
+      "max_source_bytes": 2097152,
+      "max_records": 256,
+      "max_output_bytes": 67108864,
+      "max_wall_seconds": 600,
+      "max_external_cost_usd": 0
+    },
+    "resource_boundary_tests": {
+      "source_2mib_accepted": true,
+      "source_2mib_plus_1_rejected": true,
+      "records_256_accepted": true,
+      "records_257_rejected": true,
+      "output_64mib_accepted": true,
+      "output_64mib_plus_1_rejected": true,
+      "output_overflow_extra_byte_not_visible": true,
+      "cooperative_deadline_mid_operation_rejected": true,
+      "failed_output_not_published": true,
+      "real_parent_timeout_seconds": 600
+    },
+    "observations": {
+      "max_source_bytes": 1,
+      "total_source_bytes": 16,
+      "review_record_count": 16,
+      "export_record_count": 68,
+      "export_output_bytes": 67724,
+      "export_output_sha256": "sha256:5701e6996fb5fd1e254a85009973e29728658c63f35ff71c496f799ee2e773d0",
+      "export_output_write_calls": 8153,
+      "maximum_observed_elapsed_seconds": 3.089074083021842,
+      "external_cost_usd": 0,
+      "external_call_inventory": []
+    },
+    "scope_guards": {
+      "network_calls": 0,
+      "model_or_provider_calls": 0,
+      "external_sources": 0,
+      "production_database_writes": 0,
+      "production_dependencies": 0,
+      "gate_only_dependencies": 5
+    }
+  },
+  "threats": [
+    "hostile source bytes and prompt injection",
+    "archive bombs path traversal and parser escape",
+    "SSRF DNS rebinding and redirect abuse",
+    "ambiguous licenses and changed site terms",
+    "secret leakage",
+    "poisoned or nondeterministic indexes",
+    "takedown without provenance",
+    "automated trust promotion",
+    "resource and cost exhaustion"
+  ],
+  "owner_decisions": [
+    {
+      "id": "slice",
+      "recommended": "accept Phase 4A local rights and human applicability review",
+      "accepted": true
+    },
+    {
+      "id": "schema_interchange",
+      "recommended": "accept additive v1 records, migration plan, and separate export",
+      "accepted": true
+    },
+    {
+      "id": "rights_lifecycle",
+      "recommended": "accept per-use fail-closed rights and append-only suppression/takedown",
+      "accepted": true
+    },
+    {
+      "id": "applicability_authority",
+      "recommended": "accept enumerated reasons and human-only checked/applicable authority",
+      "accepted": true
+    },
+    {
+      "id": "fixtures_thresholds",
+      "recommended": "accept the 16-case corpus and quantitative thresholds",
+      "accepted": true
+    },
+    {
+      "id": "deferred_capabilities",
+      "recommended": "accept no crawler rich parser archive embedding vector model API or automation in Phase 4A",
+      "accepted": true
+    },
+    {
+      "id": "security_reproducibility_inventory",
+      "recommended": "accept exactly P4A-SC-001 through P4A-SC-024; deferred capability values remain unapproved",
+      "accepted": true
+    },
+    {
+      "id": "gate_schema_validator",
+      "recommended": "accept exactly five hash-locked binary wheels only in the isolated CPython 3.14 macOS ARM64 gate environment",
+      "approval_sha256": "sha256:98244f19de93af73e220dd0d57b0a9b70921f0b8381e0e7b2cc2c2fa47b8846b",
+      "accepted": true
+    }
+  ],
+  "gate_conditions": [
+    {
+      "id": 1,
+      "name": "singular_bounded_owner_accepted_slice",
+      "passed": true,
+      "reason": "The owner accepted Phase 4A local rights and human applicability review in ADR-0017."
+    },
+    {
+      "id": 2,
+      "name": "accepted_adrs_and_policy_decisions",
+      "passed": true,
+      "reason": "ADR-0017 and ADR-0018 are accepted and bind the exact control and threshold inventories to preapproval artifact hashes."
+    },
+    {
+      "id": 3,
+      "name": "complete_accepted_rights_dependency_parser_embedding_acquisition_security_schema_migration_fixture_threshold_verification_decisions",
+      "passed": true,
+      "reason": "All Phase 4A decisions are explicit and accepted; deferred capabilities are excluded; fixture, dependency, license, schema, threshold, and verification artifacts are hashed."
+    },
+    {
+      "id": 4,
+      "name": "all_local_spikes_pass_frozen_conditions",
+      "passed": true,
+      "reason": "The nonproduction contract spike uses the owner-approved isolated Draft 2020-12 validator and passes 16 valid fixtures, 31 adversarial/contract cases including seven fully rehashed actor/authority mutations through replay and restart, the real streaming output boundary, exact thresholds, repeats, fresh-process restart, replay, and rebuild."
+    },
+    {
+      "id": 5,
+      "name": "phase0_through_phase3b_acceptance_and_seals",
+      "passed": true,
+      "reason": "191 tests, Phase 0 19/19, Phase 1-3A offline checks, two sealed Phase 3B runs, all 29 v5 conditions, schemas, seals, and credential scans passed in disposable/read-only scopes."
+    },
+    {
+      "id": 6,
+      "name": "phase3b_cross_run_semantic_stability",
+      "passed": true,
+      "reason": "Two independent sealed host-runtime runs had identical export and per-finding semantic identities while operational values remained separate."
+    },
+    {
+      "id": 7,
+      "name": "machine_evidence_accounts_for_every_condition_and_failure",
+      "passed": true,
+      "reason": "This evidence records all conditions, proposals, absences, and history."
+    },
+    {
+      "id": 8,
+      "name": "scope_guards_zero",
+      "passed": true,
+      "reason": "No prohibited Phase 4 production or remote action occurred."
+    },
+    {
+      "id": 9,
+      "name": "production_prompt_matches_accepted_gate",
+      "passed": true,
+      "reason": "The bounded prompt names only the accepted Phase 4A scope and exact evidence hashes and retains every explicit deferral."
+    }
+  ],
+  "verification": {
+    "status": "passed",
+    "tests": {
+      "passed": 191,
+      "total": 191
+    },
+    "phase0": {
+      "passed": 19,
+      "total": 19
+    },
+    "phase1": {
+      "passed": true,
+      "content_hash": "sha256:ee299e0a6d6295dd005f0292ab5b0ac89320862ed1853935ddc0da5d5b9f96fa",
+      "round_trip_hash_preserved": true
+    },
+    "phase2": {
+      "passed": true,
+      "audit_replay_hash": "sha256:8c185deeb88a6e981bfd5376c868d62163a748f686bf04e5004b89c5d68bea9c"
+    },
+    "phase3a": {
+      "passed": true,
+      "export_hash": "sha256:99891f3b0acd8493adae7976caad8d493995adf2c68522bca2e8da6845e21e4c",
+      "recall_at_5": 1.0,
+      "mrr": 1.0,
+      "citation_resolution_precision": 1.0,
+      "repeat_restart_stable": true,
+      "api_call_count": 0
+    },
+    "phase3b": {
+      "passed": true,
+      "independent_runs": 2,
+      "export_hashes": [
+        "sha256:78a08bc23ba34bcc2d78d11a5e75c4c6da053d6aa95c15d4de4f2046a3c3636d",
+        "sha256:78a08bc23ba34bcc2d78d11a5e75c4c6da053d6aa95c15d4de4f2046a3c3636d"
+      ],
+      "all_nine_finding_ids_and_content_hashes_equal": true,
+      "runtime_digest": "sha256:39457cf097e89537ac90e7ddee08cbda8f7f2d49e443cc60a87d6d02d8cb896f",
+      "restart_replay_preserved": true,
+      "trust_promotions": 0,
+      "model_calls": 0,
+      "external_api_calls": 0
+    },
+    "sealed_v5": {
+      "recorded_conditions_passed": 29,
+      "recorded_conditions_total": 29,
+      "image_digest": "sha256:39457cf097e89537ac90e7ddee08cbda8f7f2d49e443cc60a87d6d02d8cb896f",
+      "containers_remaining": 0,
+      "v4_artifacts_unchanged": 53,
+      "named_protected_seals_passed": 10
+    },
+    "json_and_schema": {
+      "parsed_json_documents": 101,
+      "parsed_schema_documents": 12,
+      "intentional_malformed_fixtures_excluded": [
+        "fixtures/phase3b/malformed.json",
+        "fixtures/phase4-gate/malformed.json",
+        "fixtures/phase4-gate/duplicate-keys.json"
+      ],
+      "phase4_duplicate_keys_rejected_before_object_construction": true,
+      "phase4_valid_fixtures_schema_validated": 16,
+      "phase4_adversarial_and_contract_cases_passed": 31,
+      "phase4_fully_rehashed_actor_authority_mutations_rejected_in_replay_and_restart": 7,
+      "passed": true
+    },
+    "credential_scan": {
+      "persisted_files_scanned": 200,
+      "exact_credential_matches": 0,
+      "credential_token_pattern_matches": 0,
+      "passed": true
+    },
+    "failed_attempts": [
+      {
+        "kind": "phase3b_disposable_sandbox_run",
+        "retained_export_hash": "sha256:cfb8212ae9779b1ea53abed3cb1da845a453b140a10ff82227d5505f28f1a681",
+        "outcome": "sandbox_failure",
+        "reason": "The restricted command environment could not access the host Docker runtime; the adapter failed closed. The same check was then rerun with authorized host Docker access."
+      }
+    ],
+    "protected_report_hashes_unchanged": true,
+    "protected_report_file_count": 199,
+    "final_git_diff_check": true,
+    "changed_files": [
+      "docs/adrs/0017-phase4a-local-rights-applicability-review.md",
+      "docs/adrs/0018-phase4-gate-security-reproducibility-controls.md",
+      "docs/phase-4/ACCEPTANCE_THRESHOLD_INVENTORY.md",
+      "docs/phase-4/BOUNDED_IMPLEMENTATION_PROMPT.md",
+      "docs/phase-4/DEPENDENCY_LICENSE_ASSESSMENT.md",
+      "docs/phase-4/ENTRY_GATE_REPORT.md",
+      "docs/phase-4/REQUIREMENT_TEST_MATRIX.md",
+      "docs/phase-4/SECURITY_CONTROL_INVENTORY.md",
+      "fixtures/phase4-gate/cases.json",
+      "fixtures/phase4-gate/corpus.json",
+      "fixtures/phase4-gate/duplicate-keys.json",
+      "fixtures/phase4-gate/malformed.json",
+      "fixtures/phase4-gate/manifest.json",
+      "reports/phase-4-entry-gate/entry-gate.json",
+      "requirements-phase4-gate-py314-macos-arm64.txt",
+      "schemas/phase4-gate-fixture-v1.schema.json",
+      "spikes/phase4_gate/gate_spike.py",
+      "tests/test_phase4_gate.py"
+    ]
+  },
+  "scope_guards": {
+    "adaivy_model_provider_api_calls": 0,
+    "external_sources_acquired": 0,
+    "sites_crawled": 0,
+    "embedding_models_downloaded": 0,
+    "production_phase4_entities": 0,
+    "production_databases_schemas_or_migrations": 0,
+    "quantum_phase5_actions": 0,
+    "commits": 0,
+    "tags": 0,
+    "pushes": 0,
+    "publications": 0,
+    "pull_requests": 0
+  },
+  "documentation_sources": [
+    "https://www.rfc-editor.org/rfc/rfc9309.html",
+    "https://www.rfc-editor.org/rfc/rfc3986.html",
+    "https://www.rfc-editor.org/rfc/rfc9110.html",
+    "https://www.rfc-editor.org/rfc/rfc6890.html",
+    "https://docs.python.org/3.14/library/tarfile.html",
+    "https://docs.python.org/3.14/library/zipfile.html",
+    "https://docs.python.org/3/library/html.parser.html",
+    "https://www.sqlite.org/fts5.html",
+    "https://spdx.dev/use/specifications/",
+    "https://spdx.dev/learn/areas-of-interest/licensing/",
+    "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/tree/b9db1e8a0d3a51769172ba8546f282a73f066e47"
+  ],
+  "gate_passed": true,
+  "production_prompt_ready": true,
+  "production_authorized": false,
+  "production_implementation_started": false
+}

@@ -1,0 +1,185 @@
+{
+  "schema_version": "adaivy.phase4-gate-corpus.v1",
+  "evaluation_at": "2026-08-20T00:00:05Z",
+  "fixtures": [
+    {
+      "schema_version": "adaivy.phase4-gate-fixture.v1",
+      "fixture_id": "phase4.fixture.applicable-1",
+      "primary_class": "applicable",
+      "tags": ["exact_statement"],
+      "source": {"artifact_id":"artifact.phase4.applicable-1","text":"x","evidence_start":0,"evidence_end":1,"evidence_quote":"x","quarantined":false,"provenance_id":"provenance.artifact.phase4.applicable-1","actor_id":"actor.fixture-author","actor_type":"human","authority":"source_provenance","reason_code":"local_user_supplied","evidence_ids":["evidence.artifact.phase4.applicable-1"],"recorded_at":"2026-08-20T00:00:00Z","version":1,"sequence":0},
+      "rights": {"requested_use":"parsing","decisions":{"parsing":"allowed"},"actor_id":"actor.owner","reason":"project-authored fixture","evidence_id":"rights-evidence.applicable-1","reviewed_at":"2026-08-20T00:00:00Z","version":1,"supersedes":null,"use_scope":["parsing"],"valid_from":"2026-08-20T00:00:00Z","valid_until":null,"actor_type":"human","authority":"human_final","reason_code":"permitted","sequence":1,"superseded_by":null},
+      "lifecycle": [],
+      "applicability": {"actor_kind":"human","actor_id":"actor.reviewer","status":"checked","reason_code":"applicable","evidence_id":"evidence.applicable-1","decided_at":"2026-08-20T00:00:01Z","version":1,"supersedes":null,"authority":"human_final","proposed_status":null,"final_status":"checked","sequence":1},
+      "expected": {"action_allowed": true, "applicability_status": "checked", "reason_code": "applicable", "retrievable": true}
+    },
+    {
+      "schema_version": "adaivy.phase4-gate-fixture.v1",
+      "fixture_id": "phase4.fixture.applicable-2",
+      "primary_class": "applicable",
+      "tags": ["renamed_result"],
+      "source": {"artifact_id":"artifact.phase4.applicable-2","text":"x","evidence_start":0,"evidence_end":1,"evidence_quote":"x","quarantined":false,"provenance_id":"provenance.artifact.phase4.applicable-2","actor_id":"actor.fixture-author","actor_type":"human","authority":"source_provenance","reason_code":"local_user_supplied","evidence_ids":["evidence.artifact.phase4.applicable-2"],"recorded_at":"2026-08-20T00:00:00Z","version":1,"sequence":0},
+      "rights": {"requested_use":"excerpting","decisions":{"excerpting":"allowed"},"actor_id":"actor.owner","reason":"project-authored fixture","evidence_id":"rights-evidence.applicable-2","reviewed_at":"2026-08-20T00:00:00Z","version":1,"supersedes":null,"use_scope":["excerpting"],"valid_from":"2026-08-20T00:00:00Z","valid_until":null,"actor_type":"human","authority":"human_final","reason_code":"permitted","sequence":1,"superseded_by":null},
+      "lifecycle": [],
+      "applicability": {"actor_kind":"human","actor_id":"actor.reviewer","status":"checked","reason_code":"applicable","evidence_id":"evidence.applicable-2","decided_at":"2026-08-20T00:00:01Z","version":1,"supersedes":null,"authority":"human_final","proposed_status":null,"final_status":"checked","sequence":1},
+      "expected": {"action_allowed": true, "applicability_status": "checked", "reason_code": "applicable", "retrievable": true}
+    },
+    {
+      "schema_version": "adaivy.phase4-gate-fixture.v1",
+      "fixture_id": "phase4.fixture.applicable-3",
+      "primary_class": "applicable",
+      "tags": ["definition_map"],
+      "source": {"artifact_id":"artifact.phase4.applicable-3","text":"x","evidence_start":0,"evidence_end":1,"evidence_quote":"x","quarantined":false,"provenance_id":"provenance.artifact.phase4.applicable-3","actor_id":"actor.fixture-author","actor_type":"human","authority":"source_provenance","reason_code":"local_user_supplied","evidence_ids":["evidence.artifact.phase4.applicable-3"],"recorded_at":"2026-08-20T00:00:00Z","version":1,"sequence":0},
+      "rights": {"requested_use":"storage_and_retention","decisions":{"storage_and_retention":"allowed"},"actor_id":"actor.owner","reason":"project-authored fixture","evidence_id":"rights-evidence.applicable-3","reviewed_at":"2026-08-20T00:00:00Z","version":1,"supersedes":null,"use_scope":["storage_and_retention"],"valid_from":"2026-08-20T00:00:00Z","valid_until":null,"actor_type":"human","authority":"human_final","reason_code":"permitted","sequence":1,"superseded_by":null},
+      "lifecycle": [],
+      "applicability": {"actor_kind":"human","actor_id":"actor.reviewer","status":"checked","reason_code":"applicable","evidence_id":"evidence.applicable-3","decided_at":"2026-08-20T00:00:01Z","version":1,"supersedes":null,"authority":"human_final","proposed_status":null,"final_status":"checked","sequence":1},
+      "expected": {"action_allowed": true, "applicability_status": "checked", "reason_code": "applicable", "retrievable": true}
+    },
+    {
+      "schema_version": "adaivy.phase4-gate-fixture.v1",
+      "fixture_id": "phase4.fixture.applicable-4",
+      "primary_class": "applicable",
+      "tags": ["scope_match"],
+      "source": {"artifact_id":"artifact.phase4.applicable-4","text":"x","evidence_start":0,"evidence_end":1,"evidence_quote":"x","quarantined":false,"provenance_id":"provenance.artifact.phase4.applicable-4","actor_id":"actor.fixture-author","actor_type":"human","authority":"source_provenance","reason_code":"local_user_supplied","evidence_ids":["evidence.artifact.phase4.applicable-4"],"recorded_at":"2026-08-20T00:00:00Z","version":1,"sequence":0},
+      "rights": {"requested_use":"acquisition","decisions":{"acquisition":"allowed"},"actor_id":"actor.owner","reason":"project-authored fixture","evidence_id":"rights-evidence.applicable-4","reviewed_at":"2026-08-20T00:00:00Z","version":1,"supersedes":null,"use_scope":["acquisition"],"valid_from":"2026-08-20T00:00:00Z","valid_until":null,"actor_type":"human","authority":"human_final","reason_code":"permitted","sequence":1,"superseded_by":null},
+      "lifecycle": [],
+      "applicability": {"actor_kind":"human","actor_id":"actor.reviewer","status":"checked","reason_code":"applicable","evidence_id":"evidence.applicable-4","decided_at":"2026-08-20T00:00:01Z","version":1,"supersedes":null,"authority":"human_final","proposed_status":null,"final_status":"checked","sequence":1},
+      "expected": {"action_allowed": true, "applicability_status": "checked", "reason_code": "applicable", "retrievable": true}
+    },
+    {
+      "schema_version": "adaivy.phase4-gate-fixture.v1",
+      "fixture_id": "phase4.fixture.incompatible-1",
+      "primary_class": "incompatible_hypotheses",
+      "tags": ["domain_mismatch"],
+      "source": {"artifact_id":"artifact.phase4.incompatible-1","text":"x","evidence_start":0,"evidence_end":1,"evidence_quote":"x","quarantined":false,"provenance_id":"provenance.artifact.phase4.incompatible-1","actor_id":"actor.fixture-author","actor_type":"human","authority":"source_provenance","reason_code":"local_user_supplied","evidence_ids":["evidence.artifact.phase4.incompatible-1"],"recorded_at":"2026-08-20T00:00:00Z","version":1,"sequence":0},
+      "rights": {"requested_use":"parsing","decisions":{"parsing":"allowed"},"actor_id":"actor.owner","reason":"project-authored fixture","evidence_id":"rights-evidence.incompatible-1","reviewed_at":"2026-08-20T00:00:00Z","version":1,"supersedes":null,"use_scope":["parsing"],"valid_from":"2026-08-20T00:00:00Z","valid_until":null,"actor_type":"human","authority":"human_final","reason_code":"permitted","sequence":1,"superseded_by":null},
+      "lifecycle": [],
+      "applicability": {"actor_kind":"human","actor_id":"actor.reviewer","status":"rejected","reason_code":"incompatible_hypotheses","evidence_id":"evidence.incompatible-1","decided_at":"2026-08-20T00:00:01Z","version":1,"supersedes":null,"authority":"human_final","proposed_status":null,"final_status":"rejected","sequence":1},
+      "expected": {"action_allowed": true, "applicability_status": "rejected", "reason_code": "incompatible_hypotheses", "retrievable": true}
+    },
+    {
+      "schema_version": "adaivy.phase4-gate-fixture.v1",
+      "fixture_id": "phase4.fixture.incompatible-2",
+      "primary_class": "incompatible_hypotheses",
+      "tags": ["missing_assumption"],
+      "source": {"artifact_id":"artifact.phase4.incompatible-2","text":"x","evidence_start":0,"evidence_end":1,"evidence_quote":"x","quarantined":false,"provenance_id":"provenance.artifact.phase4.incompatible-2","actor_id":"actor.fixture-author","actor_type":"human","authority":"source_provenance","reason_code":"local_user_supplied","evidence_ids":["evidence.artifact.phase4.incompatible-2"],"recorded_at":"2026-08-20T00:00:00Z","version":1,"sequence":0},
+      "rights": {"requested_use":"parsing","decisions":{"parsing":"allowed"},"actor_id":"actor.owner","reason":"project-authored fixture","evidence_id":"rights-evidence.incompatible-2","reviewed_at":"2026-08-20T00:00:00Z","version":1,"supersedes":null,"use_scope":["parsing"],"valid_from":"2026-08-20T00:00:00Z","valid_until":null,"actor_type":"human","authority":"human_final","reason_code":"permitted","sequence":1,"superseded_by":null},
+      "lifecycle": [],
+      "applicability": {"actor_kind":"human","actor_id":"actor.reviewer","status":"rejected","reason_code":"incompatible_hypotheses","evidence_id":"evidence.incompatible-2","decided_at":"2026-08-20T00:00:01Z","version":1,"supersedes":null,"authority":"human_final","proposed_status":null,"final_status":"rejected","sequence":1},
+      "expected": {"action_allowed": true, "applicability_status": "rejected", "reason_code": "incompatible_hypotheses", "retrievable": true}
+    },
+    {
+      "schema_version": "adaivy.phase4-gate-fixture.v1",
+      "fixture_id": "phase4.fixture.incompatible-3",
+      "primary_class": "incompatible_hypotheses",
+      "tags": ["quantifier_mismatch"],
+      "source": {"artifact_id":"artifact.phase4.incompatible-3","text":"x","evidence_start":0,"evidence_end":1,"evidence_quote":"x","quarantined":false,"provenance_id":"provenance.artifact.phase4.incompatible-3","actor_id":"actor.fixture-author","actor_type":"human","authority":"source_provenance","reason_code":"local_user_supplied","evidence_ids":["evidence.artifact.phase4.incompatible-3"],"recorded_at":"2026-08-20T00:00:00Z","version":1,"sequence":0},
+      "rights": {"requested_use":"parsing","decisions":{"parsing":"allowed"},"actor_id":"actor.owner","reason":"project-authored fixture","evidence_id":"rights-evidence.incompatible-3","reviewed_at":"2026-08-20T00:00:00Z","version":1,"supersedes":null,"use_scope":["parsing"],"valid_from":"2026-08-20T00:00:00Z","valid_until":null,"actor_type":"human","authority":"human_final","reason_code":"permitted","sequence":1,"superseded_by":null},
+      "lifecycle": [],
+      "applicability": {"actor_kind":"human","actor_id":"actor.reviewer","status":"rejected","reason_code":"incompatible_hypotheses","evidence_id":"evidence.incompatible-3","decided_at":"2026-08-20T00:00:01Z","version":1,"supersedes":null,"authority":"human_final","proposed_status":null,"final_status":"rejected","sequence":1},
+      "expected": {"action_allowed": true, "applicability_status": "rejected", "reason_code": "incompatible_hypotheses", "retrievable": true}
+    },
+    {
+      "schema_version": "adaivy.phase4-gate-fixture.v1",
+      "fixture_id": "phase4.fixture.incompatible-4",
+      "primary_class": "incompatible_hypotheses",
+      "tags": ["automated_proposal_boundary"],
+      "source": {"artifact_id":"artifact.phase4.incompatible-4","text":"x","evidence_start":0,"evidence_end":1,"evidence_quote":"x","quarantined":false,"provenance_id":"provenance.artifact.phase4.incompatible-4","actor_id":"actor.fixture-author","actor_type":"human","authority":"source_provenance","reason_code":"local_user_supplied","evidence_ids":["evidence.artifact.phase4.incompatible-4"],"recorded_at":"2026-08-20T00:00:00Z","version":1,"sequence":0},
+      "rights": {"requested_use":"parsing","decisions":{"parsing":"allowed"},"actor_id":"actor.owner","reason":"project-authored fixture","evidence_id":"rights-evidence.incompatible-4","reviewed_at":"2026-08-20T00:00:00Z","version":1,"supersedes":null,"use_scope":["parsing"],"valid_from":"2026-08-20T00:00:00Z","valid_until":null,"actor_type":"human","authority":"human_final","reason_code":"permitted","sequence":1,"superseded_by":null},
+      "lifecycle": [],
+      "applicability": {"actor_kind":"automation","actor_id":"automation.fixture","status":"proposed","reason_code":"incompatible_hypotheses","evidence_id":"evidence.incompatible-4","decided_at":"2026-08-20T00:00:01Z","version":1,"supersedes":null,"authority":"proposal","proposed_status":"rejected","final_status":null,"sequence":1},
+      "expected": {"action_allowed": true, "applicability_status": "proposed", "reason_code": "incompatible_hypotheses", "retrievable": true}
+    },
+    {
+      "schema_version": "adaivy.phase4-gate-fixture.v1",
+      "fixture_id": "phase4.fixture.definition-1",
+      "primary_class": "definition_mismatch",
+      "tags": ["renamed_definition"],
+      "source": {"artifact_id":"artifact.phase4.definition-1","text":"x","evidence_start":0,"evidence_end":1,"evidence_quote":"x","quarantined":false,"provenance_id":"provenance.artifact.phase4.definition-1","actor_id":"actor.fixture-author","actor_type":"human","authority":"source_provenance","reason_code":"local_user_supplied","evidence_ids":["evidence.artifact.phase4.definition-1"],"recorded_at":"2026-08-20T00:00:00Z","version":1,"sequence":0},
+      "rights": {"requested_use":"parsing","decisions":{"parsing":"allowed"},"actor_id":"actor.owner","reason":"project-authored fixture","evidence_id":"rights-evidence.definition-1","reviewed_at":"2026-08-20T00:00:00Z","version":1,"supersedes":null,"use_scope":["parsing"],"valid_from":"2026-08-20T00:00:00Z","valid_until":null,"actor_type":"human","authority":"human_final","reason_code":"permitted","sequence":1,"superseded_by":null},
+      "lifecycle": [],
+      "applicability": {"actor_kind":"human","actor_id":"actor.reviewer","status":"rejected","reason_code":"definition_mismatch","evidence_id":"evidence.definition-1","decided_at":"2026-08-20T00:00:01Z","version":1,"supersedes":null,"authority":"human_final","proposed_status":null,"final_status":"rejected","sequence":1},
+      "expected": {"action_allowed": true, "applicability_status": "rejected", "reason_code": "definition_mismatch", "retrievable": true}
+    },
+    {
+      "schema_version": "adaivy.phase4-gate-fixture.v1",
+      "fixture_id": "phase4.fixture.definition-2",
+      "primary_class": "definition_mismatch",
+      "tags": ["carrier_mismatch"],
+      "source": {"artifact_id":"artifact.phase4.definition-2","text":"x","evidence_start":0,"evidence_end":1,"evidence_quote":"x","quarantined":false,"provenance_id":"provenance.artifact.phase4.definition-2","actor_id":"actor.fixture-author","actor_type":"human","authority":"source_provenance","reason_code":"local_user_supplied","evidence_ids":["evidence.artifact.phase4.definition-2"],"recorded_at":"2026-08-20T00:00:00Z","version":1,"sequence":0},
+      "rights": {"requested_use":"parsing","decisions":{"parsing":"allowed"},"actor_id":"actor.owner","reason":"project-authored fixture","evidence_id":"rights-evidence.definition-2","reviewed_at":"2026-08-20T00:00:00Z","version":1,"supersedes":null,"use_scope":["parsing"],"valid_from":"2026-08-20T00:00:00Z","valid_until":null,"actor_type":"human","authority":"human_final","reason_code":"permitted","sequence":1,"superseded_by":null},
+      "lifecycle": [],
+      "applicability": {"actor_kind":"human","actor_id":"actor.reviewer","status":"rejected","reason_code":"definition_mismatch","evidence_id":"evidence.definition-2","decided_at":"2026-08-20T00:00:01Z","version":1,"supersedes":null,"authority":"human_final","proposed_status":null,"final_status":"rejected","sequence":1},
+      "expected": {"action_allowed": true, "applicability_status": "rejected", "reason_code": "definition_mismatch", "retrievable": true}
+    },
+    {
+      "schema_version": "adaivy.phase4-gate-fixture.v1",
+      "fixture_id": "phase4.fixture.scope-1",
+      "primary_class": "scope_or_exception",
+      "tags": ["excluded_edge_case"],
+      "source": {"artifact_id":"artifact.phase4.scope-1","text":"x","evidence_start":0,"evidence_end":1,"evidence_quote":"x","quarantined":false,"provenance_id":"provenance.artifact.phase4.scope-1","actor_id":"actor.fixture-author","actor_type":"human","authority":"source_provenance","reason_code":"local_user_supplied","evidence_ids":["evidence.artifact.phase4.scope-1"],"recorded_at":"2026-08-20T00:00:00Z","version":1,"sequence":0},
+      "rights": {"requested_use":"parsing","decisions":{"parsing":"allowed"},"actor_id":"actor.owner","reason":"project-authored fixture","evidence_id":"rights-evidence.scope-1","reviewed_at":"2026-08-20T00:00:00Z","version":1,"supersedes":null,"use_scope":["parsing"],"valid_from":"2026-08-20T00:00:00Z","valid_until":null,"actor_type":"human","authority":"human_final","reason_code":"permitted","sequence":1,"superseded_by":null},
+      "lifecycle": [],
+      "applicability": {"actor_kind":"human","actor_id":"actor.reviewer","status":"rejected","reason_code":"scope_or_exception","evidence_id":"evidence.scope-1","decided_at":"2026-08-20T00:00:01Z","version":1,"supersedes":null,"authority":"human_final","proposed_status":null,"final_status":"rejected","sequence":1},
+      "expected": {"action_allowed": true, "applicability_status": "rejected", "reason_code": "scope_or_exception", "retrievable": true}
+    },
+    {
+      "schema_version": "adaivy.phase4-gate-fixture.v1",
+      "fixture_id": "phase4.fixture.scope-2",
+      "primary_class": "scope_or_exception",
+      "tags": ["local_only_scope"],
+      "source": {"artifact_id":"artifact.phase4.scope-2","text":"x","evidence_start":0,"evidence_end":1,"evidence_quote":"x","quarantined":false,"provenance_id":"provenance.artifact.phase4.scope-2","actor_id":"actor.fixture-author","actor_type":"human","authority":"source_provenance","reason_code":"local_user_supplied","evidence_ids":["evidence.artifact.phase4.scope-2"],"recorded_at":"2026-08-20T00:00:00Z","version":1,"sequence":0},
+      "rights": {"requested_use":"parsing","decisions":{"parsing":"allowed"},"actor_id":"actor.owner","reason":"project-authored fixture","evidence_id":"rights-evidence.scope-2","reviewed_at":"2026-08-20T00:00:00Z","version":1,"supersedes":null,"use_scope":["parsing"],"valid_from":"2026-08-20T00:00:00Z","valid_until":null,"actor_type":"human","authority":"human_final","reason_code":"permitted","sequence":1,"superseded_by":null},
+      "lifecycle": [],
+      "applicability": {"actor_kind":"human","actor_id":"actor.reviewer","status":"rejected","reason_code":"scope_or_exception","evidence_id":"evidence.scope-2","decided_at":"2026-08-20T00:00:01Z","version":1,"supersedes":null,"authority":"human_final","proposed_status":null,"final_status":"rejected","sequence":1},
+      "expected": {"action_allowed": true, "applicability_status": "rejected", "reason_code": "scope_or_exception", "retrievable": true}
+    },
+    {
+      "schema_version": "adaivy.phase4-gate-fixture.v1",
+      "fixture_id": "phase4.fixture.misquotation",
+      "primary_class": "misquotation",
+      "tags": ["span_text_mismatch_candidate"],
+      "source": {"artifact_id":"artifact.phase4.misquotation","text":"x","evidence_start":0,"evidence_end":1,"evidence_quote":"x","quarantined":false,"provenance_id":"provenance.artifact.phase4.misquotation","actor_id":"actor.fixture-author","actor_type":"human","authority":"source_provenance","reason_code":"local_user_supplied","evidence_ids":["evidence.artifact.phase4.misquotation"],"recorded_at":"2026-08-20T00:00:00Z","version":1,"sequence":0},
+      "rights": {"requested_use":"parsing","decisions":{"parsing":"allowed"},"actor_id":"actor.owner","reason":"project-authored fixture","evidence_id":"rights-evidence.misquotation","reviewed_at":"2026-08-20T00:00:00Z","version":1,"supersedes":null,"use_scope":["parsing"],"valid_from":"2026-08-20T00:00:00Z","valid_until":null,"actor_type":"human","authority":"human_final","reason_code":"permitted","sequence":1,"superseded_by":null},
+      "lifecycle": [],
+      "applicability": {"actor_kind":"human","actor_id":"actor.reviewer","status":"rejected","reason_code":"misquotation","evidence_id":"evidence.misquotation","decided_at":"2026-08-20T00:00:01Z","version":1,"supersedes":null,"authority":"human_final","proposed_status":null,"final_status":"rejected","sequence":1},
+      "expected": {"action_allowed": true, "applicability_status": "rejected", "reason_code": "misquotation", "retrievable": true}
+    },
+    {
+      "schema_version": "adaivy.phase4-gate-fixture.v1",
+      "fixture_id": "phase4.fixture.contradiction",
+      "primary_class": "contradiction",
+      "tags": ["conflicting_source"],
+      "source": {"artifact_id":"artifact.phase4.contradiction","text":"x","evidence_start":0,"evidence_end":1,"evidence_quote":"x","quarantined":false,"provenance_id":"provenance.artifact.phase4.contradiction","actor_id":"actor.fixture-author","actor_type":"human","authority":"source_provenance","reason_code":"local_user_supplied","evidence_ids":["evidence.artifact.phase4.contradiction"],"recorded_at":"2026-08-20T00:00:00Z","version":1,"sequence":0},
+      "rights": {"requested_use":"parsing","decisions":{"parsing":"allowed"},"actor_id":"actor.owner","reason":"project-authored fixture","evidence_id":"rights-evidence.contradiction","reviewed_at":"2026-08-20T00:00:00Z","version":1,"supersedes":null,"use_scope":["parsing"],"valid_from":"2026-08-20T00:00:00Z","valid_until":null,"actor_type":"human","authority":"human_final","reason_code":"permitted","sequence":1,"superseded_by":null},
+      "lifecycle": [],
+      "applicability": {"actor_kind":"human","actor_id":"actor.reviewer","status":"rejected","reason_code":"contradiction","evidence_id":"evidence.contradiction","decided_at":"2026-08-20T00:00:01Z","version":1,"supersedes":null,"authority":"human_final","proposed_status":null,"final_status":"rejected","sequence":1},
+      "expected": {"action_allowed": true, "applicability_status": "rejected", "reason_code": "contradiction", "retrievable": true}
+    },
+    {
+      "schema_version": "adaivy.phase4-gate-fixture.v1",
+      "fixture_id": "phase4.fixture.prompt-injection",
+      "primary_class": "prompt_injection",
+      "tags": ["prompt_injection", "malicious_markup", "archive_probe"],
+      "source": {"artifact_id":"artifact.phase4.prompt-injection","text":"x","evidence_start":0,"evidence_end":1,"evidence_quote":"x","quarantined":true,"provenance_id":"provenance.artifact.phase4.prompt-injection","actor_id":"actor.fixture-author","actor_type":"human","authority":"source_provenance","reason_code":"local_user_supplied","evidence_ids":["evidence.artifact.phase4.prompt-injection"],"recorded_at":"2026-08-20T00:00:00Z","version":1,"sequence":0},
+      "rights": {"requested_use":"parsing","decisions":{"parsing":"allowed"},"actor_id":"actor.owner","reason":"project-authored fixture","evidence_id":"rights-evidence.prompt-injection","reviewed_at":"2026-08-20T00:00:00Z","version":1,"supersedes":null,"use_scope":["parsing"],"valid_from":"2026-08-20T00:00:00Z","valid_until":null,"actor_type":"human","authority":"human_final","reason_code":"permitted","sequence":1,"superseded_by":null},
+      "lifecycle": [],
+      "applicability": {"actor_kind":"human","actor_id":"actor.reviewer","status":"rejected","reason_code":"malicious_content","evidence_id":"evidence.prompt-injection","decided_at":"2026-08-20T00:00:01Z","version":1,"supersedes":null,"authority":"human_final","proposed_status":null,"final_status":"rejected","sequence":1},
+      "expected": {"action_allowed": true, "applicability_status": "rejected", "reason_code": "malicious_content", "retrievable": false}
+    },
+    {
+      "schema_version": "adaivy.phase4-gate-fixture.v1",
+      "fixture_id": "phase4.fixture.rights-takedown",
+      "primary_class": "rights_or_takedown",
+      "tags": ["revocation", "takedown", "deletion"],
+      "source": {"artifact_id":"artifact.phase4.rights-takedown","text":"x","evidence_start":0,"evidence_end":1,"evidence_quote":"x","quarantined":false,"provenance_id":"provenance.artifact.phase4.rights-takedown","actor_id":"actor.fixture-author","actor_type":"human","authority":"source_provenance","reason_code":"local_user_supplied","evidence_ids":["evidence.artifact.phase4.rights-takedown"],"recorded_at":"2026-08-20T00:00:00Z","version":1,"sequence":0},
+      "rights": {"requested_use":"parsing","decisions":{"parsing":"allowed"},"actor_id":"actor.owner","reason":"initial project-authored permission","evidence_id":"rights-evidence.rights-takedown.v1","reviewed_at":"2026-08-20T00:00:00Z","version":1,"supersedes":null,"use_scope":["parsing"],"valid_from":"2026-08-20T00:00:00Z","valid_until":null,"actor_type":"human","authority":"human_final","reason_code":"permitted","sequence":1,"superseded_by":null},
+      "lifecycle": [
+        {"event_id":"lifecycle.rights-takedown.revoke","type":"rights_revoked","target_record_id":"rights-evidence.rights-takedown.v1","actor_id":"actor.owner","actor_type":"human","authority":"human_final","reason_code":"rights_revoked","reason":"fixture rights revocation","evidence_ids":["rights-evidence.rights-takedown.v2"],"recorded_at":"2026-08-20T00:00:02Z","sequence":2,"version":1,"supersedes":"rights-evidence.rights-takedown.v1","superseded_by":null,"previous_event_id":null},
+        {"event_id":"lifecycle.rights-takedown.delete","type":"content_deleted","target_record_id":"artifact.phase4.rights-takedown","actor_id":"actor.owner","actor_type":"human","authority":"human_final","reason_code":"content_deleted","reason":"fixture deletion after revocation","evidence_ids":["deletion-evidence.rights-takedown"],"recorded_at":"2026-08-20T00:00:03Z","sequence":3,"version":1,"supersedes":"lifecycle.rights-takedown.revoke","superseded_by":null,"previous_event_id":"lifecycle.rights-takedown.revoke"}
+      ],
+      "applicability": {"actor_kind":"human","actor_id":"actor.reviewer","status":"unresolved","reason_code":"source_withdrawn","evidence_id":"evidence.rights-takedown","decided_at":"2026-08-20T00:00:04Z","version":1,"supersedes":null,"authority":"human_final","proposed_status":null,"final_status":"unresolved","sequence":1},
+      "expected": {"action_allowed": false, "applicability_status": "unresolved", "reason_code": "source_withdrawn", "retrievable": false}
+    }
+  ]
+}
