@@ -7,6 +7,10 @@ does not implement the iteration, invoke a solver, define numerical tolerances,
 or contain Lean code. The supporting mathematical and source analysis is in
 `THEOREM_DOSSIER.md`.
 
+Successor registration: [`QD-FS-01`](FULL_SUPPORT_CONVERGENCE_BENCHMARK_V1.md)
+preregisters a separate componentwise-full-support convergence question. It
+does not alter QD-L00--QD-L15 or give QD-L15 theorem-statement status.
+
 ## 1. Disposition vocabulary
 
 Every statement has exactly one disposition:
@@ -249,7 +253,7 @@ or a different initialization is a different benchmark statement.
 
      \[
        P_{\rm succ}(M)=\frac13,\qquad
-       P_{\rm succ}((0,1))=\frac23,qquad
+       P_{\rm succ}((0,1))=\frac23,\qquad
        P_*=\frac23.
      \]
 
@@ -275,7 +279,7 @@ or a different initialization is a different benchmark statement.
 - Statement: $\Gamma$ is dual feasible exactly when
 
   \[
-    \Gamma=\Gamma^\dagger,qquad
+    \Gamma=\Gamma^\dagger,\qquad
     \Gamma-W_i\succeq0\quad\text{for every }i.
   \]
 
@@ -340,7 +344,7 @@ or a different initialization is a different benchmark statement.
   Then $M$ is globally optimal if and only if
 
   \[
-    \Gamma(M)=\Gamma(M)^\dagger,qquad
+    \Gamma(M)=\Gamma(M)^\dagger,\qquad
     \Gamma(M)-W_i\succeq0\quad\text{for every }i.
   \]
 
