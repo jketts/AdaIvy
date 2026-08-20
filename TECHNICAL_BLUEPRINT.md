@@ -201,6 +201,19 @@ actions. It cannot be created from an unverified proposal, silently complete the
 parent objective, or disappear through acknowledgement, dismissal, replay, or
 restart.
 
+### Proposed C17. Exploratory synthesis preserves authority and history (inactive)
+
+C17 is a proposed refinement, not part of baseline 0.3. It cannot become active
+until the branch is rebased onto the approved, effective forward prerequisites
+and the combined architecture passes an independent audit. The proposal keeps
+source applicability, extraction fidelity, mathematical warrant, and graph admission
+as independent axes; requires finite run bounds; and preserves negative and
+abandoned branches. Source correction, revocation, takedown, deletion, changed
+rights applicability, or a superseding `ApplicabilityReview` must append
+closure/invalidation records through affected derived projections without
+erasing audit history. The authoritative proposed contract is
+`docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md`.
+
 ---
 
 ## 3. System context
@@ -755,6 +768,18 @@ records. They do not mutate or delete the surfaced event. The normative v1
 interchange and deferred production boundary are defined in ADR-0019 and
 `docs/phase-4/MATERIAL_PARTIAL_RESULT_V1.md`.
 
+### Proposed future synthesis records (inactive)
+
+The proposed contract defines structured-result, relation, branch, and bridge
+records. Statements and relations remain attributed proposals with independent
+source-applicability, extraction-fidelity, mathematical-warrant, and
+graph-admission records. Policy admission does not establish truth, proof,
+novelty, or permanent inclusion. A bridge proposal is only locally minimal in a
+recorded finite candidate set; failure to find prior literature is never a
+novelty conclusion. See
+`docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md` for the authoritative fields
+and state semantics.
+
 ---
 
 ## 5. Trust and verification model
@@ -948,6 +973,22 @@ presentation. None of those operations silently completes or deletes the
 original objective. Ordinary progress and unverified proposals remain in their
 existing records and do not enter this event path.
 
+### Proposed exploratory multi-result synthesis lifecycle (inactive)
+
+The proposed synthesis lifecycle keeps literature discovery, authorized
+acquisition, representation selection, structured extraction, graph
+construction, branch management, multi-result composition, bridge generation, verification/
+falsification, material-result surfacing, and human steering as distinct
+stages. Discovery metadata never authorizes acquisition or content use.
+
+The branch portfolio should include direct proof, counterexample search,
+restricted cases, computational experiments, alternative formulations,
+cross-domain transfer, multi-paper composition, and formalization/verification
+when applicable. Human steering appends decisions and never overwrites earlier
+branch history. This lifecycle remains inactive pending the forward integration
+prerequisites and independent re-audit. The authoritative proposed contract is
+`docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md`.
+
 ---
 
 ## 7. Knowledge acquisition and retrieval
@@ -1052,6 +1093,34 @@ Measure:
 - performance on notation variants;
 - robustness to malicious instructions embedded in documents; and
 - novelty-search recall on renamed and independently rediscovered results.
+
+### Proposed multi-hop retrieval and representation policy (inactive)
+
+Future synthesis uses an iterative bounded loop: retrieve seed results;
+extract terminology, citations, and missing prerequisites; expand equivalent
+formulations and notation; follow backward and forward dependencies;
+deliberately retrieve contrasting approaches; update the derived result graph;
+and stop on budget exhaustion, recorded convergence, user intervention, or an
+explicit blocker. Every proposed run has validated finite bounds, including
+hops, fan-out, discovered sources, branches, graph size, and time/resources.
+Retrieval must be capable of combining prose, exact terms,
+citations, symbols/formulas, assumptions, conclusions, and graph relations. A
+single top-k vector search is insufficient.
+
+Subject to separate rights and parser gates, the preferred reading order is
+authoritative structured HTML, TeX/LaTeX source, born-digital PDF, then scanned
+PDF/OCR. Important sources may retain HTML as the reading layer, TeX as the
+mathematical-source layer, and PDF as rendered evidence. Version or
+representation disagreements create explicit warnings. Every form retains
+exact paper/version identity, acquisition provenance, source hashes,
+parser/converter identity, anchors, and deterministic lineage. Representation
+disagreement blocks silent selection.
+
+All rich content is untrusted. In particular, TeX must never receive arbitrary
+execution, shell escape, network access, uncontrolled includes, or unbounded
+macro expansion. No remote acquisition, parser, embedding, vector, or graph
+adapter is activated by this architecture. The authoritative proposed rules are
+in `docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md`.
 
 ---
 
@@ -1310,6 +1379,15 @@ CounterexampleCandidate:
 A universal claim is not marked disproved until both the assumptions and the
 failure of the conclusion are verified for the same witness.
 
+### Proposed exploratory synthesis verification axes (inactive)
+
+The proposed contract records source applicability, extraction fidelity,
+mathematical warrant, and graph admission independently for statements and
+relations. No state on one axis implies a state on another. Search, retrieval,
+experiments, confidence, model agreement, and graph centrality never create
+proof status. See `docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md` for the
+authoritative states and transition authority.
+
 ---
 
 ## 11. Durable orchestration
@@ -1377,6 +1455,14 @@ report.published
 
 Events are append-only and contain actor, timestamp, correlation ID, causation
 ID, entity IDs, and a schema-versioned payload.
+
+Proposed future exploratory branch, graph, synthesis, bridge, correction,
+invalidation, and steering records must use this same semantic event store and
+durable run timeline. They require the effective forward partial-result
+lifecycle and a separately approved production vocabulary and replay contract;
+this proposal creates no event implementation or parallel notification system.
+Correction, revocation, takedown, deletion, changed rights applicability, and a
+superseding `ApplicabilityReview` append semantic closure/invalidation records.
 
 ### 11.3 Budget policy
 
@@ -1912,6 +1998,11 @@ Build:
 - source-injection and misquotation evaluations;
 - broader research automation and the deferred embedding-provider boundary.
 
+Exploratory multi-result synthesis is not part of the implemented or active
+Phase 4A rights/applicability slice. Phase 4 may establish separately gated
+source, parser, and hybrid-retrieval prerequisites, but it cannot represent the
+ADR-0023 synthesis capability as operational.
+
 Exit criteria:
 
 - every load-bearing imported theorem has an exact span and checked
@@ -1925,6 +2016,14 @@ Exit criteria:
 
 Build:
 
+- after the approved, effective forward prerequisites, a successful integration
+  re-audit, and a dedicated owner-approved entry gate, the proposed ADR-0023
+  bounded exploratory multi-result synthesis pipeline and deterministic result-graph
+  interchange;
+- representation comparison, structured-result proposals, multi-hop hybrid
+  result retrieval, branch portfolios, synthesis compatibility checks, bridge-
+  lemma proposals, lifecycle invalidation, and human steering over the effective
+  predecessor boundaries;
 - branch priorities, falsification enforcement, and dead-end detection;
 - search tiers 2–4 behind feature flags;
 - quantum-state-discrimination plugin and independent SDP/numerical checks;
@@ -1932,6 +2031,16 @@ Build:
 
 Exit criteria:
 
+- proposed scenarios `ERS-AC-01` through `ERS-AC-12` in
+  `docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md` pass on the actual bounded
+  production path;
+- the suite demonstrates genuine multi-hop composition, quantifier/domain/
+  notation controls, representation disagreement, material-result handling,
+  rights exclusion, source correction, revocation, takedown, deletion, changed
+  rights applicability, superseding `ApplicabilityReview`, proposal-digest
+  replay, branch deduplication, and append-only steering;
+- policy-admitted result-graph export/replay is deterministic while
+  nondeterministic exploratory outputs remain captured, attributed proposals;
 - the benchmark runs end to end under a frozen exploratory protocol;
 - each added search tier demonstrates a cost-adjusted gain or is disabled;
 - failure and inconclusive outcomes produce useful dossiers;
@@ -2048,6 +2157,18 @@ the requested theorem unresolved. The system surfaces exactly one durable
 event, preserves its evidence and verification references across replay and
 restart, records acknowledgement and later redirection without deleting the
 event, and keeps the original objective incomplete.
+
+### Proposed exploratory-synthesis acceptance suite (inactive)
+
+The normative proposed definitions are `ERS-AC-01` through `ERS-AC-12` in
+`docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md`. Together they cover genuine
+multi-hop composition, quantifier/domain/notation controls, representation
+disagreement, locally scoped bridge proposals, material-result handling,
+rights-excluded influence, correction/revocation/takedown/deletion and changed
+applicability propagation (including a superseding `ApplicabilityReview`),
+proposal-digest replay, abandoned-branch deduplication, and append-only human
+steering. The suite is inactive until the forward prerequisites are integrated
+and the combined architecture passes an independent re-audit.
 
 ---
 
