@@ -1,0 +1,9 @@
+Sundial Support Threshold
+
+Lemma C. A sundial threshold exists for every strictly positive weighting on a
+finite index set, and the threshold is attained.
+
+Proof sketch. The weighting attains its minimum on a finite set, and that
+minimum is positive by hypothesis. Take the threshold to be this minimum.
+
+Remark. This lemma is the prerequisite invoked by the primary statement.

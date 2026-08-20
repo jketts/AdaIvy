@@ -1,0 +1,9 @@
+Kelvin Normalisation: Companion Bound
+
+Proposition B. Under the same kelvin cadence hypotheses, the normalisation step
+is contractive on the simplex of cadence weights.
+
+Proof sketch. Contractivity follows from strict positivity of the rescaling
+factor together with convexity of the simplex.
+
+Remark. The companion bound consumes the invariance of the total cadence mass.

@@ -1,0 +1,12 @@
+Kelvin Normalisation Cadence: Primary Statement
+
+Theorem A. Let the kelvin cadence operator act on a finite index set. If the
+cadence weights are strictly positive, then the normalisation step preserves the
+total cadence mass at every iteration.
+
+Proof sketch. The cadence mass is a linear functional of the weights, and the
+normalisation step rescales all weights by a single positive factor. Therefore
+the functional is invariant.
+
+Remark. The argument depends on the sundial support threshold established
+elsewhere, and it admits a reformulation in the language of majorisation.

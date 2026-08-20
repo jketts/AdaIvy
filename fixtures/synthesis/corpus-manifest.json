@@ -1,0 +1,80 @@
+{
+  "contrasting_query": "majorisation",
+  "contrasting_signature": "majorisation_route",
+  "expectations": {
+    "expansion_only": [
+      "d-contrasting"
+    ],
+    "initially_retrievable": [
+      "a-seed",
+      "b-seed"
+    ],
+    "traversal_only": [
+      "c-traversal"
+    ]
+  },
+  "fixture_license": {
+    "copyright_notice": "Project-authored synthetic acceptance fixtures; 2026 AdaIvy contributors",
+    "license_expression": "LicenseRef-AdaIvy-Synthetic-Fixture",
+    "redistribution_status": "allowed",
+    "usage_rights": [
+      "private_evaluation",
+      "local_retrieval",
+      "evidence_pack"
+    ]
+  },
+  "schema_version": "adaivy.synthesis-corpus.v1",
+  "seed_queries": [
+    "kelvin cadence normalisation"
+  ],
+  "sources": [
+    {
+      "approach_signature": "cadence_normalisation",
+      "byte_length": 582,
+      "citations": [
+        "sundial"
+      ],
+      "expansion_terms": [
+        "majorisation"
+      ],
+      "label": "a-seed",
+      "path": "source-a-seed.txt",
+      "role": "initially_retrievable",
+      "sha256": "1bf2648d2724c3489ff72978fd9cdacd56fde559b64939aea5ae478c0e42f5d6",
+      "title": "Kelvin cadence primary statement"
+    },
+    {
+      "approach_signature": "cadence_normalisation",
+      "byte_length": 373,
+      "citations": [],
+      "expansion_terms": [],
+      "label": "b-seed",
+      "path": "source-b-seed.txt",
+      "role": "initially_retrievable",
+      "sha256": "8efca7d037f77023816ddac2e8068c9df05edff6e6b9321e9620945dcd4b1c49",
+      "title": "Kelvin cadence companion bound"
+    },
+    {
+      "approach_signature": "cadence_normalisation",
+      "byte_length": 378,
+      "citations": [],
+      "expansion_terms": [],
+      "label": "c-traversal",
+      "path": "source-c-traversal.txt",
+      "role": "traversal_only",
+      "sha256": "cbd3b7422665e916054752de690b01df2ff526994a67760d12be0a7d4a3fef7b",
+      "title": "Sundial threshold prerequisite"
+    },
+    {
+      "approach_signature": "majorisation_route",
+      "byte_length": 497,
+      "citations": [],
+      "expansion_terms": [],
+      "label": "d-contrasting",
+      "path": "source-d-contrasting.txt",
+      "role": "expansion_only",
+      "sha256": "38fcd17acdb639c6f6d57a338d32c43f7643f33eea866b8b38f407ea0b6c2905",
+      "title": "Quasi stochastic route"
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+name: check
+
+# The offline suite is the gate. It must pass with no network egress, no model
+# provider, no container runtime, and no third-party package installed.
+#
+# Deliberately NOT run here:
+#   check-sealed  needs the ADR-0016 v5 image, which is not publicly available
+#   check-gate    needs the disposable pinned validator environment
+# Both stay local/owner-run. See docs/phase-4/DEPENDENCY_LICENSE_ASSESSMENT.md.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Confirm no third-party packages are installed
+        run: |
+          python3 -c '
+          import importlib.util, sys
+          # The runtime is standard-library only (ADR-0026). If any of these
+          # resolve, the environment is not the one the suite is specified for.
+          forbidden = ["jsonschema", "numpy", "openai", "pydantic", "requests"]
+          found = [n for n in forbidden if importlib.util.find_spec(n)]
+          if found:
+              sys.exit("unexpected packages present: " + ", ".join(found))
+          print("standard library only: confirmed")
+          '
+
+      - name: Offline check
+        run: make check
+
+      - name: Assert the suite did not silently skip the offline tests
+        run: |
+          # 15 skips are expected and legitimate: the Phase 4 gate tests require
+          # the disposable validator environment. Any other count means a test
+          # quietly stopped running, which would hide a regression.
+          PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m unittest discover -s tests 2>&1 \
+            | tee /tmp/suite.txt
+          skips=$(grep -oE 'skipped=[0-9]+' /tmp/suite.txt | grep -oE '[0-9]+' || echo 0)
+          echo "skipped=$skips"
+          if [ "$skips" != "15" ]; then
+            echo "::error::expected exactly 15 skips (Phase 4 gate env), got $skips"
+            exit 1
+          fi
+
+      - name: Structural invariants (stdlib-only, no import-time network)
+        run: |
+          # A real static audit, not a runtime monkeypatch: the offline path must
+          # import no network module and no third-party module at module scope,
+          # and every lazy third-party load must be a declared gated boundary.
+          PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m unittest \
+            tests.test_repository_invariants -v
+
+  no-credentials:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Needed so the changed-lines whitespace check has a base to diff.
+          fetch-depth: 0
+      - name: Scan for committed credentials
+        run: |
+          # .env is gitignored and must never become tracked.
+          if git ls-files --error-unmatch .env 2>/dev/null; then
+            echo "::error::.env is tracked"; exit 1
+          fi
+          # Scan source, config, and docs. tests/ is excluded deliberately: the
+          # provider-boundary tests assert on placeholder secrets by design, and
+          # including them would make this check permanently red on a false
+          # positive rather than catching a real key.
+          if grep -rEn 'sk-[A-Za-z0-9]{20,}' \
+               --exclude-dir=.git --exclude-dir=.venv --exclude-dir=tests \
+               --exclude-dir=__pycache__ . ; then
+            echo "::error::possible API key outside tests/"; exit 1
+          fi
+          # .env.example must stay placeholder-only.
+          if [ -f .env.example ] && grep -qE 'sk-[A-Za-z0-9]{20,}' .env.example; then
+            echo "::error::.env.example contains a key-shaped value"; exit 1
+          fi
+          echo "no credentials found"
+      - name: Whitespace and conflict-marker check on changed lines only
+        run: |
+          # Scoped to this change, not the whole tree: the repository predates
+          # this check and carries pre-existing trailing whitespace in docs,
+          # reports, and vendored C, so an empty-tree diff would be permanently
+          # red without catching anything new.
+          if [ -n "${{ github.base_ref }}" ]; then
+            base="origin/${{ github.base_ref }}"
+            git fetch --no-tags --depth=50 origin "${{ github.base_ref }}"
+          else
+            base="HEAD^"
+          fi
+          echo "checking $base...HEAD"
+          git diff --check "$base"...HEAD

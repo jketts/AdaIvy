@@ -11,9 +11,10 @@ treated as a proposal until an applicable verifier grants a precisely scoped
 warrant.
 
 > Status: Phases 0--4A are preserved; the bounded Phase 5 exact commuting
-> quantum benchmark and Phase 6 local confirmatory/release slice are
-> implemented. Noncommuting SDP, higher adaptive-search tiers, broader Phase 4
-> acquisition, and external evaluation remain deferred.
+> quantum benchmark, the Phase 6 local confirmatory/release slice, and the
+> bounded exploratory synthesis slice (ADR-0025 via ADR-0027) are implemented.
+> Noncommuting SDP, higher adaptive-search tiers, broader Phase 4 acquisition
+> and parsing, hybrid retrieval, and external evaluation remain deferred.
 > See
 > [TECHNICAL_BLUEPRINT.md](./TECHNICAL_BLUEPRINT.md) for the build contract and
 > [NOVELTY_LANDSCAPE.md](./NOVELTY_LANDSCAPE.md) for the prior-art review that
@@ -201,22 +202,33 @@ not as production platform code. Its canonical inputs and outputs are:
 - reproducible component spikes under `spikes/`;
 - measured results under `reports/phase-0/`.
 
-Run the complete offline check from the repository root. It has no third-party
-runtime or development dependencies:
+The single offline entrypoint is `make check`. It needs no network, no model
+provider, no container runtime, and no third-party package:
 
 ```bash
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m unittest discover -s tests -v
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m phase0_harness.cli check
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli demo --output-dir reports/phase-1
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli inspect reports/phase-1/manual-dossier.json
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase2 report reports/phase-2 run.phase2.demo.fake.v1 --output reports/phase-2/traceable-report.md
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase3a demo reports/phase-3a/acceptance-v1 --output-dir reports/phase-3a/acceptance-v1
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase3a inspect reports/phase-3a/acceptance-v1/research-memory.json
+make check
 ```
 
-The bounded Phase 3B acceptance additionally requires the exact local image
-sealed by ADR-0016. Run it only against a disposable workspace so the repository
-and the Phase 3A acceptance state remain unchanged:
+It runs the unit, integration, property, and adversarial suite plus the Phase 0
+harness check and the Phase 1, 2, 3A, 5, 6, and synthesis acceptance paths.
+
+Two targets need more than that and are named for what they need.
+`make check-gate PY=/path/to/gate-venv/bin/python` requires the disposable
+pinned Draft 2020-12 validator environment described in
+`docs/phase-4/DEPENDENCY_LICENSE_ASSESSMENT.md`; fifteen gate tests skip
+themselves unless that validator is importable, so the target refuses to run
+rather than reporting a silent pass. `make check-sealed` covers Phase 3B and is
+described next. `make check-all` runs the offline check and the sealed runtime
+together, and `make help` lists every target.
+
+The individual commands remain available for debugging a single phase; see the
+`Makefile` for the exact invocation of each.
+
+The bounded Phase 3B acceptance requires the exact local image sealed by
+ADR-0016, which is why it is not part of `make check`. Without the image the
+adapter fails closed and the run reports a failed status by design. Run it only
+against a disposable workspace so the repository and the Phase 3A acceptance
+state remain unchanged:
 
 ```bash
 phase3b_check_root="$(mktemp -d /tmp/adaivy-phase3b-check.XXXXXX)"
@@ -378,6 +390,58 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase6 dem
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase6 inspect \
   "$phase6_root/output/phase6-export.json"
 ```
+
+## Bounded exploratory synthesis
+
+The synthesis slice implements the ADR-0025 contract in
+`docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md`, frozen by ADR-0027. It
+layers over the sealed Phase 6 workspace and keeps every earlier boundary
+intact.
+
+Every structured result and relation carries four independent state axes ---
+source applicability, extraction fidelity, mathematical warrant, and graph
+admission --- and no value on one axis implies a value on another. Warrant
+states are not ordered, so admission policy evaluates an explicit permitted set
+rather than a threshold. A relation never inherits an endpoint's states.
+
+Each run validates fifteen finite bounds before it begins, charges a named
+counter before every loop body, and ends with exactly one terminal reason. The
+exploration reserve is enforceable rather than advisory: at least
+`ceil(B * numerator / denominator)` branch-generation attempts go to eligible
+non-incumbent strategy families, and a waiver is admissible only when fewer than
+two families are eligible and every evaluated family is named with its exclusion
+reason.
+
+Retrieval is bounded and genuinely multi-hop over the unmodified Phase 3A
+FTS5/BM25 index: one top-k query cannot satisfy the acceptance corpus, in which
+one source is reachable only by citation traversal and another only by declared
+terminology expansion. Composition compares thirteen dimensions before any
+composition is proposed, and every mismatch opens an obligation. Bridge
+candidates are locally minimal only when no enumerated proper subset permits the
+same composition, and search noncoverage is recorded as `search_incomplete` or
+`not_found_under_protocol`, never as novelty.
+
+Influence closure is transitive and append-only. Fourteen lifecycle and rights
+triggers invalidate every influenced extraction, relation, admission, branch,
+synthesis proposal, bridge candidate, verification input, and surfaced
+partial-result view, then rebuild the current view deterministically; original
+records stay immutable and addressable. Nondeterministic generation is captured
+once and replay never calls a generator.
+
+This slice adds no crawler, network access, parser, embedding model, vector
+database, result extractor, theorem prover, model call, dependency, or
+noncommuting quantum implementation.
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli synthesis \
+  validate-budget fixtures/synthesis/budget-policy-v1.json
+```
+
+Two capabilities it supplies are boundaries rather than fixes. Phase 4A has no
+effective-applicability resolver, so `synthesis/applicability.py` defines one and
+fails closed on a forked supersession chain. Sealed Phase 5 accepts an identical
+originating and creating principal, so the separation-of-duty check in
+`synthesis/material.py` applies only to that module's surfacing path.
 
 ## Suggested implementation defaults
 
