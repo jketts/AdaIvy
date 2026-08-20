@@ -1,0 +1,109 @@
+{
+  "accepted_thresholds": {
+    "canonical_equality_required": true,
+    "canonical_index_rebuild_count": 1,
+    "canonical_repeat_count": 3,
+    "canonical_replay_count": 1,
+    "canonical_restart_count": 1,
+    "false_applicability_accepts": 0,
+    "fixture_count": 16,
+    "fts5_mrr_minimum": 0.75,
+    "fts5_necessary_lemma_recall_at_5_minimum": 1.0,
+    "human_review_coverage_for_checked_applicability": 1.0,
+    "prohibited_rights_actions": 0,
+    "provenance_and_span_validation": 1.0,
+    "quarantine_escapes": 0,
+    "rejection_reason_accuracy": 1.0
+  },
+  "adversarial_case_count": 31,
+  "case_hashes": {
+    "phase4.case.dangling-references": "bc6544aede3b6bd19e9c2131f214deba652ff66b46255a59e27009515398f2ce",
+    "phase4.case.duplicate-ids": "eb1f313211d8adf4cfbb7b417566c66dfe6c879a88b9c2ff0bf73243e17c2efd",
+    "phase4.case.lifecycle-correction": "72bea47feec843a6456afb65b24e27790248e7796665b4adbd53cfc96cf8bb44",
+    "phase4.case.lifecycle-deletion": "90b927e1e520d4c4d073140ea45eaf1b939f29f84603371eecff1c844387766e",
+    "phase4.case.lifecycle-takedown": "b3b4a4a7ce5260a6618e1e15279f6106defee984f2419b2f7cd3b3628eb2669e",
+    "phase4.case.missing-required-field": "757edf2bf287f28d7112d93de588c25b46f8872398fb1570969b73662e6997be",
+    "phase4.case.mixed-envelope-new-record-old": "e3a6e9493fd2686cc33bc149aa39a5239e9fa4b404f2dd0e3925b8ac68a55277",
+    "phase4.case.mixed-envelope-old-record-new": "42ed34b7dedac1ce905396097ea6dcbb7e1acc31f65bcf581e10b094da9b86aa",
+    "phase4.case.mutated-history": "656e88c858644e37cf0ce54c1efd832696676bb69922d66fa2e96a2e83e3956a",
+    "phase4.case.nonhuman-final-status-attempts": "93f0489cdff31278e20a3a1b84755c410ea12232b8e265d7170d9b88cda05808",
+    "phase4.case.one-mismatched-record-among-many": "2a0c2fc986e919e05764876151f879abb456d0245941226225c48641b7cb0dad",
+    "phase4.case.reordered-history": "9ec34d9c966c18b356725ba43e4c246d7c954a9e70072f796a59336b8d033a24",
+    "phase4.case.replay-actor-reference-inconsistency": "816ddf1888040ca0dcf422ba3cdbf7e1d4b5b1557723efe337e0eb811f847513",
+    "phase4.case.replay-invalid-actor-authority": "b896e735a6f0c5b75162c750ba7a1b15c7ecec45f1dfc44d385eae090a916ee8",
+    "phase4.case.replay-mandatory-field-omission": "f3949867415c2406134164970722cae023e78580bc1ee2f665a1e8ee588757a1",
+    "phase4.case.replay-missing-actor-id": "be3cca5d0ee94700744e111afe3fb60538316569838cb0721031ff4b8cfa93c4",
+    "phase4.case.replay-missing-authority": "8c078ca82bd6233302e4a9f604d315d443eafe589b40efc020149b57bbb03750",
+    "phase4.case.replay-nonhuman-final-authority": "73754d8187fd0b4ed680f1945af6983a50b5f771c965a91bbb994728d0ec71fc",
+    "phase4.case.replay-source-authority-proposal": "f6d1e1b071d051004da27f89a60f42ce346812bb275f4dca864be6f88061c62c",
+    "phase4.case.rights-expired": "0bceb7c93e88e008f97b232c34aaec934a687e92c12f021e50e4e9fd8f02ccc2",
+    "phase4.case.rights-explicitly-prohibited": "731186c68dfc73a6723675ba53b7c047f4d7e7b1fe19a864e5c3f24008eed23e",
+    "phase4.case.rights-incompatible": "ca841c0b8d517f054be564e9819dd72c50403e5bae7dfca6677bf0ee26e4c6d2",
+    "phase4.case.rights-missing": "203368b4bbe2373eee9ff3d7d9eaa4c007c1aa9c3f7e81c24cb1080f109f60c1",
+    "phase4.case.rights-permitted": "6d5e391fcc5ff8c0b1b091ada2fa7d7ce895e0f3559be4ed75d74726f264b46b",
+    "phase4.case.rights-revoked": "0f3fc8e4cd726f72d403ab1ce7e9646a6b8ca8f6a84fa8a38067bf64039e3b08",
+    "phase4.case.supersession-cycle": "6f34d3a5bf8cadf5c60c60111c39e0845b2d603a08fd6a74862dfa6b880821c1",
+    "phase4.case.unknown-field": "0f0beb3aa9569f732426463d275043ace680249e1db43899822b3c9cf43e4c09",
+    "phase4.case.unknown-schema-version": "b5355f9a1b69c3233759c8adfbf3f4717f6935ebc8e2a182f02438e654430466",
+    "phase4.case.wrong-field-type": "15463fe3249d307b26ce371960c8c9ebcad52c35677f04523f46b41d3cddd91f"
+  },
+  "class_counts": {
+    "applicable": 4,
+    "contradiction": 1,
+    "definition_mismatch": 2,
+    "incompatible_hypotheses": 4,
+    "misquotation": 1,
+    "prompt_injection": 1,
+    "rights_or_takedown": 1,
+    "scope_or_exception": 2
+  },
+  "corpus": {
+    "case_file_sha256": "638b8705695239c63087b0232790cd4351d873ccd65f3dd6bf4f1fa7b7d8c7f3",
+    "case_path": "fixtures/phase4-gate/cases.json",
+    "fixture_schema_path": "schemas/phase4-gate-fixture-v1.schema.json",
+    "fixture_schema_sha256": "ad52d76139362380d89bea28c2399cd703cc2ab7dab298fa175b40b086537858",
+    "path": "fixtures/phase4-gate/corpus.json",
+    "sha256": "d168974199b17a847c4280a6ad2c6affee87188e198603b970251723abebb524"
+  },
+  "fixture_hashes": {
+    "phase4.fixture.applicable-1": "8174429c4aef4513fbe055f6986185f3b7ee57067938c9b7ea1d4b12dda37021",
+    "phase4.fixture.applicable-2": "ab41cb0a4bf8d4ce3eb7c1ac04ca796d60b0087bb72d1dc28591bb66b0f05b44",
+    "phase4.fixture.applicable-3": "6ed97d56d0ae33415f360e727bdbeb738ffb57594be56dca352cbe49e5f54521",
+    "phase4.fixture.applicable-4": "b0cbc1c875f7987ecf7d6492db5d8a1c58782c3004787793751caca0e726d088",
+    "phase4.fixture.contradiction": "eb9612c41f8a56603e8fa4e0025c828681fce6c436023dc32520c9d60e4f7353",
+    "phase4.fixture.definition-1": "c55bee738806a6ac05b29ba0b1612bd22f015e222a0cfbffaa9adb1a3aa96098",
+    "phase4.fixture.definition-2": "f4396244156fbe371a2a5abaca18d4b004230c7d9713cc053796eb6344aa3009",
+    "phase4.fixture.incompatible-1": "999bdcd4ed7591163529bbb082b6231a7ea8a06830c5c79e24bcc1018b9a5040",
+    "phase4.fixture.incompatible-2": "056d4cec0f30c40df895f237b263661ceb285acb0557756bc736ffdefa1fad1d",
+    "phase4.fixture.incompatible-3": "6d349c48745f4282b9870fd6141445b7037256eb88e58f2cb87937d7d6beb116",
+    "phase4.fixture.incompatible-4": "eb0297bf123ab364ce77f5774e3a9b36cdb7481d7958398637024d472620645e",
+    "phase4.fixture.misquotation": "6d52754b5c45fe2656e1377d19482ba7495348397c1dff310443fc4af2a98949",
+    "phase4.fixture.prompt-injection": "fd189c277a6e296b216b143e2b287bc0e8941250047b7354f32ec314634e6d25",
+    "phase4.fixture.rights-takedown": "daa21777fc72fc5eab12a77f1bb34203d38aa54b5097478281200ac5a90149bc",
+    "phase4.fixture.scope-1": "eb97447c9fb39d14292d8bee4b1e55cd0f4380fe7e92be187e08b303cbfda206",
+    "phase4.fixture.scope-2": "14f8673c877efbbea58ffd98d0c39a04f3008c66dd897b39f9b53295ca0b1da4"
+  },
+  "license": {
+    "copyright_notice": "Project-authored synthetic gate fixtures; 2026 AdaIvy contributors",
+    "license_expression": "LicenseRef-AdaIvy-Synthetic-Fixture",
+    "redistribution_status": "allowed",
+    "usage_rights": [
+      "private_evaluation",
+      "local_contract_validation",
+      "deterministic_replay"
+    ]
+  },
+  "raw_case_hashes": {
+    "phase4.case.duplicate-json-keys": "a352aea1b2055679afd21f3e0a9fb692326bb137479a94965ebdaa449e9ccf57",
+    "phase4.case.malformed-json": "6dceb7591fa3b211120f30dafe8a0aed4102332a9b2416462cc26581e3eb4d55"
+  },
+  "schema_validator": {
+    "draft": "https://json-schema.org/draft/2020-12/schema",
+    "gate_only_dependencies": 5,
+    "implementation": "jsonschema.validators.Draft202012Validator",
+    "platform_manifest": "requirements-phase4-gate-py314-macos-arm64.txt",
+    "remote_retrieval_allowed": false,
+    "version": "4.26.0"
+  },
+  "schema_version": "adaivy.phase4-gate-fixture-manifest.v1"
+}

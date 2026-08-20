@@ -1,384 +1,454 @@
 # Phase 4 Entry-Gate Report
 
-Date: 2026-08-19
+Status: **passed**
+Date: 2026-08-20
+Gate scope: proposal and verification only; no Phase 4 production implementation
 
-Status: **blocked before production implementation; a separate entry gate is
-required**
+## Result
 
-## Outcome
+The Phase 3B canonical-stability prerequisite is resolved. The repaired baseline
+is `e7db0ffa2d3fe4609c8a62642ec70fc5343776e3`, the repair commit is
+`beae447cf38328d7021643e6adbbb75cc42e97e1`, and the annotated repair tag is
+`phase-3b-canonical-stability-v1`. The original annotated `phase-3b` tag remains
+at `226b47863f565c9c5a7dc7ac9ac08d490420ecf2`.
 
-The sealed Phase 3B baseline passed repository preflight, and the working branch
-`codex/phase-4` was created from the verified Phase 3B target. Production Phase
-4 implementation did not begin.
+The repository owner accepted the bounded Phase 4A policy direction on
+2026-08-20 without authorizing production implementation. ADR-0017 and
+ADR-0018 capture that approval and bind it to stable control and threshold
+inventories plus the full pre-approval gate-artifact hashes. Sixteen synthetic
+fixtures are individually content-hashed, and the nonproduction candidate
+spike passes every frozen contract over independent runs and restart.
 
-The authoritative roadmap defines Phase 4, but the repository has no accepted
-Phase 4 specification, report, requirement matrix, threat model, dependency
-lock, rights-approved corpus, frozen evaluation protocol, acceptance command,
-or passed entry-gate evidence. Accepted ADRs also require explicit revisits
-before a Phase 4 crawler, embedding boundary, research automation, PDF parsing,
-or PaperQA2 integration. These are mandatory decisions rather than details an
-implementer may infer.
+All nine entry-gate conditions now pass. The gate result is **passed** and the
+bounded prompt has been converted to the prospective Phase 4A production task.
+No production Phase 4 entity, schema, migration, service, database, or workflow
+was implemented, and the prompt does not begin implementation by itself.
 
-The quantum-discrimination benchmark is Phase 5 under the current roadmap. No
-quantum material was copied, merged, or modified.
+## Baseline and branch verification
 
-## Repository preflight
-
-| Check | Observed result |
-|---|---|
-| Repository | `/Users/joshuakettlewell/Documents/GitHub/AdaIvy` |
-| Initial branch and upstream | `main`, `origin/main` |
-| Current branch | `codex/phase-4`, created from the verified target; no upstream |
-| Baseline commit | `226b47863f565c9c5a7dc7ac9ac08d490420ecf2` |
-| Baseline tree | `5c300820521c0b83b7d19c644ca42f327ef21407` |
-| `origin/main` after `git fetch origin main --tags` | `226b47863f565c9c5a7dc7ac9ac08d490420ecf2` |
-| `phase-3b` tag object | `9c464ba2b93ec9c80e6fc95421f53e3b54c6ab4c` |
-| Peeled `phase-3b` target | `226b47863f565c9c5a7dc7ac9ac08d490420ecf2` |
-| Phase 3B evidence ancestor | `6945d8aa206d79c3dc0bd7d7a50aea662414b8e8`, confirmed ancestor |
-| Initial worktree and index | clean, including untracked files |
-| Remotes | one remote, `origin`, fetch/push `https://github.com/jketts/AdaIvy.git` |
-| Existing annotated tags | `phase-2`, `phase-3a`, `phase-3b`; unchanged |
-
-Only the root `AGENTS.md` applies. It was read before any file change. README,
-`TECHNICAL_BLUEPRINT.md`, `NOVELTY_LANDSCAPE.md`, all current ADRs, recent
-history, and Phase 0 through Phase 3B reports, roadmaps, handoffs, and deferred
-work were inspected.
-
-## Authority and conflict resolution
-
-The repository does not state a general conflict-precedence algorithm. No
-silent choice was needed here:
-
-1. ADR-0012 explicitly supersedes the revision-0.2 delivery order while
-   preserving its history.
-2. README and architecture baseline 0.3 repeat ADR-0012's current order:
-   Phase 3A research memory, Phase 3B formal grounding, Phase 4 broader
-   acquisition and research automation, and Phase 5 adaptive search plus the
-   quantum benchmark.
-3. Accepted ADR-0003, ADR-0013, and ADR-0014 impose additional prerequisites on
-   Phase 4 components and preserve the Phase 3A/3B trust boundaries.
-4. The controlling task instruction requires an entry-gate report instead of
-   implementation whenever Phase 4 is ambiguous or an entry gate is unpassed.
-
-The broad objective is consistent across the current roadmap. What is absent is
-an accepted, bounded production slice and its policies.
-
-## Authoritative Phase 4 scope
-
-### Objective
-
-Broaden the local research-memory foundation into rights-aware source
-acquisition and research automation while retaining exact provenance,
-rebuildable indexes, explicit applicability review, and orthogonal trust
-classifications.
-
-### Required production capabilities
-
-Architecture baseline 0.3 lists:
-
-- licensed source acquisition, controlled crawling, and immutable archives;
-- richer math-aware and PDF parsing;
-- embeddings and hybrid lexical/semantic/formula/citation retrieval;
-- evidence cards and source-applicability review;
-- terminology and notation expansion, citation traversal, and bounded novelty
-  assessment;
-- source-injection and misquotation evaluations; and
-- broader research automation plus the deferred embedding-provider boundary.
-
-### Required entities and interfaces
-
-The existing canonical source bytes, versions, normalized documents, exact
-spans, evidence units, relations, packs, events, and ResearchMemoryExport remain
-authoritative. Phase 4 must use or define the roadmap's `SourceAcquirer`,
-`DocumentParser`, `RetrievalIndex`, `ArtifactStore`, `EventStore`, and relevant
-repository ports without allowing adapter response objects into the domain.
-
-Evidence cards must retain exact spans, imported statements, hypotheses,
-definition mappings, and applicability obligations. Load-bearing use requires
-a checked `SourceApplicabilityRecord`. Novelty work requires a reproducible
-search protocol and a bounded `NoveltyAssessment`; it cannot prove absence of
-prior art.
-
-The current documents do not freeze the Phase 4 schema versions, migration,
-command surface, adapter selection, or smallest entity subset. That is an entry
-gate item.
-
-### Security and trust boundaries
-
-- Retrieved and parsed content is untrusted candidate data.
-- Original content-addressed bytes remain authoritative; parser, embedding,
-  reranker, and model-shaped outputs are derived proposals.
-- Crawlers remain outside the trusted core and must obey access, license,
-  version, failure-retention, deduplication, and rate policies.
-- Acquisition credentials must be separated from checker and execution
-  environments; secrets and network access remain absent by default.
-- Every index is a rebuildable projection and cannot be canonical state.
-- Applicability, formal validity, novelty, significance, and human review remain
-  distinct records. No retrieval result, parser result, embedding score, model
-  agreement, or formal checker result promotes another dimension automatically.
-- The accepted Phase 3B stdin/container/Landlock/seccomp/non-root/read-only/
-  no-network/resource-limit boundary must remain unchanged.
-
-### Acceptance criteria
-
-The roadmap requires:
-
-- an exact source span and checked applicability record for every load-bearing
-  imported theorem;
-- necessary-lemma recall and applicability precision at frozen thresholds;
-- reliable rejection of real but inapplicable citations;
-- prevention of unsupported novelty claims when known results are renamed; and
-- canonical state unchanged after index rebuilds.
-
-The testing strategy additionally requires source acquisition through parsing
-and retrieval, interrupted-workflow resume, malicious-source and misquotation
-cases, incompatible-hypothesis rejection, notation-variant evaluation, citation
-correctness, assumption preservation, contradiction retrieval, and exact
-failure retention. The thresholds, corpus, repeat count, restart protocol, and
-canonical comparison surface are not yet frozen.
-
-### Explicit non-goals for the first bounded slice
-
-- Phase 5 adaptive-search tiers or quantum-discrimination implementation;
-- cloud deployment, multi-tenant operation, hidden services, or unrelated
-  redesign of Phase 0 through Phase 3B;
-- automatic promotion of retrieved, parsed, generated, or formally checked
-  claims;
-- a web/API surface, live AdaIvy model/provider calls, or secret-dependent
-  acceptance unless separately authorized by a later accepted gate; and
-- unrestricted crawling or importing source bytes without recorded rights.
-
-### Dependencies on Phase 3A and Phase 3B
-
-Phase 4 extends Phase 3A's immutable bytes, exact spans, quarantine, canonical
-exports, deterministic FTS baseline, retrieval manifests, packs, and replay. It
-must compare hybrid retrieval against that same lexical baseline on the same
-fixtures and leave canonical memory independent of every index.
-
-Phase 3B formal results remain separate from source applicability and statement
-faithfulness. Phase 4 must consume formal-checker results only through the
-accepted canonical boundary and may not weaken or replace its sealed runtime.
-
-## Quantum-discrimination inventory
-
-The separate worktree `/private/tmp/adaivy-quantum-discrimination` is on branch
-`codex/quantum-discrimination-dossier` at
-`b9c06d8fb42d690542cc23712c25fde8fe44ef50`. It is clean and contains two
-branch-only commits, including tracked theorem-dossier and benchmark-statement
-files. Its merge base with the sealed baseline is
-`1342827a4ec9736e47cc20d32475b71100c68496`; the sealed `phase-3b` commit is not
-its ancestor. It was inventoried only. It was not read into, copied to, merged
-with, or otherwise imported by this branch.
-
-This does not block Phase 4 because the current roadmap assigns the quantum
-benchmark to Phase 5. It would block any future attempt to treat that worktree
-as sealed-baseline Phase 4 input.
-
-## Why the entry gate is blocked
-
-The following decisions and evidence are mandatory and absent:
-
-1. one smallest production slice selected from the broad Phase 4 roadmap;
-2. accepted ADR(s) for that slice, including schema/migration compatibility;
-3. source/corpus selection with version, license, redistribution, extraction,
-   embedding, context-use, retention, and publication rights;
-4. parser candidates compared against `plain-text-v1`, with pinned dependency
-   graph, hashes, licenses, hostile-input containment, exact span mapping, and
-   deterministic replay;
-5. an explicit embedding decision: absent from the first slice or a pinned
-   local boundary with model-weight/data licenses, offline execution, stable
-   manifests, and measured comparison to FTS5;
-6. an acquisition decision: local-only for the first slice or a separately
-   authorized network boundary with allowlists, redirect/DNS/SSRF controls,
-   robots/terms/rate policy, byte limits, credential isolation, and preserved
-   failures;
-7. accepted mappings for evidence cards, applicability review, citation
-   traversal, terminology expansion, and novelty records;
-8. a threat model covering malicious documents, parser exploits, archive
-   traversal, decompression/resource abuse, prompt injection, source
-   misquotation, index poisoning, and cross-project leakage;
-9. frozen synthetic or rights-approved fixtures, negative controls, metrics,
-   thresholds, repeat/restart protocol, and baseline comparison;
-10. exact verification commands, clean-tree policy, and machine-readable gate
-    schema.
-11. resolution of the sealed Phase 3B export's cross-run canonical-hash defect:
-    `elapsed_milliseconds` currently participates in finding IDs, finding
-    hashes, export ordering, and the export hash.
-
-Real external acquisition, live model/provider calls, a new high-privilege
-runtime, or a materially expanded security boundary also requires separate
-authorization under the controlling instruction.
-
-## Verification evidence
-
-All commands ran with `PYTHONDONTWRITEBYTECODE=1`, `PYTHONPATH=src`, and
-`OPENAI_API_KEY` removed. Mutable demonstrations used unique directories below
-`/private/tmp`; no tracked database, FTS projection, report, or build output was
-regenerated.
-
-| Check | Exit | Result |
-|---|---:|---|
-| `python3 -W error::ResourceWarning -m unittest discover -s tests -q` | 0 | 173/173 passed |
-| `python3 -m phase0_harness.cli check` | 0 | 19/19 passed |
-| Phase 1 disposable demo and inspect | 0 | round-trip hash preserved; dossier content hash `sha256:ee299e0a6d6295dd005f0292ab5b0ac89320862ed1853935ddc0da5d5b9f96fa` |
-| Phase 2 offline report to `/private/tmp` | 0 | completed using the scripted offline baseline |
-| Phase 3A disposable demo and inspect, run 1 | 0 | passed; zero API calls |
-| Phase 3A disposable demo and inspect, run 2 | 0 | passed; zero API calls |
-| Phase 3B disposable sealed-image demo and inspect, run 1 | 0 | all 9 outcomes passed; zero model/API calls; zero trust promotions |
-| Phase 3B disposable sealed-image demo and inspect, run 2 | 0 | all 9 outcomes passed; zero model/API calls; zero trust promotions |
-
-The two Phase 3A runs were byte-identical:
-
-- acceptance JSON:
-  `sha256:c0ea908f3b6f1c9fd19d83180f3e55f865238dfc4f96727048531d51bfe8c241`;
-- ResearchMemoryExport bytes:
-  `sha256:f1b57c2cae96638a7545476722685f17eb7470c5b4d0a790ca788de8e8756272`;
-- traceable report:
-  `sha256:881b2d0a85da1c9c57181c0aeb28ae6efccbc88e4a6521f6d29bd60856544ac9`;
-- canonical memory hash:
-  `sha256:99891f3b0acd8493adae7976caad8d493995adf2c68522bca2e8da6845e21e4c`;
-- event replay hash:
-  `sha256:66998142ca524886b021958c54a80cfbb77002ce1035892f4c26ea54ba362e6c`;
-  and
-- all three repeats plus restart retained ordered-result hash
-  `sha256:08d8f51567341a9ab17b03b913f1e5409e2b751e1aa4b60db068de72c72cbb0c`
-  and pack-set hash
-  `sha256:0586e955336e2e7322168f784662ac5beafaaac26259e07933c1af1deb7b5631`.
-
-The Phase 3B runtime remained the sealed
-`sha256:39457cf097e89537ac90e7ddee08cbda8f7f2d49e443cc60a87d6d02d8cb896f`
-image. Each run preserved its own restart replay, but independent runs did not
-produce the same canonical export:
-
-| Artifact | Run 1 | Run 2 |
+| Check | Evidence | Result |
 |---|---|---|
-| export content hash | `sha256:bd942606af74f9b2705d98123828a760284326f23992bbf0f60fc421e5f85c25` | `sha256:6f34bec8c69aa99b6cf666981c7d2fd64df586d4e81b2f9e649b48067ab7f3bf` |
-| acceptance file bytes | `sha256:eaaf1d49d92e968bacd30e44a77da570fd3c6d397878b1febc63b286b0c26fd0` | `sha256:058a843a572a243dbd8fc64a7d3311518da570a90d94722a461746ca1b63ce49` |
-| export file bytes | `sha256:b6fd0d1a7b1f116ac32018e6dc5c2fd971a4d54ecfbff5f2d864d61136e14fb4` | `sha256:cf69c13adc3b3857749ec271bbf7333425a6cd02cf5d8589c9c8f08e6981d5fb` |
+| Phase 4 branch head | `7832f9f5f7d0cd504a28107fbf0b489522652e46` | pass |
+| Repaired `main` and merge base | `e7db0ffa2d3fe4609c8a62642ec70fc5343776e3` | pass |
+| Ahead/behind against `main` | `1/0` | pass |
+| Upstream | none | pass |
+| Replayed Phase 4 documentation commit | old `17baf546`, new `7832f9f` | pass |
+| Repair commit in ancestry | `beae447cf38328d7021643e6adbbb75cc42e97e1` | pass |
+| Repair tag target | `e7db0ffa2d3fe4609c8a62642ec70fc5343776e3` | pass |
+| Original tag target | `226b47863f565c9c5a7dc7ac9ac08d490420ecf2` | pass |
+| Initial worktree/index | clean | pass |
 
-The six executed findings differed in measured `elapsed_milliseconds`; their
-content hashes and IDs are derived from that field, which also changes export
-ordering and hashing. After excluding only finding IDs, finding content hashes,
-and `elapsed_milliseconds`, the findings compared equal. No temporary host path,
-process ID, source bytes, checker output, outcome, axiom inventory, or trust
-classification differed.
+## Accepted prospective first production slice
 
-This is a pre-existing Phase 3B production behavior, not a Phase 4 change. It
-fails the controlling requirement that incidental timing not affect canonical
-hashes. The entry gate must remain blocked until a separately authorized Phase
-3B maintenance decision defines and verifies the canonical/operational split.
-The fix must retain elapsed time as auditable operational metadata rather than
-discard it, and must not weaken the sealed checker or replay validation.
+The owner selected exactly one slice: **Phase 4A local rights and source-applicability
+review**.
 
-Additional validation results:
+The slice would accept only manually supplied regular local files already
+eligible for `plain-text-v1`. It would add immutable, reviewable rights
+decisions, evidence cards, source-applicability reviews, and source lifecycle
+actions. A human would decide whether an exact imported statement applies to a
+local claim under compatible hypotheses, definitions, scope, and exceptions.
+It would not crawl, resolve a URI, add a parser, embed text, add a vector index,
+call a model, or automate research authority.
 
-- 97 JSON documents parsed; the sole invalid JSON path was the intentional
-  `fixtures/phase3b/malformed.json` adversarial fixture exercised by the tests;
-- all 11 schema documents parsed and schema semantics were exercised by the
-  173-test suite;
-- all 53 v4 gate-evidence files matched the v5 preservation manifest and every
-  one of the 29 v5 entry-gate conditions remains true;
-- all protected Phase 0, Phase 2, and Phase 3A hashes matched their sealed
-  values, including the tracked Phase 3A SQLite file;
-- the disposable Phase 2 report was byte-identical to the tracked report at
-  `sha256:adef3d2d42999f24a877cf512f015c09316a719a163b9899faeb717b69a28b55`;
-- credential scanning covered 202 files in `reports/**` and the new Phase 4
-  documentation, with zero exact local-credential matches and zero credential
-  token-pattern matches;
-- `git diff --check`, standard-library `tabnanny`, and AST parsing of 77 Python
-  files passed; and
-- the repository defines no Ruff, mypy, or Pyright configuration and those
-  tools are not installed, so no unconfigured third-party formatter or type
-  checker was introduced or claimed.
+This is the smallest complete Phase 4 step because it addresses the rights and
+applicability controls required before broader corpus acquisition while using
+the already accepted source bytes, spans, FTS5 index, evidence proposals, and
+Phase 1 applicability policy. Retrieval, parsing, or formal checking still
+cannot create an applicability approval or warrant.
 
-The measured environment was Python 3.14.4, SQLite 3.53.3 with FTS5, Apple Git
-2.50.1, and macOS 26.5.2 build 25F84 on Darwin 25.5.0 arm64.
+### Accepted capability map
 
-## Exact independent verification commands
+| Capability | Existing authority | Proposed additive record/port | Trust and persistence |
+|---|---|---|---|
+| Rights by intended use | `LicenseMetadata`, original CAS bytes | `SourceRightsDecision`, `SourceRightsPolicy` | Human-reviewed; append-only; unresolved use fails closed |
+| Lifecycle and takedown | immutable source/reference records | `SourceLifecycleAction`, suppression projection | Append-only action/tombstone; indexes are rebuilt projections |
+| Evidence card | evidence unit/span/relation | `EvidenceCard`, `EvidenceCardRepository` | Source-derived proposal only |
+| Applicability review | Phase 1 `SourceApplicabilityRecord` and trust policy | additive `ApplicabilityReview` with reason code | Only a named human reviewer may mark checked/applicable |
+| Policy provenance | canonical event/config patterns | `Phase4PolicySnapshot` | Content-hashed, versioned, referenced by every decision |
+| Interchange | existing dossier/research-memory exports | separate `phase4-review-v1` export | Does not change Phase 0-3B canonical formats |
 
-Run from the repository root with the already sealed local Phase 3B image:
+Proposed migration name: `phase4/0001_rights_applicability_review.sql`.
+It would add append-only tables and foreign keys to existing opaque IDs without
+rewriting existing records. This is a plan only: no schema or migration was
+created by this gate.
 
-```bash
-env -u OPENAI_API_KEY PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
-  python3 -W error::ResourceWarning -m unittest discover -s tests -q
-env -u OPENAI_API_KEY PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
-  python3 -m phase0_harness.cli check
+Canonical identities would include schema/policy versions, referenced semantic
+IDs and hashes, rights values, reason codes, reviewer identity, and the signed
+review content. They would exclude timestamps, elapsed time, process IDs,
+temporary paths, row order, database layout, scheduler state, and measured
+scores. Excluded operational values would remain auditable under a separate
+operational hash, following repaired Phase 3B practice.
 
-phase4_phase1="$(mktemp -d /private/tmp/adaivy-phase4-phase1.XXXXXX)"
-env -u OPENAI_API_KEY PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
-  python3 -m math_research.cli demo --output-dir "$phase4_phase1"
-env -u OPENAI_API_KEY PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
-  python3 -m math_research.cli inspect "$phase4_phase1/manual-dossier.json"
+## Accepted policies and deferred boundaries
 
-env -u OPENAI_API_KEY PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
-  python3 -m math_research.cli phase2 report reports/phase-2 \
-  run.phase2.demo.fake.v1 --output /private/tmp/adaivy-phase4-phase2-report.md
+The Phase 4A controls in this section are accepted exactly as enumerated in
+`SECURITY_CONTROL_INVENTORY.md`. Values describing possible future network,
+parser, archive, embedding, or hybrid capabilities remain minimum guardrails,
+not approval to implement or even spike those deferred capabilities.
 
-phase4_phase3a="$(mktemp -d /private/tmp/adaivy-phase4-phase3a.XXXXXX)"
-env -u OPENAI_API_KEY PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
-  python3 -m math_research.cli phase3a demo "$phase4_phase3a/workspace" \
-  --output-dir "$phase4_phase3a/output"
-env -u OPENAI_API_KEY PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
-  python3 -m math_research.cli phase3a inspect \
-  "$phase4_phase3a/output/research-memory.json"
+### 1. Acquisition, crawling, robots, and terms
 
-phase4_phase3b="$(mktemp -d /private/tmp/adaivy-phase4-phase3b.XXXXXX)"
-env -u OPENAI_API_KEY PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
-  python3 -m math_research.cli phase3b demo "$phase4_phase3b/workspace" \
-  --output-dir "$phase4_phase3b/output"
-env -u OPENAI_API_KEY PYTHONDWRITEBYTECODE=1 PYTHONPATH=src \
-  python3 -m math_research.cli phase3b inspect \
-  "$phase4_phase3b/output/formal-checking.json"
+- Phase 4A remains local-only. It accepts explicit regular files, refuses
+  symlinks and special files, retains the Phase 3A 2 MiB source limit, and
+  performs no URI resolution or network operation.
+- A future network adapter must be separately authorized per origin and remain
+  outside the trusted core. It may use HTTPS on port 443 only, a normalized
+  hostname allowlist, no URI user information, and no ambient proxy settings.
+- Every DNS result and connected address, including every redirect, must be
+  rejected if it is loopback, link-local, private, multicast, unspecified, or
+  otherwise special-use. Redirects are capped at five and revalidated; auth,
+  cookies, and origin-bound headers never cross origins.
+- `robots.txt` is necessary but not authorization. The adapter follows RFC
+  9309 but is stricter: missing, unreachable, invalid, ambiguous, 4xx, or 5xx
+  robots state means no crawl. A successful policy is cached for at most 24
+  hours. An explicit disallow denies access. Robots content is untrusted data.
+- Site terms and source rights are independent of robots. Before enabling an
+  origin, a human must approve a content-hashed terms snapshot containing URL,
+  retrieval time, applicable actor/use, reviewer, and decision. Any changed or
+  unavailable terms suspend the origin.
 
-git diff --check
-python3 -m tabnanny src tests
-git status --short --untracked-files=all
-git diff --stat
-git diff
-git diff --cached --stat
-git diff --cached
-```
+### 2. Corpus licensing and rights by use
 
-Repeat the Phase 3A and Phase 3B disposable blocks and compare the listed
-canonical hashes. Phase 3A must match. Phase 3B currently demonstrates the
-recorded blocker until separately repaired and accepted.
+Each source version receives a human decision for eight independent actions:
+acquisition, storage/retention, parsing, excerpting, embedding, model context,
+redistribution, and publication. Each action is `allowed`, `prohibited`, or
+`unresolved`, with evidence URI/hash, attribution/notices, jurisdictional or
+contract constraints, reviewer, effective time, and superseded decision.
+`unresolved` and `prohibited` both block that action. SPDX expressions are
+recording vocabulary, not legal interpretation. Project-authored synthetic
+fixtures retain `LicenseRef-AdaIvy-Synthetic-Fixture`; no academic bytes may be
+committed or redistributed without source-specific permission.
 
-## Deliverable inventory and handoff
+### 3. Provenance, deletion, and takedown
 
-This gate-only delta contains exactly:
+Original bytes remain authoritative and content-addressed. A takedown creates
+an append-only lifecycle action and immediate suppression projection for
+parsing, retrieval, contexts, exports, and publication. Derived indexes are
+rebuilt without the source. Prior reports retain the source hash and a visible
+unavailable/takedown state; history is never silently rewritten. Legal hold
+prevents physical deletion. Physical CAS deletion requires a distinct approved
+retention job and completion event. Restore requires a new reviewed action;
+every dependent rebuild records the policy/action IDs.
 
-- `docs/phase-4/ENTRY_GATE_REPORT.md` — authority, preflight, scope, blockers,
-  verification, and handoff;
-- `docs/phase-4/BOUNDED_IMPLEMENTATION_PROMPT.md` — inactive successor prompt
-  for entry-gate work only; and
-- `reports/phase-4-entry-gate/entry-gate.json` — machine-readable evidence.
+### 4. Parsing, hostile content, and resource limits
 
-The machine-readable evidence content hash is
-`sha256:f48f770c026be574e8685b31b37680fdc3b5aa3e3be7f1d3c50b8089f47f1964`,
-computed from canonical JSON with its `provenance.content_hash` field set to
-`null`.
+- Phase 4A adds no parser. Only valid UTF-8 `text/plain` is eligible; all HTML,
+  PDF, XML, Office, EPUB, image, OCR, and archive inputs remain quarantined.
+- Document bytes and extracted text are data, never instructions. Prompt-like
+  content is retained verbatim for provenance, labelled untrusted, and cannot
+  alter policies, invoke tools, reveal secrets, broaden network scope, or grant
+  trust. Evidence packs delimit and attribute each span. Human applicability
+  review remains mandatory.
+- A future parser must run non-root in an isolated no-network worker with a
+  read-only input, new empty writable temp directory, no executable/macro/JS or
+  external-reference support, and bounded CPU, memory, output, and wall time.
+  It must produce an exact byte-to-normalized-span map or quarantine the item.
+- Future non-archive response limits: 2 MiB compressed/raw input, 8 MiB decoded
+  output, expansion ratio at most 20:1, 30 seconds wall time, 512 MiB memory,
+  and 64 MiB writable temporary storage.
+- Archives remain excluded from Phase 4A. A future archive spike is capped at
+  one nesting level, 128 regular-file members, 2 MiB per member, 16 MiB total
+  decoded bytes, 20:1 aggregate expansion, and 255-byte names. Absolute paths,
+  traversal, duplicate/case-colliding names, links, devices, pipes, encrypted
+  members, unknown sizes, and nested archives are rejected before extraction.
+- The standard-library `HTMLParser` is not accepted as a rich parser because
+  its permissive recovery cannot by itself establish exact mathematical
+  structure or source mapping. Python's archive filters are also insufficient
+  alone; official documentation requires inspection and external resource
+  bounds for untrusted archives.
 
-No production source, fixture, schema, migration, dependency, quantum path, or
-existing report changed. Nothing is staged.
+### 5. Embeddings, indexes, and retrieval determinism
 
-If the maintainer elects to preserve this blocked-gate evidence, the proposed
-commit message is `docs: record blocked Phase 4 entry gate`, using explicit
-pathspecs for only the three paths above. No Phase 4 tag command is appropriate
-while the gate is blocked. The existing convention suggests reserving
-`phase-4` for a future accepted production commit; do not create or move it now.
+Embeddings and vector retrieval are excluded from Phase 4A. The documentation-
+only future candidate is
+`sentence-transformers/all-MiniLM-L6-v2` at revision
+`b9db1e8a0d3a51769172ba8546f282a73f066e47`. It is not approved: its Apache-2.0
+model-card label, training-data notices, artifact hashes, transitive runtime
+licenses, 256-wordpiece truncation, and deterministic replay still require a
+complete audited manifest and a local spike. No model files were downloaded.
 
-Phase 5 handoff: do not begin adaptive search or quantum work. Before Phase 5,
-the quantum dossier branch must be reviewed and rebased or otherwise recreated
-through an explicit, provenance-preserving decision from a sealed descendant;
-it must not be silently imported from its current pre-Phase-3B ancestry.
+If later approved, embedding executes locally, offline, CPU-only, from pinned
+`safetensors` blobs with every blob/tokenizer/config hash recorded. Dynamic
+code, external inference, provider APIs, unpinned aliases, auto-download,
+quantization, and nondeterministic kernels are prohibited. A separate decision
+would be required for any external provider and would have to address source
+rights, data retention, credentials, pricing, and reproducibility.
 
-## Bounded recommendation
+FTS5 remains the lexical baseline and records SQLite version, compile options,
+tokenizer, corpus manifest, query, and explicit semantic-ID tie-break. Indexes
+and embeddings are rebuildable projections, never canonical evidence state.
+An embedding manifest would include source/evidence-unit hashes, exact input
+text hash, model/runtime/blob hashes, dimension, dtype, normalization, and
+batch policy.
 
-Run only the proposed entry-gate task in
-`BOUNDED_IMPLEMENTATION_PROMPT.md`. It must resolve and measure the decisions
-above without production entities, migrations, network acquisition, model/API
-calls, or quantum work. After human acceptance, generate a new production
-prompt naming the exact selected slice, accepted ADRs, evidence hash, fixtures,
-thresholds, dependencies, and stop line.
+A future hybrid spike would use exact-rational reciprocal-rank fusion with
+`k=60`, equal lexical/vector weights, and at most 50 candidates from each
+index. It must compute comparison values with integer arithmetic over common
+denominators and tie-break by source-artifact ID, byte start, byte end, then
+evidence-unit ID. Raw floating scores remain operational only.
 
-Do not use this report as production authorization.
+### 6. Evaluation corpus and frozen thresholds
+
+The proposed project-authored corpus contains 16 cases: four applicable, four
+incompatible-hypothesis, two definition-mismatch, two scope/exception, one
+misquotation, one contradiction, one prompt-injection, and one
+rights/takedown case. Cases may exercise more than one adversarial property but
+must retain distinct expected outcomes. It also freezes a renamed-result case,
+a malicious markup/archive case for quarantine, and restart/replay/index-
+rebuild variants. Exact bytes and expected manifests must be content-hashed
+before production code.
+
+Required Phase 4A thresholds are: 100% provenance/span validation; 100% human
+review coverage for checked applicability; zero false applicability accepts;
+zero prohibited-rights actions; zero quarantine escapes; all rejection reason
+codes exact; identical canonical bytes/hashes over three repeats, one restart,
+one replay, and one index rebuild; and no regression from the accepted FTS5
+necessary-lemma recall@5 of 1.0 or MRR of 0.75. A future hybrid candidate must
+equal all safety/determinism thresholds and improve a separately frozen primary
+retrieval metric without worsening any adversarial case.
+
+### 7. Applicability and human authority
+
+The existing statuses remain `proposed`, `checked`, `rejected`, and
+`unresolved`; Phase 4 adds a required reason classification:
+`applicable`, `incompatible_hypotheses`, `definition_mismatch`,
+`scope_or_exception`, `misquotation`, `contradiction`, `insufficient_evidence`,
+`rights_blocked`, `source_withdrawn`, or `malicious_content`.
+
+Only a named human reviewer may create `checked/applicable`, after verifying
+the imported statement, bibliographic identity, hypotheses, definition map,
+scope/exceptions, exact evidence span, local implication, and open/discharged
+obligation. Deterministic code may reject malformed or policy-blocked inputs
+but cannot approve applicability. Retrieval, parser output, embeddings, model
+agreement, and formal checking remain non-authoritative.
+
+### 8. Automation, scheduling, budgets, secrets, and audit
+
+Phase 4A has no autonomous scheduling, network, model, or publication action.
+It is bounded to 256 review records, 64 MiB of derived review/export data, ten
+minutes per local gate run, and zero external spend. A future research planner
+may propose work only; a human authorizes each origin/crawl run, rights change,
+applicability approval, and publication action.
+
+A future network run is capped at one concurrent request and one request per
+second per origin, four globally, 100 requests, 64 MiB total decoded bytes, and
+30 minutes. Only idempotent GET is retryable, at most twice, for transport
+errors, 408, 429, or 5xx. `Retry-After` is honored up to 24 hours; otherwise
+bounded exponential delays are operational metadata. Stop immediately on
+robots/terms/rights uncertainty, origin or budget exhaustion, redirect/DNS
+policy failure, credential exposure, policy hash mismatch, parser quarantine,
+or repeated failure.
+
+Phase 4A requires no secret. Future credentials must be explicit per-adapter
+environment inputs, absent from URIs, canonical records, logs, subprocess
+inheritance, and artifacts. TLS verification is mandatory. Networking is
+disabled by default and enabled only for an approved adapter policy. Audit
+records retain sanitized canonical request metadata, destination and resolved
+address, redirect chain, response status/headers allowlist/body hash, robots
+and terms decision IDs, budgets, retries, failures, and policy version; they
+never retain authorization, cookies, or secret-bearing query values.
+
+### 9. Dependencies, licenses, hashes, and reproducibility
+
+Phase 4A adds no production dependency. Standards-conforming gate-only schema
+validation uses exactly five owner-approved, hash-locked binary wheels in an
+isolated disposable CPython 3.14/macOS ARM64 environment. The manifest is
+`requirements-phase4-gate-py314-macos-arm64.txt`; source builds, unsupported
+platforms, ordinary-development installation, and production imports fail
+closed. Production continues to use the existing Python standard library,
+CAS/workspace, and SQLite FTS5. Every later parser,
+model, vector library, or service requires exact version/revision, source and
+wheel/blob hashes, complete transitive license/notices, training-data and model
+license assessment where applicable, supported-platform manifest, offline
+rebuild proof, runtime/network behavior, vulnerability review, cost, and a
+removal/rollback plan before installation. Floating versions and aliases fail
+closed. Failed candidates and missing tools remain machine-readable evidence.
+
+## Threat model and preservation boundary
+
+Threats include hostile source bytes and prompt injection, archive bombs and
+path traversal, parser escapes, SSRF/DNS rebinding/redirect abuse, ambiguous
+licenses and changed terms, secret leakage, poisoned indexes, non-deterministic
+ranking, source deletion without provenance, automated trust promotion, and
+resource/cost exhaustion. The proposed controls above preserve original bytes,
+quarantine unsupported inputs, isolate derived projections, require explicit
+rights and human applicability review, bind operations to policy hashes, and
+retain append-only failures. All Phase 0-3B trust, replay, runtime, and formal-
+checking seals remain unchanged.
+
+## Owner decisions
+
+| Decision | Accepted option | Status |
+|---|---|---|
+| First slice | Local rights + human applicability review | accepted in ADR-0017 |
+| Schema/interchange | Additive v1 records, fail-closed versions, separate export | accepted in ADR-0017 |
+| Rights/lifecycle | Per-use fail-closed rights and append-only correction/revocation/takedown/deletion | accepted in ADR-0017 |
+| Applicability authority | Closed reason vocabulary and human-only checked/applicable | accepted in ADR-0017 |
+| Fixtures/thresholds | Exact 16-case corpus and P4A-AT-001–028 | accepted and passing |
+| Deferred capabilities | No crawler, robots, rich parser, archive, embedding, vector/hybrid index, model/API, automation, scheduling, or Phase 5 work | accepted stop line |
+| Security/reproducibility | Exactly P4A-SC-001–024; changes require renewed owner review | accepted in ADR-0018 |
+
+Pre-approval report SHA-256:
+`ccd382ebab45eb6eab574ed0794c9252d60829ae20aa12ba270d92a20b8f7d56`.
+Pre-approval machine-evidence SHA-256:
+`89544036e7f300851277b46b1b5403672ca1a6f2a8887366ffb8445b9d3fc117`.
+
+## Phase 4 synthetic gate evidence
+
+| Evidence | Result |
+|---|---|
+| Fixture corpus | 16/16 Draft 2020-12 schema-valid; exact class counts; every canonical hash matches manifest |
+| Contract/adversarial cases | 31/31 passed; every descriptor/raw artifact individually hashed, including seven independently rehashed actor/authority replay mutations |
+| Manifest canonical hash | `sha256:a4125f09770a65250784e873fbf42a6cff248b3f4776f34783e67af110d27854` |
+| Candidate export hash | `sha256:b9120dacc09262594932bee8bc535e51f0f6a2ea2b94b8c4e0e32d63bbe4a7ed` |
+| Provenance/human coverage/reason accuracy | 1.0 / 1.0 / 1.0 |
+| False accepts/prohibited actions/quarantine escapes | 0 / 0 / 0 |
+| Fail-closed rights | permitted, explicitly prohibited, missing/unknown, expired, lifecycle-revoked, and use-incompatible are independently modeled and tested |
+| Human authority | complete 20-cell actor × outcome matrix; all 15 nonhuman cells remain proposal-only, all five outcome cells have an explicit human-final mapping, and unknown actors fail closed |
+| Lifecycle | correction, revocation, deletion, and takedown prove immutable append, monotonic chains, acyclic links, complete tombstones, and replay |
+| Audit export | 68 full canonical records; duplicate/dangling/broken/cyclic/reordered/mutated/mixed history rejected |
+| Determinism | three repeats, two independent processes, fresh-process restart, replay, reverse rebuild all identical; initial/replay/restart/fresh-process acceptance uses the same strict raw-byte verifier |
+| Resources | exact 2 MiB/256-record/64 MiB boundaries and +1 rejection pass through actual bounded paths; cooperative monotonic expiry and independent 600-second parent hard timeout pass; USD 0 |
+| Normal-run observations | maximum/total fixture source 1/16 bytes; 16 reviews; 68 export records; 67,724 output bytes; output stream `sha256:5701e6996fb5fd1e254a85009973e29728658c63f35ff71c496f799ee2e773d0` over 8,153 writes; maximum observed elapsed time 3.090 seconds; USD 0; empty external-call inventory |
+| Dependencies/licenses | zero production dependencies; exactly five approved gate-only wheels verified and installed offline |
+| Validator provenance | CPython 3.14.4, `cpython-314-darwin`, macOS 26.5.2 ARM64, pip 26.0.1; requirements `5467b0a5…`; wheel inventory `ee7e0354…`; all five PyPI provenance endpoints HTTP 200 with one attestation bundle each |
+| Production prompt SHA-256 | `da1ab3a700d8926abc51849983b1b8ee5ddcf5127251f80de330ab13fcc420c2` |
+
+### Final P1 enforcement corrections
+
+Initial verification, import, replay, restart, and fresh-process verification
+now enter through the same public raw-byte boundary. It applies the input cap,
+strict UTF-8/JSON and duplicate-key rejection, exact profile/version checks,
+whole-envelope Draft 2020-12 validation, domain invariants, record/reference/
+graph/history checks, and the envelope hash in fail-closed order. Schema
+validation alone is not domain validation. The returned accepted snapshot is a
+detached copy and retains no mutable alias to caller-controlled input.
+
+Seven missing or inconsistent actor/authority variants were independently
+rehashed before testing: missing `actor_id`, missing `authority`, source
+authority changed to `proposal`, an invalid actor/authority pairing, nonhuman
+final authority, a mandatory audit-field omission, and an actor/reference
+inconsistency. All seven were rejected through both the normal replay and
+restart entry points before state acceptance; the valid export passed initial,
+replay, restart, and fresh-process verification.
+
+The 64 MiB control is enforced by the real deterministic streaming writer.
+`JSONEncoder.iterencode()` output is UTF-8 encoded, counted, written, and hashed
+incrementally through the same bounded sink used by the exporter; no complete
+serialized output string exists before the size decision. Exactly 64 MiB is
+accepted and byte 67,108,865 is rejected before it becomes visible. Output is
+published atomically only after serialization, bounds, hash, and strict
+verification succeed; overflow, expiry, and other failure discard temporary
+output and publish neither an accepted nor partial artifact.
+
+The internal monotonic deadline is cooperative and is checked throughout input,
+iteration, validation, graph/history, serialization, write, and finalization
+boundaries. It does not claim to preempt arbitrary blocking code. The parent
+subprocess timeout is the independent hard termination boundary. A deterministic
+injected-clock operation expired mid-write without sleeping and left no file or
+temporary artifact; a disposable overlong child was hard-terminated and reaped
+by its parent.
+
+## Pre-commit audit repair history
+
+The read-only pre-commit audit returned `changes_required`. Its findings remain
+part of the gate history and are resolved as follows:
+
+1. incomplete export provenance: replaced ID-only projections with complete
+   canonical provenance, rights, applicability, lifecycle, evidence-link, and
+   tombstone records plus a strict export verifier;
+2. nonhuman final statuses: every model, automation, and system outcome is now
+   proposal-only with `final_status: null`; final classifications require a
+   separate human record;
+3. collapsed rights failures: expiry uses explicit validity plus the fixed
+   evaluation timestamp, revocation is append-only, use incompatibility is
+   derived independently, and missing differs from explicit prohibition;
+4. weak lifecycle/adversarial coverage: 31 hashed cases now cover malformed and
+   duplicate JSON, schema errors, both mixed-version directions, one mismatched
+   record, duplicate/dangling/cyclic/reordered/mutated history, seven fully
+   rehashed actor/authority failures, correction, revocation, deletion, and
+   takedown;
+5. permissive schema: every security-relevant object is closed and validated by
+   `Draft202012Validator` after draft and internal-reference checks;
+6. unmeasured resources: actual input, record, streaming output, elapsed-time,
+   and cost observations are recorded separately from semantic hashes; the real
+   exporter and bounded reader exercise every exact boundary, cooperative
+   expiry, atomic failure, and the independent parent hard timeout; and
+7. incomplete production prompt: all production-critical numeric, authority,
+   audit, rights, lifecycle, schema, and adversarial requirements are now stated
+   explicitly.
+
+The audit result remains historically valid for the prior candidate. It did not
+indicate a Phase 0-3B regression and did not authorize production work.
+
+## Read-only documentation evidence
+
+- RFC 9309, Robots Exclusion Protocol: <https://www.rfc-editor.org/rfc/rfc9309.html>
+- RFC 3986, URI generic syntax: <https://www.rfc-editor.org/rfc/rfc3986.html>
+- RFC 9110, HTTP semantics: <https://www.rfc-editor.org/rfc/rfc9110.html>
+- RFC 6890, special-purpose address registries: <https://www.rfc-editor.org/rfc/rfc6890.html>
+- Python `tarfile` security guidance: <https://docs.python.org/3.14/library/tarfile.html>
+- Python `zipfile` security guidance: <https://docs.python.org/3.14/library/zipfile.html>
+- Python `HTMLParser`: <https://docs.python.org/3/library/html.parser.html>
+- SQLite FTS5: <https://www.sqlite.org/fts5.html>
+- SPDX specifications/licensing: <https://spdx.dev/use/specifications/>, <https://spdx.dev/learn/areas-of-interest/licensing/>
+- Pinned embedding candidate documentation only: <https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/tree/b9db1e8a0d3a51769172ba8546f282a73f066e47>
+
+No site was crawled, no corpus was acquired, no URI was resolved by AdaIvy, no
+model/provider/API was called, and no embedding/model artifact was downloaded.
+
+## Complete baseline verification
+
+The documented commands were rerun after updating this decision package, with
+disposable output roots where the README paths would overwrite protected
+reports.
+
+| Verification | Result |
+|---|---|
+| Unit/integration/adversarial/evaluation tests | 191/191 passed |
+| Phase 0 harness | 19/19 passed |
+| Phase 1 demo, inspect, round trip | passed; `sha256:ee299e0a6d6295dd005f0292ab5b0ac89320862ed1853935ddc0da5d5b9f96fa` |
+| Phase 2 deterministic report | passed; audit replay `sha256:8c185deeb88a6e981bfd5376c868d62163a748f686bf04e5004b89c5d68bea9c` |
+| Phase 3A demo, inspect, repeats/restart | passed; export `sha256:99891f3b0acd8493adae7976caad8d493995adf2c68522bca2e8da6845e21e4c`; recall@5/MRR 1.0/1.0 |
+| Phase 3B sealed host run 1 | passed; export `sha256:78a08bc23ba34bcc2d78d11a5e75c4c6da053d6aa95c15d4de4f2046a3c3636d` |
+| Phase 3B sealed host run 2 | passed; same export and all nine semantic finding IDs/hashes identical |
+| Phase 3B restart/replay and trust boundary | preserved; zero trust promotions, model calls, or external API calls |
+| Recorded v5 conditions | 29/29 true; sealed image digest exact; no containers remain |
+| V4 artifacts and protected seals | 53/53 v4 artifacts and 10/10 named seals match |
+| JSON/schema validation | 101 applicable JSON documents parse and 12 schemas pass schema checks; intentional malformed Phase 3B and malformed/duplicate-key Phase 4 fixtures retained and rejected by their dedicated checks; hostile remote `$ref` is rejected without retrieval |
+| Persisted credential scan | 200 files; zero exact or token-pattern matches |
+| Protected report hashes | all 199 files unchanged before/after |
+| Diff validation | `git diff --check` passed; only authorized Phase 4 gate artifacts changed |
+
+Verification result: **passed**. Gate conditions 1-9 are satisfied.
+
+## Historical blocked result (2026-08-19)
+
+The previous report was blocked for two independent reasons:
+
+1. no Phase 4 slice, rights policy, dependency/parser/embedding/acquisition
+   boundary, schemas, migrations, fixtures, thresholds, threat model, or owner
+   acceptance existed; and
+2. independent Phase 3B runs produced different canonical semantic identities
+   because timing and termination-race observations were included.
+
+That report evaluated the original Phase 3B baseline
+`226b47863f565c9c5a7dc7ac9ac08d490420ecf2`, ran 173 tests and Phase 0 at
+19/19, and recorded status `blocked`. Its report SHA-256 was
+`1cd5b4f55e9fe0cc4d216e4cf842364df48c309103af626e28c6416d4488aac1`; its
+machine-evidence file SHA-256 was
+`5baf3a1fce46a9ab072d63b271811a7eca9a8366d78338cb6f8e2a0b2ed4133c`.
+The canonical-stability reason was resolved by `beae447` and `e7db0ff`. The
+governance/specification reasons were then converted into the decision-ready
+package whose pre-approval report and machine hashes are recorded above. Owner
+approval, accepted ADRs, hashed fixtures, candidate checks, and final
+verification have now resolved those later blockers. This historical result is
+evidence, not a claim that the repaired or current baseline failed.
+
+The intermediate 2026-08-20 result was also `blocked`: the repaired baseline
+passed 182 tests and sealed replay, but owner acceptance, accepted ADRs, hashed
+fixtures, and candidate spikes were absent. That exact pre-approval state is
+preserved by report SHA-256 `ccd382ebab45eb6eab574ed0794c9252d60829ae20aa12ba270d92a20b8f7d56`
+and machine-evidence SHA-256
+`89544036e7f300851277b46b1b5403672ca1a6f2a8887366ffb8445b9d3fc117`.
