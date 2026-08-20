@@ -93,7 +93,16 @@ An evaluation of AI-scientist systems found inappropriate benchmark choices, und
 
 RMA reports gains from interacting structured modules, but AlphaProof Nexus found that a basic loop of independent LLM attempts plus Lean feedback reproduced its nine Erdős successes, with sophisticated evolution helping mainly on the hardest cases. The Agentic Researcher similarly obtains long-running work from disciplined files, Git, tools, and prompts.
 
-**Design implication:** start with the smallest durable vertical slice. Add multi-agent markets, elaborate schedulers, or graph databases only when an evaluation demonstrates a specific bottleneck.
+**Design implication:** keep one coherent long-horizon research lead and a
+centralized verifier as the baseline, but do not confuse low orchestration
+complexity with shallow research. Literature access, experiments, competing
+branches, and incremental formalization belong in the central loop. Add bounded
+specialists only when task structure or measured stagnation predicts a net
+gain, and retain them only when evaluation confirms more verified progress per
+unit cost. Evolutionary search needs a substantially higher bar: a cheap,
+reliable verifier-backed fitness signal and adversarial evidence that selection
+does not amplify persuasive nonsense. An always-on hierarchical swarm is not
+the target.
 
 ### 8. Benchmarks are fragile
 
@@ -176,8 +185,10 @@ The platform should reject or quarantine:
 
 Compare at minimum with:
 
-- a strong single-agent tool-using baseline;
-- a simple proposer/critic loop;
+- a coherent long-horizon single-lead baseline with literature, experiments,
+  multiple branches, incremental formalization, and centralized verification;
+- bounded specialist and evolutionary candidates only where their activation
+  gates are satisfied;
 - Albilich or an equivalent persistent proof-state workflow;
 - a formal-first Lean agent where the target can be encoded;
 - the full proposed trust architecture.
@@ -189,4 +200,3 @@ Measure expert review time and detected semantic errors, not only solve rate.
 The original intuition was good, but it has now become an active research category. Building an undifferentiated crawler + vector database + agent loop would duplicate existing work and inherit known failures. Building a carefully specified **semantic-custody, evidence-governance, and verifier-interoperability layer** could still be worthwhile—especially if it is evaluated transparently on both successful and failed research attempts.
 
 The immediate next step should be a build-versus-adopt spike and a revision of the blueprint’s Phase 0, not implementation of the entire architecture.
-

@@ -1,0 +1,1 @@
+Project-authored lemma. In a compact topological space, every family of closed sets with the finite intersection property has nonempty total intersection. The hypotheses require compactness and closedness.

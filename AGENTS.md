@@ -26,13 +26,22 @@ ADR-0026 records the accepted delivery order for the remaining work: Phase 4B
 acquisition and parsing, then Phase 4C hybrid retrieval, then the noncommuting
 Phase 5 expansion, then Phase 6 external evaluation.
 
+ADR-0029 refines the target orchestration architecture without enabling a new
+runtime. The baseline is one coherent long-horizon research lead plus a
+centralized verifier, with literature, experiments, multiple branches, and
+incremental formalization available inside that central loop. Higher search
+tiers remain disabled. Bounded specialists require a recorded prediction and
+measured retention gain in verified progress per unit cost; evolutionary search
+additionally requires cheap reliable verifier-backed fitness and adversarial
+calibration. Never substitute an always-on hierarchical swarm.
+
 The Phase 1 domain/trust semantics, sealed Phase 2 evidence, Phase 3A memory,
 sealed Phase 3B runtime, and Phase 4A rights/applicability boundaries remain
 authoritative. Do not add a web UI or HTTP API, crawler, network acquisition,
 embeddings, PDF parsing, model/external API calls, noncommuting SDP solver,
 multi-agent or evolutionary search, automated novelty/significance assessment,
-or enable higher search tiers without a later explicit request and measured
-cost-adjusted gain.
+or enable higher search tiers without a later explicit implementation request,
+the ADR-0029 activation evidence, and measured cost-adjusted verified gain.
 
 Two capabilities the synthesis slice supplies are boundaries, not fixes, and
 must not be assumed to hold elsewhere. `synthesis/applicability.py` resolves the

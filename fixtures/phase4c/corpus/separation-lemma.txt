@@ -1,0 +1,1 @@
+Project-authored lemma. Two nonempty disjoint convex sets, one compact and one closed, admit a continuous separating functional with a strict gap.

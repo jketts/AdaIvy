@@ -1,10 +1,12 @@
 # Technical Blueprint: Verification-First Mathematical Research System
 
-**Document status:** Architecture baseline 0.4 — bounded local Phase 5 and
-Phase 6 slices accepted and implemented on 20 August 2026. Phases 0--4A remain
-preserved; noncommuting SDP, higher adaptive-search tiers, broader Phase 4
-acquisition, exploratory synthesis, and external evaluation remain deferred.
-ADR-0012 preserves the superseded roadmap history.
+**Document status:** Architecture baseline 0.6 — bounded local Phase 5 and
+Phase 6 slices and the ADR-0027 exploratory-synthesis slice are accepted and
+implemented on 20 August 2026. Phases 0--4A remain preserved; noncommuting SDP,
+higher adaptive-search tiers, broader Phase 4 acquisition and hybrid retrieval,
+and external evaluation remain deferred. ADR-0029 refines the future adaptive
+search architecture without activating those tiers. ADR-0012 preserves the
+superseded roadmap history.
 
 **Audience:** Implementers, mathematical researchers, evaluators, and AI-system
 operators
@@ -32,6 +34,15 @@ The platform will be built around six durable abstractions:
 Conversation transcripts, retrieved passages, model responses, and experiment
 logs are supporting artifacts. None is the source of mathematical truth.
 
+**Separation of research claims.** AdaIvy treats mathematical plausibility,
+formal correctness, statement alignment, and scholarly novelty as separate
+claims supported by different evidence. The default execution model remains a
+coherent research lead coupled to an incremental formalizer. Formal
+verification certifies the encoded theorem but does not by itself certify that
+the theorem matches the intended source problem or constitutes a novel
+contribution. Statement alignment and scholarly review are applied at
+candidate-result boundaries, while exploratory work remains lightweight.
+
 The system must support both proof and disproof. Its valid terminal outcomes are:
 
 - proved result;
@@ -50,8 +61,8 @@ The system must support both proof and disproof. Its valid terminal outcomes are
 | Model role | Proposer and planner | Model agreement is not verification |
 | Verification | Pluggable verifier hierarchy | Different domains require different standards |
 | Epistemic state | Orthogonal warrants, never one confidence score | Meaning, proof, novelty, and significance are different questions |
-| Orchestration | Durable state machine with bounded branch search | Long research runs must resume and remain inspectable |
-| Search complexity | Start with a simple proposer–verifier loop | Parallel/evolutionary search is justified only by measured gains |
+| Orchestration | Coherent long-horizon research lead, centralized verifier, and bounded branch search | Long research runs must resume, synthesize across branches, and remain inspectable |
+| Search complexity | Rich central loop with selectively activated overlays | Parallel/evolutionary search is retained only for measured cost-adjusted verified gains |
 | Retrieval | Hybrid and provenance-preserving | Vector similarity alone loses symbols and assumptions |
 | Tool execution | Sandboxed, reproducible jobs | Mathematical evidence must be repeatable |
 | Model integration | Provider-neutral gateway | Avoid coupling research state to one API or model |
@@ -207,11 +218,9 @@ unverified proposal, silently complete the parent objective, or disappear
 through correction, invalidation, acknowledgement, dismissal, replay, or
 restart.
 
-### Proposed C17. Exploratory synthesis preserves authority and history (inactive)
+### C17. Exploratory synthesis preserves authority and history
 
-C17 is a proposed refinement, not part of baseline 0.4. Its prerequisites are
-integrated, but it cannot become active until the combined architecture passes
-an independent audit and a dedicated owner-approved entry gate. The proposal keeps
+C17 is active for the bounded synthesis slice accepted by ADR-0027. The slice keeps
 source applicability, extraction fidelity, mathematical warrant, and graph admission
 as independent axes; requires finite run bounds; and preserves negative and
 abandoned branches. Source correction, revocation, takedown, deletion, changed
@@ -227,13 +236,14 @@ erasing audit history. The authoritative proposed contract is
 
 - **Researcher:** owns the problem statement, approves formalization, and decides
   whether a result is ready to publish.
-- **Research orchestrator:** selects bounded actions according to current state,
-  policy, and budget.
+- **Long-horizon research lead:** maintains the coherent problem interpretation,
+  branch portfolio, unresolved obligations, and synthesis across bounded actions.
 - **Model providers:** propose structured plans, claims, critiques, and drafts.
 - **Source providers:** papers, books, repositories, datasets, and metadata APIs.
 - **Mathematical tools:** symbolic systems, numerical solvers, graph tools,
   SAT/SMT solvers, and proof assistants.
-- **Verifier:** applies deterministic or independently configured checks.
+- **Centralized verifier:** applies deterministic or independently configured
+  checks from reconstructed contexts and is never controlled by search workers.
 - **Operator:** configures credentials, compute limits, models, and security
   policies.
 
@@ -795,7 +805,7 @@ trusted principals. The normative v1 interchanges and deferred production
 boundary are defined in ADR-0019 and
 `docs/phase-4/MATERIAL_PARTIAL_RESULT_V1.md`.
 
-### Proposed future synthesis records (inactive)
+### Bounded synthesis records
 
 The proposed contract defines structured-result, relation, branch, and bridge
 records. Statements and relations remain attributed proposals with independent
@@ -952,6 +962,21 @@ PlannerDecision:
 The workflow engine validates all referenced IDs and permissions before
 execution. It—not the model—performs state transitions.
 
+The baseline planner is a coherent long-horizon research lead, not a shallow
+single-thread prompt loop. Without changing search tier it can retrieve
+literature for ideation and novelty auditing, run experiments and
+counterexample tests, maintain multiple live branches, change representation,
+and incrementally formalize mature definitions and subclaims. These actions
+remain proposals or appropriately typed evidence until the centralized
+verifier applies its recorded policy.
+
+Literature-ideation traces and novelty-search traces are separate. A source may
+inspire a branch without establishing that branch, and an unsuccessful novelty
+search never becomes a novelty warrant. Lean is used incrementally where claims
+and interfaces are mature enough to encode; unstable conceptual exploration is
+not forced into Lean, and formal checking is not postponed until the end of the
+entire research run.
+
 ### 6.4 Branch policy
 
 - Maintain at least one falsification branch for every central conjecture.
@@ -960,23 +985,51 @@ execution. It—not the model—performs state transitions.
 - Require a branch to state what evidence would refute it.
 - Prefer actions with high expected information gain over longer prose.
 - Stop branches that repeatedly create equivalent obligations without progress.
+- Surface significant partial theorems, counterexamples, reductions, or methods
+  through the material-result path and request human steering without
+  autonomously redefining the objective.
 
 ### 6.5 Search-complexity ladder
 
-Use the least complicated search regime that produces verified progress:
+Use the least complicated search regime that produces verified progress. Every
+tier retains the coherent research lead and centralized verifier; higher tiers
+are bounded overlays, not replacement control planes:
 
 | Tier | Regime | Promotion trigger |
 |---:|---|---|
 | 0 | Deterministic workflow and human-directed tools | Default for intake and formalization |
-| 1 | One proposer with an isolated verifier/reviser loop | Default model-assisted research mode |
-| 2 | Independent parallel proposals plus deterministic ranking | Tier 1 stalls or variance is demonstrably useful |
-| 3 | Shared-memory/evolutionary population of attempts | Benchmark shows cost-adjusted gains on hard obligations |
-| 4 | Specialized multi-role research team | A role has a measured capability unavailable in lower tiers |
+| 1 | One long-horizon research lead, centralized isolated verifier, and multiple bounded branches | Default model-assisted research mode |
+| 2 | Independent bounded specialists on scoped branch targets | Decomposition or measured stagnation predicts a net verified-progress gain |
+| 3 | Coordinated specialist overlay without worker-created hierarchy | A specialist capability has a measured gain unavailable in tiers 1--2 |
+| 4 | Bounded evolutionary population of attempts | Cheap reliable verifier-backed fitness and benchmarked cost-adjusted gain over lower tiers |
 
 Tier changes are recorded with cost and outcome. Agent count is not a success
 metric. Independent attempts may share the approved problem and accepted
 premises, but not each other’s unverified narratives unless the regime is
 explicitly testing synthesis.
+
+Promotion requires an append-only activation record containing the baseline
+window, task-decomposition or stagnation signal, predicted gain, verifier and
+ranking policy, cost ceiling, merge rule, and stop/demotion rule. Retention is a
+separate evaluation against the same fixture and tier-1 baseline. The measured
+objective is verified progress per unit cost, including expert review time and
+semantic-error cost—not proposal count, model agreement, or persuasive prose.
+If the retained regime ceases to improve that frontier, it is demoted while all
+partial and negative results remain ordinary branch history.
+
+Evolutionary promotion additionally requires a cheap reproducible fitness
+signal such as executable counterexample tests, a certified numerical
+objective, or Lean-checkable subclaims; adversarial calibration against
+persuasive invalid candidates; explicit population/generation/mutation bounds;
+and isolation of selection from the centralized verifier. Noisy conceptual
+proof judgement, model confidence, retrieval rank, and model agreement are
+ineligible fitness signals. Fitness-calibration failure causes immediate
+demotion.
+
+Specialists receive scoped immutable inputs, return attributed proposals, and
+cannot change trust state, redefine the approved target, control the verifier,
+or recursively create an unbounded hierarchy. AdaIvy therefore never becomes
+an always-on hierarchical swarm.
 
 ### 6.6 Stop conditions
 
@@ -999,9 +1052,9 @@ presentation. None of those operations silently completes or deletes the
 original objective. Ordinary progress and unverified proposals remain in their
 existing records and do not enter this event path.
 
-### Proposed exploratory multi-result synthesis lifecycle (inactive)
+### Bounded exploratory multi-result synthesis lifecycle
 
-The proposed synthesis lifecycle keeps literature discovery, authorized
+The bounded synthesis lifecycle keeps literature discovery, authorized
 acquisition, representation selection, structured extraction, graph
 construction, branch management, multi-result composition, bridge generation, verification/
 falsification, material-result surfacing, and human steering as distinct
@@ -1011,9 +1064,9 @@ The branch portfolio should include direct proof, counterexample search,
 restricted cases, computational experiments, alternative formulations,
 cross-domain transfer, multi-paper composition, and formalization/verification
 when applicable. Human steering appends decisions and never overwrites earlier
-branch history. This lifecycle remains inactive pending an independent re-audit
-and dedicated owner-approved entry gate. The authoritative proposed contract is
-`docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md`.
+branch history. ADR-0027 activates this lifecycle only over captured proposals,
+the existing Phase 3A index, and the sealed predecessor boundaries. The
+authoritative contract is `docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md`.
 ---
 
 ## 7. Knowledge acquisition and retrieval
@@ -1119,9 +1172,9 @@ Measure:
 - robustness to malicious instructions embedded in documents; and
 - novelty-search recall on renamed and independently rediscovered results.
 
-### Proposed multi-hop retrieval and representation policy (inactive)
+### Bounded multi-hop retrieval and representation policy
 
-Future synthesis uses an iterative bounded loop: retrieve seed results;
+The ADR-0027 synthesis slice uses an iterative bounded loop: retrieve seed results;
 extract terminology, citations, and missing prerequisites; expand equivalent
 formulations and notation; follow backward and forward dependencies;
 deliberately retrieve contrasting approaches; update the derived result graph;
@@ -1141,7 +1194,10 @@ exact paper/version identity, acquisition provenance, source hashes,
 parser/converter identity, anchors, and deterministic lineage. Representation
 disagreement blocks silent selection.
 
-All rich content is untrusted. In particular, TeX must never receive arbitrary
+The current implementation uses the unmodified Phase 3A lexical index and
+project-authored traversal metadata; semantic, formula, rich-parser, and remote
+acquisition adapters remain deferred. All rich content is untrusted. In
+particular, TeX must never receive arbitrary
 execution, shell escape, network access, uncontrolled includes, or unbounded
 macro expansion. No remote acquisition, parser, embedding, vector, or graph
 adapter is activated by this architecture. The authoritative proposed rules are
@@ -1404,9 +1460,9 @@ CounterexampleCandidate:
 A universal claim is not marked disproved until both the assumptions and the
 failure of the conclusion are verified for the same witness.
 
-### Proposed exploratory synthesis verification axes (inactive)
+### Exploratory synthesis verification axes
 
-The proposed contract records source applicability, extraction fidelity,
+The ADR-0027 contract records source applicability, extraction fidelity,
 mathematical warrant, and graph admission independently for statements and
 relations. No state on one axis implies a state on another. Search, retrieval,
 experiments, confidence, model agreement, and graph centrality never create
@@ -1817,11 +1873,15 @@ IDs and hashes but should avoid unnecessary raw source or prompt content.
 Evals must include negative controls. A system evaluated only on true statements
 will learn to produce proofs rather than determine truth.
 
-Every architecture experiment compares at least a strong single-agent baseline,
-a simple proposer–isolated-verifier loop, and the more complex candidate. Report
-solve rate, expert review time, semantic-error rate, cost, variance, and useful
-partial progress. Complexity is retained only when it improves the relevant
-cost-adjusted frontier.
+Every architecture experiment compares at least the rich tier-1 baseline—one
+coherent long-horizon lead with literature, experiments, multiple branches,
+incremental formalization, and an isolated centralized verifier—against the
+more complex candidate. Report verified obligation closure, solve rate, expert
+review time, semantic-error rate, cost, variance, and useful partial progress.
+Complexity is retained only when it improves verified progress on the relevant
+cost-adjusted frontier. Evolutionary candidates additionally report fitness
+calibration, adversarial-selection failures, and the fraction of selected
+candidates later rejected by the central verifier.
 
 ---
 
@@ -2026,10 +2086,11 @@ Build:
 - source-injection and misquotation evaluations;
 - broader research automation and the deferred embedding-provider boundary.
 
-Exploratory multi-result synthesis is not part of the implemented or active
-Phase 4A rights/applicability slice. Phase 4 may establish separately gated
-source, parser, and hybrid-retrieval prerequisites, but it cannot represent the
-ADR-0025 synthesis capability as operational.
+Exploratory multi-result synthesis is implemented by ADR-0027 as a separate
+package layered over the sealed Phase 6 workspace; it is not part of the Phase
+4A rights/applicability slice. Phase 4 still requires separately gated source,
+parser, and hybrid-retrieval prerequisites before synthesis may consume those
+new capabilities.
 
 Exit criteria:
 
@@ -2218,17 +2279,18 @@ event, preserves its evidence and verification references across replay and
 restart, records acknowledgement and later redirection without deleting the
 event, and keeps the original objective incomplete.
 
-### Proposed exploratory-synthesis acceptance suite (inactive)
+### Exploratory-synthesis acceptance suite
 
-The normative proposed definitions are `ERS-AC-01` through `ERS-AC-12` in
+The normative definitions are `ERS-AC-01` through `ERS-AC-12` in
 `docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md`. Together they cover genuine
 multi-hop composition, quantifier/domain/notation controls, representation
 disagreement, locally scoped bridge proposals, material-result handling,
 rights-excluded influence, correction/revocation/takedown/deletion and changed
 applicability propagation (including a superseding `ApplicabilityReview`),
 proposal-digest replay, abandoned-branch deduplication, and append-only human
-steering. The suite is inactive until the combined architecture passes an
-independent re-audit and dedicated owner-approved entry gate.
+steering. ADR-0027 activates the bounded suite under ADR-0026's owner-approved
+lightweight-process substitution; richer acquisition, parser, hybrid-retrieval,
+model, theorem-prover, and noncommuting-quantum paths remain separately gated.
 ---
 
 ## 21. Implementation guidance for Codex

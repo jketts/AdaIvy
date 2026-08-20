@@ -20,17 +20,17 @@ PHASE6_INSTANT ?= 2026-08-20T14:00:00Z
 TMPROOT ?= $(shell printf '%s' "$${TMPDIR:-/tmp}")
 
 .PHONY: check check-all check-sealed check-gate test phase0 phase1 phase2 \
-        phase3a phase3b phase5 phase6 clean help
+        phase3a phase3b phase4a phase4b phase5 phase6 synthesis clean help
 
 help:
 	@printf 'Targets:\n'
-	@printf '  check         offline suite: tests + phases 0,1,2,3A,5,6 (no network, no Docker)\n'
+	@printf '  check         offline suite: tests + phases 0,1,2,3A,4A,4B,5,6 and synthesis\n'
 	@printf '  check-sealed  phase 3B Lean formal checking (requires the ADR-0016 v5 image)\n'
 	@printf '  check-gate    phase 4 gate tests (requires the disposable jsonschema env)\n'
 	@printf '  check-all     check + check-sealed\n'
 	@printf '  clean         remove __pycache__ and stray sqlite journals\n'
 
-check: test phase0 phase1 phase2 phase3a phase5 phase6
+check: test phase0 phase1 phase2 phase3a phase4a phase4b phase5 phase6 synthesis
 	@printf '\n== offline check complete ==\n'
 
 check-all: check check-sealed
@@ -74,6 +74,29 @@ phase3b check-sealed:
 	  $(PY) -m math_research.cli phase3b inspect "$$d/out/formal-checking.json" >/dev/null && \
 	  rm -rf "$$d" && printf 'phase 3B ok\n'
 
+phase4a:
+	@printf '\n== phase 4A local rights and applicability ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-p4a.XXXXXX") && \
+	  $(PY) -m math_research.phase4a_cli init "$$d/workspace" \
+	    fixtures/phase4a-production/empty-workspace-spec-v1.json >/dev/null && \
+	  $(PY) -m math_research.phase4a_cli export "$$d/workspace" \
+	    "$$d/phase4a-export.json" $(PHASE5_INSTANT) >/dev/null && \
+	  $(PY) -m math_research.phase4a_cli inspect "$$d/phase4a-export.json" >/dev/null && \
+	  rm -rf "$$d" && printf 'phase 4A ok\n'
+
+phase4b:
+	@printf '\n== phase 4B offline acquisition/parsing metadata ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-p4b.XXXXXX") && \
+	  $(PY) -m math_research.cli phase4b init "$$d/workspace" >/dev/null && \
+	  $(PY) -m math_research.cli phase4b export "$$d/workspace" \
+	    "$$d/phase4b-export.json" >/dev/null && \
+	  $(PY) -m math_research.cli phase4b inspect "$$d/phase4b-export.json" >/dev/null && \
+	  $(PY) -m math_research.cli phase4b replay "$$d/replay" \
+	    "$$d/phase4b-export.json" >/dev/null && \
+	  $(PY) -m math_research.cli phase4b gate . "$$d/gate" \
+	    --output "$$d/phase4b-feasible-gate.json" >/dev/null && \
+	  rm -rf "$$d" && printf 'phase 4B ok\n'
+
 phase5:
 	@printf '\n== phase 5 exact adaptive quantum benchmark ==\n'
 	@d=$$(mktemp -d "$(TMPROOT)/adaivy-p5.XXXXXX") && \
@@ -92,6 +115,17 @@ phase6:
 	    $(PHASE5_INSTANT) $(PHASE6_INSTANT) --output-dir "$$d/out" >/dev/null && \
 	  $(PY) -m math_research.cli phase6 inspect "$$d/out/phase6-export.json" >/dev/null && \
 	  rm -rf "$$d" && printf 'phase 6 ok\n'
+
+synthesis:
+	@printf '\n== bounded exploratory synthesis ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-synthesis.XXXXXX") && \
+	  $(PY) -m math_research.synthesis_cli validate-budget \
+	    fixtures/synthesis/budget-policy-v1.json >/dev/null && \
+	  $(PY) -m math_research.synthesis_cli export "$$d/workspace" \
+	    "$$d/synthesis-export.json" >/dev/null && \
+	  $(PY) -m math_research.synthesis_cli inspect \
+	    "$$d/synthesis-export.json" >/dev/null && \
+	  rm -rf "$$d" && printf 'synthesis ok\n'
 
 # The 15 gate tests skip themselves unless `jsonschema` is importable. They are
 # meant to run inside the disposable environment described in

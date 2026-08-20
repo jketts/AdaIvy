@@ -1,0 +1,6 @@
+# Assessment-only disposable spike. This is not a runtime dependency lock and
+# does not authorize parser activation. CPython 3.14, Darwin arm64, 2026-08-20.
+pylatexenc==2.11 \
+    --hash=sha256:e78e7391d6c104f1ed150e21cfaa58016cdb50aa54406a2eecb793649ffdfdd0
+pypdf==6.16.1 \
+    --hash=sha256:63fec31c4092ae50b6729beedcb469055b60d20c834bde1c402df241f371f644

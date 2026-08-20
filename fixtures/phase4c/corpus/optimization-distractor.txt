@@ -1,0 +1,1 @@
+Project-authored informal note. An optimization score may look feasible and optimal, but no dual certificate or checked bound is supplied, so applicability is insufficient.

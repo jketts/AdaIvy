@@ -1,0 +1,25 @@
+{
+  "schema_version": "adaivy.phase4b-feasible-gate-policy.v2",
+  "required_passes": {
+    "fixture_manifest_total": 30,
+    "acquisition_fixture_executions": 12,
+    "parser_fixture_executions": 12,
+    "lifecycle_fixture_executions": 6,
+    "ambient_network_calls": 0,
+    "phase3a_writes_caused": 0,
+    "protected_evidence_mismatches": 0,
+    "credential_marker_matches": 0,
+    "in_process_repeat_count": 3,
+    "independent_process_count": 2,
+    "restart_count": 1,
+    "replay_count": 1,
+    "reverse_order_rebuild_count": 1,
+    "semantic_hashes_identical": true,
+    "parser_corpus_authorized": true
+  },
+  "required_blocked_controls": [
+    "os_parser_sandbox",
+    "live_https_operator_transport"
+  ],
+  "activation_status": "blocked_pending_full_gate_controls"
+}

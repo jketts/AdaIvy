@@ -1,0 +1,1 @@
+Project-authored lemma. A finite family of commuting self-adjoint operators on a finite-dimensional inner-product space admits simultaneous diagonalization in one orthonormal basis.

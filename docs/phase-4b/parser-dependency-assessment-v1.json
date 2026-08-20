@@ -1,0 +1,169 @@
+{
+  "activation": "disabled",
+  "assessment_content_sha256": "sha256:ed7681e2b4169606f6d5dee0f330b9cfab4a52ca07b21a151a09d46bf62342f3",
+  "assessment_date": "2026-08-20",
+  "candidates": [
+    {
+      "artifacts": [
+        {
+          "filename": "html5lib-1.1-py2.py3-none-any.whl",
+          "kind": "wheel",
+          "sha256": "sha256:0d78f8fde1c230e99fe37986a60526d7049ed4bf8a9fadbad5f00e22e58e041d",
+          "size_bytes": 112173
+        },
+        {
+          "filename": "html5lib-1.1.tar.gz",
+          "kind": "sdist",
+          "sha256": "sha256:b2e5b40261e20f354d198eae92afc10d750afb487ed5e50f9c4eaf07c184146f",
+          "size_bytes": 272215
+        }
+      ],
+      "capability": "html",
+      "closure": [
+        {
+          "license": "MIT",
+          "name": "html5lib",
+          "sdist_sha256": "sha256:b2e5b40261e20f354d198eae92afc10d750afb487ed5e50f9c4eaf07c184146f",
+          "version": "1.1",
+          "wheel_sha256": "sha256:0d78f8fde1c230e99fe37986a60526d7049ed4bf8a9fadbad5f00e22e58e041d"
+        },
+        {
+          "license": "MIT",
+          "name": "six",
+          "sdist_sha256": "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81",
+          "version": "1.17.0",
+          "wheel_sha256": "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"
+        },
+        {
+          "license": "BSD",
+          "name": "webencodings",
+          "sdist_sha256": "sha256:b36a1c245f2d304965eb4e0a82848379241dc04b865afcc4aab16748587e1923",
+          "version": "0.5.1",
+          "wheel_sha256": "sha256:a0af1213f3c2226497a97e2b3aa01a7e4bee4f403f95be16fc9acd2947514a78"
+        }
+      ],
+      "closure_complete": true,
+      "disposition": "reject",
+      "known_cves": [
+        "CVE-2016-9909",
+        "CVE-2016-9910"
+      ],
+      "license": "MIT",
+      "name": "html5lib",
+      "native_code": false,
+      "reason_code": "exact_source_byte_anchors_absent",
+      "source_commit": "f87487a4ada2d6cf223bdd182774a01ba3c84618",
+      "version": "1.1"
+    },
+    {
+      "artifacts": [
+        {
+          "filename": "pylatexenc-2.11-py2.py3-none-any.whl",
+          "kind": "wheel",
+          "sha256": "sha256:e78e7391d6c104f1ed150e21cfaa58016cdb50aa54406a2eecb793649ffdfdd0",
+          "size_bytes": 137533
+        },
+        {
+          "filename": "pylatexenc-2.11.tar.gz",
+          "kind": "sdist",
+          "sha256": "sha256:305a072a99ce736246049c9da05841b9d718c0f7ea8888f5f596cf15cb621053",
+          "size_bytes": 165743
+        }
+      ],
+      "capability": "tex",
+      "closure": [
+        {
+          "license": "MIT",
+          "name": "pylatexenc",
+          "sdist_sha256": "sha256:305a072a99ce736246049c9da05841b9d718c0f7ea8888f5f596cf15cb621053",
+          "version": "2.11",
+          "wheel_sha256": "sha256:e78e7391d6c104f1ed150e21cfaa58016cdb50aa54406a2eecb793649ffdfdd0"
+        }
+      ],
+      "closure_complete": true,
+      "disposition": "defer",
+      "known_cves": [],
+      "license": "MIT",
+      "name": "pylatexenc",
+      "native_code": false,
+      "reason_code": "sandbox_and_hostile_fixture_evidence_missing",
+      "source_commit": "0e936a10f125bc3357b1a9d68de0beec5f835a3f",
+      "version": "2.11"
+    },
+    {
+      "artifacts": [
+        {
+          "filename": "pypdf-6.16.1-py3-none-any.whl",
+          "kind": "wheel",
+          "sha256": "sha256:63fec31c4092ae50b6729beedcb469055b60d20c834bde1c402df241f371f644",
+          "size_bytes": 382924
+        },
+        {
+          "filename": "pypdf-6.16.1.tar.gz",
+          "kind": "sdist",
+          "sha256": "sha256:c4d1b43ddae921387321cf63936cd16a7743b91d2da92f165c149a195c972ba9",
+          "size_bytes": 7003737
+        }
+      ],
+      "capability": "pdf",
+      "closure": [
+        {
+          "license": "BSD-3-Clause",
+          "name": "pypdf",
+          "sdist_sha256": "sha256:c4d1b43ddae921387321cf63936cd16a7743b91d2da92f165c149a195c972ba9",
+          "version": "6.16.1",
+          "wheel_sha256": "sha256:63fec31c4092ae50b6729beedcb469055b60d20c834bde1c402df241f371f644"
+        }
+      ],
+      "closure_complete": true,
+      "disposition": "defer",
+      "known_cves": [
+        "CVE-2026-71852",
+        "CVE-2026-71870"
+      ],
+      "license": "BSD-3-Clause",
+      "name": "pypdf",
+      "native_code": false,
+      "reason_code": "exact_anchor_and_adversarial_gate_evidence_missing",
+      "source_commit": "1bce7a755b4b24ef9d5f2b03f9882c115bec91f2",
+      "version": "6.16.1"
+    },
+    {
+      "artifacts": [
+        {
+          "filename": "pdfminer_six-20260107-py3-none-any.whl",
+          "kind": "wheel",
+          "sha256": "sha256:366585ba97e80dffa8f00cebe303d2f381884d8637af4ce422f1df3ef38111a9",
+          "size_bytes": 6592252
+        },
+        {
+          "filename": "pdfminer_six-20260107.tar.gz",
+          "kind": "sdist",
+          "sha256": "sha256:96bfd431e3577a55a0efd25676968ca4ce8fd5b53f14565f85716ff363889602",
+          "size_bytes": 8512094
+        }
+      ],
+      "capability": "pdf_alternate",
+      "closure": [],
+      "closure_complete": false,
+      "disposition": "reject",
+      "known_cves": [
+        "CVE-2025-64512",
+        "CVE-2025-70559"
+      ],
+      "license": "MIT",
+      "name": "pdfminer.six",
+      "native_code": true,
+      "reason_code": "native_transitive_closure_and_security_history",
+      "source_commit": "9e1243c4ad000bf9bbe60e81fc8dde2fccc0ed3b",
+      "version": "20260107"
+    }
+  ],
+  "install_lock": false,
+  "schema_version": "adaivy.phase4b-parser-dependency-assessment.v1",
+  "target": {
+    "implementation": "CPython",
+    "platform": "darwin-arm64",
+    "python": "3.14"
+  }
+}

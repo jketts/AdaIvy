@@ -1,0 +1,55 @@
+{
+  "schema_version": "adaivy.phase4b-acceptance-manifest.v1",
+  "fixture_license": {
+    "copyright_notice": "Project-authored synthetic acceptance fixtures; 2026 AdaIvy contributors",
+    "license_expression": "LicenseRef-AdaIvy-Synthetic-Fixture",
+    "redistribution_status": "allowed"
+  },
+  "declared_counts": {
+    "total": 30,
+    "acquisition": 12,
+    "acquisition_allowed": 3,
+    "acquisition_denied": 9,
+    "parsing": 12,
+    "parsing_html": 4,
+    "parsing_tex": 4,
+    "parsing_pdf": 4,
+    "lifecycle_integration": 6
+  },
+  "fixtures": [
+    {"case_id":"p4b.acquisition.allowed-direct","class":"acquisition","format":null,"role":"allowed","expected_outcome":"untrusted_candidate","path":"acquisition/allowed-direct.json","byte_length":132,"sha256":"sha256:0372e8107cc6833d5d12d6a4cd629f98444a90d123e0ebfb55883ec9c062315e"},
+    {"case_id":"p4b.acquisition.allowed-same-origin-redirect","class":"acquisition","format":null,"role":"allowed","expected_outcome":"untrusted_candidate","path":"acquisition/allowed-same-origin-redirect.json","byte_length":145,"sha256":"sha256:b2059c95db8c2482a13aaad007f7057ceabb453be409c8a62d9c37532c3711f6"},
+    {"case_id":"p4b.acquisition.allowed-cross-origin-redirect","class":"acquisition","format":null,"role":"allowed","expected_outcome":"untrusted_candidate","path":"acquisition/allowed-cross-origin-redirect.json","byte_length":158,"sha256":"sha256:2e5b7b1df2f018b544fee08b0dcf7e605f028e73b5b849dfd51e9a1bb704c70e"},
+    {"case_id":"p4b.acquisition.denied-missing-run-authority","class":"acquisition","format":null,"role":"denied","expected_outcome":"denied","path":"acquisition/denied-missing-run-authority.json","byte_length":134,"sha256":"sha256:2d0326d0b1c179eb0531afb0bdcd459fddb6eb147ca5ab9ace636e2bbe0a31eb"},
+    {"case_id":"p4b.acquisition.denied-robots-disallow","class":"acquisition","format":null,"role":"denied","expected_outcome":"denied","path":"acquisition/denied-robots-disallow.json","byte_length":136,"sha256":"sha256:6952b4f3f8c6b68ba03bf4865a811cf6ee5cb5e8f5cdaf41407bbf11de78172b"},
+    {"case_id":"p4b.acquisition.denied-robots-unavailable","class":"acquisition","format":null,"role":"denied","expected_outcome":"denied","path":"acquisition/denied-robots-unavailable.json","byte_length":136,"sha256":"sha256:9e5a5288bd47e69a685a49e96ecf29a255a2ae0130596d8c324d1c225b1eeae8"},
+    {"case_id":"p4b.acquisition.denied-changed-terms","class":"acquisition","format":null,"role":"denied","expected_outcome":"denied","path":"acquisition/denied-changed-terms.json","byte_length":124,"sha256":"sha256:b59e9c0de9a304d34dd9705620ab4505aae0e4f3178f9cc07ff013b4d7c666da"},
+    {"case_id":"p4b.acquisition.denied-acquisition-right","class":"acquisition","format":null,"role":"denied","expected_outcome":"denied","path":"acquisition/denied-acquisition-right.json","byte_length":138,"sha256":"sha256:434e649ea100df3a8cb70c62fdca64ea21b56d636f70376fbaa7f9df9e2f00c8"},
+    {"case_id":"p4b.acquisition.denied-retention-right","class":"acquisition","format":null,"role":"denied","expected_outcome":"denied","path":"acquisition/denied-retention-right.json","byte_length":146,"sha256":"sha256:4e37976f325a80449cdde21a262bc7546f2ae86ce57b1247f259a3aa64050a24"},
+    {"case_id":"p4b.acquisition.denied-special-use-redirect","class":"acquisition","format":null,"role":"denied","expected_outcome":"denied","path":"acquisition/denied-special-use-redirect.json","byte_length":142,"sha256":"sha256:3eb7097db4564afb649f667b9c6623e43ee13777a33f169d77e2f66eb1fb2809"},
+    {"case_id":"p4b.acquisition.denied-peer-mismatch","class":"acquisition","format":null,"role":"denied","expected_outcome":"denied","path":"acquisition/denied-peer-mismatch.json","byte_length":140,"sha256":"sha256:aafa29d6bf260808d56a9f0df83ef6fffe97c8bce588e04fad3d6f5860623936"},
+    {"case_id":"p4b.acquisition.denied-response-budget","class":"acquisition","format":null,"role":"denied","expected_outcome":"denied","path":"acquisition/denied-response-budget.json","byte_length":135,"sha256":"sha256:3e19240aee399e22c03e932722f593d85a3dac575b43c740f20d96ccbb1365a8"},
+
+    {"case_id":"p4b.parsing.html.ordinary","class":"parsing","format":"html","role":"ordinary","expected_outcome":"candidate_proposal","path":"../parsing/authoritative.html","byte_length":196,"sha256":"sha256:3fdac24a49f6bc722c3b8ff74c69dc0b80ce308bae7bf730ce83edebc8e79dc5"},
+    {"case_id":"p4b.parsing.html.warning","class":"parsing","format":"html","role":"warning","expected_outcome":"candidate_proposal","path":"parsing/warning.html","byte_length":115,"sha256":"sha256:025d6589d09cf4b7ad30567fc7d6d67764a27409ef0a4310253259a6efa0722e"},
+    {"case_id":"p4b.parsing.html.attack","class":"parsing","format":"html","role":"attack","expected_outcome":"quarantined","path":"../parsing/hostile.html","byte_length":110,"sha256":"sha256:a3509c7d1255b195f8844c1c4c8e9a3afb1fce5447a323a3bf1cdad68761ad3f"},
+    {"case_id":"p4b.parsing.html.malformed","class":"parsing","format":"html","role":"malformed_or_limit","expected_outcome":"quarantined","path":"parsing/malformed.html","byte_length":86,"sha256":"sha256:59d24907bcd20957fb2554678be4964b516db3ea9cef41e4e6d453151da41e37"},
+    {"case_id":"p4b.parsing.tex.ordinary","class":"parsing","format":"tex","role":"ordinary","expected_outcome":"candidate_proposal","path":"../parsing/nonexecuting.tex","byte_length":95,"sha256":"sha256:d67dd25240f55a9301d0a764bdc0cd9ed921d2d34b7bf4776eea55032de7175e"},
+    {"case_id":"p4b.parsing.tex.warning","class":"parsing","format":"tex","role":"warning","expected_outcome":"candidate_proposal","path":"parsing/warning.tex","byte_length":120,"sha256":"sha256:01383244a08b2923d7e0a49a24308127f6ae992ec582e30ca5d40b247ee51b8c"},
+    {"case_id":"p4b.parsing.tex.attack","class":"parsing","format":"tex","role":"attack","expected_outcome":"quarantined","path":"../parsing/hostile.tex","byte_length":86,"sha256":"sha256:e6e7e1f2c4e900f25fe7e2395017143b44ce9c748b85999a4abe69c8438c573a"},
+    {"case_id":"p4b.parsing.tex.malformed","class":"parsing","format":"tex","role":"malformed_or_limit","expected_outcome":"quarantined","path":"parsing/malformed.tex","byte_length":75,"sha256":"sha256:4b9cf539e908e48dad4b7b1f1b5abc4e4a1af99edc4f75c56e003ff55e3c4ec8"},
+    {"case_id":"p4b.parsing.pdf.ordinary","class":"parsing","format":"pdf","role":"ordinary","expected_outcome":"candidate_proposal","path":"../parsing/born-digital.pdf","byte_length":631,"sha256":"sha256:a45db862d8736ac430863e49b4b5abc61771f99f14bf92924b8a60704907b9cf"},
+    {"case_id":"p4b.parsing.pdf.warning","class":"parsing","format":"pdf","role":"warning","expected_outcome":"candidate_proposal","path":"parsing/warning.pdf","byte_length":628,"sha256":"sha256:144df4d566dbfe2644a92fbc215274d066b79e3baca442503cb547cd579026dc"},
+    {"case_id":"p4b.parsing.pdf.attack","class":"parsing","format":"pdf","role":"attack","expected_outcome":"quarantined","path":"../parsing/hostile.pdf","byte_length":153,"sha256":"sha256:3761adb0f7ae3727906229476df4f37a6f7e81d286912bacbd80ec06b19d70da"},
+    {"case_id":"p4b.parsing.pdf.malformed","class":"parsing","format":"pdf","role":"malformed_or_limit","expected_outcome":"quarantined","path":"parsing/malformed.pdf","byte_length":24,"sha256":"sha256:adf53ade871a89914358cef44bfbfb706dce290019d10e91c8322d5f20c47525"},
+
+    {"case_id":"p4b.lifecycle.correction-supersession","class":"lifecycle_integration","format":null,"role":"correction_supersession","expected_outcome":"prior_candidates_invalidated","path":"lifecycle/correction-supersession.json","byte_length":157,"sha256":"sha256:0337cd9fdb78d895faa0b873e25b90d994a1a074489ac6c8f931a0f235c4188c"},
+    {"case_id":"p4b.lifecycle.revocation-takedown","class":"lifecycle_integration","format":null,"role":"revocation_takedown","expected_outcome":"content_removed_candidates_invalidated","path":"lifecycle/revocation-takedown.json","byte_length":165,"sha256":"sha256:7ab5e14eab4eca79a999f5d3fa37ab25d38a2d152b4a95eeb21ea3b7cbcefe87"},
+    {"case_id":"p4b.lifecycle.deletion-restart","class":"lifecycle_integration","format":null,"role":"deletion_restart","expected_outcome":"absence_reconciled_after_restart","path":"lifecycle/deletion-restart.json","byte_length":168,"sha256":"sha256:844898e81bee85e0146c6dc9f2795375aab2a000af81d23e24b81cab12bee8cc"},
+    {"case_id":"p4b.lifecycle.independent-identical-copies","class":"lifecycle_integration","format":null,"role":"independent_identical_copies","expected_outcome":"one_copy_removed_one_retained","path":"lifecycle/independent-identical-copies.json","byte_length":186,"sha256":"sha256:c02bde732b1af9ce6033c778609532d15c442bf5ac7039a18376f9877508af44"},
+    {"case_id":"p4b.lifecycle.canonical-replay-rebuild","class":"lifecycle_integration","format":null,"role":"canonical_replay_rebuild","expected_outcome":"semantic_identity_preserved","path":"lifecycle/canonical-replay-rebuild.json","byte_length":179,"sha256":"sha256:6e068aac4919f5ed04bb9655352428f6e59789aba388e5242c2e9feed32e1997"},
+    {"case_id":"p4b.lifecycle.trust-self-promotion","class":"lifecycle_integration","format":null,"role":"trust_self_promotion","expected_outcome":"promotion_rejected","path":"lifecycle/trust-self-promotion.json","byte_length":175,"sha256":"sha256:cf4c7d6b9fb306cfe5d12985cb0bdae983f18f889c1cae64dc7bc1fa9997daa7"}
+  ],
+  "coverage_status": "actual_corpus_strict_workers_authorized_not_activated",
+  "content_hash": "sha256:24def4605dead8a3ee651b455ca859b2aa12b99e4adff0112d805f52788c7dbd"
+}

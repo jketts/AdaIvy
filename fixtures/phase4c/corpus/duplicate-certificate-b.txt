@@ -1,0 +1,1 @@
+Project-authored restatement. A dual feasible certificate gives an upper bound equal to the primal construction, and equality certifies the exact optimum.

@@ -8,7 +8,8 @@ The system is not a chatbot with a large context window. Its central state is a
 versioned graph of problems, semantic alignments, claims, representations,
 evidence, hypotheses, experiments, and proof obligations. Model output is
 treated as a proposal until an applicable verifier grants a precisely scoped
-warrant.
+warrant. One coherent long-horizon research lead owns that evolving state; a
+centralized verifier independently checks candidate progress.
 
 > Status: Phases 0--4A are preserved; the bounded Phase 5 exact commuting
 > quantum benchmark, the Phase 6 local confirmatory/release slice, and the
@@ -78,7 +79,7 @@ is inferred from another.
 ```mermaid
 flowchart TD
     A["Research question"] --> B["Formalization"]
-    B --> C["Research orchestrator"]
+    B --> C["Long-horizon research lead"]
     D["Sources"] --> E["Evidence substrate"]
     E --> C
     C --> F["Hypothesis branches"]
@@ -110,8 +111,17 @@ flowchart TD
   adapters, not architectural dependencies.
 - **Adopt before rebuilding:** established open-source systems and standards are
   tested, wrapped, or integrated whenever they improve capability.
-- **Measured orchestration:** begin with a simple proposer–verifier loop and add
-  parallel or evolutionary search only when evaluation shows a gain.
+- **Deep central loop:** the baseline research lead has literature access,
+  experiments, multiple live branches, falsification, and incremental
+  formalization from the beginning.
+- **Measured orchestration:** activate bounded specialists only when task
+  structure or measured stagnation predicts improved verified progress per
+  unit cost, and retain them only while evaluation confirms that gain.
+- **Evolutionary restraint:** evolutionary search requires a cheap, reliable
+  verifier-backed fitness signal; noisy conceptual proof judgement is
+  ineligible.
+- **Central verification:** parallel workers return attributed proposals and
+  never replace, vote over, or control the centralized verifier.
 - **Evaluation integrity:** confirmatory metrics, data, and stopping rules are
   frozen before held-out execution.
 - **Human authority:** the user controls the formal problem and publication of
@@ -183,14 +193,17 @@ leak into the core claim, evidence, workflow, or verification abstractions.
 6. **Phase 4 — broader research acquisition:** crawling, licensed corpus
    ingestion, richer parsing, embeddings, hybrid retrieval, and research
    automation.
-7. **Adaptive search and benchmark:** branching and more complex agent regimes
-   only where they beat the simple baseline.
+7. **Adaptive search and benchmark:** keep one coherent lead and central
+   verifier; activate bounded specialist or evolutionary overlays only where
+   they beat that rich baseline on verified progress per unit cost.
 8. **Confirmatory evaluation:** held-out tests, contribution reporting,
    clean-room replay, and release hardening.
 
 Each phase has concrete exit criteria in the technical blueprint. Do not begin
-with a broad crawler, custom graph platform, or multi-agent swarm. First measure
-what existing components already provide and what gap remains.
+with a broad crawler, custom graph platform, or hierarchical multi-agent swarm.
+The central loop must nevertheless support literature, experimentation,
+branching, and incremental formalization rather than becoming shallow. First
+measure what existing components already provide and what gap remains.
 
 ## Offline repository checks
 

@@ -1,0 +1,1 @@
+{"case_id":"p4b.acquisition.allowed-same-origin-redirect","expected_outcome":"untrusted_candidate","scenario":"authorized same-origin redirect"}
