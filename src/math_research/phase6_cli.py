@@ -1,4 +1,10 @@
-"""CLI for Phase 6 frozen confirmatory evaluation and release replay."""
+"""CLI for Phase 6 frozen confirmatory evaluation, replay ingest, and verification.
+
+`replay` and `verify` are deliberately separate. `replay` INGESTS an export into
+a workspace and checks only that the envelope is self-consistent. `verify` runs
+the read-only clean-room re-derivation in `phase6.replay` and touches no
+workspace at all. Collapsing them would hide that distinction.
+"""
 
 from __future__ import annotations
 
@@ -8,6 +14,7 @@ from pathlib import Path
 
 from .phase5.service import Phase5Service
 from .phase5.workspace import decode_json
+from .phase6.replay import Phase6ReplayError, verify_release_bundle
 from .phase6.service import Phase6Service
 from .phase6.workspace import Phase6Workspace
 
@@ -49,10 +56,36 @@ def main(argv: list[str] | None = None) -> int:
     export.add_argument("output", type=Path)
     inspect = commands.add_parser("inspect")
     inspect.add_argument("path", type=Path)
-    replay = commands.add_parser("replay")
+    replay = commands.add_parser(
+        "replay", help="ingest an export into a workspace (envelope self-consistency only)"
+    )
     replay.add_argument("workspace", type=Path)
     replay.add_argument("path", type=Path)
+    verify = commands.add_parser(
+        "verify",
+        help="clean-room re-derivation of a release bundle; read-only, no workspace",
+    )
+    verify.add_argument("phase6_export", type=Path)
+    verify.add_argument("phase5_export", type=Path)
+    verify.add_argument("phase5_fixture", type=Path)
     args = parser.parse_args(argv)
+
+    if args.command == "verify":
+        try:
+            verdict = verify_release_bundle(
+                args.phase6_export.read_bytes(),
+                args.phase5_export.read_bytes(),
+                args.phase5_fixture.read_bytes(),
+            )
+        except Phase6ReplayError as error:
+            # A rejection is preserved as machine-readable output, never a
+            # silent pass and never a bare traceback.
+            print(json.dumps(
+                {"verified": False, "rejection": str(error)}, indent=2, sort_keys=True
+            ))
+            return 1
+        print(json.dumps(verdict, indent=2, sort_keys=True))
+        return 0
 
     if args.command == "inspect":
         value = decode_json(args.path.read_bytes(), max_bytes=67_108_864)

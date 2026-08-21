@@ -460,6 +460,46 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase6 ins
   "$phase6_root/output/phase6-export.json"
 ```
 
+### Ingest versus verification
+
+`phase6 replay` and `phase6 verify` are deliberately separate commands, because
+they make very different claims.
+
+`replay` **ingests** an export into a workspace. It checks only that the envelope
+is self-consistent — the declared `content_hash` equals the hash of the envelope
+minus that key — and stores the blob in `phase6_verified_exports`. It does not
+re-derive anything inside the envelope, and `verify_integrity` does not read that
+table, so a workspace holding an ingested export still reports itself intact
+regardless of what the export contains.
+
+`verify` (ADR-0044) is the clean-room re-derivation. It reads only its own
+temporary copies of the three inputs, re-derives every record `content_hash` and
+`record_id`, the protocol guards, the release hash and identity, the Phase 5
+bindings, and the held-out case itself via `run_case`, and refuses anything it
+cannot reproduce. It writes nothing anywhere and adds no row to any table.
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase5 export \
+  "$phase6_root/workspace" "$phase6_root/output/phase5-export.json"
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase6 verify \
+  "$phase6_root/output/phase6-export.json" \
+  "$phase6_root/output/phase5-export.json" \
+  fixtures/phase5/quantum-diagonal-v1.json
+```
+
+The verdict separates what was checked from what was not, in two distinct
+categories. `unverifiable` names claims about facts outside the system's view:
+`semantic_fidelity` and `negative_and_superseded_attempts_retained`.
+`not_derived` names constants that the release package presents as measured
+outcomes: `controls_passed`, `controls_total`, and the `baseline_comparison`
+block including `simplest_baseline_passed` and `phase6_passed`. The distinction
+matters because a number that cannot vary is not a measurement. In particular the
+advertised five-versus-zero trust-control advantage has literals on both sides —
+the named baseline `arithmetic_only_without_trust_controls` is never executed —
+and the control suite contains no positive control, so a system that refused
+every candidate, sound ones included, would score identically. Nothing in either
+list is counted toward `verified`.
+
 ## Bounded exploratory synthesis
 
 The synthesis slice implements the ADR-0025 contract in
