@@ -22,6 +22,9 @@ def durable_report_data(workspace: object, run_id: OpaqueId) -> dict[str, object
         manifest: VerifierContextManifest | None = workspace.get_manifest(run_id)
     except KeyError:
         manifest = None
+    rounds = workspace.list_refinement_rounds(run_id)
+    stop = workspace.get_run_stop(run_id)
+    manifests = workspace.list_manifests(run_id)
     return {
         "schema_version": "2.0.0",
         "run": run,
@@ -40,6 +43,11 @@ def durable_report_data(workspace: object, run_id: OpaqueId) -> dict[str, object
         "budget": budget,
         "proposals": proposals,
         "verifier_context_manifest": manifest,
+        # ADR-0041. Per-round manifests and the round ledger. A single-round run
+        # records exactly what it always did, with one round and no stop bound.
+        "verifier_context_manifests": manifests,
+        "refinement_rounds": rounds,
+        "run_stop": stop,
         "model_calls": calls,
         "cost_estimates": estimates,
         "audit_timeline": timeline,
@@ -68,6 +76,25 @@ def render_durable_report(workspace: object, run_id: OpaqueId) -> str:
                 f"- Verifier independence: context-isolated=`{str(manifest.independence.context_isolated).lower()}`, separate-call=`{str(manifest.independence.separate_model_call).lower()}`, different-model=`{str(manifest.independence.different_model).lower()}`, different-provider=`{str(manifest.independence.different_provider).lower()}`, fully-independent=`{str(manifest.independence.fully_independent).lower()}`. [refs: {manifest.manifest_id}]",
             ]
         )
+    rounds = data["refinement_rounds"]
+    stop = data["run_stop"]
+    # Only a run that actually refined adds lines here, so the byte-for-byte
+    # report of every pre-ADR-0041 run is unchanged.
+    if len(rounds) > 1 or (stop is not None and stop.stop_bound is not None):
+        lines.append(
+            f"- Refinement used {len(rounds)} of {stop.max_refinement_rounds if stop else len(rounds)} declared rounds; "
+            f"per-round verifier manifests are `{', '.join(item.manifest_id.value for item in data['verifier_context_manifests'])}`. [refs: {run.run_id}]"
+        )
+        for item in rounds:
+            lines.append(
+                f"- Round {item.round_index} finding `{item.finding_artifact_hash}` classified `{item.outcome_class.value}`; "
+                f"refinement warranted: `{str(item.refinement_warranted).lower()}`. [refs: {run.run_id}]"
+            )
+        if stop is not None:
+            lines.append(
+                f"- The run stopped for `{stop.stop_reason.value}`; binding bound `{stop.stop_bound or 'none'}` "
+                f"out of `{', '.join(stop.binding_bounds) or 'none'}`. [refs: {run.run_id}]"
+            )
     if data["cost_estimates"]:
         calls = data["model_calls"]
         lines.append(

@@ -21,6 +21,42 @@ class RunStatus(StrEnum):
     UNRESOLVED = "unresolved"
     CANCELLED = "cancelled"
     COMPLETED = "completed"
+    #: ADR-0041. A refuting or defective verifier finding warranted another
+    #: refinement round, and a declared bound refused to grant it. This is
+    #: neither a success nor a failure: the last candidate stands unrepaired
+    #: and the bound that refused the round is recorded separately.
+    REFINEMENT_EXHAUSTED = "refinement_exhausted"
+
+
+class RefinementOutcomeClass(StrEnum):
+    """ADR-0041 classification of one verifier finding artifact.
+
+    Derived only from the ``result_type``, ``findings[].outcome`` and
+    ``recommendation`` fields the verifier schema already requires. No new
+    classifier and no model judgement of its own output.
+    """
+
+    SUPPORTING = "supporting"
+    REFUTING = "refuting"
+    DEFECTIVE = "defective"
+    INDETERMINATE = "indeterminate"
+
+    @property
+    def warrants_refinement(self) -> bool:
+        return self in {RefinementOutcomeClass.REFUTING, RefinementOutcomeClass.DEFECTIVE}
+
+
+class RunStopReason(StrEnum):
+    """ADR-0041. Why the loop stopped enqueueing rounds."""
+
+    #: The verifier finding did not warrant another attempt.
+    NO_REFINEMENT_WARRANTED = "no_refinement_warranted"
+    #: The declared refinement-round cap refused the next round.
+    REFINEMENT_ROUND_CAP = "refinement_round_cap"
+    #: A declared budget dimension refused the next round.
+    BUDGET_BOUND = "budget_bound"
+    #: The round produced no committable finding at all.
+    NON_SUCCESS = "non_success"
 
 
 class JobStatus(StrEnum):
@@ -58,6 +94,15 @@ class BudgetLimits:
     max_cost_microusd: int
     max_wall_milliseconds: int
     max_attempts: int
+    #: ADR-0041 declared cap on proposer/verifier rounds in one run. One is the
+    #: identity, not a tuned constant: a run that declares nothing keeps the
+    #: pre-ADR-0041 behaviour of a single round with no refinement. A caller
+    #: that wants refinement must declare how much it is willing to spend.
+    max_refinement_rounds: int = 1
+
+    def __post_init__(self) -> None:
+        if self.max_refinement_rounds < 1:
+            raise ValueError("max_refinement_rounds must be at least 1")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -71,6 +116,8 @@ class BudgetSnapshot:
     used_attempts: int
     elapsed_milliseconds: int
     exhausted_dimensions: tuple[str, ...]
+    #: ADR-0041. Rounds already granted to this run, aggregated across rounds.
+    used_refinement_rounds: int = 0
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -100,6 +147,8 @@ class JobRecord:
     lease_until: str | None
     payload_hash: str
     result_hash: str | None
+    #: ADR-0041 one-based refinement round this job belongs to.
+    round_index: int = 1
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -245,6 +294,47 @@ class VerifierContextManifest:
     serialized_context_hash: str
     context_artifact_hash: str
     independence: VerifierIndependence
+    #: ADR-0041. The round this context was serialized for. Every round records
+    #: its own manifest so each round's isolation is separately auditable.
+    round_index: int = 1
+    #: Rounds whose findings shaped the candidate under review. Empty on round
+    #: one. Non-empty means the candidate is not causally independent of this
+    #: verifier's own earlier output, even though the context is still isolated.
+    candidate_shaped_by_rounds: tuple[int, ...] = ()
+    #: Finding artifacts the proposer was shown and this verifier was not.
+    withheld_prior_finding_hashes: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RefinementRoundRecord:
+    """ADR-0041. One completed round and the trigger decision it produced."""
+
+    schema_version: str = PHASE2_SCHEMA_VERSION
+    run_id: OpaqueId
+    round_index: int
+    candidate_artifact_hash: str
+    finding_artifact_hash: str
+    outcome_class: RefinementOutcomeClass
+    result_type: str
+    recommendation: str
+    refinement_warranted: bool
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RunStopRecord:
+    """ADR-0041. Which declared bound, if any, ended the run."""
+
+    schema_version: str = PHASE2_SCHEMA_VERSION
+    run_id: OpaqueId
+    terminal_status: RunStatus
+    stop_reason: RunStopReason
+    #: Budget dimension that refused the next round, or ``None`` when no budget
+    #: dimension was binding. Named so a reader never has to guess whether the
+    #: round cap or the money ran out.
+    stop_bound: str | None
+    binding_bounds: tuple[str, ...]
+    rounds_used: int
+    max_refinement_rounds: int
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

@@ -249,7 +249,9 @@ def execute_live_gate(
             raise RuntimeError("live API usage is absent or incomplete")
         if any(call["pricing_snapshot_id"] != pricing.snapshot_id.value for call in calls):
             raise RuntimeError("live call cost lacks the pinned pricing snapshot ID")
-        if final.status not in {RunStatus.AWAITING_REVIEW, RunStatus.UNRESOLVED}:
+        # ADR-0041 added a third honest single-round outcome: a refuting finding
+        # with no refinement allowance left. It is neither a pass nor a crash.
+        if final.status not in {RunStatus.AWAITING_REVIEW, RunStatus.UNRESOLVED, RunStatus.REFINEMENT_EXHAUSTED}:
             raise RuntimeError(f"unexpected live terminal state: {final.status.value}")
         manifest = workspace.get_manifest(run_id)
         if manifest.independence.fully_independent or manifest.independence.different_provider:

@@ -22,8 +22,12 @@ from .records import (
     ModelResult,
     ProposalRecord,
     PricingSnapshot,
+    RefinementOutcomeClass,
+    RefinementRoundRecord,
     RunRecord,
     RunStatus,
+    RunStopReason,
+    RunStopRecord,
     VerifierContextManifest,
     VerifierIndependence,
 )
@@ -44,21 +48,76 @@ class LateCommitRejected(RuntimeError):
     pass
 
 
+class SealedWorkspaceError(RuntimeError):
+    """A durable write was attempted against a workspace opened read-only."""
+
+
+class RefinementRoundsExhausted(RuntimeError):
+    """ADR-0041. The declared refinement-round cap refused another round."""
+
+    def __init__(self, *, requested_round: int, max_refinement_rounds: int) -> None:
+        self.requested_round = requested_round
+        self.max_refinement_rounds = max_refinement_rounds
+        super().__init__(
+            f"refinement round {requested_round} exceeds the declared cap of "
+            f"{max_refinement_rounds}"
+        )
+
+
+#: ADR-0041. Migration files may declare that they need SQLite's table-rebuild
+#: procedure. Widening a CHECK constraint on a referenced table is impossible
+#: with foreign keys on, so the runner turns them off for exactly that file and
+#: re-checks integrity afterwards. Fail closed: an unknown directive is an error.
+_REBUILD_DIRECTIVE = "-- adaivy-migration: rebuild-tables"
+
+
 class SQLiteWorkspace:
-    def __init__(self, path: Path, *, migrations_dir: Path | None = None) -> None:
+    """Transactional durable workspace, or a sealed read-only replay of one.
+
+    ``read_only=True`` exists because some Phase 2 workspaces are *sealed
+    evidence*: `reports/phase-2/workspace.sqlite3` is pinned byte-for-byte by
+    the ADR-0022 Phase 4A protected-evidence manifest. Opening such a file
+    read-write would let a later schema migration rewrite committed evidence in
+    place, which is exactly what "protected" is supposed to prevent. In
+    read-only mode the file is opened immutable, copied into an in-memory
+    database, and the migrations are applied to the copy, so a replay reads the
+    current schema while the bytes on disk never change. Any durable write in
+    that mode raises `SealedWorkspaceError` rather than vanishing silently.
+    """
+
+    def __init__(
+        self, path: Path, *, migrations_dir: Path | None = None, read_only: bool = False,
+    ) -> None:
         self.path = path.resolve()
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.read_only = read_only
         self.migrations_dir = migrations_dir or Path(__file__).resolve().parents[3] / "migrations"
-        self.connection = sqlite3.connect(self.path, timeout=5.0, isolation_level=None)
+        self._sealed = False
+        if read_only:
+            if not self.path.is_file():
+                raise FileNotFoundError(str(self.path))
+            source = sqlite3.connect(
+                f"file:{self.path}?mode=ro&immutable=1", uri=True, timeout=5.0,
+                isolation_level=None,
+            )
+            try:
+                self.connection = sqlite3.connect(":memory:", timeout=5.0, isolation_level=None)
+                source.backup(self.connection)
+            finally:
+                source.close()
+        else:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self.connection = sqlite3.connect(self.path, timeout=5.0, isolation_level=None)
         self.connection.row_factory = sqlite3.Row
         self.connection.execute("PRAGMA foreign_keys = ON")
-        self.connection.execute("PRAGMA journal_mode = WAL")
-        self.connection.execute("PRAGMA synchronous = FULL")
+        if not read_only:
+            self.connection.execute("PRAGMA journal_mode = WAL")
+            self.connection.execute("PRAGMA synchronous = FULL")
         try:
             self._migrate()
         except BaseException:
             self.connection.close()
             raise
+        self._sealed = read_only
 
     def close(self) -> None:
         self.connection.close()
@@ -71,6 +130,10 @@ class SQLiteWorkspace:
 
     @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:
+        if self._sealed:
+            raise SealedWorkspaceError(
+                f"workspace opened read-only; refusing a durable write: {self.path}"
+            )
         self.connection.execute("BEGIN IMMEDIATE")
         try:
             yield self.connection
@@ -99,14 +162,32 @@ class SQLiteWorkspace:
                 if applied[version] != checksum:
                     raise MigrationError(f"migration checksum drift: {path.name}")
                 continue
-            statements = [item.strip() for item in data.decode("utf-8").split(";") if item.strip()]
-            with self.transaction() as connection:
-                for statement in statements:
-                    connection.execute(statement)
-                connection.execute(
-                    "INSERT INTO schema_migrations(version, checksum, applied_at) VALUES(?,?,?)",
-                    (version, checksum, _now()),
-                )
+            text = data.decode("utf-8")
+            statements = [item.strip() for item in text.split(";") if item.strip()]
+            rebuild = text.splitlines()[0].strip() == _REBUILD_DIRECTIVE if text.strip() else False
+            if not rebuild and text.lstrip().startswith("-- adaivy-migration:"):
+                raise MigrationError(f"unknown migration directive: {path.name}")
+            if rebuild:
+                self.connection.execute("PRAGMA foreign_keys = OFF")
+                self.connection.execute("PRAGMA legacy_alter_table = ON")
+            try:
+                with self.transaction() as connection:
+                    for statement in statements:
+                        connection.execute(statement)
+                    connection.execute(
+                        "INSERT INTO schema_migrations(version, checksum, applied_at) VALUES(?,?,?)",
+                        (version, checksum, _now()),
+                    )
+            finally:
+                if rebuild:
+                    self.connection.execute("PRAGMA legacy_alter_table = OFF")
+                    self.connection.execute("PRAGMA foreign_keys = ON")
+            if rebuild:
+                violations = self.connection.execute("PRAGMA foreign_key_check").fetchall()
+                if violations:
+                    raise MigrationError(
+                        f"migration left {len(violations)} foreign key violations: {path.name}"
+                    )
 
     @property
     def migration_versions(self) -> tuple[str, ...]:
@@ -157,18 +238,30 @@ class SQLiteWorkspace:
             if existing:
                 if existing["dossier_hash"] != dossier_hash or existing["budget_id"] != budget_id.value:
                     raise ValueError("run ID cannot be rewritten")
+                declared = connection.execute(
+                    "SELECT max_refinement_rounds FROM budgets WHERE budget_id=?",
+                    (budget_id.value,),
+                ).fetchone()
+                if declared is not None and declared["max_refinement_rounds"] != limits.max_refinement_rounds:
+                    raise ValueError("declared refinement-round cap cannot be rewritten")
                 return self._run(existing)
             connection.execute(
-                "INSERT INTO budgets VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                """INSERT INTO budgets(
+                    budget_id,schema_version,max_input_tokens,max_output_tokens,
+                    max_cost_microusd,max_wall_milliseconds,max_attempts,
+                    used_input_tokens,used_output_tokens,used_cost_microusd,
+                    used_attempts,started_at,updated_at,max_refinement_rounds,
+                    used_refinement_rounds
+                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
                     budget_id.value, PHASE2_SCHEMA_VERSION, limits.max_input_tokens,
                     limits.max_output_tokens, limits.max_cost_microusd,
                     limits.max_wall_milliseconds, limits.max_attempts,
-                    0, 0, 0, 0, now, now,
+                    0, 0, 0, 0, now, now, limits.max_refinement_rounds, 1,
                 ),
             )
             connection.execute(
-                "INSERT INTO runs VALUES(?,?,?,?,?,?,?,?)",
+                "INSERT INTO runs(run_id,schema_version,dossier_id,dossier_hash,budget_id,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)",
                 (run_id.value, PHASE2_SCHEMA_VERSION, dossier.id.value, dossier_hash, budget_id.value, RunStatus.QUEUED.value, now, now),
             )
             self._insert_event(
@@ -200,12 +293,13 @@ class SQLiteWorkspace:
                 return self._run(row)
             allowed = {
                 RunStatus.QUEUED: {RunStatus.RUNNING, RunStatus.CANCELLED},
-                RunStatus.RUNNING: {RunStatus.PAUSED, RunStatus.AWAITING_REVIEW, RunStatus.UNRESOLVED, RunStatus.CANCELLED, RunStatus.COMPLETED},
+                RunStatus.RUNNING: {RunStatus.PAUSED, RunStatus.AWAITING_REVIEW, RunStatus.UNRESOLVED, RunStatus.CANCELLED, RunStatus.COMPLETED, RunStatus.REFINEMENT_EXHAUSTED},
                 RunStatus.PAUSED: {RunStatus.RUNNING, RunStatus.CANCELLED},
                 RunStatus.AWAITING_REVIEW: {RunStatus.CANCELLED},
                 RunStatus.UNRESOLVED: {RunStatus.CANCELLED},
                 RunStatus.CANCELLED: set(),
                 RunStatus.COMPLETED: set(),
+                RunStatus.REFINEMENT_EXHAUSTED: {RunStatus.CANCELLED},
             }
             if current is not desired and desired not in allowed[current]:
                 raise LateCommitRejected(f"invalid run transition: {current.value} -> {desired.value}")
@@ -275,17 +369,30 @@ class SQLiteWorkspace:
     def enqueue_job(
         self, *, job_id: OpaqueId, run_id: OpaqueId, kind: str, idempotency_key: str,
         payload_hash: str, max_attempts: int, deadline_at: str, now: str,
+        round_index: int = 1,
     ) -> JobRecord:
+        if round_index < 1:
+            raise ValueError("round_index must be at least 1")
         with self.transaction() as connection:
             existing = connection.execute("SELECT * FROM jobs WHERE idempotency_key=?", (idempotency_key,)).fetchone()
             if existing:
-                if existing["run_id"] != run_id.value or existing["kind"] != kind or existing["payload_hash"] != payload_hash:
+                if (
+                    existing["run_id"] != run_id.value
+                    or existing["kind"] != kind
+                    or existing["payload_hash"] != payload_hash
+                    or existing["round_index"] != round_index
+                ):
                     raise ValueError("job idempotency key reused with different semantics")
                 return self._job(existing)
             connection.execute(
-                "INSERT INTO jobs VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                """INSERT INTO jobs(
+                    job_id,schema_version,run_id,kind,status,idempotency_key,payload_hash,
+                    attempts,max_attempts,deadline_at,lease_owner,lease_until,result_hash,
+                    created_at,updated_at,round_index
+                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (job_id.value, PHASE2_SCHEMA_VERSION, run_id.value, kind, JobStatus.QUEUED.value,
-                 idempotency_key, payload_hash, 0, max_attempts, deadline_at, None, None, None, now, now),
+                 idempotency_key, payload_hash, 0, max_attempts, deadline_at, None, None, None,
+                 now, now, round_index),
             )
             row = connection.execute("SELECT * FROM jobs WHERE job_id=?", (job_id.value,)).fetchone()
             assert row is not None
@@ -293,6 +400,7 @@ class SQLiteWorkspace:
 
     def claim_job(
         self, *, run_id: OpaqueId, kind: str, worker_id: str, lease_until: str, now: str,
+        round_index: int | None = None,
     ) -> JobRecord | None:
         with self.transaction() as connection:
             run = connection.execute("SELECT status FROM runs WHERE run_id=?", (run_id.value,)).fetchone()
@@ -304,10 +412,16 @@ class SQLiteWorkspace:
                 "UPDATE jobs SET status='timed_out', lease_owner=NULL, lease_until=NULL, updated_at=? WHERE run_id=? AND deadline_at<=? AND status IN ('queued','running','retryable')",
                 (now, run_id.value, now),
             )
-            row = connection.execute(
-                "SELECT * FROM jobs WHERE run_id=? AND kind=? AND status IN ('queued','retryable') AND attempts<max_attempts AND deadline_at>? ORDER BY created_at,job_id LIMIT 1",
-                (run_id.value, kind, now),
-            ).fetchone()
+            if round_index is None:
+                row = connection.execute(
+                    "SELECT * FROM jobs WHERE run_id=? AND kind=? AND status IN ('queued','retryable') AND attempts<max_attempts AND deadline_at>? ORDER BY round_index,created_at,job_id LIMIT 1",
+                    (run_id.value, kind, now),
+                ).fetchone()
+            else:
+                row = connection.execute(
+                    "SELECT * FROM jobs WHERE run_id=? AND kind=? AND round_index=? AND status IN ('queued','retryable') AND attempts<max_attempts AND deadline_at>? ORDER BY created_at,job_id LIMIT 1",
+                    (run_id.value, kind, round_index, now),
+                ).fetchone()
             if row is None:
                 return None
             connection.execute(
@@ -416,22 +530,57 @@ class SQLiteWorkspace:
         payload = json.loads(canonical_json)
         if payload.get("serialized_context_hash") != manifest.serialized_context_hash:
             raise ValueError("manifest JSON and record hash differ")
+        if payload.get("round_index", 1) != manifest.round_index:
+            raise ValueError("manifest JSON and record round differ")
         with self.transaction() as connection:
-            existing = connection.execute("SELECT canonical_json FROM verifier_manifests WHERE run_id=?", (manifest.run_id.value,)).fetchone()
+            existing = connection.execute(
+                "SELECT canonical_json FROM verifier_manifests WHERE run_id=? AND round_index=?",
+                (manifest.run_id.value, manifest.round_index),
+            ).fetchone()
             if existing and existing["canonical_json"] != canonical_json:
                 raise ValueError("verifier manifest is immutable")
             connection.execute(
-                "INSERT OR IGNORE INTO verifier_manifests VALUES(?,?,?,?,?,?)",
+                """INSERT OR IGNORE INTO verifier_manifests(
+                    manifest_id,schema_version,run_id,round_index,canonical_json,
+                    serialized_context_hash,created_at
+                ) VALUES(?,?,?,?,?,?,?)""",
                 (manifest.manifest_id.value, manifest.schema_version, manifest.run_id.value,
-                 canonical_json, manifest.serialized_context_hash, now),
+                 manifest.round_index, canonical_json, manifest.serialized_context_hash, now),
             )
         return manifest
 
-    def get_manifest(self, run_id: OpaqueId) -> VerifierContextManifest:
-        row = self.connection.execute("SELECT canonical_json FROM verifier_manifests WHERE run_id=?", (run_id.value,)).fetchone()
+    def get_manifest(self, run_id: OpaqueId, *, round_index: int | None = None) -> VerifierContextManifest:
+        """Return one round's manifest; ``None`` means the latest recorded round.
+
+        A pre-ADR-0041 workspace holds exactly one manifest per run, which the
+        migration labels round one, so the default answer is unchanged there.
+        """
+        if round_index is None:
+            row = self.connection.execute(
+                "SELECT canonical_json, round_index FROM verifier_manifests WHERE run_id=? ORDER BY round_index DESC LIMIT 1",
+                (run_id.value,),
+            ).fetchone()
+        else:
+            row = self.connection.execute(
+                "SELECT canonical_json, round_index FROM verifier_manifests WHERE run_id=? AND round_index=?",
+                (run_id.value, round_index),
+            ).fetchone()
         if row is None:
-            raise KeyError(run_id.value)
-        value = json.loads(row["canonical_json"])
+            raise KeyError(run_id.value if round_index is None else f"{run_id.value}#{round_index}")
+        return self._manifest(row["canonical_json"], row["round_index"])
+
+    def list_manifests(self, run_id: OpaqueId) -> tuple[VerifierContextManifest, ...]:
+        return tuple(
+            self._manifest(row["canonical_json"], row["round_index"])
+            for row in self.connection.execute(
+                "SELECT canonical_json, round_index FROM verifier_manifests WHERE run_id=? ORDER BY round_index",
+                (run_id.value,),
+            )
+        )
+
+    @staticmethod
+    def _manifest(canonical_json_text: str, round_index: int) -> VerifierContextManifest:
+        value = json.loads(canonical_json_text)
         independence = VerifierIndependence(**value["independence"])
         return VerifierContextManifest(
             schema_version=value["schema_version"], manifest_id=OpaqueId(value["manifest_id"]),
@@ -439,6 +588,134 @@ class SQLiteWorkspace:
             excluded_entity_ids=tuple(OpaqueId(item) for item in value["excluded_entity_ids"]),
             policy_version=value["policy_version"], serialized_context_hash=value["serialized_context_hash"],
             context_artifact_hash=value["context_artifact_hash"], independence=independence,
+            round_index=value.get("round_index", round_index),
+            candidate_shaped_by_rounds=tuple(value.get("candidate_shaped_by_rounds", ())),
+            withheld_prior_finding_hashes=tuple(value.get("withheld_prior_finding_hashes", ())),
+        )
+
+    def reserve_refinement_round(
+        self, budget_id: OpaqueId, *, round_index: int, now: str,
+    ) -> BudgetSnapshot:
+        """Grant round ``round_index`` or refuse it against the declared cap.
+
+        Idempotent: replaying an already-granted round is a no-op, so a crash
+        between granting a round and enqueueing its job cannot consume two.
+        """
+        if round_index < 1:
+            raise ValueError("round_index must be at least 1")
+        with self.transaction() as connection:
+            row = connection.execute("SELECT * FROM budgets WHERE budget_id = ?", (budget_id.value,)).fetchone()
+            if row is None:
+                raise KeyError(budget_id.value)
+            if round_index > row["max_refinement_rounds"]:
+                raise RefinementRoundsExhausted(
+                    requested_round=round_index,
+                    max_refinement_rounds=row["max_refinement_rounds"],
+                )
+            if round_index > row["used_refinement_rounds"]:
+                connection.execute(
+                    "UPDATE budgets SET used_refinement_rounds=?, updated_at=? WHERE budget_id=?",
+                    (round_index, now, budget_id.value),
+                )
+            updated = connection.execute("SELECT * FROM budgets WHERE budget_id = ?", (budget_id.value,)).fetchone()
+            assert updated is not None
+            return self._budget(updated, now)
+
+    def record_refinement_round(
+        self, record: RefinementRoundRecord, *, now: str,
+    ) -> RefinementRoundRecord:
+        """Append one immutable round record.
+
+        Re-recording identical content is a no-op; re-recording different
+        content for the same round is rejected rather than overwritten.
+        """
+        with self.transaction() as connection:
+            existing = connection.execute(
+                "SELECT * FROM refinement_rounds WHERE run_id=? AND round_index=?",
+                (record.run_id.value, record.round_index),
+            ).fetchone()
+            if existing is not None:
+                if (
+                    existing["candidate_artifact_hash"] != record.candidate_artifact_hash
+                    or existing["finding_artifact_hash"] != record.finding_artifact_hash
+                    or existing["outcome_class"] != record.outcome_class.value
+                    or existing["result_type"] != record.result_type
+                    or existing["recommendation"] != record.recommendation
+                    or bool(existing["refinement_warranted"]) != record.refinement_warranted
+                ):
+                    raise ValueError("refinement round record cannot be rewritten")
+                return record
+            connection.execute(
+                """INSERT INTO refinement_rounds(
+                    run_id,round_index,schema_version,candidate_artifact_hash,
+                    finding_artifact_hash,outcome_class,result_type,recommendation,
+                    refinement_warranted,created_at
+                ) VALUES(?,?,?,?,?,?,?,?,?,?)""",
+                (record.run_id.value, record.round_index, record.schema_version,
+                 record.candidate_artifact_hash, record.finding_artifact_hash,
+                 record.outcome_class.value, record.result_type, record.recommendation,
+                 1 if record.refinement_warranted else 0, now),
+            )
+        return record
+
+    def list_refinement_rounds(self, run_id: OpaqueId) -> tuple[RefinementRoundRecord, ...]:
+        return tuple(
+            RefinementRoundRecord(
+                schema_version=row["schema_version"], run_id=OpaqueId(row["run_id"]),
+                round_index=row["round_index"],
+                candidate_artifact_hash=row["candidate_artifact_hash"],
+                finding_artifact_hash=row["finding_artifact_hash"],
+                outcome_class=RefinementOutcomeClass(row["outcome_class"]),
+                result_type=row["result_type"], recommendation=row["recommendation"],
+                refinement_warranted=bool(row["refinement_warranted"]),
+            )
+            for row in self.connection.execute(
+                "SELECT * FROM refinement_rounds WHERE run_id=? ORDER BY round_index",
+                (run_id.value,),
+            )
+        )
+
+    def record_run_stop(self, record: RunStopRecord, *, now: str) -> RunStopRecord:
+        payload = canonical_json(list(record.binding_bounds))
+        with self.transaction() as connection:
+            existing = connection.execute(
+                "SELECT * FROM run_stop_records WHERE run_id=?", (record.run_id.value,),
+            ).fetchone()
+            if existing is not None:
+                if (
+                    existing["terminal_status"] != record.terminal_status.value
+                    or existing["stop_reason"] != record.stop_reason.value
+                    or existing["stop_bound"] != record.stop_bound
+                    or existing["binding_bounds_json"] != payload
+                    or existing["rounds_used"] != record.rounds_used
+                    or existing["max_refinement_rounds"] != record.max_refinement_rounds
+                ):
+                    raise ValueError("run stop record cannot be rewritten")
+                return record
+            connection.execute(
+                """INSERT INTO run_stop_records(
+                    run_id,schema_version,terminal_status,stop_reason,stop_bound,
+                    binding_bounds_json,rounds_used,max_refinement_rounds,created_at
+                ) VALUES(?,?,?,?,?,?,?,?,?)""",
+                (record.run_id.value, record.schema_version, record.terminal_status.value,
+                 record.stop_reason.value, record.stop_bound, payload, record.rounds_used,
+                 record.max_refinement_rounds, now),
+            )
+        return record
+
+    def get_run_stop(self, run_id: OpaqueId) -> RunStopRecord | None:
+        row = self.connection.execute(
+            "SELECT * FROM run_stop_records WHERE run_id=?", (run_id.value,),
+        ).fetchone()
+        if row is None:
+            return None
+        return RunStopRecord(
+            schema_version=row["schema_version"], run_id=OpaqueId(row["run_id"]),
+            terminal_status=RunStatus(row["terminal_status"]),
+            stop_reason=RunStopReason(row["stop_reason"]), stop_bound=row["stop_bound"],
+            binding_bounds=tuple(json.loads(row["binding_bounds_json"])),
+            rounds_used=row["rounds_used"],
+            max_refinement_rounds=row["max_refinement_rounds"],
         )
 
     def record_model_call(
@@ -493,25 +770,35 @@ class SQLiteWorkspace:
     def save_live_run_configuration(
         self, *, run_id: OpaqueId, configuration_id: OpaqueId, schema_version: str,
         provider: str, model_identifier: str, pricing_snapshot_id: OpaqueId,
-        content_hash: str, canonical_json: str, now: str,
+        content_hash: str, canonical_json: str, now: str, role: str = "proposer",
     ) -> None:
+        if role not in {"proposer", "verifier"}:
+            raise ValueError("live run configuration role must be proposer or verifier")
         with self.transaction() as connection:
             existing = connection.execute(
-                "SELECT content_hash,canonical_json FROM live_run_configurations WHERE run_id=?",
-                (run_id.value,),
+                "SELECT content_hash,canonical_json FROM live_run_configurations WHERE run_id=? AND role=?",
+                (run_id.value, role),
             ).fetchone()
             if existing:
                 if existing["content_hash"] != content_hash or existing["canonical_json"] != canonical_json:
                     raise ValueError("live run configuration cannot be rewritten")
                 return
             connection.execute(
-                "INSERT INTO live_run_configurations VALUES(?,?,?,?,?,?,?,?,?)",
+                """INSERT INTO live_run_configurations(
+                    run_id,role,configuration_id,schema_version,provider,model_identifier,
+                    pricing_snapshot_id,content_hash,canonical_json,created_at
+                ) VALUES(?,?,?,?,?,?,?,?,?,?)""",
                 (
-                    run_id.value, configuration_id.value, schema_version, provider,
+                    run_id.value, role, configuration_id.value, schema_version, provider,
                     model_identifier, pricing_snapshot_id.value, content_hash,
                     canonical_json, now,
                 ),
             )
+
+    def list_live_run_configurations(self, run_id: OpaqueId) -> tuple[dict[str, object], ...]:
+        return tuple(dict(row) for row in self.connection.execute(
+            "SELECT * FROM live_run_configurations WHERE run_id=? ORDER BY role", (run_id.value,),
+        ))
 
     def record_cost_estimate(self, estimate: CostEstimate, *, now: str) -> CostEstimate:
         with self.transaction() as connection:
@@ -601,6 +888,7 @@ class SQLiteWorkspace:
             max_attempts=row["max_attempts"], deadline_at=row["deadline_at"],
             lease_owner=row["lease_owner"], lease_until=row["lease_until"],
             payload_hash=row["payload_hash"], result_hash=row["result_hash"],
+            round_index=row["round_index"],
         )
 
     @staticmethod
@@ -632,12 +920,18 @@ class SQLiteWorkspace:
             max_input_tokens=row["max_input_tokens"], max_output_tokens=row["max_output_tokens"],
             max_cost_microusd=row["max_cost_microusd"], max_wall_milliseconds=row["max_wall_milliseconds"],
             max_attempts=row["max_attempts"],
+            max_refinement_rounds=row["max_refinement_rounds"],
         )
+        # The refinement-round cap is deliberately NOT an ``exhausted_dimensions``
+        # entry: ``reserve_call`` refuses any call once a dimension is exhausted,
+        # and a run on its last permitted round must still be able to finish that
+        # round. The cap is enforced by ``reserve_refinement_round`` instead.
         return BudgetSnapshot(
             budget_id=OpaqueId(row["budget_id"]), limits=limits,
             used_input_tokens=row["used_input_tokens"], used_output_tokens=row["used_output_tokens"],
             used_cost_microusd=row["used_cost_microusd"], used_attempts=row["used_attempts"],
             elapsed_milliseconds=elapsed, exhausted_dimensions=tuple(dimensions),
+            used_refinement_rounds=row["used_refinement_rounds"],
         )
 
 

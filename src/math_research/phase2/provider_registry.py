@@ -238,6 +238,33 @@ def registered_providers() -> tuple[str, ...]:
     return tuple(sorted(PROVIDER_SPECS))
 
 
+# Adapters whose non-secret config does not carry its own ``provider`` field.
+# Keyed by class object, not class name, so a rename cannot silently mislabel a
+# gateway's provider in a durable independence record.
+_PROVIDER_BY_GATEWAY_TYPE: tuple[tuple[type, str], ...] = (
+    (OpenAIResponsesGateway, "openai"),
+    (AnthropicMessagesGateway, "anthropic"),
+    (BedrockInvokeGateway, BEDROCK_PROVIDER),
+)
+
+
+def gateway_provider(gateway: Any) -> str | None:
+    """Which admitted provider this gateway will call, or ``None`` if unknown.
+
+    ADR-0041 needs this to *measure* verifier independence instead of trusting a
+    declaration. ``None`` means the gateway has no provider identity at all -- a
+    scripted fixture, for instance -- and the caller must then refuse rather
+    than assume an independence claim.
+    """
+    declared = getattr(getattr(gateway, "config", None), "provider", None)
+    if isinstance(declared, str) and declared in PROVIDER_SPECS:
+        return declared
+    for gateway_type, provider in _PROVIDER_BY_GATEWAY_TYPE:
+        if isinstance(gateway, gateway_type):
+            return provider
+    return None
+
+
 def provider_secret_variables(provider: str) -> tuple[str, ...]:
     """Credential variables for `provider` that carry secret material.
 

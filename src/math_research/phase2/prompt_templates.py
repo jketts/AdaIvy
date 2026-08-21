@@ -23,7 +23,14 @@ class PromptCatalog:
         self.root = root or Path(__file__).resolve().parents[3] / "prompts" / "phase-2"
 
     def load(self, purpose: str) -> PromptTemplate:
-        names = {"proposer": "proposer-v1.txt", "verifier": "verifier-v1.txt"}
+        names = {
+            "proposer": "proposer-v1.txt",
+            # ADR-0041. Rounds after the first get their own versioned, hashed
+            # template so a refinement request is never mistaken in the durable
+            # record for a first attempt.
+            "proposer_refinement": "proposer-refinement-v1.txt",
+            "verifier": "verifier-v1.txt",
+        }
         try:
             filename = names[purpose]
         except KeyError as error:

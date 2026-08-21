@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -54,9 +55,24 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _open(root: Path) -> tuple[SQLiteWorkspace, FileArtifactStore]:
-    root.mkdir(parents=True, exist_ok=True)
-    return SQLiteWorkspace(root / "workspace.sqlite3"), FileArtifactStore(root / "artifacts")
+# Read-only subcommands. Some Phase 2 workspaces are sealed evidence pinned
+# byte-for-byte by the ADR-0022 Phase 4A protected-evidence manifest, so a
+# reporting command must never open one read-write: a pending migration would
+# rewrite committed evidence in place. ADR-0041 added the first migration that
+# would have done so, and did once before this guard existed.
+_READ_ONLY_COMMANDS = frozenset({
+    "report", "jobs", "budget", "artifacts", "manifest", "review", "timeline",
+    "export", "rounds",
+})
+
+
+def _open(root: Path, *, read_only: bool = False) -> tuple[SQLiteWorkspace, FileArtifactStore]:
+    if not read_only:
+        root.mkdir(parents=True, exist_ok=True)
+    return (
+        SQLiteWorkspace(root / "workspace.sqlite3", read_only=read_only),
+        FileArtifactStore(root / "artifacts"),
+    )
 
 
 def _run_dossier(workspace: SQLiteWorkspace, run_id: OpaqueId) -> ResearchDossier:
@@ -87,19 +103,38 @@ def _start_dossier(args: argparse.Namespace) -> ResearchDossier:
     return load_problem_definition_file(problem, instant=parse_instant(instant)).dossier
 
 
-def _loop(
-    workspace: SQLiteWorkspace,
-    artifacts: FileArtifactStore,
+def _declared_independence() -> VerifierIndependence:
+    """What an operator is still permitted to assert.
+
+    ADR-0041 has the loop MEASURE `different_provider`, `different_model`,
+    `separate_model_call` and `context_isolated` from the run itself, so whatever
+    is written for those four here is overwritten by what actually happened. Only
+    the three checker-construction dimensions remain declarations, and they are
+    declared false: nothing in this CLI supplies a deterministic, independently
+    implemented, or formal checker.
+    """
+    return VerifierIndependence(
+        context_isolated=True, separate_model_call=True,
+        different_model=False, different_provider=False,
+        deterministic_checker=False, independently_implemented_checker=False,
+        formal_kernel=False,
+    )
+
+
+def _role_gateway(
     provider: str,
-    configuration: LiveRunConfiguration | None = None,
-    pricing: PricingSnapshot | None = None,
-    *,
+    configuration: LiveRunConfiguration | None,
+    pricing: PricingSnapshot | None,
+    role: str,
     dossier: ResearchDossier,
-) -> BaselineResearchLoop:
-    # The dossier is supplied, never rebuilt here. `start` resolves it from the
-    # problem definition (or the built-in fixture); every later command reloads
-    # the one the run was actually started with. Re-deriving it would silently
-    # run a different problem than the one on record.
+):
+    """Build one role's adapter. No role falls back to a default provider.
+
+    Both roles pass through exactly the same ADR-0038 gate. Before ADR-0041 the
+    verifier had no gate of its own because it had no gateway of its own: one
+    object served both roles, which made the two strongest independence axes
+    unreachable from the run path.
+    """
     if provider == "fake":
         if not dossier.formalization.assumption_claim_ids:
             raise ValueError(
@@ -110,55 +145,88 @@ def _loop(
             dossier.formalization.target_claim_id.value,
             dossier.formalization.assumption_claim_ids[0].value,
         )
-        gateway = ScriptedModelGateway({"proposer": [proposer_result], "verifier": [verifier_result]})
-        independence = VerifierIndependence(
-            context_isolated=True, separate_model_call=True,
-            different_model=False, different_provider=False,
-            deterministic_checker=False, independently_implemented_checker=False,
-            formal_kernel=False,
+        return ScriptedModelGateway({"proposer": [proposer_result], "verifier": [verifier_result]})
+    # Every live provider takes the same path: the content-hashed configuration
+    # names the provider, the registry builds that provider's adapter, and there
+    # is no fallback. Constructing an adapter opens no socket and imports no SDK;
+    # the credential and endpoint requirements are resolved inside the adapter's
+    # own call path and fail closed there.
+    if configuration is None or pricing is None:
+        raise RuntimeError(
+            f"{role} provider {provider} requires an explicit live run"
+            " configuration and a pinned pricing snapshot"
         )
-    else:
-        # Every live provider takes the same path: the content-hashed
-        # configuration names the provider, the registry builds that provider's
-        # adapter, and there is no fallback. Constructing an adapter opens no
-        # socket and imports no SDK; the credential and endpoint requirements are
-        # resolved inside the adapter's own call path and fail closed there.
-        if configuration is None or pricing is None:
-            raise RuntimeError(
-                f"provider {provider} requires an explicit live run configuration"
-                " and a pinned pricing snapshot"
-            )
-        if configuration.provider != provider:
-            raise RuntimeError(
-                f"selected provider {provider} is not the configured provider"
-                f" {configuration.provider}"
-            )
-        if pricing.provider != provider:
-            raise RuntimeError(
-                f"pinned pricing snapshot names provider {pricing.provider},"
-                f" not {provider}"
-            )
-        if configuration.pricing_snapshot_id != pricing.snapshot_id:
-            raise RuntimeError(
-                "pinned pricing snapshot is not the one the configuration names"
-            )
-        if configuration.model_identifier != pricing.model_identifier:
-            raise RuntimeError(
-                "pinned pricing snapshot is not bound to the configured model"
-            )
-        gateway = build_gateway(provider, configuration.model_identifier)
-        independence = VerifierIndependence(
-            context_isolated=True, separate_model_call=True,
-            different_model=False, different_provider=False,
-            deterministic_checker=False, independently_implemented_checker=False,
-            formal_kernel=False,
+    if configuration.provider != provider:
+        raise RuntimeError(
+            f"selected {role} provider {provider} is not the configured provider"
+            f" {configuration.provider}"
         )
+    if pricing.provider != provider:
+        raise RuntimeError(
+            f"pinned {role} pricing snapshot names provider {pricing.provider},"
+            f" not {provider}"
+        )
+    if configuration.pricing_snapshot_id != pricing.snapshot_id:
+        raise RuntimeError(
+            f"pinned {role} pricing snapshot is not the one the configuration names"
+        )
+    if configuration.model_identifier != pricing.model_identifier:
+        raise RuntimeError(
+            f"pinned {role} pricing snapshot is not bound to the configured model"
+        )
+    return build_gateway(provider, configuration.model_identifier)
+
+
+def _loop(
+    workspace: SQLiteWorkspace,
+    artifacts: FileArtifactStore,
+    provider: str,
+    configuration: LiveRunConfiguration | None = None,
+    pricing: PricingSnapshot | None = None,
+    *,
+    dossier: ResearchDossier,
+    verifier_provider: str | None = None,
+    verifier_configuration: LiveRunConfiguration | None = None,
+    verifier_pricing: PricingSnapshot | None = None,
+) -> BaselineResearchLoop:
+    # The dossier is supplied, never rebuilt here. `start` resolves it from the
+    # problem definition (or the built-in fixture); every later command reloads
+    # the one the run was actually started with. Re-deriving it would silently
+    # run a different problem than the one on record.
+    #
+    # ADR-0041: the proposer and the verifier resolve independently. Omitting the
+    # verifier selection reuses the proposer's provider, which is the unchanged
+    # single-provider path and records `different_provider=false` because that is
+    # what actually happened.
+    verifier_provider = verifier_provider or provider
+    if verifier_provider == provider:
+        verifier_configuration = verifier_configuration or configuration
+        verifier_pricing = verifier_pricing or pricing
+    proposer_gateway = _role_gateway(provider, configuration, pricing, "proposer", dossier)
+    verifier_gateway = _role_gateway(
+        verifier_provider, verifier_configuration, verifier_pricing, "verifier", dossier,
+    )
+    # Two providers mean two rate cards and two declared reserves. Cost has to
+    # aggregate across roles, so neither may be assumed from the other.
+    pricing_snapshots: dict[str, PricingSnapshot] = {}
+    if pricing is not None:
+        pricing_snapshots["proposer"] = pricing
+    if verifier_pricing is not None:
+        pricing_snapshots["verifier"] = verifier_pricing
+    reserves: dict[str, int] = {}
+    if configuration is not None:
+        reserves["proposer"] = configuration.per_call_output_token_reserve
+    if verifier_configuration is not None:
+        reserves["verifier"] = verifier_configuration.per_call_output_token_reserve
     return BaselineResearchLoop(
         workspace=workspace, artifacts=artifacts,
-        proposer=gateway, verifier=gateway, independence=independence, now=_now,
+        proposer=proposer_gateway, verifier=verifier_gateway,
+        independence=_declared_independence(), now=_now,
         call_timeout_milliseconds=configuration.call_timeout_milliseconds if configuration else 20_000,
         estimated_output_tokens=configuration.per_call_output_token_reserve if configuration else 512,
         pricing_snapshot=pricing,
+        pricing_snapshots=pricing_snapshots or None,
+        output_token_reserves=reserves or None,
     )
 
 
@@ -326,6 +394,68 @@ def _prepare_live_run(args) -> tuple[LiveRunConfiguration, PricingSnapshot] | in
     return configuration, pricing
 
 
+def _prepare_verifier_role(args) -> tuple[LiveRunConfiguration | None, PricingSnapshot | None] | int:
+    """Gate the verifier role's live inputs when it selects its own provider.
+
+    Returns ``(None, None)`` when the verifier reuses the proposer's already
+    gated inputs, which is the unchanged single-provider path. A verifier
+    provider that is asked for and unconfigured refuses the run rather than
+    starting it half-configured or quietly borrowing the proposer's credentials,
+    and a verifier configuration supplied without a verifier provider is refused
+    rather than silently ignored.
+    """
+    verifier_provider = getattr(args, "verifier_provider", None)
+    config_path = getattr(args, "verifier_config", None)
+    pricing_path = getattr(args, "verifier_pricing_snapshot", None)
+    supplied = config_path is not None or pricing_path is not None
+    if verifier_provider is None:
+        if supplied:
+            _json({
+                "missing_variables": ["--verifier-provider"],
+                "failed_checks": [
+                    "verifier_inputs_without_verifier_provider: a verifier"
+                    " configuration or pricing snapshot was supplied with no"
+                    " --verifier-provider, and would have been ignored"
+                ],
+                "command_shape": LIVE_GATE_COMMAND_SHAPE,
+            })
+            return 2
+        return None, None
+    if verifier_provider == "fake":
+        if supplied:
+            _json({
+                "missing_variables": [],
+                "failed_checks": [
+                    "verifier_provider_fake_with_live_inputs: the scripted"
+                    " verifier calls no provider, so a configuration or pricing"
+                    " snapshot for it cannot be honoured"
+                ],
+                "command_shape": LIVE_GATE_COMMAND_SHAPE,
+            })
+            return 2
+        return None, None
+    if verifier_provider == args.provider and not supplied:
+        # Same provider, no separate inputs: reuse the proposer's gated
+        # configuration rather than demanding a duplicate of it.
+        return None, None
+    configuration, pricing, missing, failures = _live_inputs(
+        config_path, pricing_path, selected_provider=verifier_provider,
+    )
+    if missing or failures:
+        _print_incomplete(missing, failures)
+        return 2
+    assert configuration is not None and pricing is not None
+    checked = preflight_live_gate(configuration, pricing)
+    if not checked.passed:
+        _json({
+            "missing_variables": list(checked.missing_variables),
+            "failed_checks": list(checked.failed_checks),
+            "command_shape": LIVE_GATE_COMMAND_SHAPE,
+        })
+        return 2
+    return configuration, pricing
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Phase 2 durable workspace and baseline loop")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -336,8 +466,17 @@ def main(argv: list[str] | None = None) -> int:
         item.add_argument("--provider", choices=RUN_PROVIDER_CHOICES, default="fake")
         item.add_argument("--config", type=Path)
         item.add_argument("--pricing-snapshot", type=Path)
+        # ADR-0041. The verifier role may resolve to its own provider and model.
+        # Derived from the same registry as --provider, for the same reason.
+        item.add_argument("--verifier-provider", choices=RUN_PROVIDER_CHOICES)
+        item.add_argument("--verifier-config", type=Path)
+        item.add_argument("--verifier-pricing-snapshot", type=Path)
         if name == "start":
             item.add_argument("--execute", action="store_true")
+            # ADR-0041 declared refinement-round cap. One is the identity: the
+            # historical single-round behaviour. A caller that wants refinement
+            # must say how many rounds it will pay for.
+            item.add_argument("--max-refinement-rounds", type=int, default=1)
             item.add_argument(
                 "--problem", type=Path,
                 help="problem definition to run instead of the built-in fixture",
@@ -346,12 +485,14 @@ def main(argv: list[str] | None = None) -> int:
                 "--intake-instant",
                 help="explicit UTC intake instant, required with --problem",
             )
-    for name in ("jobs", "budget", "pause", "resume", "artifacts", "manifest", "review", "timeline"):
+    for name in ("jobs", "budget", "pause", "resume", "artifacts", "manifest", "review", "timeline", "rounds"):
         item = sub.add_parser(name)
         item.add_argument("workspace", type=Path)
         item.add_argument("run_id")
         if name == "artifacts":
             item.add_argument("--content", action="store_true")
+        if name == "manifest":
+            item.add_argument("--round", type=int, dest="round_index")
     export = sub.add_parser("export")
     export.add_argument("workspace", type=Path)
     export.add_argument("run_id")
@@ -510,7 +651,9 @@ def main(argv: list[str] | None = None) -> int:
         args.status_artifact.write_text(json.dumps(status, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         _json(status)
         return 0
-    workspace, artifacts = _open(args.workspace)
+    workspace, artifacts = _open(
+        args.workspace, read_only=args.command in _READ_ONLY_COMMANDS,
+    )
     try:
         run_id = OpaqueId(args.run_id)
         if args.command == "start":
@@ -520,6 +663,17 @@ def main(argv: list[str] | None = None) -> int:
                 if isinstance(prepared, int):
                     return prepared
                 configuration, pricing = prepared
+            verifier_prepared = _prepare_verifier_role(args)
+            if isinstance(verifier_prepared, int):
+                return verifier_prepared
+            verifier_configuration, verifier_pricing = verifier_prepared
+            if args.max_refinement_rounds < 1:
+                _json({
+                    "missing_variables": [],
+                    "failed_checks": ["--max-refinement-rounds must be at least 1"],
+                    "command_shape": LIVE_GATE_COMMAND_SHAPE,
+                })
+                return 2
             try:
                 dossier = _start_dossier(args)
             except ProblemDefinitionError as error:
@@ -531,28 +685,41 @@ def main(argv: list[str] | None = None) -> int:
                 return 2
             try:
                 loop = _loop(workspace, artifacts, args.provider, configuration, pricing,
-                             dossier=dossier)
+                             dossier=dossier,
+                             verifier_provider=args.verifier_provider,
+                             verifier_configuration=verifier_configuration,
+                             verifier_pricing=verifier_pricing)
             except Exception as error:  # adapter refusal is a fail-closed gate
                 _print_adapter_refusal(args.provider, error)
                 return 2
+            declared = configuration.budget if configuration is not None else BudgetLimits(
+                max_input_tokens=20_000, max_output_tokens=4_000,
+                max_cost_microusd=10_000_000, max_wall_milliseconds=300_000,
+                max_attempts=4,
+            )
             run = loop.start(
                 run_id=run_id, dossier=dossier,
-                limits=configuration.budget if configuration is not None else BudgetLimits(
-                    max_input_tokens=20_000, max_output_tokens=4_000,
-                    max_cost_microusd=10_000_000, max_wall_milliseconds=300_000,
-                    max_attempts=4,
-                ),
+                limits=replace(declared, max_refinement_rounds=args.max_refinement_rounds),
             )
-            if configuration is not None and pricing is not None:
-                workspace.save_pricing_snapshot(pricing, canonical_json=canonical_json(pricing), now=_now().isoformat().replace("+00:00", "Z"))
+            stamp = _now().isoformat().replace("+00:00", "Z")
+            for role, role_configuration, role_pricing in (
+                ("proposer", configuration, pricing),
+                ("verifier", verifier_configuration, verifier_pricing),
+            ):
+                if role_configuration is None or role_pricing is None:
+                    continue
+                workspace.save_pricing_snapshot(
+                    role_pricing, canonical_json=canonical_json(role_pricing), now=stamp,
+                )
                 workspace.save_live_run_configuration(
-                    run_id=run_id, configuration_id=configuration.configuration_id,
-                    schema_version=configuration.schema_version, provider=configuration.provider,
-                    model_identifier=configuration.model_identifier,
-                    pricing_snapshot_id=configuration.pricing_snapshot_id,
-                    content_hash=configuration.content_hash,
-                    canonical_json=canonical_json(live_run_configuration_payload(configuration)),
-                    now=_now().isoformat().replace("+00:00", "Z"),
+                    run_id=run_id, configuration_id=role_configuration.configuration_id,
+                    schema_version=role_configuration.schema_version,
+                    provider=role_configuration.provider,
+                    model_identifier=role_configuration.model_identifier,
+                    pricing_snapshot_id=role_configuration.pricing_snapshot_id,
+                    content_hash=role_configuration.content_hash,
+                    canonical_json=canonical_json(live_run_configuration_payload(role_configuration)),
+                    now=stamp, role=role,
                 )
             if args.execute:
                 run = loop.run_to_terminal(run_id)
@@ -565,9 +732,16 @@ def main(argv: list[str] | None = None) -> int:
                 if isinstance(prepared, int):
                     return prepared
                 configuration, pricing = prepared
+            verifier_prepared = _prepare_verifier_role(args)
+            if isinstance(verifier_prepared, int):
+                return verifier_prepared
+            verifier_configuration, verifier_pricing = verifier_prepared
             try:
                 loop = _loop(workspace, artifacts, args.provider, configuration, pricing,
-                             dossier=_run_dossier(workspace, run_id))
+                             dossier=_run_dossier(workspace, run_id),
+                             verifier_provider=args.verifier_provider,
+                             verifier_configuration=verifier_configuration,
+                             verifier_pricing=verifier_pricing)
             except Exception as error:  # adapter refusal is a fail-closed gate
                 _print_adapter_refusal(args.provider, error)
                 return 2
@@ -598,7 +772,19 @@ def main(argv: list[str] | None = None) -> int:
             _json(calls)
             return 0
         if args.command == "manifest":
-            _json(workspace.get_manifest(run_id))
+            _json(workspace.get_manifest(run_id, round_index=args.round_index))
+            return 0
+        if args.command == "rounds":
+            _json({
+                "schema_version": "2.0.0",
+                "budget": workspace.budget(
+                    workspace.get_run(run_id).budget_id,
+                    now=_now().isoformat().replace("+00:00", "Z"),
+                ),
+                "refinement_rounds": workspace.list_refinement_rounds(run_id),
+                "run_stop": workspace.get_run_stop(run_id),
+                "verifier_context_manifests": workspace.list_manifests(run_id),
+            })
             return 0
         if args.command == "review":
             values = []

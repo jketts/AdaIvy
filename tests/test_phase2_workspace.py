@@ -83,10 +83,10 @@ class MigrationTests(unittest.TestCase):
             shutil.copytree(Path("migrations"), migrations)
             path = root / "workspace.sqlite3"
             first = SQLiteWorkspace(path, migrations_dir=migrations)
-            self.assertEqual(first.migration_versions, ("0001", "0002", "0003"))
+            self.assertEqual(first.migration_versions, ("0001", "0002", "0003", "0004"))
             first.close()
             second = SQLiteWorkspace(path, migrations_dir=migrations)
-            self.assertEqual(second.migration_versions, ("0001", "0002", "0003"))
+            self.assertEqual(second.migration_versions, ("0001", "0002", "0003", "0004"))
             second.close()
             migration = migrations / "0002_phase2_indexes.sql"
             migration.write_text(migration.read_text(encoding="utf-8") + "\n-- drift\n", encoding="utf-8")

@@ -37,7 +37,9 @@ class Phase2DemonstrationEvidenceTests(unittest.TestCase):
         manifest_hash = evidence["model_context_isolation"]["serialized_context_hash"]
         self.assertEqual(sha256_bytes(store.get(manifest_hash)), manifest_hash)
 
-        with SQLiteWorkspace(root / "workspace.sqlite3") as workspace:
+        # Sealed evidence: this file is pinned byte-for-byte by the Phase 4A
+        # protected-evidence manifest, so it is replayed read-only.
+        with SQLiteWorkspace(root / "workspace.sqlite3", read_only=True) as workspace:
             self.assertEqual(
                 report_hash(workspace, oid("run.phase2.demo.fake.v1")),
                 evidence["replay_hashes"]["report_hash"],
