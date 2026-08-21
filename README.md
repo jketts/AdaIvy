@@ -62,6 +62,11 @@ another model agrees with it.
   of generality against unseen traps.
 - Bounded exploratory synthesis is implemented over the sealed Phase 6
   workspace.
+- **Bounded central-lead runtime** (ADR-0047) composes one-round Phase 2 runs
+  under a frozen target and content-hashed session bounds. Its history is
+  proposer-only, replay makes no model call, and it creates no warrant or
+  proof-obligation discharge. It activates no higher search tier and measures
+  no retention gain.
 - **Phase 4C** covers benchmark-scoped hybrid retrieval only: a frozen
   19-document, 17-query fixture set, an FTS5/BM25 lexical signal, a
   content-keyed alias table, and an exclusion-only evidentiary self-disclaimer

@@ -57,6 +57,8 @@ def main(argv: list[str] | None = None) -> int:
     phase6.add_argument("phase6_args", nargs=argparse.REMAINDER)
     publication = subparsers.add_parser("publication", help="ADR-0036 publication projection commands")
     publication.add_argument("publication_args", nargs=argparse.REMAINDER)
+    runtime = subparsers.add_parser("runtime", help="ADR-0047 bounded iterative research runtime commands")
+    runtime.add_argument("runtime_args", nargs=argparse.REMAINDER)
     synthesis = subparsers.add_parser("synthesis", help="bounded exploratory synthesis commands")
     synthesis.add_argument("synthesis_args", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
@@ -91,6 +93,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "publication":
         from .publication_cli import main as publication_main
         return publication_main(args.publication_args)
+    if args.command == "runtime":
+        from .runtime_cli import main as runtime_main
+        return runtime_main(args.runtime_args)
     if args.command == "synthesis":
         from .synthesis_cli import main as synthesis_main
         return synthesis_main(args.synthesis_args)

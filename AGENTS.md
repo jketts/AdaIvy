@@ -165,6 +165,15 @@ measured retention gain in verified progress per unit cost; evolutionary search
 additionally requires cheap reliable verifier-backed fitness and adversarial
 calibration. Never substitute an always-on hierarchical swarm.
 
+ADR-0047 activates only the bounded central-lead runtime. It composes distinct
+one-round Phase 2 runs, carries a size-bounded proposer-only ledger between
+them, and rebuilds the verifier context without that history. Session bounds
+are content-hashed, replay is model-free, the target is frozen, and no warrant
+or proof-obligation discharge is producible. ADR-0041 refinement is refused
+inside an ADR-0047 iteration so the two loops cannot multiply each other's
+bounds. The runtime measures no retention gain and activates no specialist,
+parallel, evolutionary, or higher search tier.
+
 The Phase 1 domain/trust semantics, sealed Phase 2 evidence, Phase 3A memory,
 sealed Phase 3B runtime, and Phase 4A rights/applicability boundaries remain
 authoritative. Do not add a web UI or HTTP API, crawler, network acquisition,
