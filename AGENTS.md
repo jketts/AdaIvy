@@ -23,6 +23,27 @@ supplied to it and never discovers them**, so it is a checker and not a solver.
 Search tiers 2--4 stay disabled in both. The Phase 6 scope is still one frozen
 held-out case plus the generality control suite and canonical replay.
 
+Phase 3B now has two scopes and both must be stated exactly. The sealed
+single-shot scope is unchanged. On top of it, ADR-0040 adds a **bounded repair
+loop that adds submissions and no Lean capability**: it orchestrates strictly
+above `FormalCheckingService.check` and holds no reference to the container
+engine, image digest, launcher, fixed invocation, stdin bound, Landlock
+hardener, or seccomp policy. Three bounds are load-bearing and must not be
+relaxed without a new ADR. The theorem is frozen -- a proposer returns one proof
+fragment, so statement, hypotheses, imports, declaration, claim, and meaning
+tests cannot change, and a repair therefore cannot weaken what it claims to
+prove. Only Lean's own `elaboration_failure` is repairable; a policy rejection
+is never fed back, because a validator diagnostic describes how to evade the
+validator, and meaning-test failures and unapproved-assumption results are
+terminal for the same reason. Nothing is promoted: `epistemic_warrant_created`
+is `False` unconditionally, including on a successful repair, and a repaired
+proof is attributed to `MODEL` and never to the operator. The
+`ProofProposer` port has **no live implementation** and this ADR authorizes
+none; the acceptance path drives a scripted proposer and makes zero model and
+zero network calls. Nothing measures whether repair helps -- that is an
+ADR-0029 retention question and is open. `docs/phase-3b-repair/` is the
+normative gate package, per ADR-0026's revisit trigger.
+
 The Phase 6 generality control suite (ADR-0034) executes. Thirteen controls drive
 Phase 1 `TrustPolicy`, the exact Phase 5 engine, or the Phase 6 `HeldOutView`
 over a content-hashed project-authored manifest whose hash the confirmatory
