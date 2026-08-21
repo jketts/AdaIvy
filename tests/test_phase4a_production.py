@@ -9,6 +9,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from contextlib import closing
 from pathlib import Path
@@ -1523,17 +1524,37 @@ with tempfile.TemporaryDirectory() as directory:
                 read_interchange_file(link, max_bytes=MAX_EXPORT_BYTES)
 
     def test_process_tree_timeout_kills_child_and_grandchild(self) -> None:
+        # The child publishes both pids through an atomically renamed file instead of
+        # stdout, so the handshake is readable after the group has been killed. The tree
+        # still has to be fully formed before the timeout fires, which is a scheduling
+        # race on a loaded machine, so the handshake gets its own bounded escalation:
+        # a machine that cannot start two interpreters inside 0.2s retries with more
+        # room rather than reporting zero pids.
         code = (
             "import os,signal,subprocess,sys,time;"
             "signal.signal(signal.SIGTERM,signal.SIG_IGN);"
             "p=subprocess.Popen([sys.executable,'-c','import signal,time;signal.signal(signal.SIGTERM,signal.SIG_IGN);time.sleep(60)']);"
-            "print(os.getpid(),p.pid,flush=True);time.sleep(60)"
+            "handshake=sys.argv[1];partial=handshake+'.partial';"
+            "written=open(partial,'w');written.write(f'{os.getpid()} {p.pid}');written.close();"
+            "os.replace(partial,handshake);time.sleep(60)"
         )
-        with self.assertRaises(subprocess.TimeoutExpired) as caught:
-            _run_process_tree([sys.executable, "-c", code], timeout=0.2)
-        pids = [int(item) for item in (caught.exception.output or b"").decode().split()]
-        self.assertEqual(2, len(pids))
+        pids: list[int] = []
+        for attempt, timeout in enumerate((0.2, 1.0, 5.0, 25.0)):
+            handshake = self.fixture.root / f"process-tree-pids-{attempt}"
+            with self.assertRaises(subprocess.TimeoutExpired):
+                _run_process_tree([sys.executable, "-c", code, str(handshake)], timeout=timeout)
+            if handshake.exists():
+                pids = [int(item) for item in handshake.read_text().split()]
+                break
+        self.assertEqual(2, len(pids), "child never published its own and its grandchild pid")
         for pid in pids:
+            # The grandchild is reaped by init after reparenting, so allow that to land.
+            for _ in range(1000):
+                try:
+                    os.kill(pid, 0)
+                except ProcessLookupError:
+                    break
+                time.sleep(0.01)
             with self.assertRaises(ProcessLookupError):
                 os.kill(pid, 0)
 
