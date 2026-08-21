@@ -88,10 +88,27 @@ another model agrees with it.
   signal, fused in score space. All seven gates are measured as passing under
   ADR-0032. Exclusion removes a candidate from a result list and asserts
   nothing about applicability.
+- **Phase 4D** (ADR-0051) enables one bounded public Crossref metadata search
+  from operator-supplied terminology grounded in a local problem/context file.
+  It returns at most ten `untrusted_inspiration_candidate` records and never
+  follows them. Relevance, applicability, novelty, and significance remain
+  `not_assessed`; acquisition remains unauthorized and warrant remains `none`.
+  Live execution requires an exact acknowledgement and grounded-query hash;
+  `make check` exercises only the zero-network dry run.
+- **Novelty checkpoints** (ADR-0055) fail closed at both vulnerable lifecycle
+  transitions. Every operator-chosen problem needs a human, evidence-linked
+  re-check no more than 24 hours before research starts, and every human
+  publication approval needs a second re-check over the exact result being
+  announced. Each record is bound to one subject and one next action. An empty
+  search remains `not_found_under_protocol`, never a novelty conclusion or a
+  mathematical warrant; any prior-art relationship and resolution class is
+  recorded separately from novelty. Reports expose the derived role and target
+  status—for example, the Graffiti 197 regression is
+  `independent_verification` / `already_refuted`, not a new result.
 - Deferred: general noncommuting SDP beyond ADR-0049's exact bounded domain,
   retrieval embeddings and vector indexes, credentialed or autonomous
-  acquisition, crawling, broader media, higher adaptive-search tiers, and
-  external evaluation.
+  acquisition, result crawling/citation traversal, broader discovery providers,
+  broader media, higher adaptive-search tiers, and external evaluation.
   Novelty and significance are recorded as `not_assessed`.
 - Retrieval uses no embedding and no model provider, so the live provider
   boundary can change without affecting it. Before embeddings are added, note
@@ -119,7 +136,7 @@ make check
 
 `make check` is the single documented offline entrypoint. It runs the unit,
 integration, property, and adversarial suite plus the Phase 0 harness check and
-the Phase 1, 2, 3A, 4A, 4B, 5, 6, and synthesis acceptance paths, each against a
+the Phase 1, 2, 3A, 4A, 4B, 4C, 4D, 5, 6, and synthesis acceptance paths, each against a
 disposable temporary workspace.
 
 ```bash
@@ -135,11 +152,35 @@ they need:
 | `make check-sealed` | the ADR-0016 v5 container image (Phase 3B Lean checking) |
 | `make check-gate PY=…` | a disposable pinned Draft 2020-12 validator environment |
 | `make check-phase4b-oci` | Docker plus the exact pinned Phase 4B parser image |
+| `make setup-typeset` | explicit networked acquisition of hash-pinned BasicTeX under `work/toolchains/` |
+| `make check-typeset` | the locally installed BasicTeX toolchain; two clean offline pdfLaTeX compiles |
 | `make check-all` | `check` + `check-sealed` |
 
 `make check-sealed`, `make check-gate`, and `make check-phase4b-oci` are
 local/owner-run because their prerequisites are not publicly available.
 Continuous integration runs the offline check only.
+
+The publication PDF is compiled from classic LaTeX, not drawn by an alternate
+PDF generator. Run `make setup-typeset` once on macOS, then
+`make check-typeset`. The setup verifies the BasicTeX package SHA-256 and keeps
+the 377 MB extracted toolchain in gitignored `work/`; the compile itself is
+offline, disables shell escape, and must reproduce the same PDF bytes from two
+clean builds.
+
+For every solved publication claim, the renderer also requires a located,
+acquisition-backed citation to the original problem and a concise auditable
+derivation with citations for any retrieved-source influence. The paper ends
+with an unsuppressible AdaIvy project note linking to
+[github.com/jketts/AdaIvy](https://github.com/jketts/AdaIvy). This derivation is
+a reproducible mathematical account; it is not represented as private model
+chain-of-thought.
+The same disclosure block names every usage-bearing provider/model, the number
+of completed model calls, measured USD spend and budget cap, plus input, output,
+and total tokens. Transport and authorization failures remain available in the
+machine-readable run record but are not paper content. Missing telemetry is
+printed as not recorded and never estimated. Located source references render
+as conventional LaTeX citations, with the recorded passage anchor in the
+optional citation locator.
 
 ## Running the tests
 

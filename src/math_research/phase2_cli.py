@@ -16,6 +16,8 @@ from .application.problem_intake import (
 )
 from .domain.entities import OpaqueId, ResearchDossier
 from .interchange import write_dossier
+from .interchange import export_dossier_dict
+from .novelty import NoveltyRecheckError, read_recheck, require_checkpoint
 from .phase2.artifacts import FileArtifactStore
 from .phase2.baseline_loop import BaselineResearchLoop, deterministic_fake_results
 from .phase2.fixtures import build_open_theorem_dossier
@@ -485,6 +487,10 @@ def main(argv: list[str] | None = None) -> int:
                 "--intake-instant",
                 help="explicit UTC intake instant, required with --problem",
             )
+            item.add_argument(
+                "--novelty-recheck", type=Path,
+                help="fresh ADR-0055 before-research re-check; required with --problem",
+            )
     for name in ("jobs", "budget", "pause", "resume", "artifacts", "manifest", "review", "timeline", "rounds"):
         item = sub.add_parser(name)
         item.add_argument("workspace", type=Path)
@@ -683,6 +689,35 @@ def main(argv: list[str] | None = None) -> int:
             except ValueError as error:
                 _json({"command": "start", "accepted": False, "error": str(error)})
                 return 2
+            if args.problem is not None:
+                if args.novelty_recheck is None:
+                    _json({
+                        "command": "start", "accepted": False,
+                        "error": "fresh_novelty_recheck_required_before_research",
+                    })
+                    return 2
+                try:
+                    recheck = read_recheck(args.novelty_recheck)
+                    require_checkpoint(
+                        recheck, checkpoint="before_research",
+                        subject_id=dossier.problem.id.value,
+                        subject_hash=str(export_dossier_dict(dossier)["content_hash"]),
+                        next_action_id=run_id.value,
+                        action_at=_now().isoformat(timespec="microseconds").replace("+00:00", "Z"),
+                    )
+                    if workspace.timeline(run_id):
+                        raise NoveltyRecheckError("novelty_recheck_not_first_run_event")
+                    workspace.append_event(
+                        event_id=OpaqueId(f"event.{run_id.value}.novelty-recheck"),
+                        aggregate_id=run_id,
+                        event_type="novelty_recheck_recorded",
+                        payload_json=canonical_json(recheck.payload()),
+                        now=recheck.performed_at,
+                        idempotency_key=f"novelty-recheck:{run_id.value}:{recheck.content_hash}",
+                    )
+                except (NoveltyRecheckError, OSError, ValueError) as error:
+                    _json({"command": "start", "accepted": False, "error": str(error)})
+                    return 2
             try:
                 loop = _loop(workspace, artifacts, args.provider, configuration, pricing,
                              dossier=dossier,

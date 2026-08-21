@@ -60,8 +60,8 @@ order, by the same lead.
 
 from __future__ import annotations
 
-SCHEMA_VERSION = "adaivy.runtime-session.v1"
-POLICY_VERSION = "runtime-central-lead-v1"
+SCHEMA_VERSION = "adaivy.runtime-session.v2"
+POLICY_VERSION = "runtime-central-lead-v2"
 CANONICALIZATION_VERSION = "runtime-canonical-json-v1"
 SESSION_CONFIG_SCHEMA_VERSION = "1.0.0"
 

@@ -1,0 +1,39 @@
+{
+  "schema_version": "adaivy.prior-art-classification-fixture.v1",
+  "subject_id": "problem.graffiti-197",
+  "subject_hash": "sha256:626439796ee4635919cdc3dc8c08f6f7bc13f8928770c7d15b8134905b090a1f",
+  "next_action_id": "session.graffiti-197.verify.v1",
+  "performed_by": "researcher.repository-owner",
+  "performed_at": "2026-08-21T00:00:00Z",
+  "protocol_id": "protocol.graffiti-197.prior-art.v1",
+  "query_terms": [
+    "Graffiti 197",
+    "gravity range Kneser 7 2"
+  ],
+  "searched_sources": [
+    "AI Village News",
+    "acquired verifier artifact"
+  ],
+  "equivalence_checks": [
+    "same Graffiti 197 statement under the distinct-values meaning of range",
+    "same Kneser K(7,2) witness and same exact inequality 4 > 3"
+  ],
+  "evidence_refs": [
+    {
+      "ref_id": "source.ai-village.opus5-124",
+      "content_hash": "sha256:aedd5efc3a041d3c27b55a06f64b39063265b422e4fc4d5d2d2c793680c9c628"
+    }
+  ],
+  "outcome": "prior_art_found",
+  "prior_art_relationship": "same_result",
+  "prior_resolution": "refutation",
+  "prior_resolution_verification": "independently_verified",
+  "limitations": [
+    "This classifies the identified Opus 5 result relative to the AdaIvy reconstruction; it is not a complete novelty search."
+  ],
+  "expected": {
+    "report_classification": "independent_verification",
+    "target_resolution_status": "already_refuted",
+    "novelty_status": "not_assessed"
+  }
+}

@@ -31,6 +31,8 @@ Related documents:
 - [Phase 3A bounded research memory](#phase-3a-bounded-research-memory)
 - [Phase 3B bounded Lean formal checking](#phase-3b-bounded-lean-formal-checking)
 - [Phase 4B authorized acquisition and exact parsing](#phase-4b-authorized-acquisition-and-exact-parsing)
+- [Phase 4D grounded public scholarly discovery](#phase-4d-grounded-public-scholarly-discovery)
+- [Two mandatory novelty checkpoints](#two-mandatory-novelty-checkpoints)
 - [Phase 5 exact adaptive quantum benchmark](#phase-5-exact-adaptive-quantum-benchmark)
 - [Phase 6 confirmatory evaluation and release](#phase-6-confirmatory-evaluation-and-release)
 - [Bounded exploratory synthesis](#bounded-exploratory-synthesis)
@@ -428,6 +430,83 @@ licence or as permission to redistribute. At execution the plan timestamp must
 be within five minutes of the system clock, preventing an old terms/robots
 snapshot from remaining executable indefinitely. See `docs/phase-4b/`,
 ADR-0028 and ADR-0050.
+
+## Phase 4D grounded public scholarly discovery
+
+ADR-0051 adds a deliberately separate discovery surface. The operator supplies
+terms and a local UTF-8 problem/context file; every term must occur in that file
+after NFKC normalization and case folding. A dry run hashes that grounding and
+prints the exact query hash without DNS or HTTPS.
+
+Live execution requires the operator identity, the acknowledgement
+`I_ACKNOWLEDGE_PUBLIC_WEB_DISCOVERY`, and that exact query hash. It makes one
+public unauthenticated request to the pinned Crossref origin, with at most ten
+results, twelve terms, 256 query bytes, a 1 MiB response, and fifteen seconds.
+The provider-terms review expires after thirty days. The Phase 4B opt-in
+resolver and HTTPS transport retain public-address, connected-peer, TLS, header,
+body, and deadline controls.
+
+```bash
+PYTHONPATH=src python3 -m math_research.cli phase4d search PROBLEM.txt \
+  --term 'quantum state discrimination' --term 'spectral projector' \
+  --config config/phase4d-crossref-public-discovery-v1.json
+```
+
+Repeat with `--execute --actor-id ACTOR`,
+`--confirm-live-network I_ACKNOWLEDGE_PUBLIC_WEB_DISCOVERY`, and
+`--confirm-query-hash` equal to the dry-run value to perform the request.
+Returned DOI metadata is an `untrusted_inspiration_candidate`; it has no
+relevance or applicability decision, no acquisition authorization, no novelty
+or significance assessment, and no mathematical warrant. Phase 4D never opens
+the DOI URL. Acquiring a selected work remains a separate ADR-0050 Phase 4B
+operation with its own terms, robots, and rights evidence.
+
+## Two mandatory novelty checkpoints
+
+ADR-0055 turns novelty review into a fail-closed lifecycle rule without turning
+search into a novelty oracle. Before a supplied problem may start a Phase 2 run
+or bounded central-lead session, a human creates a `before_research` record
+bound to the exact dossier content hash and run/session identifier. The runtime
+persists it immediately before the first research action. Before any result can
+receive non-null `publication_approval`, a second human
+`before_announcement` record must bind every exact claim statement and the
+approval identifier, and link to the first record by identifier and hash.
+
+Both records must strictly precede their actions by no more than 24 hours. Each
+names its protocol, query terms, searched sources, equivalent-formulation
+checks, evidence hashes, observed outcome, and limitations. Use the CLI to
+create or inspect the canonical record:
+
+```bash
+PYTHONPATH=src python3 -m math_research.cli novelty create before_research \
+  PROBLEM_ID sha256:DOSSIER_HASH RUN_ID HUMAN_ID 2026-08-21T00:00:00Z \
+  work/novelty-before-research.json \
+  --recheck-id RECHECK_ID --protocol-id PROTOCOL_ID \
+  --query-term TERM --searched-source SOURCE \
+  --equivalence-check EQUIVALENT_FORMULATIONS_REVIEWED \
+  --evidence-ref EVIDENCE_ID sha256:EVIDENCE_HASH \
+  --prior-art-relationship unresolved --prior-resolution unresolved \
+  --prior-resolution-verification unresolved \
+  --outcome inconclusive --limitation COVERAGE_LIMIT
+```
+
+Pass that file to `phase2 start --novelty-recheck ...` or `runtime run
+--novelty-recheck ...`. The announcement-side record uses the same command with
+`before_announcement` plus the first record's ID and hash, and is stored inside
+the approval-bearing manuscript. `prior_art_found`,
+`not_found_under_protocol`, and `inconclusive` are observations only. None
+changes the manuscript's `novelty: not_assessed`, creates warrant, or authorizes
+network access. Phase 4D output can be referenced as evidence after human
+review, but does not satisfy the checkpoint by itself.
+
+For `prior_art_found`, the operator also records the relationship to the target,
+the earlier resolution kind, and whether that resolution was independently
+verified. AdaIvy derives rather than accepts the report role and target status.
+The Graffiti 197 regression must produce `independent_verification` and
+`already_refuted`; runtime reports, approval-bearing manuscript status blocks,
+and `records/prior-art.json` all expose those values. A mere source report is
+limited to `reported_proved`, `reported_refuted`, or
+`reported_resolved_other`, while general novelty remains `not_assessed`.
 
 ## Phase 5 exact adaptive quantum benchmark
 

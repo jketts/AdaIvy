@@ -39,6 +39,8 @@ def main(argv: list[str] | None = None) -> int:
     demo.add_argument("--output-dir", type=Path, required=True)
     problem = subparsers.add_parser("problem", help="declarative problem-intake commands (ADR-0039)")
     problem.add_argument("problem_args", nargs=argparse.REMAINDER)
+    novelty = subparsers.add_parser("novelty", help="novelty re-check records and gates (ADR-0055)")
+    novelty.add_argument("novelty_args", nargs=argparse.REMAINDER)
     phase2 = subparsers.add_parser("phase2", help="Phase 2 durable workspace commands")
     phase2.add_argument("phase2_args", nargs=argparse.REMAINDER)
     phase3a = subparsers.add_parser("phase3a", help="bounded Phase 3A research-memory commands")
@@ -51,6 +53,8 @@ def main(argv: list[str] | None = None) -> int:
     phase4b.add_argument("phase4b_args", nargs=argparse.REMAINDER)
     phase4c = subparsers.add_parser("phase4c", help="benchmark-scoped Phase 4C hybrid retrieval commands")
     phase4c.add_argument("phase4c_args", nargs=argparse.REMAINDER)
+    phase4d = subparsers.add_parser("phase4d", help="grounded public scholarly discovery commands")
+    phase4d.add_argument("phase4d_args", nargs=argparse.REMAINDER)
     phase5 = subparsers.add_parser("phase5", help="adaptive quantum benchmark and steering commands")
     phase5.add_argument("phase5_args", nargs=argparse.REMAINDER)
     phase6 = subparsers.add_parser("phase6", help="confirmatory evaluation and release commands")
@@ -66,6 +70,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "problem":
         from .problem_intake_cli import main as problem_main
         return problem_main(args.problem_args)
+    if args.command == "novelty":
+        from .novelty_cli import main as novelty_main
+        return novelty_main(args.novelty_args)
     if args.command == "phase2":
         from .phase2_cli import main as phase2_main
         return phase2_main(args.phase2_args)
@@ -84,6 +91,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "phase4c":
         from .phase4c_cli import main as phase4c_main
         return phase4c_main(args.phase4c_args)
+    if args.command == "phase4d":
+        from .phase4d_cli import main as phase4d_main
+        return phase4d_main(args.phase4d_args)
     if args.command == "phase5":
         from .phase5_cli import main as phase5_main
         return phase5_main(args.phase5_args)

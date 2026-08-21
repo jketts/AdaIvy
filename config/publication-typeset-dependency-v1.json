@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "dependency_id": "publication.typesetter.basictex.darwin.v1",
+  "name": "BasicTeX",
+  "version": "2026.0301",
+  "platform": "darwin-universal",
+  "homebrew_cask": "basictex",
+  "artifact_url": "https://mirror.ctan.org/systems/mac/mactex/mactex-basictex-20260301.pkg",
+  "artifact_sha256": "sha256:19164fbfef08c30fd433f59203c8804abbbd685d3a344ef7f0ba8c1fd4157cb3",
+  "homebrew_cask_source_sha256": "sha256:5b91aa7723704397fd824eef2b53e2033219cfe057f8be9422661be579ac56ea",
+  "extracted_distribution_path": "usr/local/texlive/2026basic",
+  "engine_relative_path": "bin/universal-darwin/pdflatex",
+  "install_root": "work/toolchains/basictex-2026.0301",
+  "licenses": {
+    "distribution": "TeX Live collection of free-software packages; each component retains its own license",
+    "pdftex_and_kpathsea": "GNU General Public License version 2 or later / GNU Lesser General Public License",
+    "latex_base": "LaTeX Project Public License 1.3c or later",
+    "amsmath_amssymb_amsthm": "LaTeX Project Public License 1.3c or later",
+    "hyperref": "LaTeX Project Public License 1.3c or later",
+    "machine_readable_inventory": "tlpkg/texlive.tlpdb inside the verified artifact"
+  },
+  "scope": "optional publication typesetting gate; never imported by application code",
+  "network_policy": "network is permitted only during the explicit setup-typeset acquisition step; compilation is offline"
+}

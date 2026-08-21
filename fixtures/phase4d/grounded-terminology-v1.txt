@@ -1,0 +1,1 @@
+Minimum-error quantum state discrimination can be studied with a spectral projector and an exact dual certificate.

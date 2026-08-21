@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 from ..domain.entities import OpaqueId
+from ..novelty import NoveltyRecheckError, classify_prior_art
 from . import POLICY_VERSION, SCHEMA_VERSION
 from .serialization import canonical_hash
 
@@ -198,6 +199,14 @@ class LeadSession:
     distinct_hypotheses: int
     started_at: str
     ended_at: str
+    novelty_recheck_id: str
+    novelty_recheck_hash: str
+    prior_art_outcome: str
+    prior_art_relationship: str
+    prior_resolution: str
+    prior_resolution_verification: str
+    report_classification: str
+    target_resolution_status: str
     epistemic_warrant_created: bool = False
     obligations_discharged: int = 0
     novelty_assessment: str = "not_assessed"
@@ -214,6 +223,20 @@ class LeadSession:
             raise ValueError("a runtime session cannot discharge a proof obligation")
         if self.retention_gain_measured:
             raise ValueError("nothing in this runtime measures retention gain (ADR-0029)")
+        try:
+            classification = classify_prior_art(
+                outcome=self.prior_art_outcome,
+                relationship=self.prior_art_relationship,
+                prior_resolution=self.prior_resolution,
+                verification_status=self.prior_resolution_verification,
+            )
+        except NoveltyRecheckError as error:
+            raise ValueError(f"invalid prior-art classification: {error}") from error
+        if (
+            self.report_classification != classification.report_classification
+            or self.target_resolution_status != classification.target_resolution_status
+        ):
+            raise ValueError("session prior-art classification is not derived from its source fields")
 
     def with_content_hash(self) -> LeadSession:
         from dataclasses import replace
@@ -225,6 +248,13 @@ class LeadSession:
             "exhausted_bound": self.exhausted_bound,
             "iterations": [item.content_hash for item in self.iterations],
             "novelty_assessment": self.novelty_assessment,
+            "novelty_recheck_hash": self.novelty_recheck_hash,
+            "novelty_recheck_id": self.novelty_recheck_id,
+            "prior_art_outcome": self.prior_art_outcome,
+            "prior_art_relationship": self.prior_art_relationship,
+            "prior_resolution": self.prior_resolution,
+            "prior_resolution_verification": self.prior_resolution_verification,
+            "report_classification": self.report_classification,
             "obligations_discharged": self.obligations_discharged,
             "policy_version": self.policy_version,
             "retention_gain_measured": self.retention_gain_measured,
@@ -233,6 +263,7 @@ class LeadSession:
             "session_configuration_id": self.session_configuration_id.value,
             "session_id": self.session_id.value,
             "significance_assessment": self.significance_assessment,
+            "target_resolution_status": self.target_resolution_status,
             "target_frozen_hash": self.target.frozen_hash(),
             "terminal_reason": self.terminal_reason.value,
             # Token and cost totals are excluded on purpose: they are true

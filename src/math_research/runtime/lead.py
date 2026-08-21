@@ -33,6 +33,8 @@ from pathlib import Path
 from typing import Any, Callable
 
 from ..domain.entities import OpaqueId, ResearchDossier
+from ..interchange import export_dossier_dict
+from ..novelty import NoveltyRecheck, require_checkpoint, write_recheck
 from ..phase2.artifacts import FileArtifactStore
 from ..phase2.records import (
     PricingSnapshot,
@@ -164,10 +166,24 @@ class ResearchLeadRuntime:
 
     # -- public surface ----------------------------------------------------
 
-    def run(self, *, session_id: OpaqueId, dossier: ResearchDossier) -> LeadSession:
-        self.root.mkdir(parents=True, exist_ok=True)
+    def run(
+        self, *, session_id: OpaqueId, dossier: ResearchDossier,
+        novelty_recheck: NoveltyRecheck,
+    ) -> LeadSession:
         target = freeze_target(dossier)
         started = self.now()
+        require_checkpoint(
+            novelty_recheck, checkpoint="before_research",
+            subject_id=dossier.problem.id.value,
+            subject_hash=str(export_dossier_dict(dossier)["content_hash"]),
+            next_action_id=session_id.value,
+            action_at=self._stamp(started),
+        )
+        self.root.mkdir(parents=True, exist_ok=True)
+        # This is written immediately before the first durable run/model action.
+        # A content/action-bound record cannot be reused for another subject or
+        # another session, and replay can inspect the exact bytes that opened it.
+        write_recheck(novelty_recheck, self.root / "novelty-recheck.json")
         artifacts = FileArtifactStore(self.root / "artifacts")
         records: list[IterationRecord] = []
         seen_finding_signatures: set[str] = set()
@@ -202,6 +218,7 @@ class ResearchLeadRuntime:
                     session_id=session_id,
                     index=index,
                     dossier=dossier,
+                    novelty_recheck=novelty_recheck,
                     seen_finding_signatures=seen_finding_signatures,
                 )
                 records.append(result.record)
@@ -233,6 +250,14 @@ class ResearchLeadRuntime:
             }),
             started_at=self._stamp(started),
             ended_at=self._stamp(ended),
+            novelty_recheck_id=novelty_recheck.recheck_id,
+            novelty_recheck_hash=novelty_recheck.content_hash,
+            prior_art_outcome=novelty_recheck.outcome,
+            prior_art_relationship=novelty_recheck.prior_art_relationship,
+            prior_resolution=novelty_recheck.prior_resolution,
+            prior_resolution_verification=novelty_recheck.prior_resolution_verification,
+            report_classification=novelty_recheck.classification().report_classification,
+            target_resolution_status=novelty_recheck.classification().target_resolution_status,
         ).with_content_hash()
         self._persist(session)
         return session
@@ -247,6 +272,7 @@ class ResearchLeadRuntime:
         session_id: OpaqueId,
         index: int,
         dossier: ResearchDossier,
+        novelty_recheck: NoveltyRecheck,
         seen_finding_signatures: set[str],
     ) -> _IterationResult:
         run_id = OpaqueId(f"{session_id.value}.iter.{index:03d}")
@@ -268,6 +294,21 @@ class ResearchLeadRuntime:
             ),
             pricing_snapshot=self.pricing_snapshot,
             ledger=self.ledger,
+            prior_art_context={
+                "recheck_id": novelty_recheck.recheck_id,
+                "recheck_hash": novelty_recheck.content_hash,
+                "outcome": novelty_recheck.outcome,
+                "relationship": novelty_recheck.prior_art_relationship,
+                "prior_resolution": novelty_recheck.prior_resolution,
+                "prior_resolution_verification": novelty_recheck.prior_resolution_verification,
+                **novelty_recheck.classification().payload(),
+                "reporting_rule": (
+                    "Treat this as binding provenance for the research role. If the report "
+                    "classification is independent_verification, do not claim discovery, "
+                    "novel proof, or novel refutation; investigate only as verification or "
+                    "a clearly delimited extension of the cited prior result."
+                ),
+            },
         )
         # `create_run` inserts one budget row per run, so the per-iteration
         # budget is a genuinely separate ledger rather than a view of a shared

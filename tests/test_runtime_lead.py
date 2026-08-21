@@ -22,6 +22,8 @@ from typing import Any
 from unittest import mock
 
 from math_research.domain.entities import OpaqueId
+from math_research.interchange import export_dossier_dict
+from math_research.novelty import NoveltyRecheck
 from math_research.phase2.fixtures import build_open_theorem_dossier
 from math_research.phase2.pricing import create_pricing_snapshot
 from math_research.phase2.records import (
@@ -181,6 +183,7 @@ class Gateway:
 def run_session(
     gateway: Any, *, config: Any = None, dossier: Any = None, now: Any = None,
     session_id: str = "session.test", pricing: Any = None, root: Path | None = None,
+    novelty_recheck: NoveltyRecheck | None = None,
 ):
     directory = root
     context = None
@@ -193,6 +196,20 @@ def run_session(
             max_iterations=scripted_iterations,
             stagnation_window=min(2, scripted_iterations),
         )
+    active_dossier = dossier if dossier is not None else DOSSIER
+    recheck = novelty_recheck or NoveltyRecheck(
+        recheck_id=f"recheck.{session_id}", checkpoint="before_research",
+        subject_id=active_dossier.problem.id.value,
+        subject_hash=export_dossier_dict(active_dossier)["content_hash"],
+        next_action_id=session_id, performed_by="researcher.test",
+        performed_at="2026-08-21T00:00:00Z", protocol_id="protocol.novelty.test",
+        query_terms=("bounded theorem",), searched_sources=("fixture catalogue",),
+        equivalence_checks=("renamed and equivalent formulations",),
+        evidence_refs=(("evidence.novelty.test", "sha256:" + "1" * 64),),
+        outcome="inconclusive", prior_art_relationship="unresolved",
+        prior_resolution="unresolved", prior_resolution_verification="unresolved",
+        limitations=("Project-authored offline fixture only.",),
+    ).finalized()
     runtime = ResearchLeadRuntime(
         root=directory / "run",
         configuration=config or configuration(),
@@ -202,7 +219,7 @@ def run_session(
         now=now or clock(),
     )
     session = runtime.run(
-        session_id=OpaqueId(session_id), dossier=dossier if dossier is not None else DOSSIER,
+        session_id=OpaqueId(session_id), dossier=active_dossier, novelty_recheck=recheck,
     )
     return session, directory / "run", context
 
@@ -240,6 +257,42 @@ class IterationTests(unittest.TestCase):
             len({item.run_id.value for item in session.iterations}), len(session.iterations)
         )
 
+    def test_prior_resolution_classification_reaches_the_proposer_and_report(self) -> None:
+        session_id = "session.graffiti-197.verify.v1"
+        recheck = NoveltyRecheck(
+            recheck_id="recheck.graffiti-197.start", checkpoint="before_research",
+            subject_id=DOSSIER.problem.id.value,
+            subject_hash=export_dossier_dict(DOSSIER)["content_hash"],
+            next_action_id=session_id, performed_by="researcher.test",
+            performed_at="2026-08-21T00:00:00Z",
+            protocol_id="protocol.graffiti-197.prior-art.v1",
+            query_terms=("Graffiti 197",), searched_sources=("AI Village News",),
+            equivalence_checks=("same Kneser K(7,2) witness and inequality",),
+            evidence_refs=(("source.ai-village.opus5-124", "sha256:" + "a" * 64),),
+            outcome="prior_art_found", prior_art_relationship="same_result",
+            prior_resolution="refutation",
+            prior_resolution_verification="independently_verified",
+            limitations=("Fixture checks classification, not search completeness.",),
+        ).finalized()
+        gateway = Gateway([proposal("A", ("a",))], [verdict("unresolved", ("g",))])
+        session, root, holder = run_session(
+            gateway, session_id=session_id, novelty_recheck=recheck,
+        )
+        self.addCleanup(holder.cleanup)
+        context = gateway.contexts("proposer")[0]["prior_art_context"]
+        self.assertEqual("independent_verification", context["report_classification"])
+        self.assertEqual("already_refuted", context["target_resolution_status"])
+        self.assertIn("do not claim discovery", context["reporting_rule"])
+        with SQLiteWorkspace(root / "workspace.sqlite3") as workspace:
+            report = render_session_report(session, workspace)
+        self.assertIn("Report classification: `independent_verification`", report)
+        self.assertIn("Target resolution status: `already_refuted`", report)
+        self.assertIn("Prior-art relationship: `same_result`", report)
+        self.assertIn("Prior resolution: `refutation`", report)
+
+        with self.assertRaisesRegex(ValueError, "not derived"):
+            replace(session, report_classification="extension_of_prior_result")
+
     def test_the_ledger_reaches_the_proposer_and_grows(self) -> None:
         gateway = Gateway(
             [proposal("A", ("a",)), proposal("B", ("b",)), proposal("C", ("c",))],
@@ -266,6 +319,7 @@ class IterationTests(unittest.TestCase):
             serialized = canonical_json(context)
             self.assertNotIn("session_history", serialized)
             self.assertNotIn("iteration_policy", serialized)
+            self.assertNotIn("prior_art_context", serialized)
             self.assertNotIn("attempts_shown", serialized)
         self.assertEqual(len(gateway.contexts("verifier")), 2)
 
@@ -705,6 +759,17 @@ class ReplayTests(unittest.TestCase):
         path.write_text(json.dumps(payload), encoding="utf-8")
         with self.assertRaises(ValueError):
             _load_session(path)
+
+    def test_a_missing_novelty_recheck_makes_replay_fail(self) -> None:
+        """Replay retains the exact re-check that opened research."""
+        from math_research.runtime_cli import _load_session
+
+        gateway = Gateway([proposal("A", ("a",))], [verdict("unresolved", ("g",))])
+        _, root, holder = run_session(gateway)
+        self.addCleanup(holder.cleanup)
+        (root / "novelty-recheck.json").unlink()
+        with self.assertRaisesRegex(ValueError, "novelty re-check unavailable"):
+            _load_session(root / "session.json")
 
 
 class LedgerBoundsTests(unittest.TestCase):
