@@ -1,9 +1,11 @@
 """CLI for the bounded Phase 3B formal-checking slice.
 
-Two families of command live here and the separation is deliberate. The four
+Three families of command live here and the separation is deliberate. The four
 `bridge-*` commands (ADR-0043) are fully offline and never need the sealed
 ADR-0016 image: constructing a request is not executing one. `check` and `demo`
-execute, and they require the image.
+execute and require the image. ADR-0048's `repair-live-preflight` is offline;
+`repair-live` requires both the image and an explicitly acknowledged provider
+call.
 
 Every ADR-0043 command name is prefixed `bridge-` and every ADR-0043 symbol
 lives in `phase3b/bridge.py`, so this slice adds nothing to an existing module
@@ -25,11 +27,19 @@ from .phase3b.bridge import (
 )
 from .phase3b.demonstration import run_acceptance
 from .phase3b.interchange import export_workspace, import_trusted_replay
+from .phase3b.live_proposer import (
+    AzureOpenAIProofProposer, LiveProofConfigurationError,
+    configuration_payload as live_proof_configuration_payload,
+    load_environment_for_live_proof, load_live_proof_configuration,
+    preflight_live_proof,
+)
 from .phase3b.records import SourceKind
+from .phase3b.repair import ProofRepairService, RepairLimits, _repaired_request_bytes
 from .phase3b.serialization import canonical_bytes, public_value
 from .phase3b.service import FormalCheckingService
 from .phase3b.validation import RequestValidationError
 from .phase3b.workspace import FormalCheckWorkspace
+from .phase2.pricing import PricingSnapshotError, load_pricing_snapshot
 
 
 def _print(value: Any) -> None:
@@ -50,6 +60,97 @@ def _refusal(error: BridgeRefusal | RequestValidationError) -> dict[str, Any]:
 def _write_canonical(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(canonical_bytes(value) + b"\n")
+
+
+def _live_inputs(args: argparse.Namespace):
+    failures = list(load_environment_for_live_proof())
+    try:
+        configuration = load_live_proof_configuration(args.config)
+    except LiveProofConfigurationError as error:
+        failures.append(str(error))
+        configuration = None
+    try:
+        pricing = load_pricing_snapshot(args.pricing_snapshot)
+    except PricingSnapshotError as error:
+        failures.append(str(error))
+        pricing = None
+    if failures or configuration is None or pricing is None:
+        _print({"status": "blocked", "missing_variables": [], "failed_checks": failures})
+        return None
+    checked = preflight_live_proof(configuration, pricing)
+    if not checked.passed:
+        _print({
+            "status": "blocked", "missing_variables": list(checked.missing_variables),
+            "failed_checks": list(checked.failed_checks),
+            "reserved_cost_microusd": checked.reserved_cost_microusd,
+        })
+        return None
+    return configuration, pricing, checked
+
+
+def _live_preflight(args: argparse.Namespace) -> int:
+    prepared = _live_inputs(args)
+    if prepared is None:
+        return 2
+    configuration, _, checked = prepared
+    _print({
+        "status": "passed", "configuration_id": configuration.configuration_id.value,
+        "configuration_hash": configuration.content_hash,
+        "provider": configuration.provider, "model_identifier": configuration.model_identifier,
+        "reserved_cost_microusd": checked.reserved_cost_microusd,
+        "network_call_performed": False,
+    })
+    return 0
+
+
+def _live_repair(args: argparse.Namespace) -> int:
+    if not args.execute:
+        _print({
+            "status": "blocked", "missing_variables": ["--execute"],
+            "failed_checks": ["live_execution_not_acknowledged"],
+        })
+        return 2
+    prepared = _live_inputs(args)
+    if prepared is None:
+        return 2
+    configuration, pricing, _ = prepared
+    source = args.request.read_bytes()
+    from .phase3b.validation import parse_request_bytes
+    try:
+        origin = parse_request_bytes(source)
+    except RequestValidationError as error:
+        _print(_refusal(error))
+        return 2
+    proposer = AzureOpenAIProofProposer(configuration, pricing)
+    service = ProofRepairService(
+        FormalCheckingService(DockerLeanAdapter()), proposer,
+        RepairLimits(
+            max_attempts=configuration.max_model_calls + 1,
+            max_diagnostic_bytes=configuration.max_diagnostic_bytes,
+        ),
+    )
+    result = service.run(source, created_at=args.created_at)
+    # Every checker attempt remains durable. Reconstruct repaired envelopes from
+    # the frozen origin plus the exact fragments returned by this proposer.
+    request_bytes = [source]
+    submitted = proposer.submitted_fragments[: max(0, len(result.attempts) - 1)]
+    for index, fragment in enumerate(submitted, start=1):
+        request_bytes.append(_repaired_request_bytes(origin, fragment=fragment, attempt_index=index)[0])
+    with FormalCheckWorkspace(args.workspace) as workspace:
+        for candidate, attempt in zip(request_bytes, result.attempts, strict=True):
+            workspace.save_attempt(candidate, attempt.finding)
+    report = {
+        "schema_version": "1.0.0", "status": "completed",
+        "configuration": live_proof_configuration_payload(configuration),
+        "pricing_snapshot_id": pricing.snapshot_id.value,
+        "repair_session": public_value(result), "model_calls": public_value(tuple(proposer.calls)),
+        "used_cost_microusd": proposer.used_cost_microusd,
+        "epistemic_warrant_created": False,
+    }
+    if args.output is not None:
+        _write_canonical(args.output, report)
+    _print(report)
+    return 0 if result.kernel_checked else 2
 
 
 def _bridge(args: argparse.Namespace) -> int:
@@ -157,6 +258,23 @@ def main(argv: list[str] | None = None) -> int:
     demo.add_argument("workspace", type=Path)
     demo.add_argument("--output-dir", type=Path, required=True)
 
+    live_preflight = commands.add_parser(
+        "repair-live-preflight",
+        help="validate the ADR-0048 Azure OpenAI proposer inputs without a network call",
+    )
+    live_preflight.add_argument("--config", type=Path, required=True)
+    live_preflight.add_argument("--pricing-snapshot", type=Path, required=True)
+    live_repair = commands.add_parser(
+        "repair-live", help="run bounded model proof repair above the sealed checker (ADR-0048)",
+    )
+    live_repair.add_argument("request", type=Path)
+    live_repair.add_argument("--workspace", type=Path, required=True)
+    live_repair.add_argument("--config", type=Path, required=True)
+    live_repair.add_argument("--pricing-snapshot", type=Path, required=True)
+    live_repair.add_argument("--created-at", required=True, help="explicit UTC instant")
+    live_repair.add_argument("--output", type=Path)
+    live_repair.add_argument("--execute", action="store_true", help="explicitly acknowledge live model execution")
+
     bridge = commands.add_parser(
         "bridge-request",
         help="build a provenance-linked request from a committed Phase 2 proposal (offline; ADR-0043)",
@@ -225,6 +343,10 @@ def main(argv: list[str] | None = None) -> int:
         summary = run_acceptance(args.workspace, args.output_dir)
         _print(summary)
         return 0 if summary["status"] == "passed" else 1
+    if args.command == "repair-live-preflight":
+        return _live_preflight(args)
+    if args.command == "repair-live":
+        return _live_repair(args)
     if args.command == "bridge-request":
         return _bridge(args)
     if args.command == "bridge-attest":

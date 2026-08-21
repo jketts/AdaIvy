@@ -791,7 +791,8 @@ class AdditiveSliceTests(unittest.TestCase):
         )
         self.assertEqual(registered, [
             "bridge-attest", "bridge-request", "bridge-status", "bridge-trace",
-            "check", "demo", "finding", "inspect",
+            "check", "demo", "finding", "inspect", "repair-live",
+            "repair-live-preflight",
         ])
 
 

@@ -1,8 +1,8 @@
 # ADR-0040: Bounded Phase 3B proof repair above the sealed runtime
 
 - **Status:** accepted for the bounded proof-repair slice; implemented
-  21 August 2026 with a scripted proposer only. **No live model proposer exists
-  and none is authorized by this ADR** -- see "Measured outcome".
+  21 August 2026 with a scripted proposer. ADR-0048 subsequently authorizes a
+  separately gated live Azure OpenAI implementation of the same narrow port.
 - **Date:** 2026-08-21
 - **Blueprint requirement:** Section 7 Lean-first formal backend; Section 19
   Phase 3B; `TECHNICAL_BLUEPRINT.md:294` and `:1393` on adopting premise
@@ -103,12 +103,11 @@ Phase 3B gains a repair loop and no Lean capability. Premise selection is *not*
 adopted here; `TECHNICAL_BLUEPRINT.md:294` and `:1393` already govern that as
 an adopt-before-rebuild decision, and it remains open work.
 
-The `ProofProposer` port is a model-shaped hole with no live implementation. The
-offline acceptance path drives a deterministic scripted proposer and performs no
-model or network call, so `make check` stays offline. Wiring a live proposer is
-a separate slice that must satisfy the Phase 2 live-gate precedent, including a
-confirmed pricing snapshot and per-phase cost attribution, which does not yet
-exist.
+The offline acceptance path drives a deterministic scripted proposer and
+performs no model or network call, so `make check` stays offline. ADR-0048 later
+wires a live Azure OpenAI implementation through a separate explicit gate with
+a confirmed pricing snapshot and per-phase cost attribution; none of that
+changes this slice's control plane.
 
 Reviewers gain one new failure mode to watch: a proposer that reliably converts
 elaboration failures into policy rejections is not a proof engine, it is a
@@ -144,8 +143,8 @@ so the thresholds are executable rather than decorative:
 | disable duplicate-candidate detection | 2 |
 | disable the theorem-identity check | 2 |
 
-**What is not measured.** No live model has ever driven this loop, so its
-solve rate, its cost, and its `proposer_rejected` rate against a real proposer
-are all unknown. Nothing here is evidence that repair improves verified
-progress per unit cost; that is an ADR-0029 retention question and remains
+**What is not measured by this ADR.** Its scripted suite measures no live-model
+solve rate, cost, or `proposer_rejected` rate. ADR-0048 creates a place to record
+those observations without retroactively treating them as evidence that repair
+improves verified progress per unit cost; the ADR-0029 retention question stays
 open.

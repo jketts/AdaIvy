@@ -1,0 +1,1 @@
+{"$id":"https://adaivy.local/schemas/phase3b-live-proof-v1.schema.json","$schema":"https://json-schema.org/draft/2020-12/schema","additionalProperties":false,"properties":{"proof_fragment":{"maxLength":65536,"minLength":1,"type":"string"}},"required":["proof_fragment"],"title":"Phase 3B proof-fragment proposal","type":"object"}
