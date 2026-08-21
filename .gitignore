@@ -10,3 +10,24 @@ __pycache__/
 .env.*
 !.env.example
 !.env.settings.example
+
+# Locally run reports and derived state. `reports/` also holds committed gate
+# evidence that ADRs cite, so only the `local/` subtree is ignored: if a path is
+# under reports/local/ it is a local run, and if it is anywhere else under
+# reports/ it is recorded evidence. Never move committed evidence into local/.
+reports/local/
+
+# Scratch workspaces. Durable sqlite state a run needs but no reader does. A
+# workspace that IS evidence lives under reports/<phase>/ and is committed
+# deliberately; these are not.
+work/
+
+# Derived indexes and vector stores. Rebuildable from the records by definition,
+# never a source of truth, and never shared across providers or embedding models
+# (see AGENTS.md and TECHNICAL_BLUEPRINT.md 12.2.1). Committing one would let a
+# stale index outlive the corpus it was built from.
+*.index.sqlite3
+*.derived.sqlite3
+vector-store/
+vectors/
+embeddings/

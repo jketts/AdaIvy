@@ -224,6 +224,30 @@ quantum feasibility/optimum checks, material-result persistence and steering,
 frozen held-out capability boundaries, generality controls, restart/replay,
 report consistency, and zero-network/model/API checks.
 
+Output has two homes and the distinction is enforced by `.gitignore`, not by
+convention. `make check` and every phase target are GATES: they render into a
+mktemp directory and delete it, so a check never writes into a tracked path.
+`make report` is the durable counterpart -- it runs the same work and keeps every
+readable artifact under `$(OUT)`, defaulting to `reports/local/run-<stamp>`, then
+writes `index.json` and `INDEX.md` hashing every file. A path under
+`reports/local/` is a LOCAL RUN and is ignored; a path anywhere else under
+`reports/` is RECORDED EVIDENCE that an ADR may cite and is committed
+deliberately. Promote a local run by copying it to `reports/<phase>/<version>/`,
+never by moving it or by loosening the ignore rule. Scratch workspaces go to
+`work/`, also ignored, and a fresh workspace per run is required because
+replaying an identical record into an existing workspace is refused by design.
+Derived indexes and any future vector store are ignored too: they are rebuildable
+from the records by definition, are never a source of truth, and a committed one
+would let a stale index outlive the corpus it was built from.
+
+The report index hashes and does not summarise, and its `recorded_at` is an
+argument rather than a clock read. Two files legitimately differ between two
+otherwise identical runs and both are phase properties rather than
+nondeterminism: `phase1/demo-summary.json` echoes its own output paths, and the
+Phase 4C report carries `operational.elapsed_ms` plus the derived
+`operational_hash`, which Phase 4C separates from its stable `content_hash` on
+purpose.
+
 Under ADR-0026 each new slice ships one ADR plus an acceptance suite that
 encodes its thresholds as executable assertions, rather than a separate
 threshold inventory. A scenario's forbidden outcomes must be demonstrated

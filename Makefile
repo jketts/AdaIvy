@@ -21,9 +21,28 @@ INTAKE_INSTANT ?= 2026-08-21T00:00:00Z
 
 TMPROOT ?= $(shell printf '%s' "$${TMPDIR:-/tmp}")
 
+# `make report` filing. The two stamps below name a directory and stamp an index;
+# they are the ONLY clock reads in this file. Every command in the target runs on
+# frozen fixtures at the frozen instants above, so two runs with the same stamps
+# produce byte-identical output with exactly two measured exceptions, both of them
+# properties of the phases rather than of this target:
+#
+#   phase1/demo-summary.json  echoes its own output paths, so it changes with OUT.
+#   phase4c/...-report.json   carries `operational.elapsed_ms` and the derived
+#                             `operational_hash`. Phase 4C separates those from
+#                             `content_hash` deliberately; the content hash is
+#                             stable and the operational one is a timing.
+#
+# Everything else -- phase 5, phase 6, synthesis and the publication bundle --
+# is byte-identical. Override both stamps to reproduce an earlier run.
+REPORT_STAMP ?= $(shell date -u +%Y%m%dT%H%M%SZ)
+REPORT_INSTANT ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+OUT ?= reports/local/run-$(REPORT_STAMP)
+WORK ?= work/$(REPORT_STAMP)
+
 .PHONY: check check-all check-sealed check-gate check-typeset check-phase4b-oci \
         test phase0 phase1 problem-intake phase2 phase3a phase3b phase4a phase4b \
-        phase4c phase5 phase6 synthesis publication clean help
+        phase4c phase5 phase6 synthesis publication report clean help
 
 help:
 	@printf 'Targets:\n'
@@ -33,6 +52,8 @@ help:
 	@printf '  check-typeset publication PDF build (requires the pinned TeX Live engine)\n'
 	@printf '  check-phase4b-oci strict Phase 4B parser gate (requires exact pinned image)\n'
 	@printf '  check-all     check + check-sealed\n'
+	@printf '  report        write every readable artifact to $$(OUT) with a hashed index\n'
+	@printf '                default OUT=reports/local/run-<stamp> (gitignored)\n'
 	@printf '  clean         remove __pycache__ and stray sqlite journals\n'
 
 check: test phase0 phase1 problem-intake phase2 phase3a phase4a phase4b phase4c phase5 phase6 synthesis publication
@@ -264,6 +285,50 @@ check-typeset:
 	  cp "$$d/bundle/paper.pdf" "$${PUBLICATION_PDF:-./paper.pdf}" && \
 	  rm -rf "$$d" && \
 	  printf 'typeset ok (byte-reproducible across two clean compiles)\n'
+
+# `make report` is the durable counterpart to `make check`. The phase targets are
+# GATES: they render into a mktemp directory and delete it, because writing into a
+# tracked path on every check would churn the repo. This target does the same work
+# and KEEPS it.
+#
+# Output lands in reports/local/, which .gitignore excludes. That subtree is the
+# boundary: a path under reports/local/ is a local run, and a path anywhere else
+# under reports/ is recorded evidence that an ADR may cite. Never move a local run
+# into the evidence tree -- promote it by copying it to reports/<phase>/<version>/
+# and committing it deliberately.
+#
+# Workspaces go to work/, also gitignored. They are append-only sqlite state that
+# a run needs and no reader does, and a fresh directory per run is required
+# because replaying an identical record into an existing workspace is refused by
+# design.
+report:
+	@printf '\n== local report -> $(OUT) ==\n'
+	@out="$(OUT)"; work="$(WORK)"; \
+	  mkdir -p "$$out/phase2" "$$out/phase4c" "$$out/phase5" "$$out/synthesis" "$$work" && \
+	  $(PY) -m math_research.cli demo --output-dir "$$out/phase1" >/dev/null && \
+	  $(PY) -m math_research.cli phase2 report reports/phase-2 run.phase2.demo.fake.v1 \
+	    --output "$$out/phase2/traceable-report.md" >/dev/null && \
+	  $(PY) -m math_research.cli phase3a demo "$$work/p3a" \
+	    --output-dir "$$out/phase3a" >/dev/null && \
+	  $(PY) -m math_research.cli phase4c benchmark --fixtures fixtures/phase4c \
+	    --output "$$out/phase4c/hybrid-retrieval-report.json" >/dev/null && \
+	  $(PY) -m math_research.cli phase5 run "$$work/p5" \
+	    fixtures/phase5/quantum-diagonal-v1.json $(PHASE5_INSTANT) \
+	    --output "$$out/phase5/diagonal-run.json" >/dev/null && \
+	  $(PY) -m math_research.cli phase5 verify-noncommuting "$$work/p5nc" \
+	    fixtures/phase5/noncommuting-certificates-v1.json $(PHASE5_INSTANT) \
+	    --output "$$out/phase5/noncommuting-run.json" \
+	    --report "$$out/phase5/report.md" >/dev/null && \
+	  $(PY) -m math_research.cli phase6 demo "$$work/p6" \
+	    fixtures/phase6/confirmatory-protocol-v1.json \
+	    fixtures/phase5/quantum-diagonal-v1.json \
+	    $(PHASE5_INSTANT) $(PHASE6_INSTANT) --output-dir "$$out/phase6" >/dev/null && \
+	  $(PY) -m math_research.synthesis_cli export "$$work/synthesis" \
+	    "$$out/synthesis/synthesis-export.json" >/dev/null && \
+	  $(PY) -m math_research.cli publication render \
+	    fixtures/publication/manuscript-v1.json --output-dir "$$out/publication" >/dev/null && \
+	  $(PY) -m math_research.report_index "$$out" --recorded-at "$(REPORT_INSTANT)" && \
+	  printf '\nreport written to %s -- open %s/INDEX.md\n' "$$out" "$$out"
 
 # The 15 gate tests skip themselves unless `jsonschema` is importable. They are
 # meant to run inside the disposable environment described in
