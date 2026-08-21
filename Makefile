@@ -19,7 +19,8 @@ PHASE6_INSTANT ?= 2026-08-20T14:00:00Z
 
 TMPROOT ?= $(shell printf '%s' "$${TMPDIR:-/tmp}")
 
-.PHONY: check check-all check-sealed check-gate check-phase4b-oci test phase0 \
+.PHONY: check check-all check-sealed check-gate check-phase4b-oci \
+        spike-phase5-sdp test phase0 \
         phase1 phase2 phase3a phase3b phase4a phase4b phase4c phase5 phase6 \
         synthesis clean help
 
@@ -29,6 +30,7 @@ help:
 	@printf '  check-sealed  phase 3B Lean formal checking (requires the ADR-0016 v5 image)\n'
 	@printf '  check-gate    phase 4 gate tests (requires the disposable jsonschema env)\n'
 	@printf '  check-phase4b-oci strict Phase 4B parser gate (requires exact pinned image)\n'
+	@printf '  spike-phase5-sdp  ADR-0045 noncommuting-SDP comparison (engines optional)\n'
 	@printf '  check-all     check + check-sealed\n'
 	@printf '  clean         remove __pycache__ and stray sqlite journals\n'
 
@@ -168,6 +170,39 @@ check-gate:
 	  }
 	$(PY) -m unittest tests.test_phase4_gate \
 	  tests.test_phase4a_schema_conformance tests.test_material_partial_result_contract
+
+# ADR-0045 noncommuting-SDP engine comparison. Deliberately NOT part of `check`:
+# `check` is the pinned offline entrypoint and this target's engine-present path
+# needs the disposable environment built from
+# requirements-phase5-sdp-comparison-py314-macos-arm64.txt -- never the ordinary
+# .venv. The library and CLI are already covered by the offline suite in
+# tests/test_phase5_noncommuting_sdp_comparison.py.
+#
+# The forced fail-closed leg always runs and always exits 1 by design, because a
+# comparison with fewer than two engines is INCOMPLETE, not a pass. Its recorded
+# outcome is asserted instead, so this target fails if the result moves in either
+# direction: a silent completion would mean an engine got loaded on the offline
+# path, and a lost certificate would be a regression.
+spike-phase5-sdp:
+	@printf '\n== ADR-0045 noncommuting-SDP comparison: forced fail-closed leg ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-p5sdp.XXXXXX") && \
+	  { PYTHONPATH=src:. $(PY) -m spikes.phase5_noncommuting_sdp.comparison_cli run \
+	      --no-engines --output "$$d/closed.json" >/dev/null || true; } && \
+	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["experiment_status"]=="incomplete_engines_absent_or_refused", r["experiment_status"]; assert r["minimum_independent_engines_executed"]==0; assert len(r["missing_tool_records"])==6, r["missing_tool_records"]; assert r["all_cases_exactly_certified"] is True; assert r["guardrails"]["warrant_created"] is False; assert r["guardrails"]["search_tiers_enabled"] is False; assert r["guardrails"]["phase5_integrated"] is False' \
+	    "$$d/closed.json" && \
+	  rm -rf "$$d" && \
+	  printf 'fail-closed leg ok (2 engines absent, 6 missing-tool records, 3 exact certificates)\n'
+	@printf '\n== engine-present leg (requires the disposable pinned environment) ==\n'
+	@if $(PY) -c 'import importlib.util,sys; sys.exit(0 if importlib.util.find_spec("clarabel") and importlib.util.find_spec("cvxpy") else 1)'; then \
+	    PYTHONPATH=src:. $(PY) -m spikes.phase5_noncommuting_sdp.comparison_cli run \
+	      >/dev/null && printf 'two-engine comparison complete\n'; \
+	  else \
+	    printf 'clarabel/cvxpy are not importable for %s, so no engine ran.\n' '$(PY)'; \
+	    printf 'That is the expected offline result and is NOT a pass for the\n'; \
+	    printf 'two-engine clause. To run it, build the disposable environment:\n'; \
+	    printf '  requirements-phase5-sdp-comparison-py314-macos-arm64.txt\n'; \
+	    printf 'then: make spike-phase5-sdp PY=/path/to/sdp-venv/bin/python\n'; \
+	  fi
 
 # Separate from `check`: this executes untrusted-parser fixtures inside the
 # exact no-pull OCI runtime locked in config/phase4b-oci-image-linux-arm64-v1.json.
