@@ -134,6 +134,29 @@ def import_into_workspace(data: bytes, workspace: Phase4Workspace) -> dict[str, 
     return workspace.import_verified(data).value()
 
 
+_GROUP_TEARDOWN_GRACE_SECONDS = 5.0
+_GROUP_TEARDOWN_POLL_SECONDS = 0.01
+
+
+def _process_group_is_gone(pgid: int) -> bool:
+    """Report whether a process group has finished tearing down.
+
+    Signal delivery and process-group teardown are asynchronous, so a group can
+    still be reported as present for a moment after SIGKILL, and a group whose
+    last member is mid-exit is reported EPERM rather than ESRCH on macOS. Only
+    ESRCH proves the group is gone; anything else is treated as still present so
+    the caller's survival check stays exact.
+    """
+
+    try:
+        os.killpg(pgid, 0)
+    except ProcessLookupError:
+        return True
+    except PermissionError:
+        return False
+    return False
+
+
 def _run_process_tree(
     command: Sequence[str], *, timeout: float, cwd: Path | None = None,
 ) -> subprocess.CompletedProcess[bytes]:
@@ -158,12 +181,11 @@ def _run_process_tree(
             pass
         if process.returncode is None:
             stdout, stderr = process.communicate()
-        try:
-            os.killpg(process.pid, 0)
-        except ProcessLookupError:
-            pass
-        else:
-            raise RuntimeError("Phase 4A timed-out process group survived forced termination")
+        teardown_deadline = time.monotonic() + _GROUP_TEARDOWN_GRACE_SECONDS
+        while not _process_group_is_gone(process.pid):
+            if time.monotonic() >= teardown_deadline:
+                raise RuntimeError("Phase 4A timed-out process group survived forced termination")
+            time.sleep(_GROUP_TEARDOWN_POLL_SECONDS)
         raise subprocess.TimeoutExpired(
             error.cmd, error.timeout, output=stdout, stderr=stderr,
         ) from None
