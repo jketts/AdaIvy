@@ -5,6 +5,8 @@
   "phase": "confirmatory",
   "benchmark_id": "QD-FS-01",
   "phase5_fixture_hash": "sha256:a2fa89d5ceea218fe5d777f0c97aef8566a7bc3aa44b7307511cf88056b4b382",
+  "generality_suite_id": "suite.phase6.generality-controls-v1",
+  "generality_suite_hash": "sha256:e2e4d640ea54b4eafd56908d218e86aa20cfac7830109c1dd3518c964ea168c4",
   "heldout_case_ids": ["qd-fs-01-orthogonal-2d"],
   "allowed_capabilities": [
     "execute_exact_diagonal_case",
@@ -15,12 +17,14 @@
     "exact_feasibility",
     "independent_primal_dual_agreement",
     "generality_control_rejection_rate",
+    "falsifiability_probe_flip_rate",
     "restart_replay_identity"
   ],
   "success_criteria": {
     "exact_feasibility": true,
     "independent_primal_dual_agreement": true,
     "generality_control_rejection_rate": "1",
+    "falsifiability_probe_flip_rate": "1",
     "restart_replay_identity": true
   },
   "stopping_rule": "one_pass_no_adaptation",

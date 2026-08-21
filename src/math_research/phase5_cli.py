@@ -6,6 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
+from .phase5.noncommuting import render_noncommuting_report, verify_fixture
 from .phase5.service import Phase5Service
 from .phase5.workspace import Phase5Workspace, decode_json
 
@@ -19,6 +20,19 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("recorded_at")
     run.add_argument("--output", type=Path)
     run.add_argument("--run-id")
+    noncommuting = commands.add_parser(
+        "verify-noncommuting",
+        help=(
+            "check supplied exact noncommuting certificates (ADR-0035: verifies, "
+            "never discovers)"
+        ),
+    )
+    noncommuting.add_argument("workspace", type=Path)
+    noncommuting.add_argument("fixture", type=Path)
+    noncommuting.add_argument("recorded_at")
+    noncommuting.add_argument("--output", type=Path)
+    noncommuting.add_argument("--report", type=Path)
+    noncommuting.add_argument("--run-id")
     export = commands.add_parser("export", help="export the canonical Phase 5 workspace")
     export.add_argument("workspace", type=Path)
     export.add_argument("output", type=Path)
@@ -51,7 +65,23 @@ def main(argv: list[str] | None = None) -> int:
     workspace_path = args.path if args.command == "inspect" else args.workspace
     with Phase5Workspace(workspace_path) as workspace:
         service = Phase5Service(workspace)
-        if args.command == "run":
+        if args.command == "verify-noncommuting":
+            fixture = decode_json(args.fixture.read_bytes())
+            result = service.run_noncommuting_fixture(
+                fixture, recorded_at=args.recorded_at, run_id=args.run_id,
+            )
+            if args.output is not None:
+                args.output.parent.mkdir(parents=True, exist_ok=True)
+                args.output.write_text(
+                    json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+                )
+            if args.report is not None:
+                args.report.parent.mkdir(parents=True, exist_ok=True)
+                args.report.write_text(
+                    render_noncommuting_report(verify_fixture(fixture)), encoding="utf-8"
+                )
+            print(json.dumps(result, indent=2, sort_keys=True))
+        elif args.command == "run":
             fixture = decode_json(args.fixture.read_bytes())
             result = service.run_quantum_fixture(
                 fixture, recorded_at=args.recorded_at, run_id=args.run_id,

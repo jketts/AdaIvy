@@ -9,7 +9,10 @@ Honesty rules carried over from the frozen lexical baseline:
   `None` alongside its numerator and denominator, and its gate status is
   `undetermined` -- never `pass`, never `0`.
 * Every query appears in the report, including zero-hit queries, duplicate
-  hits, inapplicable hits, missed golds, and demotions. Nothing is filtered.
+  hits, inapplicable hits, missed golds, and exclusions. Nothing is filtered.
+  An excluded document is absent from `ordered_ids` and still fully present in
+  `hits`, in `fused_candidate_ids`, and in `excluded_ids`, with its absence
+  operator and evidence noun recorded.
 * Declared provenance is assembled from the same constants that build the
   executed SQL, and the executed SQL text is reported verbatim.
 * Timestamps, elapsed milliseconds, byte counts, and raw float scores are
@@ -32,7 +35,7 @@ from pathlib import Path
 from typing import Any
 
 from . import aliases as alias_module
-from . import hedging as hedging_module
+from . import disclaimer as disclaimer_module
 from . import lexical as lexical_module
 from .aliases import ALIAS_PHRASE_POINTS, AliasExpansionSignal
 from .bounds import (
@@ -44,6 +47,12 @@ from .bounds import (
     THRESHOLD_KEYS,
     TOP_K_BY_CATEGORY,
 )
+from .disclaimer import (
+    ABSENCE_OPERATORS,
+    EVIDENCE_NOUNS,
+    OBJECT_LEVEL_CUES,
+    SelfDisclaimerSignal,
+)
 from .fixtures import (
     AliasEntry,
     CORPUS_MANIFEST_NAME,
@@ -53,14 +62,13 @@ from .fixtures import (
     load_corpus,
     load_gold,
 )
-from .fusion import HEDGE_PENALTY_RULE, fuse
-from .hedging import HedgingScopeSignal, OBJECT_LEVEL_CUES, SELF_DISCLAIMING_CUES
+from .fusion import fuse, retained_ids
 from .lexical import LexicalIndex, corpus_rows, derived_db_bytes, open_index
-from .ports import AliasSignal, HedgeSignal, LexicalSignal
+from .ports import AliasSignal, DisclaimerSignal, LexicalSignal
 from .serialization import canonical_bytes, content_hash, operational_hash, sha256_bytes
 
-METHOD = "phase4c-hybrid-score-space-fusion"
-FUSION_METHOD = "score-space-additive-fusion-with-demotion"
+METHOD = "phase4c-hybrid-score-space-fusion-with-exclusion"
+FUSION_METHOD = "score-space-additive-fusion-with-candidate-exclusion"
 
 
 @dataclass(frozen=True)
@@ -137,7 +145,8 @@ def compute_measurements(
 
 def declared_method(
     *,
-    self_disclaiming_cues: Sequence[str],
+    absence_operators: Sequence[Sequence[str]],
+    evidence_nouns: Sequence[str],
     object_level_cues: Sequence[str],
     alias_phrase_points: float,
 ) -> dict[str, Any]:
@@ -149,13 +158,16 @@ def declared_method(
             "rank_only_combiner": False,
             "reciprocal_rank_fusion": False,
             "lexical_orientation": "relevance = -bm25 (monotone, margins preserved)",
-            "composition": "fused_score = (-bm25) + alias_points - hedge_penalty",
-            "hedge_penalty_rule": HEDGE_PENALTY_RULE,
+            "composition": "fused_score = (-bm25) + alias_points",
+            "exclusion_rule": (
+                "an excluded candidate is removed from the ordering; no score "
+                "changes and no penalty term exists"
+            ),
             "ordering": "fused_score DESC, document_id ASC",
         },
         "lexical_signal": lexical_module.declared_method(),
-        "hedging_signal": hedging_module.declared_method(
-            self_disclaiming_cues, object_level_cues
+        "disclaimer_signal": disclaimer_module.declared_method(
+            absence_operators, evidence_nouns, object_level_cues
         ),
         "alias_signal": alias_module.declared_method(alias_phrase_points),
     }
@@ -191,16 +203,17 @@ def evaluate_hybrid(
     *,
     reverse_insertion: bool = False,
     alias_entries: Sequence[AliasEntry] | None = None,
-    self_disclaiming_cues: Sequence[str] | None = None,
+    absence_operators: Sequence[Sequence[str]] | None = None,
+    evidence_nouns: Sequence[str] | None = None,
     object_level_cues: Sequence[str] | None = None,
     alias_phrase_points: float | None = None,
     lexical_signal: LexicalSignal | None = None,
-    hedge_signal: HedgeSignal | None = None,
+    disclaimer_signal: DisclaimerSignal | None = None,
     alias_signal: AliasSignal | None = None,
 ) -> dict[str, Any]:
     """Run the benchmark and return a canonical report.
 
-    Every keyword after `reverse_insertion` exists for the ADR-0031 acceptance
+    Every keyword after `reverse_insertion` exists for the ADR-0032 acceptance
     suite, which must demonstrate the slice's boundaries as properties rather
     than exercise a happy path. The CLI never sets any of them. Any deviation
     from the frozen configuration is recorded in `signal_configuration.
@@ -213,11 +226,12 @@ def evaluate_hybrid(
     queries, thresholds = load_gold(fixtures, documents)
     table = tuple(alias_entries) if alias_entries is not None else load_aliases(fixtures)
 
-    demoting_cues = (
-        tuple(self_disclaiming_cues)
-        if self_disclaiming_cues is not None
-        else SELF_DISCLAIMING_CUES
+    operators = (
+        tuple(tuple(item) for item in absence_operators)
+        if absence_operators is not None
+        else ABSENCE_OPERATORS
     )
+    nouns = tuple(evidence_nouns) if evidence_nouns is not None else EVIDENCE_NOUNS
     neutral_cues = (
         tuple(object_level_cues) if object_level_cues is not None else OBJECT_LEVEL_CUES
     )
@@ -226,16 +240,18 @@ def evaluate_hybrid(
     overrides: list[str] = []
     if alias_entries is not None:
         overrides.append("alias_entries")
-    if self_disclaiming_cues is not None:
-        overrides.append("self_disclaiming_cues")
+    if absence_operators is not None:
+        overrides.append("absence_operators")
+    if evidence_nouns is not None:
+        overrides.append("evidence_nouns")
     if object_level_cues is not None:
         overrides.append("object_level_cues")
     if alias_phrase_points is not None:
         overrides.append("alias_phrase_points")
     if lexical_signal is not None:
         overrides.append("lexical_signal")
-    if hedge_signal is not None:
-        overrides.append("hedge_signal")
+    if disclaimer_signal is not None:
+        overrides.append("disclaimer_signal")
     if alias_signal is not None:
         overrides.append("alias_signal")
 
@@ -244,9 +260,10 @@ def evaluate_hybrid(
     connection = open_index(rows)
     try:
         lexical: LexicalSignal = lexical_signal or LexicalIndex(connection)
-        hedge: HedgeSignal = hedge_signal or HedgingScopeSignal(
+        disclaimer: DisclaimerSignal = disclaimer_signal or SelfDisclaimerSignal(
             documents,
-            self_disclaiming_cues=demoting_cues,
+            absence_operators=operators,
+            evidence_nouns=nouns,
             object_level_cues=neutral_cues,
         )
         expander: AliasSignal = alias_signal or AliasExpansionSignal(documents, table)
@@ -279,14 +296,19 @@ def evaluate_hybrid(
                 for document_id, _phrases in expansion.matched:
                     if document_id not in pre_ids:
                         pre_ids.append(document_id)
-            verdicts = hedge.verdicts(query.query, pre_ids)
+            verdicts = disclaimer.verdicts(query.query, pre_ids)
             hits = fuse(candidates, expansions, verdicts, alias_phrase_points=points)
 
-            demoted_ids = sorted(hit.document_id for hit in hits if hit.demoted)
-            if set(demoted_ids) - set(pre_ids):
-                raise Phase4CValidationError("the hedge introduced a document")
+            excluded_ids = sorted(hit.document_id for hit in hits if hit.excluded)
+            if set(excluded_ids) - set(pre_ids):
+                raise Phase4CValidationError(
+                    "the disclaimer signal introduced a document"
+                )
 
-            ordered_ids = [hit.document_id for hit in hits[: query.top_k]]
+            # `ordered_ids` is the post-exclusion result list: every excluded
+            # candidate is removed, then the top-k cutoff is applied. Nothing is
+            # removed from `hits` or `fused_candidate_ids`.
+            ordered_ids = list(retained_ids(hits)[: query.top_k])
             if not ordered_ids:
                 zero_hit_query_ids.append(query.identifier)
 
@@ -324,7 +346,7 @@ def evaluate_hybrid(
                     if metadata[identifier].applicability != "applicable"
                 ),
                 "zero_hit": not ordered_ids,
-                "demoted_ids": demoted_ids,
+                "excluded_ids": excluded_ids,
                 "alias_introduced_ids": sorted(
                     hit.document_id
                     for hit in hits
@@ -394,13 +416,14 @@ def evaluate_hybrid(
             "schema_version": SCHEMA_VERSION,
             "method": METHOD,
             "declared_method": declared_method(
-                self_disclaiming_cues=demoting_cues,
+                absence_operators=operators,
+                evidence_nouns=nouns,
                 object_level_cues=neutral_cues,
                 alias_phrase_points=points,
             ),
             "signal_configuration": {
                 "lexical_signal_id": getattr(lexical, "signal_id", "unknown"),
-                "hedge_signal_id": getattr(hedge, "signal_id", "unknown"),
+                "disclaimer_signal_id": getattr(disclaimer, "signal_id", "unknown"),
                 "alias_signal_id": getattr(expander, "signal_id", "unknown"),
                 "alias_entry_count": len(table),
                 "overrides": overrides,

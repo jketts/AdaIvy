@@ -2216,8 +2216,13 @@ Implemented bounded local slice (ADR-0024):
 
 - one content-hashed held-out commuting/diagonal case with an immutable method,
   metric set, capability allowlist, success criteria, and one-pass stop rule;
-- a Phase 5 material-result prerequisite and exactly one held-out access;
-- five deterministic generality trust controls;
+- a Phase 5 material-result prerequisite and exactly one held-out access,
+  counted from durable access records rather than declared;
+- the executed Section 18.4 generality control suite (ADR-0034): thirteen
+  controls over Phase 1 trust policy, the exact Phase 5 engine, and the held-out
+  capability boundary, each with a named single-field falsifiability probe that
+  must produce the forbidden verdict, two of them positive controls, over a
+  project-authored corpus whose hash the frozen protocol pins;
 - orthogonal novelty, significance, and contribution records;
 - restart-safe canonical release package and traceable report.
 
@@ -2231,7 +2236,10 @@ Bounded-slice acceptance:
 Deferred expansion:
 
 - held-out capability boundaries and frozen confirmatory protocols;
-- the generality control suite from Section 18.4;
+- a genuinely held-out generality corpus, not authored by the party that must
+  pass it, plus external expert review; the Section 18.4 suite itself is
+  implemented (ADR-0034) but its corpus is project-authored, so it demonstrates
+  boundary enforcement on known traps rather than generality;
 - novelty, significance, and contribution reporting;
 - clean-room replay and release packaging;
 - security, cost, and expert-review operations.

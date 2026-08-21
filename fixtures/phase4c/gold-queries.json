@@ -8,6 +8,8 @@
     {"id":"applicability-certificate","category":"applicability","query":"dual feasible certificate optimum bound","relevant_ids":["duplicate-certificate-a","duplicate-certificate-b","optimization-distractor"],"applicable_ids":["duplicate-certificate-a","duplicate-certificate-b"],"top_k":5},
     {"id":"applicability-compactness","category":"applicability","query":"compact topological calculation hypotheses","relevant_ids":["compactness-lemma","topology-distractor"],"applicable_ids":["compactness-lemma"],"top_k":5},
     {"id":"applicability-selfadjoint","category":"applicability","query":"self adjoint operators diagonalization domain conditions","relevant_ids":["finite-dimensional-spectral","spectral-lemma","unbounded-spectral-mismatch"],"applicable_ids":["finite-dimensional-spectral","spectral-lemma"],"top_k":5},
+    {"id":"applicability-psd-cone","category":"applicability","query":"positive semidefinite cone membership proof","relevant_ids":["psd-notation","residual-bound-gap"],"applicable_ids":["psd-notation"],"top_k":5},
+    {"id":"applicability-supremum","category":"applicability","query":"continuous function compact interval supremum hypotheses","relevant_ids":["hypothesis-free-supremum","topology-distractor"],"applicable_ids":["hypothesis-free-supremum"],"top_k":5},
     {"id":"contradiction-boundary","category":"contradiction","query":"zero prior weight full support convergence counterexample","relevant_ids":["boundary-contradiction"],"top_k":5},
     {"id":"contradiction-monotonicity","category":"contradiction","query":"objective decreases claimed monotonic iteration counterexample","relevant_ids":["monotonicity-contradiction"],"top_k":5},
     {"id":"notation-banach","category":"notation_variant","query":"Banach Cauchy sequence norm convergence","relevant_ids":["banach-notation"],"top_k":5},
@@ -18,12 +20,12 @@
     {"id":"renamed-known","category":"renamed_known_result","query":"Borel Lebesgue theorem","relevant_ids":["renamed-cover-result"],"top_k":10}
   ],
   "proposed_thresholds": {
-    "necessary_lemma_recall_at_5": 1.0,
-    "applicability_precision_at_5": 1.0,
-    "contradiction_recall_at_5": 1.0,
-    "notation_variant_recall_at_5": 1.0,
-    "renamed_known_result_recall_at_10": 1.0,
-    "duplicate_rate_at_5_maximum": 0.05,
-    "external_spend_usd": 0
+      "necessary_lemma_recall_at_5": 1.0,
+      "applicability_precision_at_5": 1.0,
+      "contradiction_recall_at_5": 1.0,
+      "notation_variant_recall_at_5": 1.0,
+      "renamed_known_result_recall_at_10": 1.0,
+      "duplicate_rate_at_5_maximum": 0.05,
+      "external_spend_usd": 0
   }
 }

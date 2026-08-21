@@ -1,0 +1,63 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "odd-perfect-number-search",
+  "declared_domain": "number-theory",
+  "originating_principal": "actor.example_researcher",
+  "problem": {
+    "title": "Existence of an odd perfect number below a fixed bound",
+    "informal_statement": "Decide whether some odd integer n with 1 < n < 10^2200 satisfies sigma(n) = 2n, where sigma is the sum-of-divisors function.\n\nThe bound is stated explicitly so the search region is finite; no claim is made that the region is small enough to enumerate.",
+    "problem_type": "prove",
+    "tags": ["number-theory", "divisor-function", "existential-target", "bounded-search-region"]
+  },
+  "target_claim": {
+    "local_id": "odd_perfect_below_bound",
+    "kind": "conjecture",
+    "statement": "There exists an odd integer n with 1 < n < 10^2200 such that sigma(n) = 2n.",
+    "scope": "existential"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "perfect_number_definition",
+      "kind": "definition",
+      "statement": "An integer n >= 1 is perfect iff sigma(n) = 2n, where sigma(n) is the sum of all positive divisors of n.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "sigma_multiplicativity",
+      "kind": "lemma",
+      "statement": "For coprime positive integers a and b, sigma(a*b) = sigma(a)*sigma(b).",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "euler_form_of_odd_perfect_numbers",
+      "kind": "lemma",
+      "statement": "Every odd perfect number has the form p^e * m^2 with p an odd prime, p congruent to e congruent to 1 modulo 4, and gcd(p, m) = 1.",
+      "scope": "unrestricted_universal"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "exists n : N, Odd(n) and 1 < n and n < 10^2200 and sigma(n) = 2*n",
+    "formal_language": "typed_informal_math",
+    "quantifiers": ["exists n in N with 1 < n < 10^2200"],
+    "assumption_local_ids": ["perfect_number_definition", "sigma_multiplicativity", "euler_form_of_odd_perfect_numbers"],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [["n", "odd integer n strictly between 1 and 10^2200"]],
+    "definition_mapping": [
+      ["sigma(n)", "sum of all positive divisors of n, including n"],
+      ["Perfect(n)", "sigma(n) = 2n"]
+    ],
+    "assumption_delta": ["The informal statement says 'below a fixed bound'; the formalization pins that bound to 10^2200 and no other value."],
+    "edge_case_delta": ["n = 1 is excluded explicitly because sigma(1) = 1, not 2."],
+    "strength_relation": "equivalent"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": ["obligations_opened", "obligations_discharged", "search_region_reduction"],
+    "success_criteria": ["an exhibited odd n with a checked sigma(n) = 2n", "or a refutation covering the whole stated region"],
+    "stopping_rules": ["stop when the stated region is fully covered by checked exclusions", "stop when no obligation has been discharged for two consecutive review points"]
+  }
+}

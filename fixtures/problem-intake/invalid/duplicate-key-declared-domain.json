@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "graph-cycle-edge-bound",
+  "declared_domain": "graph-theory",
+  "declared_domain": "number-theory",
+  "originating_principal": "actor.example_researcher",
+  "problem": {
+    "title": "Edge count forcing a cycle in a connected graph",
+    "informal_statement": "Show that a connected finite simple graph with at least as many edges as vertices must contain a cycle.\n\nThe target is stated for every such graph, with no bound on the number of vertices.",
+    "problem_type": "prove",
+    "tags": ["graph-theory", "acyclicity", "unrestricted-universal-target"]
+  },
+  "target_claim": {
+    "local_id": "edge_count_forces_cycle",
+    "kind": "theorem",
+    "statement": "For every finite simple connected graph G = (V, E) with |E| >= |V|, G contains a cycle.",
+    "scope": "unrestricted_universal"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "cycle_definition",
+      "kind": "definition",
+      "statement": "A cycle in a graph is a closed walk of length at least three whose vertices are pairwise distinct except for the coinciding endpoints.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "tree_edge_count",
+      "kind": "lemma",
+      "statement": "Every finite connected acyclic graph on |V| vertices has exactly |V| - 1 edges.",
+      "scope": "unrestricted_universal"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "forall G : SimpleGraph, Finite(G) and Connected(G) and edges(G) >= vertices(G) implies exists c, IsCycle(G, c)",
+    "formal_language": "typed_informal_math",
+    "quantifiers": ["forall G a finite simple connected graph"],
+    "assumption_local_ids": ["cycle_definition", "tree_edge_count"],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [["G", "finite simple connected graph G"]],
+    "definition_mapping": [
+      ["IsCycle(G, c)", "c is a closed walk of length at least three with pairwise distinct interior vertices"],
+      ["edges(G)", "cardinality of the edge set E"],
+      ["vertices(G)", "cardinality of the vertex set V"]
+    ],
+    "assumption_delta": ["The informal statement says 'at least as many edges as vertices'; the formalization writes |E| >= |V| and adds no further hypothesis."],
+    "edge_case_delta": [
+      "The empty graph is excluded by connectedness, which the formalization states explicitly.",
+      "Multigraphs and loops are excluded by simplicity, so a doubled edge does not count as a cycle here."
+    ],
+    "strength_relation": "equivalent"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": ["obligations_opened", "obligations_discharged"],
+    "success_criteria": ["a derivation covering every finite simple connected graph, not a finite sample"],
+    "stopping_rules": ["stop on a checked counterexample", "stop when the open obligation set is unchanged across two review points"]
+  }
+}

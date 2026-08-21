@@ -18,6 +18,8 @@
     {"id":"duplicate-certificate-a","path":"corpus/duplicate-certificate-a.txt","source_class":"primary","applicability":"applicable","contradiction":false,"duplicate_group":"dual-certificate"},
     {"id":"duplicate-certificate-b","path":"corpus/duplicate-certificate-b.txt","source_class":"secondary","applicability":"applicable","contradiction":false,"duplicate_group":"dual-certificate"},
     {"id":"topology-distractor","path":"corpus/topology-distractor.txt","source_class":"informal","applicability":"insufficient_evidence","contradiction":false,"duplicate_group":null},
-    {"id":"optimization-distractor","path":"corpus/optimization-distractor.txt","source_class":"informal","applicability":"insufficient_evidence","contradiction":false,"duplicate_group":null}
+    {"id":"optimization-distractor","path":"corpus/optimization-distractor.txt","source_class":"informal","applicability":"insufficient_evidence","contradiction":false,"duplicate_group":null},
+    {"id":"residual-bound-gap","path":"corpus/residual-bound-gap.txt","source_class":"informal","applicability":"insufficient_evidence","contradiction":false,"duplicate_group":null},
+    {"id":"hypothesis-free-supremum","path":"corpus/hypothesis-free-supremum.txt","source_class":"primary","applicability":"applicable","contradiction":false,"duplicate_group":null}
   ]
 }

@@ -40,22 +40,22 @@ EVALUATOR_SOURCE = Path("spikes/phase4c_benchmark/evaluator.py")
 # metric change must be a deliberate edit to this file.
 MEASURED_METRICS = {
     "necessary_lemma_recall_at_5": 1.0,
-    "applicability_precision_at_5": 6 / 10,
+    "applicability_precision_at_5": 8 / 14,
     "contradiction_recall_at_5": 1.0,
     "notation_variant_recall_at_5": 1.0,
     "renamed_known_result_recall_at_10": 0.0,
-    "duplicate_rate_at_5": 1 / 50,
+    "duplicate_rate_at_5": 1 / 61,
     "external_spend_usd": 0,
     "network_calls": 0,
     "model_or_api_calls": 0,
 }
 MEASURED_SUPPORT = {
     "necessary_lemma_recall_at_5": (3, 3),
-    "applicability_precision_at_5": (6, 10),
+    "applicability_precision_at_5": (8, 14),
     "contradiction_recall_at_5": (2, 2),
     "notation_variant_recall_at_5": (2, 2),
     "renamed_known_result_recall_at_10": (0, 4),
-    "duplicate_rate_at_5": (1, 50),
+    "duplicate_rate_at_5": (1, 61),
 }
 MEASURED_ORDERED_IDS = {
     "applicability-certificate": [
@@ -70,7 +70,12 @@ MEASURED_ORDERED_IDS = {
         "compactness-lemma",
         "finite-dimensional-spectral",
         "separation-lemma",
-        "unbounded-spectral-mismatch",
+        "hypothesis-free-supremum",
+    ],
+    "applicability-psd-cone": [
+        "residual-bound-gap",
+        "psd-notation",
+        "topology-distractor",
     ],
     "applicability-selfadjoint": [
         "spectral-lemma",
@@ -84,6 +89,13 @@ MEASURED_ORDERED_IDS = {
         "spectral-lemma",
         "topology-distractor",
     ],
+    "applicability-supremum": [
+        "hypothesis-free-supremum",
+        "separation-lemma",
+        "topology-distractor",
+        "compactness-lemma",
+        "renamed-cover-result",
+    ],
     "contradiction-boundary": [
         "boundary-contradiction",
         "monotonicity-contradiction",
@@ -92,6 +104,7 @@ MEASURED_ORDERED_IDS = {
     "contradiction-monotonicity": [
         "monotonicity-contradiction",
         "boundary-contradiction",
+        "residual-bound-gap",
     ],
     "lemma-compactness": [
         "compactness-lemma",
@@ -116,6 +129,7 @@ MEASURED_ORDERED_IDS = {
     ],
     "notation-psd": [
         "psd-notation",
+        "residual-bound-gap",
         "finite-dimensional-spectral",
         "unbounded-spectral-mismatch",
     ],
@@ -129,6 +143,7 @@ MEASURED_ORDERED_IDS = {
     ],
     "renamed-maximal-chain": [
         "separation-lemma",
+        "hypothesis-free-supremum",
         "spectral-lemma",
         "compactness-lemma",
     ],
@@ -220,20 +235,20 @@ class Phase4CFixtureContractTests(unittest.TestCase):
         corpus = json.loads((FIXTURES / "corpus-manifest.json").read_text(encoding="utf-8"))
         gold = json.loads((FIXTURES / "gold-queries.json").read_text(encoding="utf-8"))
         self.assertEqual(corpus["fixture_license"], "LicenseRef-AdaIvy-Synthetic-Fixture")
-        self.assertEqual(len(corpus["documents"]), 17)
-        self.assertEqual(len(gold["queries"]), 15)
+        self.assertEqual(len(corpus["documents"]), 19)
+        self.assertEqual(len(gold["queries"]), 17)
         self.assertEqual(
             {category: sum(q["category"] == category for q in gold["queries"]) for category in {
                 "necessary_lemma", "applicability", "contradiction", "notation_variant", "renamed_known_result"
             }},
-            {"necessary_lemma": 3, "applicability": 4, "contradiction": 2, "notation_variant": 2, "renamed_known_result": 4},
+            {"necessary_lemma": 3, "applicability": 6, "contradiction": 2, "notation_variant": 2, "renamed_known_result": 4},
         )
 
     def test_declared_resource_bounds_match_the_spec(self) -> None:
         # The bound-enforcement tests below patch these constants, so the
         # constants themselves are pinned to the spec numbers here.
-        self.assertEqual(ev.DOCUMENT_COUNT, 17)
-        self.assertEqual(ev.QUERY_COUNT, 15)
+        self.assertEqual(ev.DOCUMENT_COUNT, 19)
+        self.assertEqual(ev.QUERY_COUNT, 17)
         self.assertEqual(ev.MAX_QUERY_BYTES, 4_096)
         self.assertEqual(ev.MAX_REPORT_BYTES, 262_144)
         self.assertEqual(ev.MAX_DERIVED_DB_BYTES, 2_097_152)
@@ -249,7 +264,7 @@ class Phase4CFixtureContractTests(unittest.TestCase):
         self.assertEqual(
             ev.CATEGORY_COUNTS,
             {
-                "necessary_lemma": 3, "applicability": 4, "contradiction": 2,
+                "necessary_lemma": 3, "applicability": 6, "contradiction": 2,
                 "notation_variant": 2, "renamed_known_result": 4,
             },
         )
@@ -296,7 +311,7 @@ class Phase4CLabelSeparationTests(unittest.TestCase):
         manifest = json.loads((FIXTURES / "corpus-manifest.json").read_text(encoding="utf-8"))
         documents = ev._load_corpus(FIXTURES, manifest)
         rows = ev._corpus_rows(documents)
-        self.assertEqual(len(rows), 17)
+        self.assertEqual(len(rows), 19)
         for (identifier, title, body, unit_type), document in zip(rows, documents, strict=True):
             self.assertEqual(identifier, document.identifier)
             # The frozen corpus has no title or unit-type content of its own, so
@@ -346,7 +361,7 @@ class Phase4CMeasuredValueTests(unittest.TestCase):
 
     def test_every_query_and_failure_is_visible(self) -> None:
         results = self.report["results"]
-        self.assertEqual(len(results), 15)
+        self.assertEqual(len(results), 17)
         self.assertEqual({item["id"] for item in results}, set(MEASURED_ORDERED_IDS))
         for item in results:
             self.assertIn("ordered_ids", item)
@@ -422,7 +437,7 @@ class Phase4CMeasuredValueTests(unittest.TestCase):
         self.assertEqual(result["duplicate_ids_at_5"], ["duplicate-certificate-b"])
         self.assertEqual(
             [item["duplicate_ids_at_5"] for item in self.report["results"] if item["id"] != "applicability-certificate"],
-            [[] for _ in range(14)],
+            [[] for _ in range(16)],
         )
         self.assertEqual(self.report["metric_support"]["duplicate_rate_at_5"]["numerator"], 1)
 
@@ -599,8 +614,8 @@ class Phase4CVacuousPassTests(unittest.TestCase):
                 query["query"] = "zzqqxxnotacorpustoken"
             mutated.write_gold(gold)
             report = evaluate_baseline(mutated.root)
-        self.assertEqual([item["ordered_ids"] for item in report["results"]], [[] for _ in range(15)])
-        self.assertEqual(len(report["zero_hit_query_ids"]), 15)
+        self.assertEqual([item["ordered_ids"] for item in report["results"]], [[] for _ in range(17)])
+        self.assertEqual(len(report["zero_hit_query_ids"]), 17)
         self.assertTrue(all(item["zero_hit"] for item in report["results"]))
         # No data measured: not a passing zero.
         self.assertIsNone(report["metrics"]["duplicate_rate_at_5"])
@@ -631,8 +646,8 @@ class Phase4CVacuousPassTests(unittest.TestCase):
         support = report["metric_support"]["duplicate_rate_at_5"]
         # 50 hits at the cutoff of five, fifteen of which are the first member
         # of the single group; every later hit is a declared duplicate.
-        self.assertEqual((support["numerator"], support["denominator"]), (35, 50))
-        self.assertAlmostEqual(report["metrics"]["duplicate_rate_at_5"], 35 / 50, places=12)
+        self.assertEqual((support["numerator"], support["denominator"]), (44, 61))
+        self.assertAlmostEqual(report["metrics"]["duplicate_rate_at_5"], 44 / 61, places=12)
         self.assertEqual(report["gate_evaluation"]["duplicate_rate_at_5_maximum"]["status"], "fail")
 
     def test_duplicate_rate_is_a_measured_zero_without_any_group(self) -> None:
@@ -643,7 +658,7 @@ class Phase4CVacuousPassTests(unittest.TestCase):
             mutated.write_manifest(manifest)
             report = evaluate_baseline(mutated.root)
         self.assertEqual(report["metrics"]["duplicate_rate_at_5"], 0.0)
-        self.assertEqual(report["metric_support"]["duplicate_rate_at_5"]["denominator"], 50)
+        self.assertEqual(report["metric_support"]["duplicate_rate_at_5"]["denominator"], 61)
         self.assertTrue(report["metric_support"]["duplicate_rate_at_5"]["defined"])
 
 
@@ -663,7 +678,7 @@ class Phase4CBoundEnforcementTests(unittest.TestCase):
                 evaluate_baseline(mutated.root)
 
     def test_top_k_is_bounded_and_category_consistent(self) -> None:
-        for bad in (17, 1, 15, 0, -5):
+        for bad in (19, 1, 17, 0, -5):
             with self.subTest(top_k=bad), _MutatedFixtures() as mutated:
                 gold = mutated.gold()
                 gold["queries"][0]["top_k"] = bad

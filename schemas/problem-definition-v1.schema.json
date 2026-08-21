@@ -1,0 +1,353 @@
+{
+  "$id": "https://adaivy.local/schemas/problem-definition-1.0.0.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Untrusted declarative intake for a research problem. Every enumerated value is derived from the Phase 1 domain enums in src/math_research/domain/entities.py. The grammar has no field for a warrant, evidence, verification record, source applicability record, representation map, proof status, confidence, novelty, significance, contribution, semantic-alignment approval, protocol freeze, or timestamp: defining a problem cannot create trust.",
+  "properties": {
+    "assumption_claims": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "local_id": {
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "scope": {
+            "enum": [
+              "bounded",
+              "definitional",
+              "existential",
+              "particular",
+              "unrestricted_universal"
+            ]
+          },
+          "statement": {
+            "maxLength": 8192,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "local_id",
+          "scope",
+          "statement"
+        ],
+        "type": "object"
+      },
+      "maxItems": 32,
+      "type": "array"
+    },
+    "declared_domain": {
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$",
+      "type": "string"
+    },
+    "evaluation_protocol": {
+      "additionalProperties": false,
+      "properties": {
+        "metrics": {
+          "items": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 64,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "phase": {
+          "enum": [
+            "exploratory"
+          ]
+        },
+        "stopping_rules": {
+          "items": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 64,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "success_criteria": {
+          "items": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 64,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "version": {
+          "maximum": 9999,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "metrics",
+        "phase",
+        "stopping_rules",
+        "success_criteria",
+        "version"
+      ],
+      "type": "object"
+    },
+    "formalization": {
+      "additionalProperties": false,
+      "properties": {
+        "approval_status": {
+          "enum": [
+            "needs_clarification",
+            "proposed"
+          ]
+        },
+        "assumption_local_ids": {
+          "items": {
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "formal_language": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$",
+          "type": "string"
+        },
+        "quantifiers": {
+          "items": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 64,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "statement": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "type": "string"
+        },
+        "version": {
+          "maximum": 9999,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "approval_status",
+        "assumption_local_ids",
+        "formal_language",
+        "quantifiers",
+        "statement",
+        "version"
+      ],
+      "type": "object"
+    },
+    "originating_principal": {
+      "maxLength": 96,
+      "pattern": "^[A-Za-z][A-Za-z0-9._:-]*$",
+      "type": "string"
+    },
+    "problem": {
+      "additionalProperties": false,
+      "properties": {
+        "informal_statement": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "type": "string"
+        },
+        "problem_type": {
+          "enum": [
+            "classify",
+            "compute",
+            "disprove",
+            "explore",
+            "optimize",
+            "prove"
+          ]
+        },
+        "tags": {
+          "items": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 64,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "informal_statement",
+        "problem_type",
+        "tags",
+        "title"
+      ],
+      "type": "object"
+    },
+    "problem_definition_id": {
+      "maxLength": 96,
+      "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "semantic_alignment": {
+      "additionalProperties": false,
+      "properties": {
+        "assumption_delta": {
+          "items": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 64,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "definition_mapping": {
+          "items": {
+            "items": false,
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              }
+            ],
+            "type": "array"
+          },
+          "maxItems": 64,
+          "type": "array"
+        },
+        "edge_case_delta": {
+          "items": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 64,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "quantifier_mapping": {
+          "items": {
+            "items": false,
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              }
+            ],
+            "type": "array"
+          },
+          "maxItems": 64,
+          "type": "array"
+        },
+        "strength_relation": {
+          "enum": [
+            "equivalent",
+            "overlapping",
+            "stronger",
+            "unrelated",
+            "unresolved",
+            "weaker"
+          ]
+        }
+      },
+      "required": [
+        "assumption_delta",
+        "definition_mapping",
+        "edge_case_delta",
+        "quantifier_mapping",
+        "strength_relation"
+      ],
+      "type": "object"
+    },
+    "target_claim": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
+          "type": "string"
+        },
+        "local_id": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
+          "type": "string"
+        },
+        "scope": {
+          "enum": [
+            "bounded",
+            "definitional",
+            "existential",
+            "particular",
+            "unrestricted_universal"
+          ]
+        },
+        "statement": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "local_id",
+        "scope",
+        "statement"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "assumption_claims",
+    "declared_domain",
+    "evaluation_protocol",
+    "formalization",
+    "originating_principal",
+    "problem",
+    "problem_definition_id",
+    "schema_version",
+    "semantic_alignment",
+    "target_claim"
+  ],
+  "title": "Declarative research problem definition",
+  "type": "object"
+}

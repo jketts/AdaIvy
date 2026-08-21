@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from .serialization import canonical_bytes, sha256_bytes
 
 
-SCHEMA_VERSION = "adaivy.phase4c-hybrid-retrieval.v1"
+SCHEMA_VERSION = "adaivy.phase4c-hybrid-retrieval.v2"
 CORPUS_SCHEMA_VERSION = "adaivy.phase4c-corpus.v1"
 GOLD_SCHEMA_VERSION = "adaivy.phase4c-gold-queries.v1"
 ALIAS_SCHEMA_VERSION = "adaivy.phase4c-name-aliases.v1"
@@ -28,9 +28,11 @@ CATEGORIES = (
     "renamed_known_result",
 )
 # Cardinalities are part of the frozen benchmark contract, not a default.
+# ADR-0032 is the third fixture extension: 19 documents and 17 queries, with 6
+# applicability queries. Values measured before it describe a different corpus.
 CATEGORY_COUNTS = {
     "necessary_lemma": 3,
-    "applicability": 4,
+    "applicability": 6,
     "contradiction": 2,
     "notation_variant": 2,
     "renamed_known_result": 4,
@@ -78,8 +80,8 @@ class Phase4CValidationError(ValueError):
 class HybridRetrievalBounds:
     """Benchmark-scoped resource bounds. All limits are inclusive maxima."""
 
-    document_count: int = 17
-    query_count: int = 15
+    document_count: int = 19
+    query_count: int = 17
     max_query_bytes: int = 4_096
     top_k_default: int = 5
     top_k_renamed_control: int = 10

@@ -38,11 +38,33 @@ class Phase6ConfirmatoryTests(unittest.TestCase):
     def test_end_to_end_confirmatory_run_passes_frozen_controls(self) -> None:
         result, _exported = self._run()
         self.assertEqual("passed", result["confirmatory_result"]["status"])
-        self.assertEqual(5, result["controls_passed"])
+        self.assertEqual(result["controls_total"], result["controls_passed"])
+        self.assertEqual(result["probes_total"], result["probes_flipped"])
+        self.assertEqual(result["controls_total"], result["probes_total"])
+        self.assertTrue(result["positive_control_admitted"])
+        self.assertEqual("project_authored", result["control_corpus_provenance"])
         self.assertEqual(0, result["adaptations_after_access"])
         self.assertEqual(1, result["heldout_accesses"])
+        self.assertEqual(0, result["heldout_access_violation_records"])
         self.assertEqual(1, result["material_result_count"])
         self.assertFalse(result["confirmatory_result"]["graph_admitted"])
+
+    def test_release_binds_the_executed_generality_suite(self) -> None:
+        result, _exported = self._run()
+        self.assertEqual(PROTOCOL["generality_suite_id"], result["generality_suite_id"])
+        self.assertEqual(PROTOCOL["generality_suite_hash"], result["generality_suite_hash"])
+        suite = result["confirmatory_result"]["generality_controls"]
+        self.assertEqual(PROTOCOL["generality_suite_hash"], suite["suite_hash"])
+        self.assertTrue(suite["suite_passed"])
+        self.assertEqual(
+            [item["control_id"] for item in suite["controls"]],
+            [item["control_id"] for item in result["generality_control_verdicts"]],
+        )
+        # The baseline comparison counts boundary rejections, not generality.
+        self.assertFalse(result["baseline_comparison"]["is_generality_measure"])
+        self.assertEqual(
+            suite["negative_controls_passed"], result["baseline_comparison"]["phase6_passed"]
+        )
 
     def test_novelty_significance_and_contribution_are_orthogonal(self) -> None:
         result, _exported = self._run()

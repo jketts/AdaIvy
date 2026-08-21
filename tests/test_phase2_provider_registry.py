@@ -12,7 +12,9 @@ import glob
 import subprocess
 import sys
 import unittest
+from dataclasses import replace
 from pathlib import Path
+from unittest.mock import patch
 
 from math_research.phase2 import SUPPORTED_LIVE_PROVIDERS
 from math_research.phase2.live_config import load_live_run_configuration
@@ -33,9 +35,9 @@ MODEL_IDENTIFIERS = {
     "anthropic": "claude-opus-5",
     "bedrock": "anthropic.claude-opus-5",
     "azure_openai": "gpt-5-mini",
-    "minimax": "MiniMax-Text-01",
+    "minimax": "MiniMax-M3",
     "qwen_dashscope": "qwen-plus",
-    "deepseek": "deepseek-chat",
+    "deepseek": "deepseek-v4-flash",
 }
 
 
@@ -124,8 +126,53 @@ class ProviderRegistryTests(unittest.TestCase):
         )
         anthropic = provider_spec("anthropic")
         self.assertTrue(anthropic.requires_sdk)
-        self.assertEqual(UNCONFIRMED_SDK_VERSION, anthropic.sdk_pinned_version)
-        self.assertFalse(anthropic.sdk_version_is_confirmed)
+        self.assertTrue(
+            anthropic.sdk_version_is_confirmed,
+            "the anthropic wheel digest is recorded in the requirements file",
+        )
+        # The distinction still has to hold for a spec that needs an SDK and has
+        # no confirmed pin, which no admitted provider is any more.
+        unpinned = replace(anthropic, sdk_pinned_version=UNCONFIRMED_SDK_VERSION)
+        self.assertTrue(unpinned.requires_sdk)
+        self.assertFalse(unpinned.sdk_version_is_confirmed)
+
+    def test_every_pinned_sdk_matches_the_provider_requirements_file(self) -> None:
+        """A pin is only a pin if the installable requirement agrees with it.
+
+        The preflight refuses a live call when the installed SDK differs from
+        `sdk_pinned_version`, so a registry pin that no requirement line
+        installs would fail every run for a reason nothing explains. Each
+        requirement also needs its wheel digest recorded above it: an
+        unverifiable package is the supply-chain risk the pin exists to close.
+        """
+        lines = Path("requirements-phase2-provider.txt").read_text(
+            encoding="utf-8"
+        ).splitlines()
+        requirements: dict[str, str] = {}
+        digests: dict[str, str] = {}
+        previous = ""
+        for line in lines:
+            if line.startswith("#"):
+                previous = line
+                continue
+            if not line.strip():
+                continue
+            package, _, version = line.partition("==")
+            self.assertTrue(version, f"requirement must be pinned exactly: {line}")
+            requirements[package] = version
+            self.assertIn(
+                "SHA-256:", previous, f"no wheel digest recorded for {package}",
+            )
+            digests[package] = previous.rsplit(":", 1)[1].strip()
+        for name, spec in PROVIDER_SPECS.items():
+            if not spec.requires_sdk:
+                continue
+            with self.subTest(provider=name):
+                self.assertIn(spec.sdk_package, requirements)
+                self.assertEqual(
+                    spec.sdk_pinned_version, requirements[spec.sdk_package],
+                )
+                self.assertRegex(digests[spec.sdk_package], r"^[0-9a-f]{64}$")
 
     def test_importing_and_building_loads_no_sdk_and_opens_no_socket(self) -> None:
         script = (
@@ -173,8 +220,10 @@ class ProviderAwarePreflightTests(unittest.TestCase):
                     configuration, load_pricing_snapshot(snapshot_path), environment={},
                 )
                 self.assertEqual(
-                    sorted(spec.required_credentials), sorted(result.missing_variables),
-                    "a provider must report exactly its own credentials",
+                    sorted(spec.required_credentials + spec.required_settings),
+                    sorted(result.missing_variables),
+                    "a provider must report exactly its own credentials and"
+                    " settings, and nothing belonging to another provider",
                 )
                 # The specific regression this replaces: OpenAI's credential name
                 # surfacing for a run that never involved OpenAI.
@@ -199,6 +248,39 @@ class ProviderAwarePreflightTests(unittest.TestCase):
             self.assertNotIn("_sdk_", check)
 
     def test_an_unconfirmed_sdk_pin_fails_closed(self) -> None:
+        """No admitted provider is unpinned now, so the rule is proved directly.
+
+        Until 2026-08-21 the anthropic spec itself carried the `UNCONFIRMED`
+        sentinel and this test read it off the shipped registry. Its pin is now
+        recorded, so the check is made against a substituted spec: the rule must
+        still hold for whatever provider is admitted next, and the substitution
+        proves it is the sentinel that closes the gate rather than anything
+        specific to one provider.
+        """
+        configuration = load_live_run_configuration(
+            Path("config/phase2-live-anthropic-v1.json")
+        )
+        pricing = load_pricing_snapshot(
+            Path("config/anthropic-claude-opus-5-pricing-2026-08-21.json")
+        )
+        environment = {"ANTHROPIC_API_KEY": "sk-test-only"}
+        unpinned = replace(
+            provider_spec("anthropic"), sdk_pinned_version=UNCONFIRMED_SDK_VERSION,
+        )
+        with patch.dict(PROVIDER_SPECS, {"anthropic": unpinned}):
+            result = preflight_live_gate(
+                configuration, pricing, environment=environment,
+            )
+        self.assertFalse(result.passed)
+        self.assertEqual((), result.missing_variables)
+        self.assertIn("anthropic_sdk_version_unconfirmed", result.failed_checks)
+
+    def test_a_confirmed_pin_no_longer_reports_an_unconfirmed_sdk(self) -> None:
+        """The shipped anthropic spec must not still be reported as unpinned.
+
+        Without this the previous test would keep passing if the pin silently
+        reverted: it patches the spec, so it can no longer see the real one.
+        """
         configuration = load_live_run_configuration(
             Path("config/phase2-live-anthropic-v1.json")
         )
@@ -208,9 +290,10 @@ class ProviderAwarePreflightTests(unittest.TestCase):
         result = preflight_live_gate(
             configuration, pricing, environment={"ANTHROPIC_API_KEY": "sk-test-only"},
         )
-        self.assertFalse(result.passed)
-        self.assertEqual((), result.missing_variables)
-        self.assertIn("anthropic_sdk_version_unconfirmed", result.failed_checks)
+        self.assertNotIn("anthropic_sdk_version_unconfirmed", result.failed_checks)
+        # The SDK is deliberately absent from the offline environment, so the
+        # remaining SDK check is availability -- not a missing pin.
+        self.assertIn("anthropic_sdk_unavailable", result.failed_checks)
 
     def test_an_unknown_provider_is_named_and_refused(self) -> None:
         configuration = load_live_run_configuration(

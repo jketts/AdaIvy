@@ -37,6 +37,8 @@ def main(argv: list[str] | None = None) -> int:
     inspect.add_argument("path", type=Path)
     demo = subparsers.add_parser("demo", help="create, replay, and report the manual vertical slice")
     demo.add_argument("--output-dir", type=Path, required=True)
+    problem = subparsers.add_parser("problem", help="declarative problem-intake commands (ADR-0039)")
+    problem.add_argument("problem_args", nargs=argparse.REMAINDER)
     phase2 = subparsers.add_parser("phase2", help="Phase 2 durable workspace commands")
     phase2.add_argument("phase2_args", nargs=argparse.REMAINDER)
     phase3a = subparsers.add_parser("phase3a", help="bounded Phase 3A research-memory commands")
@@ -53,10 +55,15 @@ def main(argv: list[str] | None = None) -> int:
     phase5.add_argument("phase5_args", nargs=argparse.REMAINDER)
     phase6 = subparsers.add_parser("phase6", help="confirmatory evaluation and release commands")
     phase6.add_argument("phase6_args", nargs=argparse.REMAINDER)
+    publication = subparsers.add_parser("publication", help="ADR-0036 publication projection commands")
+    publication.add_argument("publication_args", nargs=argparse.REMAINDER)
     synthesis = subparsers.add_parser("synthesis", help="bounded exploratory synthesis commands")
     synthesis.add_argument("synthesis_args", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
 
+    if args.command == "problem":
+        from .problem_intake_cli import main as problem_main
+        return problem_main(args.problem_args)
     if args.command == "phase2":
         from .phase2_cli import main as phase2_main
         return phase2_main(args.phase2_args)
@@ -81,6 +88,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "phase6":
         from .phase6_cli import main as phase6_main
         return phase6_main(args.phase6_args)
+    if args.command == "publication":
+        from .publication_cli import main as publication_main
+        return publication_main(args.publication_args)
     if args.command == "synthesis":
         from .synthesis_cli import main as synthesis_main
         return synthesis_main(args.synthesis_args)

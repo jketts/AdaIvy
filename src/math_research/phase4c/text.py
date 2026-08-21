@@ -1,12 +1,13 @@
 """Deterministic text normalization shared by all three Phase 4C signals.
 
 One tokenizer serves every signal so that a "matched query term" means the same
-thing to the lexical index, the hedging-scope rule, and alias phrase matching.
+thing to the lexical index, the self-disclaimer rule, and alias phrase
+matching.
 It mirrors the frozen lexical baseline exactly: Unicode NFC, the token regex
 `[^\\W_]+`, and `str.casefold()`.
 
-Sentence splitting is the scope unit of the hedging signal and is therefore
-part of the declared method, not an implementation detail:
+Sentence splitting is the detection unit of the self-disclaimer signal and is
+therefore part of the declared method, not an implementation detail:
 
 1. normalize to NFC and collapse every run of whitespace to a single space;
 2. split immediately after a `.`, `!`, or `?` that is followed by whitespace;

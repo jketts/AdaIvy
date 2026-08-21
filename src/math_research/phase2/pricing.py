@@ -36,6 +36,37 @@ class PricingSnapshotError(ValueError):
     pass
 
 
+# --- confirmation status ----------------------------------------------------
+# ADR-0030 admits placeholder rates for providers whose price could not be
+# confirmed, and records that state only as an UNCONFIRMED marker inside the
+# non-secret ``source`` string. Nothing in the schema carried it, so a
+# placeholder loaded byte-identically to a quoted rate and every downstream
+# check treated the two the same.
+#
+# This classifier is deliberately EXCLUSION-ONLY, on the ADR-0032 precedent:
+# finding the marker can only WITHHOLD confirmation. Its absence is not evidence
+# that a rate is correct, and no rate is asserted here. A snapshot whose numbers
+# are wrong but whose source carries no marker is still reported as confirmed --
+# that residual is recorded in ADR-0038 rather than hidden.
+PRICING_UNCONFIRMED_MARKER = "UNCONFIRMED"
+PRICING_CONFIRMED = "confirmed"
+PRICING_UNCONFIRMED = "unconfirmed"
+
+
+def pricing_confirmation_status(snapshot: PricingSnapshot) -> str:
+    """``"unconfirmed"`` when the recorded source carries the marker."""
+
+    marker = PRICING_UNCONFIRMED_MARKER.casefold()
+    return (
+        PRICING_UNCONFIRMED if marker in snapshot.source.casefold()
+        else PRICING_CONFIRMED
+    )
+
+
+def pricing_snapshot_is_confirmed(snapshot: PricingSnapshot) -> bool:
+    return pricing_confirmation_status(snapshot) == PRICING_CONFIRMED
+
+
 def create_pricing_snapshot(
     *,
     snapshot_id: OpaqueId,

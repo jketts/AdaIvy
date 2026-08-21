@@ -1,53 +1,163 @@
 {
-  "schema_version": "adaivy.phase5-noncommuting-sdp-fixtures.v1",
+  "schema_version": "adaivy.phase5-noncommuting-sdp-fixtures.v2",
   "cases": [
     {
-      "schema_version": "adaivy.phase5-noncommuting-sdp-spike.v1",
+      "schema_version": "adaivy.phase5-noncommuting-sdp-spike.v2",
       "case_id": "commuting-exact-control",
-      "weighted_states": [
-        [["1/2", 0], [0, 0]],
-        [[0, 0], [0, "1/2"]]
-      ],
-      "primal_povm": [
-        [[1, 0], [0, 0]],
-        [[0, 0], [0, 1]]
-      ],
+      "weighted_states": [[["1/2", 0], [0, 0]], [[0, 0], [0, "1/2"]]],
+      "primal_povm": [[[1, 0], [0, 0]], [[0, 0], [0, 1]]],
       "dual_gamma": [["1/2", 0], [0, "1/2"]],
       "expected_noncommuting": false,
-      "expected_zero_gap": true
+      "expected_zero_gap": true,
+      "expected_quadratic_representable": true,
+      "expected_independent_optimum": "1"
     },
     {
-      "schema_version": "adaivy.phase5-noncommuting-sdp-spike.v1",
+      "schema_version": "adaivy.phase5-noncommuting-sdp-spike.v2",
       "case_id": "real-noncommuting-rational-candidate",
-      "weighted_states": [
-        [["1/2", 0], [0, 0]],
-        [["1/4", "1/4"], ["1/4", "1/4"]]
-      ],
-      "primal_povm": [
-        [[1, 0], [0, 0]],
-        [[0, 0], [0, 1]]
-      ],
+      "weighted_states": [[["1/2", 0], [0, 0]], [["1/4", "1/4"], ["1/4", "1/4"]]],
+      "primal_povm": [[[1, 0], [0, 0]], [[0, 0], [0, 1]]],
       "dual_gamma": [["1/2", 0], [0, "1/2"]],
       "expected_noncommuting": true,
-      "expected_zero_gap": false
+      "expected_zero_gap": false,
+      "expected_quadratic_representable": true,
+      "expected_independent_optimum": {"rational": "1/2", "surd": "1/4", "radicand": 2}
     },
     {
-      "schema_version": "adaivy.phase5-noncommuting-sdp-spike.v1",
+      "schema_version": "adaivy.phase5-noncommuting-sdp-spike.v2",
       "case_id": "complex-noncommuting-rational-candidate",
       "weighted_states": [
         [["1/2", 0], [0, 0]],
+        [["1/4", {"re": "0", "im": "-1/4"}], [{"re": "0", "im": "1/4"}, "1/4"]]
+      ],
+      "primal_povm": [[[1, 0], [0, 0]], [[0, 0], [0, 1]]],
+      "dual_gamma": [["1/2", 0], [0, "1/2"]],
+      "expected_noncommuting": true,
+      "expected_zero_gap": false,
+      "expected_quadratic_representable": true,
+      "expected_independent_optimum": {"rational": "1/2", "surd": "1/4", "radicand": 2}
+    },
+    {
+      "schema_version": "adaivy.phase5-noncommuting-sdp-spike.v2",
+      "case_id": "real-noncommuting-algebraic-certificate",
+      "weighted_states": [[["1/2", 0], [0, 0]], [["1/4", "1/4"], ["1/4", "1/4"]]],
+      "primal_povm": [
         [
-          ["1/4", {"re": "0", "im": "-1/4"}],
-          [{"re": "0", "im": "1/4"}, "1/4"]
+          [
+            {"rational": "1/2", "surd": "1/4", "radicand": 2},
+            {"rational": "0", "surd": "-1/4", "radicand": 2}
+          ],
+          [
+            {"rational": "0", "surd": "-1/4", "radicand": 2},
+            {"rational": "1/2", "surd": "-1/4", "radicand": 2}
+          ]
+        ],
+        [
+          [
+            {"rational": "1/2", "surd": "-1/4", "radicand": 2},
+            {"rational": "0", "surd": "1/4", "radicand": 2}
+          ],
+          [
+            {"rational": "0", "surd": "1/4", "radicand": 2},
+            {"rational": "1/2", "surd": "1/4", "radicand": 2}
+          ]
+        ]
+      ],
+      "dual_gamma": [
+        [{"rational": "3/8", "surd": "1/8", "radicand": 2}, "1/8"],
+        ["1/8", {"rational": "1/8", "surd": "1/8", "radicand": 2}]
+      ],
+      "expected_noncommuting": true,
+      "expected_zero_gap": true,
+      "expected_quadratic_representable": true,
+      "expected_independent_optimum": {"rational": "1/2", "surd": "1/4", "radicand": 2}
+    },
+    {
+      "schema_version": "adaivy.phase5-noncommuting-sdp-spike.v2",
+      "case_id": "complex-noncommuting-algebraic-certificate",
+      "weighted_states": [
+        [["1/2", 0], [0, 0]],
+        [["1/4", {"re": "0", "im": "-1/4"}], [{"re": "0", "im": "1/4"}, "1/4"]]
+      ],
+      "primal_povm": [
+        [
+          [
+            {"rational": "1/2", "surd": "1/4", "radicand": 2},
+            {"re": "0", "im": {"rational": "0", "surd": "1/4", "radicand": 2}}
+          ],
+          [
+            {"re": "0", "im": {"rational": "0", "surd": "-1/4", "radicand": 2}},
+            {"rational": "1/2", "surd": "-1/4", "radicand": 2}
+          ]
+        ],
+        [
+          [
+            {"rational": "1/2", "surd": "-1/4", "radicand": 2},
+            {"re": "0", "im": {"rational": "0", "surd": "-1/4", "radicand": 2}}
+          ],
+          [
+            {"re": "0", "im": {"rational": "0", "surd": "1/4", "radicand": 2}},
+            {"rational": "1/2", "surd": "1/4", "radicand": 2}
+          ]
+        ]
+      ],
+      "dual_gamma": [
+        [{"rational": "3/8", "surd": "1/8", "radicand": 2}, {"re": "0", "im": "-1/8"}],
+        [{"re": "0", "im": "1/8"}, {"rational": "1/8", "surd": "1/8", "radicand": 2}]
+      ],
+      "expected_noncommuting": true,
+      "expected_zero_gap": true,
+      "expected_quadratic_representable": true,
+      "expected_independent_optimum": {"rational": "1/2", "surd": "1/4", "radicand": 2}
+    },
+    {
+      "schema_version": "adaivy.phase5-noncommuting-sdp-spike.v2",
+      "case_id": "real-noncommuting-algebraic-certificate-radicand-five",
+      "weighted_states": [
+        [["1/2", 0], [0, 0]],
+        [
+          ["2/9", {"rational": "0", "surd": "1/9", "radicand": 5}],
+          [{"rational": "0", "surd": "1/9", "radicand": 5}, "5/18"]
         ]
       ],
       "primal_povm": [
-        [[1, 0], [0, 0]],
-        [[0, 0], [0, 1]]
+        [
+          [{"rational": "1/2", "surd": "1/6", "radicand": 5}, "-1/3"],
+          ["-1/3", {"rational": "1/2", "surd": "-1/6", "radicand": 5}]
+        ],
+        [
+          [{"rational": "1/2", "surd": "-1/6", "radicand": 5}, "1/3"],
+          ["1/3", {"rational": "1/2", "surd": "1/6", "radicand": 5}]
+        ]
       ],
-      "dual_gamma": [["1/2", 0], [0, "1/2"]],
+      "dual_gamma": [
+        [
+          {"rational": "13/36", "surd": "1/12", "radicand": 5},
+          {"rational": "0", "surd": "1/18", "radicand": 5}
+        ],
+        [
+          {"rational": "0", "surd": "1/18", "radicand": 5},
+          {"rational": "5/36", "surd": "1/12", "radicand": 5}
+        ]
+      ],
       "expected_noncommuting": true,
-      "expected_zero_gap": false
+      "expected_zero_gap": true,
+      "expected_quadratic_representable": true,
+      "expected_independent_optimum": {"rational": "1/2", "surd": "1/6", "radicand": 5}
+    },
+    {
+      "schema_version": "adaivy.phase5-noncommuting-sdp-spike.v2",
+      "case_id": "real-noncommuting-irreducible-cubic-boundary",
+      "weighted_states": [
+        [["13/60", "1/20", "1/50"], ["1/20", "1/6", "1/10"], ["1/50", "1/10", "7/60"]],
+        [["7/60", "-1/20", "1/50"], ["-1/20", "1/6", "-1/10"], ["1/50", "-1/10", "13/60"]]
+      ],
+      "primal_povm": [[[1, 0, 0], [0, 1, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 1]]],
+      "dual_gamma": [["11/30", 0, 0], [0, "11/30", 0], [0, 0, "11/30"]],
+      "expected_noncommuting": true,
+      "expected_zero_gap": false,
+      "expected_quadratic_representable": false,
+      "expected_independent_optimum": null
     }
   ]
 }

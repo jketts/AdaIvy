@@ -8,11 +8,30 @@ from ..phase4a.records import (
     ActorKind, ApplicabilityOutcome, ApplicabilityStatus, Authority, RecordType, RightsUse,
 )
 from ..phase4a.service import Phase4Service
-from . import CANONICALIZATION_VERSION, POLICY_ID, POLICY_VERSION
+from . import (
+    CANONICALIZATION_VERSION, NONCOMMUTING_ADMISSION_VERSION, NONCOMMUTING_FINDING_VERSION,
+    NONCOMMUTING_RUN_VERSION, POLICY_ID, POLICY_VERSION,
+)
+from .noncommuting import (
+    BENCHMARK_ID as NONCOMMUTING_BENCHMARK_ID,
+    COVERAGE_STATEMENT, COVERAGE_STATUSES, COVERAGE_UNRESOLVED, FORBIDDEN_COVERAGE_STATUS,
+    parse_fixture, verify_fixture,
+)
 from .quantum import DiagonalCase, run_case
 from .serialization import canonical_hash, finalize, stable_id
 from .workspace import Phase5ValidationError, Phase5Workspace
 
+
+SEPARATION_OF_DUTY_NOTE = (
+    "Sealed Phase 5 accepts an identical originating and creating principal, so this "
+    "slice does not require a second principal. Under ADR-0035 that gap is "
+    "load-bearing: when one principal derives a certificate and the same principal "
+    "approves its admission, nothing independent stands between derivation and the "
+    "trust record. What contains it is mathematical, not procedural -- a zero-gap "
+    "certificate is self-verifying against the ensemble, so a wrong certificate fails "
+    "the exact check rather than passing quietly. Requiring a second principal is a "
+    "separate decision and is not taken here."
+)
 
 STEERING_ACTIONS = (
     "continue_objective", "investigate_result", "redirect_objective", "acknowledge", "dismiss",
@@ -441,5 +460,247 @@ class Phase5Service:
             "material_result_event_ids": surfaced,
             "branch_count": len(cases), "dead_end_count": len(cases) - len(findings),
             "search_tiers": run["payload"]["search_tiers"],
+            "objective_incomplete": True,
+        }
+
+    # -- ADR-0035 noncommuting expansion: verification, never discovery -----
+    #
+    # These methods are additive. `DiagonalCase` and `run_case` above are
+    # unchanged in signature and behaviour, because Phase 6 drives them for its
+    # GC-02B control.
+
+    def admit_supplied_certificate(
+        self, *, run_id: str, case_id: str, certificate_provenance: Mapping[str, Any],
+        certificate_hash: str, admitting_principal_id: str, capability_id: str,
+        recorded_at: str,
+    ) -> dict[str, Any]:
+        """Admit a human-derived certificate through the human-steering boundary.
+
+        The deriving principal is mandatory and must be a recorded trusted
+        human-final principal. Nonhuman steering fails closed exactly as sealed
+        Phase 5 already requires for `steer`.
+        """
+
+        deriving_principal_id = certificate_provenance.get("deriving_principal_id")
+        if not deriving_principal_id or not isinstance(deriving_principal_id, str):
+            raise Phase5ValidationError(
+                "a supplied certificate must record the principal that derived it"
+            )
+        if certificate_provenance.get("system_generated") is not False:
+            raise Phase5ValidationError(
+                "a certificate is a human input and may not be recorded as "
+                "system-generated"
+            )
+        deriving = self._one("principal", deriving_principal_id)
+        if (
+            deriving["payload"]["actor_kind"] != ActorKind.HUMAN.value
+            or deriving["payload"]["authority"] != Authority.HUMAN_FINAL.value
+        ):
+            raise PermissionError(
+                "certificate derivation requires a trusted human-final principal"
+            )
+        admitting, _capability = self._principal_capability(
+            admitting_principal_id, capability_id, "steer_research"
+        )
+        if (
+            admitting["payload"]["actor_kind"] != ActorKind.HUMAN.value
+            or admitting["payload"]["authority"] != Authority.HUMAN_FINAL.value
+        ):
+            raise PermissionError(
+                "certificate admission requires a trusted human-final principal"
+            )
+        admission_id = stable_id(
+            "noncommuting-admission", {"run_id": run_id, "case_id": case_id}
+        )
+        return self.workspace.append(
+            record_type="noncommuting_certificate_admission", subject_id=admission_id,
+            recorded_at=recorded_at,
+            payload={
+                "schema_version": NONCOMMUTING_ADMISSION_VERSION,
+                "admission_id": admission_id,
+                "run_id": run_id,
+                "case_id": case_id,
+                "admitted_through": "authorized_human_steering",
+                "required_capability": "steer_research",
+                "capability_id": capability_id,
+                "admitting_principal_id": admitting_principal_id,
+                "deriving_principal_id": deriving_principal_id,
+                "deriving_principal_hash": deriving["content_hash"],
+                "derivation": certificate_provenance.get("derivation"),
+                "certificate_hash": certificate_hash,
+                "certificate_origin": "human_supplied",
+                "system_generated": False,
+                "discovery_performed": False,
+                "trust_effect": "admits_a_candidate_for_exact_checking_only",
+                "separation_of_duty": {
+                    "derivation_and_admission_principals_identical": (
+                        deriving_principal_id == admitting_principal_id
+                    ),
+                    "second_principal_required": False,
+                    "enforced": False,
+                    "containment": "mathematical_zero_gap_certificate_is_self_verifying",
+                    "recorded_gap": SEPARATION_OF_DUTY_NOTE,
+                },
+            },
+        )
+
+    def run_noncommuting_fixture(
+        self, fixture: Mapping[str, Any], *, recorded_at: str,
+        objective_id: str = "objective.qd-nc-01", run_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Verify every supplied certificate in a frozen noncommuting fixture.
+
+        A case with no certificate produces an explicit unresolved outcome. No
+        branch of this method searches for, defaults to, or generates one, and
+        no result may report a discovered optimum.
+        """
+
+        cases = parse_fixture(fixture)
+        raw_certificates = {
+            item["case_id"]: item["certificate"] for item in fixture["cases"]
+        }
+        fixture_hash = canonical_hash(fixture)
+        run_id = run_id or stable_id(
+            "run.phase5-noncommuting",
+            {"objective_id": objective_id, "fixture_hash": fixture_hash},
+        )
+        self.ensure_objective(
+            objective_id=objective_id,
+            statement=(
+                "Check exact noncommuting discrimination certificates supplied by an "
+                "authorized human; discover none."
+            ),
+            semantic_alignment_id="alignment.qd-nc-01.v1", recorded_at=recorded_at,
+        )
+        human_id = "principal.phase5.owner"
+        self.ensure_principal(
+            principal_id=human_id, actor_kind=ActorKind.HUMAN,
+            authority=Authority.HUMAN_FINAL, recorded_at=recorded_at,
+        )
+        self.ensure_capability(
+            capability_id="capability.phase5.steer", principal_id=human_id,
+            operation="steer_research", recorded_at=recorded_at,
+        )
+        run = self.workspace.append(
+            record_type="noncommuting_run", subject_id=run_id, recorded_at=recorded_at,
+            payload={
+                "run_id": run_id, "objective_id": objective_id,
+                "benchmark_id": NONCOMMUTING_BENCHMARK_ID,
+                "fixture_hash": fixture_hash, "protocol_class": "exact_verification",
+                "status": "verification_only", "external_cost_usd": 0,
+                "network_calls": 0, "model_calls": 0,
+                "arithmetic": "exact_algebraic_quadratic_complex",
+                "tolerance": None,
+                "verification_mode": "verifies_supplied_certificate_never_discovers",
+                "discovery_performed": False,
+                "general_noncommuting_convergence_answered": False,
+                "coverage_status_vocabulary": list(COVERAGE_STATUSES),
+                "unproducible_coverage_status": FORBIDDEN_COVERAGE_STATUS,
+                "search_tiers": {
+                    "tier_0": "enabled_deterministic",
+                    "tier_2": "disabled_no_measured_cost_adjusted_gain",
+                    "tier_3": "disabled_no_measured_cost_adjusted_gain",
+                    "tier_4": "disabled_no_measured_cost_adjusted_gain",
+                },
+            },
+        )
+        admissions: list[str] = []
+        for case in cases:
+            if case.certificate is None:
+                self.workspace.append(
+                    record_type="noncommuting_unresolved", subject_id=(
+                        stable_id("noncommuting-unresolved", {"run_id": run_id, "case_id": case.case_id})
+                    ),
+                    recorded_at=recorded_at,
+                    payload={
+                        "run_id": run_id, "case_id": case.case_id,
+                        "coverage_status": COVERAGE_UNRESOLVED,
+                        "reason": "no certificate was supplied and none was constructed",
+                        "attempted_discovery": False,
+                    },
+                )
+                continue
+            provenance = case.certificate.provenance()
+            admission = self.admit_supplied_certificate(
+                run_id=run_id, case_id=case.case_id,
+                certificate_provenance=provenance,
+                certificate_hash=canonical_hash(raw_certificates[case.case_id]),
+                admitting_principal_id=provenance["deriving_principal_id"],
+                capability_id="capability.phase5.steer", recorded_at=recorded_at,
+            )
+            admissions.append(admission["record_id"])
+
+        report = verify_fixture(fixture)
+        findings: list[str] = []
+        for result in report["results"]:
+            finding_id = stable_id(
+                "noncommuting-finding", {"run_id": run_id, "case_id": result["case_id"]}
+            )
+            record = self.workspace.append(
+                record_type="noncommuting_finding", subject_id=finding_id,
+                recorded_at=recorded_at,
+                payload={
+                    "schema_version": NONCOMMUTING_FINDING_VERSION,
+                    "finding_id": finding_id, "run_id": run_id,
+                    "objective_id": objective_id, "case_id": result["case_id"],
+                    "coverage_status": result["coverage_status"],
+                    "coverage": dict(result["coverage"]),
+                    "certificate_provenance": result["certificate_provenance"],
+                    "result_hash": result["result_hash"],
+                    "proposal_status": result["proposal_status"],
+                    "applicability_status": result["applicability_status"],
+                    "mathematical_warrant": result["mathematical_warrant"],
+                    "graph_admitted": False,
+                    "result": dict(result),
+                },
+            )
+            findings.append(record["record_id"])
+        summary = self.workspace.append(
+            record_type="noncommuting_run_summary", subject_id=run_id,
+            recorded_at=recorded_at,
+            payload={
+                "run_id": run_id, "objective_id": objective_id,
+                "report_hash": report["content_hash"],
+                "coverage_status_counts": dict(report["coverage_status_counts"]),
+                "coverage_statement": COVERAGE_STATEMENT,
+                "coverage_illusion_warning": report["coverage_illusion_warning"],
+                "field_boundary_case_ids": list(report["field_boundary_case_ids"]),
+                "unresolved_case_ids": list(report["unresolved_case_ids"]),
+                "radicands_used": list(report["radicands_used"]),
+                "general_noncommuting_convergence_answered": False,
+                "discovery_performed": False,
+                "separation_of_duty_note": SEPARATION_OF_DUTY_NOTE,
+            },
+        )
+        self.workspace.verify_integrity()
+        return {
+            "schema_version": NONCOMMUTING_RUN_VERSION,
+            "benchmark_id": NONCOMMUTING_BENCHMARK_ID,
+            "run_id": run_id, "objective_id": objective_id,
+            "run_record_hash": run["content_hash"],
+            "summary_record_hash": summary["content_hash"],
+            "fixture_hash": fixture_hash,
+            "report_hash": report["content_hash"],
+            "case_coverage_status": {
+                item["case_id"]: item["coverage_status"] for item in report["results"]
+            },
+            "coverage_status_counts": dict(report["coverage_status_counts"]),
+            "coverage_status_vocabulary": list(COVERAGE_STATUSES),
+            "unproducible_coverage_status": FORBIDDEN_COVERAGE_STATUS,
+            "coverage_statement": COVERAGE_STATEMENT,
+            "coverage_illusion_warning": report["coverage_illusion_warning"],
+            "certificate_admission_ids": admissions,
+            "finding_ids": findings,
+            "field_boundary_case_ids": list(report["field_boundary_case_ids"]),
+            "unresolved_case_ids": list(report["unresolved_case_ids"]),
+            "gap_not_closed_case_ids": list(report["gap_not_closed_case_ids"]),
+            "verified_certificate_case_ids": list(report["verified_certificate_case_ids"]),
+            "radicands_used": list(report["radicands_used"]),
+            "case_count": report["case_count"],
+            "discovery_performed": False,
+            "general_noncommuting_convergence_answered": False,
+            "separation_of_duty_note": SEPARATION_OF_DUTY_NOTE,
+            "search_tiers": run["payload"]["search_tiers"],
+            "tolerance": None,
             "objective_incomplete": True,
         }
