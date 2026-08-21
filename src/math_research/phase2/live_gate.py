@@ -9,19 +9,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
 
+from . import SUPPORTED_LIVE_PROVIDERS
 from ..domain.entities import OpaqueId
 from .artifacts import FileArtifactStore
 from .baseline_loop import BaselineResearchLoop
 from .fixtures import build_open_theorem_dossier
 from .live_config import LiveRunConfiguration, live_run_configuration_payload
-from .model_gateway import (
-    OPENAI_SDK_PINNED_VERSION,
-    OpenAIProviderConfig,
-    OpenAIResponsesGateway,
-    openai_sdk_version,
-    redact_secrets,
-)
+from .model_gateway import redact_secrets
 from .openai_schema import ProviderSchemaError, project_openai_schema
+from .provider_registry import (
+    UnknownProviderError, build_gateway, provider_spec,
+)
 from .pricing import estimate_cost_microusd
 from .records import PricingSnapshot, RunStatus, VerifierIndependence
 from .reporting import render_durable_report, report_hash
@@ -45,6 +43,11 @@ class LivePreflightResult:
     estimated_two_call_cost_microusd: int | None
 
 
+# Retained for compatibility: the preflight is now provider-aware and derives
+# its checks from provider_registry, so every admitted provider is covered.
+PREFLIGHT_SUPPORTED_PROVIDERS = frozenset(SUPPORTED_LIVE_PROVIDERS)
+
+
 def preflight_live_gate(
     configuration: LiveRunConfiguration,
     pricing: PricingSnapshot,
@@ -56,9 +59,22 @@ def preflight_live_gate(
     environment = os.environ if environment is None else environment
     missing: list[str] = []
     failed: list[str] = []
-    api_key = environment.get("OPENAI_API_KEY")
-    if not api_key:
-        missing.append("OPENAI_API_KEY")
+    try:
+        spec = provider_spec(configuration.provider)
+    except UnknownProviderError:
+        return LivePreflightResult(
+            passed=False,
+            missing_variables=(),
+            failed_checks=(f"preflight_unknown_provider:{configuration.provider}",),
+            estimated_two_call_cost_microusd=None,
+        )
+    # Each provider declares its own credentials; an absent one is unconfigured
+    # (missing), not broken (failed). Reporting OPENAI_API_KEY for a run that
+    # never involved OpenAI is the specific bug this replaces.
+    for variable in spec.required_credentials:
+        if not environment.get(variable):
+            missing.append(variable)
+    api_key = environment.get(spec.required_credentials[0])
     if not configuration.provider:
         missing.append("config.provider")
     if not configuration.model_identifier:
@@ -69,29 +85,56 @@ def preflight_live_gate(
         failed.append("pricing_provider_mismatch")
     if configuration.model_identifier != pricing.model_identifier:
         failed.append("pricing_model_identifier_mismatch")
-    adapter = OpenAIProviderConfig(model_identifier=configuration.model_identifier)
-    required_capabilities = {"responses_api", "structured_output"}
-    if not required_capabilities.issubset(adapter.capabilities):
-        failed.append("structured_output_path_unsupported")
-    observed_sdk = openai_sdk_version() if installed_sdk_version is None else installed_sdk_version
-    if observed_sdk is None:
-        failed.append("openai_sdk_unavailable")
-    elif observed_sdk != OPENAI_SDK_PINNED_VERSION:
-        failed.append("openai_sdk_version_mismatch")
-    directory = schema_dir or Path(__file__).resolve().parents[3] / "schemas"
-    for purpose in ("proposer", "verifier"):
-        try:
-            project_openai_schema(
-                (directory / f"model-{purpose}-v1.schema.json").read_text(encoding="utf-8")
-            )
-        except (OSError, ProviderSchemaError) as error:
-            if isinstance(error, ProviderSchemaError):
-                failed.extend(
-                    f"provider_schema_{purpose}:{issue.code}:{issue.path or '/'}"
-                    for issue in error.report.issues
+    try:
+        adapter = build_gateway(
+            configuration.provider, configuration.model_identifier,
+        )
+    except Exception as error:  # adapter construction is itself a gate
+        failed.append(f"adapter_unconstructable:{type(error).__name__}")
+        adapter = None
+    if adapter is not None:
+        declared = frozenset(getattr(adapter.config, "capabilities", ()))
+        if not spec.required_capabilities.issubset(declared):
+            failed.append("adapter_capabilities_insufficient")
+        if not spec.output_mode_capabilities & declared:
+            failed.append("structured_output_path_unsupported")
+    if spec.requires_sdk:
+        if not spec.sdk_version_is_confirmed:
+            # No wheel digest recorded, so the dependency cannot be pinned and a
+            # live call must not proceed on an unverified package.
+            failed.append(f"{spec.sdk_package}_sdk_version_unconfirmed")
+        observed_sdk = (
+            spec.sdk_version_probe() if installed_sdk_version is None
+            else installed_sdk_version
+        ) if spec.sdk_version_probe is not None else installed_sdk_version
+        if observed_sdk is None:
+            failed.append(f"{spec.sdk_package}_sdk_unavailable")
+        elif (
+            spec.sdk_version_is_confirmed
+            and observed_sdk != spec.sdk_pinned_version
+        ):
+            failed.append(f"{spec.sdk_package}_sdk_version_mismatch")
+    if configuration.provider == "openai":
+        # The projection lint is OpenAI-dialect specific. Other adapters forward
+        # the canonical schema unmodified and gate on the canonical validator
+        # instead, so running this for them would report OpenAI-shaped issues
+        # against a request that was never projected.
+        directory = schema_dir or Path(__file__).resolve().parents[3] / "schemas"
+        for purpose in ("proposer", "verifier"):
+            try:
+                project_openai_schema(
+                    (directory / f"model-{purpose}-v1.schema.json").read_text(
+                        encoding="utf-8"
+                    )
                 )
-            else:
-                failed.append(f"provider_schema_{purpose}:unreadable")
+            except (OSError, ProviderSchemaError) as error:
+                if isinstance(error, ProviderSchemaError):
+                    failed.extend(
+                        f"provider_schema_{purpose}:{issue.code}:{issue.path or '/'}"
+                        for issue in error.report.issues
+                    )
+                else:
+                    failed.append(f"provider_schema_{purpose}:unreadable")
     per_call_cost = estimate_cost_microusd(
         pricing,
         input_tokens=configuration.per_call_input_token_reserve,
@@ -139,7 +182,11 @@ def execute_live_gate(
     database = root / "workspace.sqlite3"
     artifacts = FileArtifactStore(root / "artifacts")
     dossier = build_open_theorem_dossier()
-    gateway = OpenAIResponsesGateway(OpenAIProviderConfig(model_identifier=configuration.model_identifier))
+    # Routed through the registry so the provider named in the content-hashed
+    # configuration is the provider actually called. Constructing the adapter
+    # opens no connection; the preflight above already confirmed its credentials,
+    # capabilities, and SDK pin.
+    gateway = build_gateway(configuration.provider, configuration.model_identifier)
     independence = VerifierIndependence(
         context_isolated=True,
         separate_model_call=True,

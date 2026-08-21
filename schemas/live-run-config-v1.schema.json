@@ -19,7 +19,7 @@
   "properties": {
     "schema_version": {"const": "1.0.0"},
     "configuration_id": {"type": "string", "minLength": 1},
-    "provider": {"const": "openai"},
+    "provider": {"enum": ["anthropic", "azure_openai", "bedrock", "deepseek", "minimax", "openai", "qwen_dashscope"]},
     "model_identifier": {"type": "string", "minLength": 1},
     "pricing_snapshot_id": {"type": "string", "minLength": 1},
     "call_timeout_milliseconds": {"type": "integer", "minimum": 1},

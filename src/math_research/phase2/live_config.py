@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from ..domain.entities import OpaqueId
+from . import SUPPORTED_LIVE_PROVIDERS
 from .records import BudgetLimits
 from .serialization import canonical_hash, canonical_json
 
@@ -131,7 +132,7 @@ def _configuration(payload: dict[str, Any]) -> LiveRunConfiguration:
     for field in ("configuration_id", "provider", "model_identifier", "pricing_snapshot_id"):
         if not isinstance(payload[field], str) or not payload[field]:
             raise LiveRunConfigurationError(f"{field} must be a non-empty string")
-    if payload["provider"] != "openai":
+    if payload["provider"] not in SUPPORTED_LIVE_PROVIDERS:
         raise LiveRunConfigurationError("unsupported live provider")
     for field in ("call_timeout_milliseconds", "per_call_input_token_reserve", "per_call_output_token_reserve"):
         if not isinstance(payload[field], int) or isinstance(payload[field], bool) or payload[field] <= 0:
