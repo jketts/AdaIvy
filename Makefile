@@ -20,19 +20,19 @@ PHASE6_INSTANT ?= 2026-08-20T14:00:00Z
 TMPROOT ?= $(shell printf '%s' "$${TMPDIR:-/tmp}")
 
 .PHONY: check check-all check-sealed check-gate check-phase4b-oci test phase0 \
-        phase1 phase2 phase3a phase3b phase4a phase4b phase5 phase6 synthesis \
-        clean help
+        phase1 phase2 phase3a phase3b phase4a phase4b phase4c phase5 phase6 \
+        synthesis clean help
 
 help:
 	@printf 'Targets:\n'
-	@printf '  check         offline suite: tests + phases 0,1,2,3A,4A,4B,5,6 and synthesis\n'
+	@printf '  check         offline suite: tests + phases 0,1,2,3A,4A,4B,4C,5,6 and synthesis\n'
 	@printf '  check-sealed  phase 3B Lean formal checking (requires the ADR-0016 v5 image)\n'
 	@printf '  check-gate    phase 4 gate tests (requires the disposable jsonschema env)\n'
 	@printf '  check-phase4b-oci strict Phase 4B parser gate (requires exact pinned image)\n'
 	@printf '  check-all     check + check-sealed\n'
 	@printf '  clean         remove __pycache__ and stray sqlite journals\n'
 
-check: test phase0 phase1 phase2 phase3a phase4a phase4b phase5 phase6 synthesis
+check: test phase0 phase1 phase2 phase3a phase4a phase4b phase4c phase5 phase6 synthesis
 	@printf '\n== offline check complete ==\n'
 
 check-all: check check-sealed
@@ -98,6 +98,28 @@ phase4b:
 	  $(PY) -m math_research.cli phase4b gate . "$$d/gate" \
 	    --output "$$d/phase4b-feasible-gate.json" >/dev/null && \
 	  rm -rf "$$d" && printf 'phase 4B ok\n'
+
+# Phase 4C is a measured PARTIAL, not a pass: six gates hold and
+# applicability_precision_at_5 fails at 0.6 against a gate of 1.0. ADR-0031
+# records why a demotion-only signal cannot reach it -- every applicability
+# query's candidate set is at or below the top-k cutoff, so no reordering can
+# move the metric at all. Both commands exit 1 by design while a gate fails, so
+# their status is tolerated and the recorded outcome is asserted instead: this
+# target fails if the result moves in EITHER direction, because a silent
+# improvement is an unreviewed change to a frozen benchmark and a silent
+# regression is a regression. `verified` covers the canonical report hash, so a
+# failing gate is never counted as a pass and a broken hash is never ignored.
+phase4c:
+	@printf '\n== phase 4C benchmark-scoped hybrid retrieval ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-p4c.XXXXXX") && \
+	  { $(PY) -m math_research.cli phase4c benchmark --fixtures fixtures/phase4c \
+	      --output "$$d/phase4c-report.json" >/dev/null || true; } && \
+	  { $(PY) -m math_research.cli phase4c inspect "$$d/phase4c-report.json" \
+	      > "$$d/phase4c-verified.json" || true; } && \
+	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); s=r["gate_summary"]; f=r["failing_gates"]; assert r.get("verified") is True, "phase 4C canonical report hash did not verify"; assert (s["pass"], s["fail"], s["undetermined"]) == (6, 1, 0), "phase 4C gate summary moved: %s" % s; assert f == ["applicability_precision_at_5"], "phase 4C failing gates moved: %s" % f' \
+	    "$$d/phase4c-verified.json" && \
+	  rm -rf "$$d" && \
+	  printf 'phase 4C ok (6 gates hold; applicability_precision_at_5 fails as recorded)\n'
 
 phase5:
 	@printf '\n== phase 5 exact adaptive quantum benchmark ==\n'

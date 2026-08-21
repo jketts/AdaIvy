@@ -1,6 +1,8 @@
 # ADR-0031: Benchmark-scoped hybrid retrieval with deterministic offline signals
 
-- **Status:** accepted for bounded Phase 4C hybrid retrieval implementation
+- **Status:** accepted for bounded Phase 4C hybrid retrieval implementation;
+  implemented 21 August 2026 with one gate unmet and the revisit trigger
+  fired -- see "Measured outcome"
 - **Date:** 2026-08-21
 - **Blueprint requirement:** Section 12.2 rebuildable index projections,
   Section 12.2.1 provider binding for vector projections, Section 19 separately
@@ -186,6 +188,61 @@ the measured value.
 Retrieval remains candidate generation. Fused rank, metric success, and
 agreement between signals are not evidence, and this module produces no premise,
 warrant, applicability judgement, or graph admission.
+
+## Measured outcome
+
+Implemented and measured on 21 August 2026. Six of seven gates hold. One fails.
+
+| Metric | Baseline | Hybrid | Support | Gate |
+|---|---|---|---|---|
+| necessary-lemma recall@5 | 1.0 | 1.0 | 3/3 | pass |
+| applicability precision@5 | 0.6 | **0.6** | 6/10 | **fail** |
+| contradiction recall@5 | 1.0 | 1.0 | 2/2 | pass |
+| notation-variant recall@5 | 1.0 | 1.0 | 2/2 | pass |
+| renamed-known-result recall@10 | 0.0 | **1.0** | 4/4 | pass |
+| duplicate rate@5 | 1/50 | 1/54 | 1/54 | pass |
+| deterministic rebuild | -- | identical | -- | pass |
+| external cost | 0 | 0 | -- | pass |
+
+The alias signal closed the renamed gate as designed, from `0.0` to `1.0` on
+four controls. No previously passing gate regressed and duplicate rate improved.
+
+The discrimination signal did not close the applicability gate, and nothing was
+tuned to make it. There are two independent measured causes.
+
+**First, the demotion-only constraint in this ADR makes the gate unreachable by
+construction.** All four applicability queries have fused candidate sets of 4,
+5, 5 and 4 against a top-k of 5. Every retrieved relevant document is therefore
+already inside the cutoff, so no permutation of the ordering changes either the
+numerator or the denominator: `6/10` is invariant under every reordering. This
+is an error in this ADR, not a limitation discovered during implementation. The
+evidence was on record before the constraint was written -- the diagnosis noted
+that `applicability-certificate` returned only three hits against a cutoff of
+five, so no cutoff could exclude the false hit -- and the demotion-only rule was
+adopted anyway, to protect `duplicate_rate_at_5`. That protection was also
+unnecessary: exclusion only shrinks the duplicate denominator and cannot raise
+its numerator, and at a denominator of 54 the gate has room.
+
+**Second, exclusion would not reach the gate either.** Measured, an exclusion
+variant scores `6/7 = 0.857`, still short of `1.0`. The whole residual is
+`applicability-selfadjoint`, where `unbounded-spectral-mismatch` is not demoted
+at all: its self-disclaiming sentence shares no token with the query
+`self adjoint operators diagonalization domain conditions`, and the matched
+terms all sit in a preceding sentence that carries no cue. Widening the scope
+unit from the sentence after observing that failure is fitting the signal to the
+fixture, which the forbidden outcomes prohibit, so it was not done.
+
+The fixture extension therefore did exactly what it was added to do. A
+discrimination signal validated against two known false hits failed to
+generalize to a third control that was authored without reference to it.
+Recording that is the result; a `1.0` obtained by widening the scope rule after
+seeing which query failed would have been worthless.
+
+The revisit trigger below is fired on its first clause. A future slice that
+wants this gate must either fix the scope unit on a stated principle *before*
+measuring, or use a different signal class. Structural metadata is not an option
+today: the corpus documents carry no title and no unit type, so `title` and
+`unit_type` are empty for every document and only `body` is populated.
 
 ## Explicit deferrals
 
