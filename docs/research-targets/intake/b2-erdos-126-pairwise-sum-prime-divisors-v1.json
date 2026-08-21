@@ -1,0 +1,197 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "b2-erdos-126-pairwise-sum-prime-divisors-v1",
+  "declared_domain": "number-theory",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "Divergence of f(n)/log n for distinct prime divisors of pairwise sums",
+    "informal_statement": "For an integer n >= 2 let f(n) be the least number of distinct prime divisors of the product of a + b over all unordered pairs of distinct elements a, b of an n-element set A of positive integers, the minimum being taken over all such sets A. Decide whether for every rational C > 0 there is an integer N >= 2 with f(n) > C * ln n for every integer n > N, which is the explicit threshold form of f(n)/log n tending to infinity.\n\nThe logarithm is natural. Every prime-divisor count is an exact integer computed from a complete factorization; no probabilistic primality verdict is admissible. A bounded search over sets inside a window computes a different and larger function and therefore yields upper bounds on f(n) only, never lower bounds, so it can neither prove nor refute the target: refutation needs an infinite family with a symbolic proof, not a table.",
+    "problem_type": "explore",
+    "tags": [
+      "number-theory",
+      "erdos-126",
+      "distinct-prime-divisors",
+      "pairwise-sums",
+      "asymptotic-lower-bound",
+      "exact-factorization"
+    ]
+  },
+  "target_claim": {
+    "local_id": "prime_divisor_count_diverges",
+    "kind": "conjecture",
+    "statement": "For every rational C > 0 there exists an integer N >= 2 such that for every integer n > N, f(n) > C * ln n, where f(n) = min over all sets A of positive integers with card(A) = n of omega(prod over unordered pairs {a,b} of distinct elements of A of (a + b)), omega(N) is the number of distinct primes dividing N, and ln is the natural logarithm.",
+    "scope": "unrestricted_universal"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "f_definition",
+      "kind": "definition",
+      "statement": "For an integer n >= 2 and a set A of positive integers with card(A) = n, S(A) is the product of (a + b) over all unordered pairs {a,b} of distinct elements of A, a product of exactly binom(n,2) factors each at least 3. Then f(n) = min { omega(S(A)) : A a set of positive integers with card(A) = n }. Equivalently f(n) is the largest integer k such that every such A satisfies omega(S(A)) >= k; the two descriptions define the same number, and the planning dossier's maximal-f(n) phrasing is the second. Rejected readings: a minimum restricted to sets inside a bounded window, which is a different and larger function; a maximum; an average.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "pair_and_universe_convention",
+      "kind": "definition",
+      "statement": "A is a set, so its elements are distinct, and every element is a positive integer. Pairs are unordered with a != b, giving binom(n,2) factors. Rejected readings: natural numbers taken to include 0, which admits the factors 0 + b = b and may change f; sets of arbitrary integers, which admits non-positive factors; multisets or sequences with repetition; ordered pairs, which squares S(A); pairs with a = b allowed, which adds the factors 2a and can only enlarge the prime set, so it defines a possibly larger f.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "omega_definition",
+      "kind": "definition",
+      "statement": "For a positive integer N, omega(N) is the number of distinct primes dividing N, with omega(1) = 0. Rejected readings: the count of prime factors with multiplicity; the number of divisors; the largest prime factor.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "logarithm_convention",
+      "kind": "definition",
+      "statement": "log means the natural logarithm ln, base e. Changing the base multiplies both sides of the inequality by a positive constant and therefore cannot change the truth of the target, but the base is pinned so that every recorded numeric inequality has exactly one meaning. Rejected readings: base 2, base 10, or an iterated logarithm.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "threshold_form_definition",
+      "kind": "definition",
+      "statement": "The asymptotic is frozen in explicit threshold form: for every rational C > 0 there exists an integer N >= 2 such that f(n) > C * ln n for every integer n > N. N may depend on C and on nothing else. Quantifying C over positive rationals is not a weakening, since for real C one may take a rational C' >= C, and it keeps C an exact object. Rejected readings: the inequality for all n with no threshold; a non-strict inequality; limsup in place of lim; and the strictly weaker statement that f(n)/ln n is bounded below by some fixed constant.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "exact_arithmetic_requirement",
+      "kind": "requirement",
+      "statement": "Every quantity on the trust path is an exact integer or exact rational. Prime-divisor counts come from a complete factorization: by smallest-prime-factor sieve lookup inside the sieved range, or by trial division over primes up to the exact integer square root, which is self-certifying because a cofactor with no prime factor at or below its integer square root is prime. Above the frozen bound 2^40 nothing enters the trust path without a replayable certificate: Pollard rho and elliptic-curve factorization are exploration-only, and their output is admitted only as a complete factorization each of whose claimed primes carries a primality certificate the verifier replays. No Miller-Rabin, Baillie-PSW, or unpinned library primality verdict is admissible. Comparisons involving ln n are either symbolic or made against an exact rational enclosure of ln n with a proved remainder bound, used only in the excluding direction; no floating-point logarithm may appear in any certificate or verifier decision.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "prime_support_is_union",
+      "kind": "lemma",
+      "statement": "The set of primes dividing a finite product of positive integers is the union of the sets of primes dividing its factors. Hence omega(S(A)) equals the number of primes dividing at least one pairwise sum, and neither the ordered-versus-unordered choice nor any multiplicity convention can change omega(S(A)). The only convention that changes it is whether a = b is admitted.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "minimum_exists",
+      "kind": "lemma",
+      "statement": "A nonempty set of non-negative integers has a least element, so the minimum defining f(n) exists for every n >= 2 and f(n) is a non-negative integer.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "f_is_non_decreasing",
+      "kind": "lemma",
+      "statement": "If A' is a subset of A then S(A') divides S(A), so omega(S(A)) >= omega(S(A')). Taking A' of size n inside any A of size n + 1 gives f(n + 1) >= f(n), so f is non-decreasing. This is checked as a consistency relation on every run.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "bounded_window_gives_upper_bounds",
+      "kind": "lemma",
+      "statement": "For M >= 1 let f_M(n) be the minimum of omega(S(A)) over sets A contained in {1,...,M} with card(A) = n. Since those sets form a subfamily of all n-element sets, f(n) <= f_M(n). An exactly computed f_M(n) is therefore an upper bound on f(n) and never a lower bound, and no exhaustion of a window can establish a lower bound on f.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "catalogue_status_report",
+      "kind": "untrusted_source_report",
+      "statement": "The planning dossier reports that the five numbered Erdos statements, including #126, were checked against the Erdos Problems catalogue on 21 August 2026, and treats the problem as open. Untrusted: no retained bytes, content hash, or acquisition record backs that check. Note also what the planning dossier does not record: for items A1 and C5 it records a FALSIFIABLE catalogue label and a claimed proof, and for #126 it records no label at all. Silence is not evidence of an OPEN label. The ADR-0055 pre-research novelty re-check must obtain the actual label and the entry's references.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "known_lower_bound_report",
+      "kind": "untrusted_source_report",
+      "statement": "The planning dossier lists improving the known lower bound for f(n) as useful progress but states no bound. Its value, form, threshold, and attribution are unknown to this dossier. No claim of improvement may be made until this claim is resolved against an acquired source, and the structured-family stage of the slice may simply reproduce a published construction until it is.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "source_fidelity_report",
+      "kind": "untrusted_source_report",
+      "statement": "That the catalogue rendering is faithful to Erdos's own statement, and that the question asked is the divergence of f(n)/log n rather than a nearby variant, are both untrusted. The specific risks are whether natural numbers include 0, whether the pair range admits a = b, and whether the source asks about the count of distinct prime divisors or about the largest prime factor of the same product. The semantic alignment relation is recorded as unresolved for exactly this reason.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "finite_table_direction_trap",
+      "kind": "known_trap",
+      "statement": "Do not repeat blind the route of reading a finite table as an asymptotic. An exactly computed bounded minimum is an upper bound on f(n); a sparse example at one n neither proves nor refutes divergence, because divergence is a statement about every large n and refuting it requires an infinite family of sets whose omega(S(A)) stays below C ln n for a fixed C, with a symbolic proof. Sparse examples at small n are consistent with both answers, and no fitted growth rate from such a table is a bound in either direction.",
+      "scope": "particular"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "forall C : Q, C > 0 -> exists N : N, N >= 2 and forall n : N, n > N -> f(n) > C * ln(n), where f(n) = min { omega(prod over unordered pairs {a,b} of distinct elements of A of (a + b)) : A subset of the positive integers, card(A) = n } and omega(N) is the number of distinct primes dividing N",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "forall C a rational with C > 0",
+      "exists N an integer with N >= 2, depending on C only",
+      "forall n an integer with n > N",
+      "inside f(n): forall A a set of positive integers with card(A) = n, omega(S(A)) >= f(n), and exists A attaining the minimum",
+      "inside S(A): forall unordered pairs {a,b} of distinct elements of A"
+    ],
+    "assumption_local_ids": [
+      "f_definition",
+      "pair_and_universe_convention",
+      "omega_definition",
+      "logarithm_convention",
+      "threshold_form_definition",
+      "exact_arithmetic_requirement",
+      "prime_support_is_union",
+      "minimum_exists",
+      "f_is_non_decreasing",
+      "bounded_window_gives_upper_bounds",
+      "catalogue_status_report",
+      "known_lower_bound_report",
+      "source_fidelity_report",
+      "finite_table_direction_trap"
+    ],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      ["for every n-element set A", "forall A a set of positive integers with card(A) = n; the maximal-f(n) phrasing maps to the minimum over those sets"],
+      ["distinct a, b in A", "unordered pairs {a,b} with a != b, giving binom(n,2) factors"],
+      ["f(n)/log n -> infinity", "forall C a positive rational, exists N >= 2, forall n > N, f(n) > C * ln n"],
+      ["n", "an integer n >= 2"]
+    ],
+    "definition_mapping": [
+      ["natural numbers", "positive integers 1, 2, 3, ..."],
+      ["the product of a+b", "S(A), a product of binom(n,2) factors, one per unordered pair of distinct elements"],
+      ["at least f(n) distinct prime divisors", "omega(S(A)) >= f(n) with omega counting distinct primes and omega(1) = 0"],
+      ["log n", "ln n, natural logarithm base e"]
+    ],
+    "assumption_delta": [
+      "The frozen target pins that A consists of positive integers rather than non-negative or arbitrary integers.",
+      "It pins that pairs are unordered with a != b.",
+      "It pins the logarithm base to e and quantifies C over positive rationals.",
+      "It adds no structural hypothesis on A: no bound, no residue condition, no smoothness.",
+      "It weakens nothing in the source rendering."
+    ],
+    "edge_case_delta": [
+      "n = 1 and n = 0 are excluded: the empty product gives omega(1) = 0 and the statement carries no content there.",
+      "Admitting 0 into A keeps every factor positive for n >= 2, so omega stays defined, but f may change; that is a different problem and is a rejected reading rather than an edge case.",
+      "Admitting a = b can only enlarge the prime set, so the frozen reading is the smaller of the two possible f functions.",
+      "Because the primes of a product are the union of the primes of its factors, no multiplicity or ordering convention affects omega(S(A))."
+    ],
+    "strength_relation": "unresolved"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "bounded_minima_computed_exactly",
+      "witness_sets_certified",
+      "pairwise_sums_factored_exactly",
+      "sums_skipped_at_factorization_boundary",
+      "structured_families_evaluated",
+      "sparse_family_routes_refuted",
+      "independent_verifier_replays_passed",
+      "proof_obligations_opened",
+      "proof_obligations_closed",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "an exact certified family of sets witnessing that f(n) stays below C ln n for a fixed rational C beyond an explicit threshold, with a symbolic proof and not a table",
+      "a symbolic proof of a lower bound on f(n) valid beyond an explicit threshold, with every lemma discharged",
+      "an exactly computed bounded minimum f_M(n) that contradicts a published value once that value has been acquired and replayed",
+      "an explicit unresolved outcome that names the smallest remaining obligation, together with the retained upper-bound table and every refuted sparse-family route"
+    ],
+    "stopping_rules": [
+      "stop on an exact symbolic proof in either direction and open no further search",
+      "stop when fresh model spend reaches USD 20",
+      "stop when two consecutive review points close no proof obligation and refute no route",
+      "stop when visited search nodes exceed 10^10 or a pairwise sum exceeds the frozen factorization boundary without a replayable certificate",
+      "never promote a bounded table to a statement about f(n) for all n; an exactly computed f_M(n) is an upper bound on f(n) and is never a lower bound"
+    ]
+  }
+}

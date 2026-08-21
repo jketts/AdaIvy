@@ -41,6 +41,9 @@ flows back.
 - `records/probes.json` records the falsifiability probes: single-field
   mutations of the manuscript, each of which must produce a named refusal or a
   named demotion.
+- AI-authored builds also carry `records/campaign.json` and
+  `records/publication-campaign-link.json`, the verified operational ledger and
+  the exact claim/certificate join used to derive attribution and disclosure.
 - `lean/` holds the content-hashed Lean source for every solved claim. Each
   paper claim links to its file and states whether checking is pending, failed,
   or kernel-checked.
@@ -69,7 +72,12 @@ class PublicationBundle:
         return str(self.manifest["bundle_hash"])
 
 
-def build_bundle(manuscript: Manuscript, *, toolchain: Mapping[str, Any] | None = None) -> PublicationBundle:
+def build_bundle(
+    manuscript: Manuscript,
+    *,
+    toolchain: Mapping[str, Any] | None = None,
+    record_files: Mapping[str, bytes] | None = None,
+) -> PublicationBundle:
     document = render_manuscript(manuscript)
     probes = run_probes(manuscript)
     if probes["probes_flipped"] != probes["probes_total"]:
@@ -171,6 +179,18 @@ def build_bundle(manuscript: Manuscript, *, toolchain: Mapping[str, Any] | None 
                 "lean_artifact_path_collision", f"more than one claim resolves to {path}"
             )
         files[path] = str(artifact["source"]).encode("utf-8")
+    for path, data in sorted((record_files or {}).items()):
+        if (
+            not isinstance(path, str)
+            or not path.startswith("records/")
+            or path in files
+            or ".." in Path(path).parts
+            or not isinstance(data, bytes)
+        ):
+            raise PublicationValidationError(
+                "publication_record_file_invalid", f"refused additional record {path!r}",
+            )
+        files[path] = data
 
     manifest: dict[str, Any] = {
         "schema_version": BUNDLE_SCHEMA_VERSION,

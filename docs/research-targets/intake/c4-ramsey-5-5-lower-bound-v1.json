@@ -1,0 +1,196 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "c4-ramsey-5-5-lower-bound-v1",
+  "declared_domain": "ramsey-theory",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "A 43-vertex graph with no 5-clique and no independent 5-set, giving R(5,5) >= 44",
+    "informal_statement": "Exhibit one finite simple undirected graph on 43 vertices that contains neither a clique of size 5 nor an independent set of size 5. By the standard bijection between 2-colourings of the edges of K_n and graphs on n vertices, such a graph shows R(5,5) > 43, that is R(5,5) >= 44, and nothing more.\n\nOnly the lower-bound direction is frozen. The planning item C4 offered a three-way disjunction over routes; the upper-bound route (every graph on 45 vertices contains one of the two configurations) is deliberately out of scope because it would need either a complete exact proof or an independently checked exhaustive certificate at a scale this repository has not authorized, and admitting a third-party exhaustive certificate would need its own ADR.\n\nThe first bounded slice exhausts one frozen finite family in exact integer arithmetic: the 2^21 = 2097152 circulant graphs on Z_43, reduced by the multiplier group Z_43*/{+-1} of order 21 and by complementation to exactly 49940 classes, verified by two independent orbit counts. Exhaustion of that family is a universal statement about the family alone and is never promoted into a bound on R(5,5).",
+    "problem_type": "prove",
+    "tags": [
+      "ramsey-theory",
+      "extremal-graph-theory",
+      "exact-integer-arithmetic",
+      "existential-target",
+      "circulant-graphs",
+      "exhaustive-finite-family",
+      "certificate-replay"
+    ]
+  },
+  "target_claim": {
+    "local_id": "ramsey_5_5_lower_bound_43_vertex_witness",
+    "kind": "conjecture",
+    "statement": "There exists a finite simple undirected graph G = (V, E) with |V| = 43 such that for every S subset V with |S| = 5, S is not a clique of G and S is not an independent set of G; equivalently, some graph on 43 vertices has clique number at most 4 and independence number at most 4, which gives R(5,5) >= 44.",
+    "scope": "existential"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "simple_graph_convention",
+      "kind": "definition",
+      "statement": "A graph is a pair G = (V, E) with V finite and E a set of unordered pairs of distinct elements of V: no loops, no repeated pairs, no directions, no weights. The target fixes V = {0,1,...,42}, so |V| = 43, and the certificate is a specific labelled edge list even though the property is isomorphism-invariant.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "clique_and_independent_set",
+      "kind": "definition",
+      "statement": "For S subset V, S is a clique of G iff every unordered pair of distinct elements of S lies in E, and S is an independent set of G iff no unordered pair of distinct elements of S lies in E. A clique of size 5 means five pairwise adjacent vertices; it is not a K_5 minor, a K_5 subdivision, or a maximal clique. An independent set of size 5 means five pairwise non-adjacent vertices; it is not a maximal independent set or a dominating set.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "ramsey_number_definition",
+      "kind": "definition",
+      "statement": "R(s,t) is the least n >= 1 such that every total assignment of one of two colours red or blue to each edge of the complete graph K_n yields a red clique on s vertices or a blue clique on t vertices. Colourings need not be proper. This is the two-colour graph Ramsey number, not a vertex-Ramsey number, not a hypergraph number R^(3)(s,t), and not a multicolour number R(s,t,u).",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "colouring_graph_bijection",
+      "kind": "lemma",
+      "statement": "For each n, mapping a 2-colouring c of the edges of K_n to the graph G_c on [n] whose edges are exactly the red pairs is a bijection onto the graphs on [n]. Under it a set S spans a red clique iff S is a clique of G_c, and S spans a blue clique iff S is an independent set of G_c. Hence R(s,t) > n iff there exists a graph on n vertices with no clique of size s and no independent set of size t; with s = t = 5 and n = 43, the target statement holds iff R(5,5) >= 44.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "clique_size_monotonicity",
+      "kind": "lemma",
+      "statement": "A graph containing a clique of size k >= 5 contains a clique of size exactly 5, namely any five of its vertices, and identically for independent sets. Therefore 'no clique of size 5' and 'no clique of size at least 5' are the same condition, and the search need only inspect five-element subsets.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "complement_symmetry_diagonal",
+      "kind": "lemma",
+      "statement": "Complementing the edge set corresponds to swapping the two colours, so for the diagonal case s = t a graph G on n vertices has no clique of size s and no independent set of size s if and only if its complement has the same property. The family of 43-vertex graphs with no clique of size 5 and no independent set of size 5 is therefore closed under complementation, which licenses complementation as an exact symmetry quotient in the search.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "vertex_transitive_prime_order_circulant",
+      "kind": "lemma",
+      "statement": "Every vertex-transitive graph on a prime number p of vertices is isomorphic to a circulant graph on Z_p (Turner, 1967). Since 43 is prime, exhausting the circulant graphs on Z_43 exhausts every vertex-transitive graph on 43 vertices. This lemma is used only to strengthen a negative outcome, never to constrain the target; its exact hypotheses and attribution must be confirmed against a primary source before the strengthened statement is reported, and the unstrengthened family exhaustion is retained separately so that a failed attribution check cannot contaminate it.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "supplied_range_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "The planning notes supply the range 43 <= R(5,5) <= 46, whose lower endpoint corresponds to a published 42-vertex witness and whose upper endpoint is commonly attributed to a 2024 preprint. Both endpoints are untrusted and neither is a premise of the target. The lower endpoint is void-triggering: if the current published lower bound is already 44 or more, then a 43-vertex witness is already known or already excluded, this target is void, and it must be re-frozen at a vertex count equal to or above the confirmed bound. The ADR-0055 pre-research novelty re-check must report the current lower bound as an exact number with an evidence link, not as an interval.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "conjectured_equality_43",
+      "kind": "untrusted_source_report",
+      "statement": "It is widely reported that R(5,5) is conjectured to equal 43. Untrusted. If that conjecture is true then no 43-vertex graph with no clique of size 5 and no independent set of size 5 exists and this target is false. The target is therefore an existential the field is reported to expect to fail; the exclusion certificate is the realistic deliverable and is a first-class success criterion, and operator confirmation that such a target is acceptable is an open blocking question.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "r45_equals_25_report",
+      "kind": "untrusted_source_report",
+      "statement": "The literature reports R(4,5) = 25 as a computational determination. Untrusted. Conditional on it, every vertex v of a 43-vertex graph with no clique of size 5 and no independent set of size 5 satisfies deg(v) <= 24, because the neighbourhood of v induces no clique of size 4 and no independent set of size 5, and 42 - deg(v) <= 24, because the non-neighbourhood induces no clique of size 5 and no independent set of size 4; hence 18 <= deg(v) <= 24, and for circulants with degree 2|S| this leaves |S| in {9,10,11,12}, that is 1293292 of the 2097152 generator sets. Because the window rests on a literature value rather than a replayed proof, this pruning is exploration-only: it may reorder the search, and the coverage claim is computed over all 49940 unpruned classes.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "circulant_family_may_be_settled",
+      "kind": "untrusted_source_report",
+      "statement": "No claim is inherited about whether the nonexistence of a cyclic 43-vertex graph with no clique of size 5 and no independent set of size 5 is already published. If it is, the exhaustion outcome of the first slice is a reproduction and must carry the ADR-0055 report class independent_verification, exactly as the Graffiti 197 regression does; it must never be presented as new. The pre-research re-check must search for it explicitly, including under the terminology 'cyclic Ramsey graph' and '(5,5,43) graph'.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "tier_c_blank_entry_inference",
+      "kind": "untrusted_source_report",
+      "statement": "The planning dossier records in its own words that the Tier C request contained one blank entry, that R(5,5) was included because it was the only item in the supplied N1-N15 notes not otherwise represented, and that this inference requires operator confirmation before canonical intake. This is not a mathematical claim but it is a blocking intake condition: intake must not proceed on the inference alone.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "exact_integer_arithmetic_only",
+      "kind": "method_constraint",
+      "statement": "The entire target is decidable by finite Boolean and integer operations on a 43-by-43 symmetric zero-one adjacency matrix, so no rational, algebraic, real, or floating-point arithmetic appears anywhere on the trust path. Floating-point output is refused as a certificate without exception, and its appearance is a defect rather than a tolerance question. Exact size figures on the record: C(43,2) = 903 vertex pairs, C(43,5) = 962598 five-subsets per candidate, 9625980 pair lookups for one unpruned check, and 2^903 labelled graphs on 43 vertices.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "forbidden_routes_and_traps",
+      "kind": "forbidden_route",
+      "statement": "Three routes and traps are named so they are not repeated blind. First, unstructured, random, or heuristic search over the 2^903 labelled graphs on 43 vertices is futile and is forbidden; only exactly enumerable frozen families are admitted, and the family is frozen before search. Second, the reduction that fixes vertex 0 and inspects only C(42,4) = 111930 four-subsets is exact for vertex-transitive candidates and wrong for anything else, so it is bound to the circulant family and must be disabled the moment a non-transitive candidate enters; the reference test over all C(43,5) five-subsets is the only test whose output is admitted. Third, failure of any search, a solver timeout, or a truncated run is never a nonexistence claim, and exhaustion of a frozen finite family is a statement about that family only.",
+      "scope": "definitional"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "exists G : SimpleGraph, VertexSet(G) = {0,1,...,42} and forall S subset VertexSet(G) with Card(S) = 5, (exists u v in S, u != v and {u,v} notin EdgeSet(G)) and (exists u v in S, u != v and {u,v} in EdgeSet(G))",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "exists G a finite simple undirected graph with vertex set {0,...,42}",
+      "forall S a 5-element subset of {0,...,42}, of which there are exactly C(43,5) = 962598",
+      "exists a pair {u,v} subset S with u != v that is not an edge of G, witnessing that S is not a clique",
+      "exists a pair {u,v} subset S with u != v that is an edge of G, witnessing that S is not independent"
+    ],
+    "assumption_local_ids": [
+      "simple_graph_convention",
+      "clique_and_independent_set",
+      "ramsey_number_definition",
+      "colouring_graph_bijection",
+      "clique_size_monotonicity",
+      "complement_symmetry_diagonal",
+      "vertex_transitive_prime_order_circulant",
+      "supplied_range_untrusted",
+      "conjectured_equality_43",
+      "r45_equals_25_report",
+      "circulant_family_may_be_settled",
+      "tier_c_blank_entry_inference",
+      "exact_integer_arithmetic_only",
+      "forbidden_routes_and_traps"
+    ],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      ["G", "a finite simple undirected graph on the labelled vertex set {0,...,42}"],
+      ["S", "a 5-element subset of the vertex set, universally quantified over all C(43,5) = 962598 such subsets"],
+      ["planning phrase 'a graph on 43 vertices'", "exists G with vertex set {0,...,42}"],
+      ["planning phrase 'neither a 5-clique nor an independent set of size 5'", "forall S with |S| = 5, S is neither a clique nor an independent set"],
+      ["planning phrase 'proving R(5,5) >= 44'", "not a separate quantifier structure: by the colouring/graph bijection it is the same statement as the 43-vertex witness clause"]
+    ],
+    "definition_mapping": [
+      ["5-clique", "a set of 5 pairwise adjacent vertices"],
+      ["independent set of size 5", "a set of 5 pairwise non-adjacent vertices"],
+      ["R(5,5)", "the least n such that every 2-colouring of the edges of K_n contains a red clique on 5 vertices or a blue clique on 5 vertices"],
+      ["(5,5,43) graph", "a graph on 43 vertices with clique number at most 4 and independence number at most 4"],
+      ["planning phrase 'improve the supplied range 43 <= R(5,5) <= 46'", "not mapped: the range is untrusted planning data and is not part of the frozen statement"]
+    ],
+    "assumption_delta": [
+      "The planning item is a three-way disjunction over routes; this definition freezes one disjunct, the 43-vertex existential, because it is the only route whose positive outcome is a single finite object an independent verifier can replay end to end in exact integer arithmetic.",
+      "The planning item's second route, 'proving R(5,5) >= 44', is not a separate route: by the colouring/graph bijection it is the same statement as the witness clause.",
+      "The planning item's third route, proving R(5,5) <= 45, is excluded; it would need a complete exact proof or an independently checked exhaustive certificate at an unauthorized scale, and admitting a third-party exhaustive certificate would need its own ADR.",
+      "Neither endpoint of the supplied interval 43 <= R(5,5) <= 46 is assumed; the interval enters only as an untrusted source report the pre-research re-check must revalidate.",
+      "The vertex set is fixed to {0,...,42} so the certificate is a concrete serializable object with a content hash rather than an isomorphism class.",
+      "Vertex-transitivity, regularity, and circulant structure are properties of the first search family only, not hypotheses of the target, which admits any 43-vertex graph."
+    ],
+    "edge_case_delta": [
+      "The two conditions are the same condition stated for G and for its complement: no clique of size 5 means clique number at most 4, and no independent set of size 5 means independence number at most 4.",
+      "The empty graph and the complete graph on 43 vertices both fail immediately, the first on independence and the second on cliques, so no degenerate candidate survives.",
+      "No subset of size less than 5 is examined; a clique of size 4 is permitted and expected.",
+      "Because the case is diagonal and 5 is odd, self-complementary candidates are admissible and are not removed by the complementation symmetry quotient.",
+      "'No clique of size 5' and 'no clique of size at least 5' coincide by clique-size monotonicity, so exhaustive inspection of five-element subsets is complete."
+    ],
+    "strength_relation": "weaker"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "candidate_graphs_exactly_checked",
+      "circulant_multiplier_orbits_exhausted",
+      "five_subsets_exactly_enumerated",
+      "exclusion_witnesses_recorded",
+      "failed_routes_preserved",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "an exhibited 43-vertex graph, given as a canonical hashed edge list, whose exhaustive exact check of all 962598 five-subsets finds no clique of size 5 and no independent set of size 5",
+      "an exact exclusion certificate covering every one of the 49940 multiplier-and-complement classes of circulant graphs on Z_43, each class carrying a witness five-subset, which settles the circulant family and settles nothing else",
+      "or an explicit unresolved outcome that records the smallest remaining obligation, the exclusion set reached, and the exact frontier of the enumerated family"
+    ],
+    "stopping_rules": [
+      "stop on an exact certificate: a hashed 43-vertex edge list whose independent verifier replay finds no clique of size 5 and no independent set of size 5",
+      "stop when the frozen circulant family is exhausted, recording one witness five-subset per class",
+      "stop when the fresh model spend reaches USD 20",
+      "stop when no new exclusion witness, reduction, or family extension has been recorded for two consecutive review points",
+      "never promote exhaustion of the frozen finite family into a bound on R(5,5) or into a nonexistence claim about 43-vertex graphs; a stopped search records an unresolved outcome"
+    ]
+  }
+}

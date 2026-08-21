@@ -760,6 +760,48 @@ class ReplayTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             _load_session(path)
 
+    def test_probe_edited_iteration_usage_breaks_the_operational_hash(self) -> None:
+        """PROBE: semantic stability must not leave spend observations unaudited."""
+        from math_research.runtime_cli import _load_session
+
+        gateway = Gateway([proposal("A", ("a",))], [verdict("unresolved", ("g",))])
+        _, root, holder = run_session(gateway)
+        self.addCleanup(holder.cleanup)
+        path = root / "session.json"
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["iterations"][0]["usage"]["input_tokens"] += 1
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "operational_hash mismatch"):
+            _load_session(path)
+
+    def test_probe_edited_session_rollup_is_refused_even_before_hash_verification(self) -> None:
+        """PROBE: a session total is derived from iterations, never self-attested."""
+        from math_research.runtime_cli import _load_session
+
+        gateway = Gateway([proposal("A", ("a",))], [verdict("unresolved", ("g",))])
+        _, root, holder = run_session(gateway)
+        self.addCleanup(holder.cleanup)
+        path = root / "session.json"
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["usage"]["cost_microusd"] += 1
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "sum of iteration usage"):
+            _load_session(path)
+
+    def test_probe_report_totals_are_rederived_from_durable_model_calls(self) -> None:
+        """PROBE: changing a durable call row cannot leave a plausible report total."""
+        gateway = Gateway([proposal("A", ("a",))], [verdict("unresolved", ("g",))])
+        session, root, holder = run_session(gateway)
+        self.addCleanup(holder.cleanup)
+        with SQLiteWorkspace(root / "workspace.sqlite3") as workspace:
+            with workspace.transaction() as connection:
+                connection.execute(
+                    "UPDATE model_calls SET input_tokens=input_tokens+1 "
+                    "WHERE call_id=(SELECT call_id FROM model_calls ORDER BY call_id LIMIT 1)"
+                )
+            with self.assertRaisesRegex(ValueError, "durable model-call rows"):
+                session_facts(session, workspace)
+
     def test_a_missing_novelty_recheck_makes_replay_fail(self) -> None:
         """Replay retains the exact re-check that opened research."""
         from math_research.runtime_cli import _load_session
@@ -840,7 +882,7 @@ class ProbeInventoryTests(unittest.TestCase):
     suite instead of quietly shrinking the guarantee.
     """
 
-    EXPECTED_PROBES = 17
+    EXPECTED_PROBES = 20
 
     def test_every_declared_probe_is_present(self) -> None:
         probes = sorted(

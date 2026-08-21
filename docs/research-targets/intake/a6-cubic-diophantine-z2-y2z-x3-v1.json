@@ -1,0 +1,192 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "a6-cubic-diophantine-z2-y2z-x3-v1",
+  "declared_domain": "diophantine-geometry",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "Infinitude of the integral solution set of z^2 + y^2 z + x^3 - 2 = 0",
+    "informal_statement": "Let S be the set of triples (x,y,z) of rational integers with z^2 + y^2 z + x^3 - 2 = 0. Prove that S is infinite.\n\nOne direction is frozen. The finiteness reading of the same source question is a rejected target: a proof of finiteness refutes this claim and is retained as a recorded negative outcome, not as an answer to it. The choice of direction is justified by an exploration-only divisor heuristic and by a complete sweep that is exhaustive in x for |x| <= 30000 over all y and z; neither is evidence of truth and neither creates warrant.",
+    "problem_type": "prove",
+    "tags": [
+      "cubic-surface",
+      "integral-points",
+      "diophantine-equation",
+      "divisor-characterization",
+      "mordell-specialization",
+      "exact-integer-arithmetic",
+      "frozen-direction"
+    ]
+  },
+  "target_claim": {
+    "local_id": "integral_solution_set_infinite",
+    "kind": "conjecture",
+    "statement": "The set S = { (x,y,z) in Z^3 : z^2 + y^2 * z + x^3 - 2 = 0 } is infinite; equivalently, for every positive integer B there exists (x,y,z) in S with max(|x|,|y|,|z|) > B.",
+    "scope": "particular"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "equation_and_solution_set",
+      "kind": "definition",
+      "statement": "The frozen equation is z^2 + y^2 * z + x^3 - 2 = 0, equivalently z^2 + y^2 * z + x^3 = 2, with x, y, z ranging over all of Z including zero and negative values. S is its full solution set in Z^3. Solutions are rational-integer triples: S-integral points, algebraic-integer points, and rational points are outside the frozen statement. Height means max(|x|,|y|,|z|); no logarithmic or projective height is used.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "sign_symmetry",
+      "kind": "definition",
+      "statement": "y occurs only through y^2, so (x,y,z) in S if and only if (x,-y,z) in S. This is the only coordinate sign change that preserves the equation: x -> -x changes x^3 and z -> -z changes the y^2 z term, and neither is a symmetry. Solutions are therefore normalized to y >= 0, and the infinitude claim is unaffected by that normalization because the fibres of the normalization have size at most 2.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "root_pairing",
+      "kind": "elementary_derivation",
+      "statement": "For fixed x and y the equation is a monic quadratic in z, so its two roots z and z' satisfy z + z' = -y^2 and z * z' = x^3 - 2. If one root is a rational integer then so is the other, because their sum is an integer. Solutions therefore occur in pairs sharing (x,y), and a search that reports one root must report the other.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "divisor_characterization",
+      "kind": "elementary_derivation",
+      "statement": "2 is not a perfect cube, so x^3 - 2 != 0 for every x in Z. Hence z != 0 for every solution, since z = 0 forces x^3 = 2, and z divides x^3 - 2. Conversely, for x in Z and z a divisor of x^3 - 2, the triple (x,y,z) lies in S if and only if -(z + (x^3 - 2)/z) is a nonnegative perfect square, and y is then its nonnegative square root. The full solution set over all y and z for a given x is therefore an exact walk over the divisors of x^3 - 2. This is re-derived and re-checked inside the slice rather than assumed.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "verified_small_solutions",
+      "kind": "local_exact_computation",
+      "statement": "A sweep using the divisor characterization, exhaustive in x for |x| <= 30000 and complete in y and z for each such x, with every reported triple re-checked by exact substitution, found 57 values of x carrying a solution and 116 triples with y >= 0. The solutions with |x| <= 200, written as (x, y, z) with y >= 0, are (0,1,1), (0,1,-2), (1,0,1), (1,0,-1), (-2,3,1), (-2,3,-10), (-7,8,5), (-7,8,-69), (8,7,-15), (8,7,-34), (20,17,-31), (20,17,-258), (26,17,-87), (26,17,-202), (26,19,-58), (26,19,-303), (-32,9,145), (-32,9,-226), (-52,31,129), (-52,31,-1090), (-94,221,17), (-94,221,-48858), (128,59,-775), (128,59,-2706), (133,78,-415), (133,78,-5669), (161,64,-1903), (161,64,-2193), (-199,308,83), (-199,308,-94947). The count of x values carrying a solution was 14, 24, 34, 46 and 57 at the cutoffs |x| <= 200, 1000, 3000, 10000 and 30000. This is a bounded local computation: it determines S only inside the swept envelope.",
+      "scope": "bounded"
+    },
+    {
+      "local_id": "mordell_specializations",
+      "kind": "elementary_derivation",
+      "statement": "Three slices of the equation are Mordell curves: y = 0 gives z^2 = 2 - x^3, z = 1 gives y^2 = 1 - x^3, and z = -1 gives y^2 = x^3 - 1. Each has finitely many integral points by Siegel's theorem, so no infinite family can live inside these slices and any infinitude proof must leave them. No published integral-point table for these curves is assumed: a complete determination of their integral points is an acquisition item and, if re-derived locally, a capability item.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "rational_factorization_family",
+      "kind": "elementary_derivation",
+      "statement": "In Z[t]/(t^3 - 2) the identity (2t^2 + 2t - 1)^2 = 4t + 17 holds, which yields the polynomial identity over Z, verified by coefficient comparison, (m^2 - 17)^3 - 128 = (m^3 + 3m^2 - 21m - 71)(m^3 - 3m^2 - 21m + 71). For odd m both cubic factors are divisible by 8, which is a complete check because each factor modulo 8 depends only on m modulo 8, and x = (m^2 - 17)/4 is then an integer. Writing A(m) and B(m) for the two factors divided by 8, x^3 - 2 = A(m) * B(m), and A(m) + B(m) = m(m^2 - 21)/4. A solution arises exactly when m(m^2 - 21)/4 equals y^2 or -y^2; this holds at m = 3 and m = 7, recovering (-2,3,1), (-2,3,-10), (8,7,-15) and (8,7,-34), and is otherwise a genus-one condition. The family therefore supplies infinitely many factorizations of x^3 - 2 but only finitely many solutions.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "family_route_trap",
+      "kind": "route_constraint",
+      "statement": "The rational-factorization route above must not be repeated blind. Its failure mode is structural: any construction that fixes the factorization x^3 - 2 = A * B by polynomial identities forces the extra condition A + B = plus or minus a square, which is a genus-one condition in the parameter and therefore has finitely many solutions. Every new candidate family must be tested for this collapse before search, by computing the induced square condition and its genus, and the test result must be recorded whether or not the family survives.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "infinitude_heuristic_exploration_only",
+      "kind": "heuristic_exploration_only",
+      "statement": "An exploration-only heuristic motivated the choice of direction: for each x the number of divisors of x^3 - 2 is about log|x| and each divisor split has to make a quantity of size about |x|^(3/2) a perfect square, giving an expected count over |x| <= X of order X^(1/4) * log X, which diverges. The measured counts 14, 24, 34, 46, 57 at X = 200, 1000, 3000, 10000, 30000 are consistent with that order. This heuristic is exploration-only, is not evidence that the target claim is true, creates no warrant, and may never enter a certificate or a reported result.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "local_obstruction_battery",
+      "kind": "definition",
+      "statement": "The local battery is frozen as: reduction of the equation modulo 8 and modulo 9, constraining the 2-adic and 3-adic structure of z and y; reduction modulo the primes 7, 13, 31 and 43, which are the small primes congruent to 1 modulo 3 where cubing is not surjective, so that x^3 - 2 misses residue classes; and 2-adic and 3-adic valuation conditions on the pair (z, (x^3 - 2)/z) derived from z + (x^3-2)/z = -y^2. Because S contains (1,0,1), no member of this battery can be a global obstruction. The battery is used only to prune divisor classes for a given x and to refute candidate parametric families, and a battery pass is never evidence for the target.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "epoch_membership_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "The planning dossier reports, from operator-supplied notes, that this equation is one of six remaining after three of nine were settled in 2026. That membership claim, the count of settled equations, and the 2026 date are untrusted, unacquired, and unreviewed. They must be verified against the original problem statement and covered by the ADR-0055 pre-research novelty re-check before work starts.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "intended_question_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "The precise intended question of the original source is not verifiable offline: determine all integral solutions, decide finiteness, or decide infinitude are three different targets, and which one the source poses is unknown here. The frozen target commits to infinitude of the exactly specified set S, which is well defined independently of the source, so the freeze is clean; but the mapping to the source statement is therefore unresolved and human approval of that mapping is still required.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "exact_arithmetic_requirement",
+      "kind": "exactness_constraint",
+      "statement": "All arithmetic is exact: arbitrary-precision integers for substitution, divisors, factorization and square testing, and exact rationals or polynomial coefficient comparison for identities. Every reported triple is re-checked by substituting into z^2 + y^2 z + x^3 - 2 and confirming the value 0 exactly. Floating-point square roots, floating-point height estimates, and numerical elliptic-curve or lattice output are exploration-only and may never appear in a certificate.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "finite_search_not_a_determination",
+      "kind": "route_constraint",
+      "statement": "A sweep that is complete in x for |x| <= X and exhaustive in y and z establishes only that S is exactly the listed set inside that envelope. It cannot establish infinitude, it cannot establish finiteness, and its growth counts are not a trend argument for either. What it can support is a new solution above the previous envelope, the refutation of a candidate family at a specific parameter value, and an exact record of the frontier.",
+      "scope": "particular"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "let S = { (x,y,z) in Z^3 : z^2 + y^2 * z + x^3 - 2 = 0 }; claim: forall B in Z with B >= 1, exists (x,y,z) in S with max(|x|,|y|,|z|) > B",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "forall B a positive integer",
+      "exists (x,y,z) in Z^3 with z^2 + y^2 * z + x^3 - 2 = 0 and max(|x|,|y|,|z|) > B"
+    ],
+    "assumption_local_ids": [
+      "equation_and_solution_set",
+      "sign_symmetry",
+      "root_pairing",
+      "divisor_characterization",
+      "verified_small_solutions",
+      "mordell_specializations",
+      "rational_factorization_family",
+      "family_route_trap",
+      "infinitude_heuristic_exploration_only",
+      "local_obstruction_battery",
+      "epoch_membership_untrusted",
+      "intended_question_untrusted",
+      "exact_arithmetic_requirement",
+      "finite_search_not_a_determination"
+    ],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      ["determine the integral solutions, and in particular the finiteness or infinitude of the integral solution set", "one direction is frozen: S is infinite. The finiteness reading is a rejected target retained only as an outcome shape"],
+      ["x, y, z in Z", "all three coordinates range over all of Z, including zero and negative values"],
+      ["the solution set is infinite", "forall B >= 1 there exists a solution of height greater than B, where height is max(|x|,|y|,|z|)"],
+      ["the equation z^2 + y^2 z + x^3 - 2 = 0", "one fixed equation with the constant -2 on the left-hand side; no parameter is left free"]
+    ],
+    "definition_mapping": [
+      ["integral solution", "a triple of rational integers; not an S-integral, algebraic-integer, or rational point"],
+      ["height", "max(|x|,|y|,|z|); no logarithmic or projective height is used"],
+      ["finiteness", "the cardinality of S is finite; the frozen target is exactly its negation and is not a disjunction of the two directions"],
+      ["known small solutions", "the triples listed in assumption verified_small_solutions, each re-checked by exact substitution"],
+      ["obvious symmetries", "only y -> -y; x -> -x and z -> -z do not preserve the equation"]
+    ],
+    "assumption_delta": [
+      "The source poses a determination question with two possible answers; the frozen target commits to infinitude, so a proof of finiteness refutes the frozen claim rather than answering it, and is retained under the negative-outcome contract.",
+      "No bound on x, y or z is assumed. The bounded sweep is a search envelope and is not part of the statement.",
+      "No published integral-point table for the Mordell slices z = 1, z = -1 and y = 0 is assumed; using one is an acquisition item.",
+      "The direction was chosen using an exploration-only heuristic and a bounded sweep; neither is asserted as evidence for the claim, and the choice is auditable rather than justified."
+    ],
+    "edge_case_delta": [
+      "z = 0 is impossible, since it forces x^3 = 2 and 2 is not a cube; the divisor characterization depends on this.",
+      "y -> -y is a symmetry, so solutions are enumerated with y >= 0; the infinitude claim is unaffected.",
+      "Solutions come in pairs sharing (x,y): the two roots z and z' of the monic quadratic satisfy z * z' = x^3 - 2 and z + z' = -y^2, and are rational integers together.",
+      "S is nonempty, since (1,0,1) and (1,0,-1) lie in it, so no global congruence obstruction can exist and the local battery can only prune.",
+      "x = 0 is allowed and contributes (0,1,1) and (0,1,-2); x = 1 contributes the two solutions with y = 0."
+    ],
+    "strength_relation": "unresolved"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "solutions_exactly_verified",
+      "x_values_swept",
+      "divisor_classes_pruned",
+      "candidate_families_refuted",
+      "local_obstruction_checks_run",
+      "failed_routes_preserved",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "an exhibited parametric family given by explicit integer polynomials in one parameter, together with a polynomial identity over Z verified by coefficient comparison, establishing that S is infinite",
+      "an exhibited solution of height above the previously swept envelope, verified by exact substitution, together with the exact envelope in which S is now completely determined",
+      "or an explicit unresolved outcome recording the smallest remaining obligation, namely the exact list of candidate families refuted with their induced square conditions and the exact envelope in which S is completely determined"
+    ],
+    "stopping_rules": [
+      "stop when a parametric family is verified by an exact polynomial identity over Z and its square condition is shown to have infinitely many integer solutions",
+      "stop when a proof of finiteness is produced: it refutes the frozen target and is recorded as a refutation, never reported as a success against this claim",
+      "stop when the fresh model spend reaches USD 20",
+      "stop when no candidate family has been refuted and no new solution has been certified for two consecutive review points",
+      "never promote a complete sweep over a bounded range of x into finiteness or into infinitude: exhaustion of the envelope determines S only inside that envelope"
+    ]
+  }
+}

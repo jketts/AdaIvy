@@ -499,6 +499,43 @@ changes the manuscript's `novelty: not_assessed`, creates warrant, or authorizes
 network access. Phase 4D output can be referenced as evidence after human
 review, but does not satisfy the checkpoint by itself.
 
+## Automatic solved-result publication reports
+
+ADR-0056 makes the record-to-paper path atomic for every reader-facing report
+that contains a solved mathematical claim. With the pinned typesetter installed,
+the supported command is:
+
+```bash
+PYTHONPATH=src PATH="$PWD/work/toolchains/basictex-2026.0301/bin/universal-darwin:$PATH" \
+  python3 -m math_research.cli publication build MANUSCRIPT.json --output-dir BUNDLE \
+  --campaign-export CAMPAIGN.json --campaign-link PUBLICATION-CAMPAIGN-LINK.json
+```
+
+One invocation validates the manuscript and its falsifiability probes, projects
+the frozen classic LaTeX template, emits each linked Lean artifact, performs two
+clean offline `-no-shell-escape` compiles, compares the PDF bytes, and verifies
+the completed manifest. The destination must be fresh. `publication render`
+and `publication typeset` remain lower-level diagnostics; diagnostic phase JSON
+and Markdown reports are not publication papers.
+
+ADR-0057 adds the provenance-closed campaign boundary above the earlier
+text-only central-lead runtime. One AdaIvy gateway-backed lead emits one typed
+action per call: derive, write a bounded program, run a previously recorded
+program, inspect the byte-exact result, select, verify, suspend, ask, or report.
+The orchestrator rejects unknown tools, host paths, network, environment fields,
+and excessive resources before calling the injected experiment runner. The
+provider activation request uses the same gateway and counts against the same
+attempt/token/cost budget. Production model-authored program execution remains
+disabled until the dedicated digest-pinned OCI image and enforcement probes
+pass; the offline suite uses a zero-process scripted runner.
+
+For an AI-authored solved claim, `publication build` requires both campaign
+files. It re-verifies semantic and operational hashes, closes each claim and
+certificate to its producing actions/artifacts, derives origin and accounting,
+and then replaces manuscript-authored attribution and usage fields. External
+Codex work stays external; failed and incomplete calls remain counted; cost is
+explicitly an estimate from pinned pricing rather than provider billing.
+
 For `prior_art_found`, the operator also records the relationship to the target,
 the earlier resolution kind, and whether that resolution was independently
 verified. AdaIvy derives rather than accepts the report role and target status.

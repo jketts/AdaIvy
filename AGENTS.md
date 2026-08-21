@@ -220,6 +220,20 @@ inside an ADR-0047 iteration so the two loops cannot multiply each other's
 bounds. The runtime measures no retention gain and activates no specialist,
 parallel, evolutionary, or higher search tier.
 
+ADR-0057 activates a provenance-closed campaign control plane above ADR-0047.
+The same central lead can propose routes, write a bounded program, request an
+allowlisted run, inspect exact recorded output, select a candidate, and submit
+that selection to an isolated verifier. Every provider attempt, program, tool
+artifact, selection, usage observation, and estimated cost closes inside the
+campaign export with semantic and operational hashes. The live activation probe
+uses the same gateway and budget; a failed probe is terminal and recorded.
+External Codex or human work remains an explicit import and cannot be called an
+AdaIvy discovery. Reader-facing AI-authored publication builds derive origin
+and disclosure from the verified campaign/link pair. Production generated-code
+execution remains disabled until its distinct digest-pinned OCI sandbox gate
+passes; the offline suite uses only injected scripted ports. This activates no
+parallel specialist, evolutionary, or higher search tier.
+
 The Phase 1 domain/trust semantics, sealed Phase 2 evidence, Phase 3A memory,
 sealed Phase 3B runtime, and Phase 4A rights/applicability boundaries remain
 authoritative. ADR-0048's bounded Azure proposer, ADR-0049's bounded exact

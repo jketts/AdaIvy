@@ -42,7 +42,7 @@ REPORT_INSTANT ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 OUT ?= reports/local/run-$(REPORT_STAMP)
 WORK ?= work/$(REPORT_STAMP)
 
-.PHONY: check check-all check-sealed check-gate setup-typeset check-typeset check-phase4b-oci \
+.PHONY: check check-all check-sealed check-gate setup-typeset check-typeset publication-build check-phase4b-oci \
         spike-phase5-sdp test phase0 phase1 problem-intake phase2 phase3a phase3b phase4a phase4b \
         phase4c phase4d phase5 phase6 synthesis publication report clean help
 
@@ -53,10 +53,11 @@ help:
 	@printf '  check-gate    phase 4 gate tests (requires the disposable jsonschema env)\n'
 	@printf '  setup-typeset acquire and hash-check BasicTeX under work/toolchains\n'
 	@printf '  check-typeset publication PDF build (requires the pinned TeX Live engine)\n'
+	@printf '  publication-build automatically emit a complete TeX/Lean/PDF bundle\n'
 	@printf '  check-phase4b-oci strict Phase 4B parser gate (requires exact pinned image)\n'
 	@printf '  spike-phase5-sdp  ADR-0045 noncommuting-SDP comparison (engines optional)\n'
 	@printf '  check-all     check + check-sealed\n'
-	@printf '  report        write every readable artifact to $$(OUT) with a hashed index\n'
+	@printf '  report        write every readable artifact and compile its publication PDF\n'
 	@printf '                default OUT=reports/local/run-<stamp> (gitignored)\n'
 	@printf '  clean         remove __pycache__ and stray sqlite journals\n'
 
@@ -326,7 +327,7 @@ publication:
 	  $(PY) -m math_research.cli publication inspect "$$d/bundle" \
 	    > "$$d/inspect.json" && \
 	  diff -r "$$d/bundle" "$$d/replay" >/dev/null && \
-	  $(PY) -c 'import json,sys; m=json.load(open(sys.argv[1])); c=m["evidence_class_counts"]; t=open(sys.argv[2],encoding="utf-8").read(); assert m["verified"] is True, "publication bundle did not verify"; assert c["kernel_checked_theorem"] == 0, "publication rendered a theorem with no attestation: %s" % c; assert (c["exact_certificate_proposition"], c["proposal"]) == (3, 2), "publication evidence class counts moved: %s" % c; assert m["probes_flipped"] == m["probes_total"] and m["probes_total"] >= 21, "publication probes moved: %s of %s" % (m["probes_flipped"], m["probes_total"]); assert m["typeset_status"] == "not_typeset" and m["pdf_sha256"] is None, "publication reported a typeset PDF without a compile"; assert "contains no kernel-checked theorem" in t, "publication status block stopped naming the absent theorems"; assert "\\begin{adatheorem}" not in t, "publication emitted a theorem environment"' \
+	  $(PY) -c 'import json,sys; m=json.load(open(sys.argv[1])); c=m["evidence_class_counts"]; t=open(sys.argv[2],encoding="utf-8").read(); assert m["verified"] is True, "publication bundle did not verify"; assert c["kernel_checked_theorem"] == 0, "publication rendered a theorem with no attestation: %s" % c; assert (c["exact_certificate_proposition"], c["proposal"]) == (3, 2), "publication evidence class counts moved: %s" % c; assert m["probes_flipped"] == m["probes_total"] and m["probes_total"] >= 21, "publication probes moved: %s of %s" % (m["probes_flipped"], m["probes_total"]); assert m["typeset_status"] == "not_typeset" and m["pdf_sha256"] is None, "publication reported a typeset PDF without a compile"; assert "no fully Lean-verified Theorems" in t, "publication status block stopped naming the absent fully verified theorems"; assert "No linked formal artifact has a recorded successful Lean kernel check" in t, "publication status block stopped stating the Lean result"; assert "\\begin{adatheorem}" not in t, "publication emitted a theorem environment"' \
 	    "$$d/inspect.json" "$$d/bundle/paper.tex" && \
 	  rm -rf "$$d" && \
 	  printf 'publication ok (0 theorems, 3 exact propositions, 2 proposals; 21 probes flipped; not typeset)\n'
@@ -362,6 +363,20 @@ check-typeset:
 	  rm -rf "$$d" && \
 	  printf 'typeset ok (byte-reproducible across two clean compiles)\n'
 
+# One supported command for a reader-facing publication report. It always
+# projects the records, emits every required Lean source, and typesets the PDF;
+# a missing/mismatched engine or incomplete artifact is a hard failure.
+MANUSCRIPT ?= fixtures/publication/manuscript-v1.json
+PUBLICATION_OUT ?= output/pdf/publication
+CAMPAIGN_EXPORT ?=
+CAMPAIGN_LINK ?=
+publication-build:
+	@printf '\n== automatic publication report -> $(PUBLICATION_OUT) ==\n'
+	@export PATH="$(TYPESET_BIN):$$PATH"; \
+	  $(PY) -m math_research.cli publication build "$(MANUSCRIPT)" \
+	    --output-dir "$(PUBLICATION_OUT)" \
+	    $(if $(CAMPAIGN_EXPORT),--campaign-export "$(CAMPAIGN_EXPORT)") $(if $(CAMPAIGN_LINK),--campaign-link "$(CAMPAIGN_LINK)")
+
 # `make report` is the durable counterpart to `make check`. The phase targets are
 # GATES: they render into a mktemp directory and delete it, because writing into a
 # tracked path on every check would churn the repo. This target does the same work
@@ -376,7 +391,8 @@ check-typeset:
 # Workspaces go to work/, also gitignored. They are append-only sqlite state that
 # a run needs and no reader does, and a fresh directory per run is required
 # because replaying an identical record into an existing workspace is refused by
-# design.
+# design. Reader-facing publication output is different: it is automatically
+# projected and compiled here and therefore requires the pinned typesetter.
 report:
 	@printf '\n== local report -> $(OUT) ==\n'
 	@out="$(OUT)"; work="$(WORK)"; \
@@ -410,7 +426,8 @@ report:
 	    $(PHASE5_INSTANT) $(PHASE6_INSTANT) --output-dir "$$out/phase6" >/dev/null && \
 	  $(PY) -m math_research.synthesis_cli export "$$work/synthesis" \
 	    "$$out/synthesis/synthesis-export.json" >/dev/null && \
-	  $(PY) -m math_research.cli publication render \
+	  export PATH="$(TYPESET_BIN):$$PATH" && \
+	  $(PY) -m math_research.cli publication build \
 	    fixtures/publication/manuscript-v1.json --output-dir "$$out/publication" >/dev/null && \
 	  $(PY) -m math_research.report_index "$$out" --recorded-at "$(REPORT_INSTANT)" && \
 	  printf '\nreport written to %s -- open %s/INDEX.md\n' "$$out" "$$out"

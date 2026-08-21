@@ -70,6 +70,23 @@ def build_bibliography(manuscript: Manuscript) -> tuple[BibliographyEntry, ...]:
         source = manuscript.sources[source_id]
         bibliographic = source["bibliographic"]
         entry_type = str(bibliographic["entry_type"])
+        cited_passage_ids = {
+            str(manuscript.citations[used_id]["passage_id"])
+            for used_id in used
+            if manuscript.citations[used_id]["citation_class"] == "source_record"
+            and str(manuscript.citations[used_id]["source_id"]) == source_id
+            and manuscript.citations[used_id]["passage_id"] is not None
+        }
+        cited_anchors = sorted({
+            str(passage["anchor"])
+            for passage in source["passages"]
+            if str(passage["passage_id"]) in cited_passage_ids
+        })
+        addendum_parts = []
+        if cited_anchors:
+            label = "located passage" if len(cited_anchors) == 1 else "located passages"
+            addendum_parts.append(label + " " + "; ".join(cited_anchors))
+        addendum_parts.append(f"content hash {source['content_hash']}")
         fields: list[tuple[str, str]] = [
             ("author", escape_prose(str(bibliographic["author"]), f"{source_id}.author")),
             ("title", escape_prose(str(bibliographic["title"]), f"{source_id}.title")),
@@ -79,7 +96,7 @@ def build_bibliography(manuscript: Manuscript) -> tuple[BibliographyEntry, ...]:
             ),
             ("year", str(bibliographic["year"])),
             ("file", escape_prose(str(bibliographic["identifier"]), f"{source_id}.identifier")),
-            ("addendum", f"content hash {source['content_hash']}"),
+            ("addendum", "; ".join(addendum_parts)),
         ]
         entries[source_id] = BibliographyEntry(
             key=bib_key(source_id), entry_type=entry_type, source_id=source_id,

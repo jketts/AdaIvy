@@ -1,0 +1,198 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "b6-chowla-cosine-negative-excursion-v1",
+  "declared_domain": "harmonic-analysis",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "Explicit infinite construction with negative cosine-sum excursion of smaller order than the set size",
+    "informal_statement": "Decide whether there is an explicitly presented infinite sequence of finite sets A_1, A_2, ... of positive integers, with card(A_k) strictly increasing, whose negative excursion is of strictly smaller order than the set size under the definitions frozen locally in this intake.\n\nAll three load-bearing conventions are authored here and not copied from a primary source, because no source is acquired. f_A(x) = sum over a in A of cos(a x) with every coefficient exactly 1. The domain is x in [0, 2*pi), which is the whole real range because each a is an integer and f_A is 2*pi-periodic. The negative excursion is m(A) = -min over x in [0, 2*pi) of f_A(x), a nonnegative real number. The comparison denominator is card(A) with no rescaling of f_A.\n\nBecause these conventions are local, approval_status is needs_clarification: the operator must supply the primary source's normalization, domain, and definition of negative excursion, and must say what quantity the reported constants 1 and 1/20 attach to, before this target is treated as a reading of the published problem. Those two constants are untrusted comparison values and are not the target.",
+    "problem_type": "explore",
+    "tags": [
+      "chowla-cosine-problem",
+      "chebyshev-reduction",
+      "exact-analytic-certificate",
+      "existential-target",
+      "harmonic-analysis",
+      "no-floating-point"
+    ]
+  },
+  "target_claim": {
+    "local_id": "explicit_family_with_sublinear_negative_excursion",
+    "kind": "existence_claim",
+    "statement": "There exists an explicitly presented sequence of finite nonempty sets A_1, A_2, ... of positive integers with card(A_k) strictly increasing in k, together with a computable function K from positive rationals to positive integers, such that for every rational eps > 0 and every k >= K(eps) the inequality m(A_k) <= eps * card(A_k) holds, where m(A) = -min over x in [0, 2*pi) of the sum over a in A of cos(a x).",
+    "scope": "existential"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "finite_integer_set_definition",
+      "kind": "definition",
+      "statement": "Each A is a finite nonempty set of distinct positive integers. It is a set and not a multiset, so no frequency or coefficient multiplicity is carried. Zero is excluded from A because cos(0 * x) = 1 would add a constant that shifts every value of f_A and would change the meaning of the excursion. Negative and non-integer frequencies are excluded.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "cosine_sum_and_normalization",
+      "kind": "definition",
+      "statement": "f_A(x) = sum over a in A of cos(a x), with every coefficient exactly 1 and no scaling applied to f_A. The comparison denominator in the target inequality is card(A), the number of elements. Rejected normalizations: dividing f_A by card(A), dividing by sqrt(card(A)), comparing against sum of coefficients, and comparing against any power card(A)^theta with theta != 1.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "domain_definition",
+      "kind": "definition",
+      "statement": "x ranges over the real interval [0, 2*pi). Because every element of A is an integer, f_A is 2*pi-periodic, so this interval realizes every value f_A takes on the real line and the choice loses nothing. Rejected domains: [0, pi], the punctured interval excluding 0, a proper arc bounded away from 0, the rational multiples of pi, and the integers.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "negative_excursion_definition",
+      "kind": "definition",
+      "statement": "The negative excursion is m(A) = -min over x in [0, 2*pi) of f_A(x). It is the magnitude of the most negative value taken by f_A. Rejected readings: the signed minimum itself, the integral or L^1 norm of the negative part of f_A, the maximum of abs(f_A), the supremum over a restricted subdomain, and the largest negative Fourier-side quantity.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "asymptotic_epsilon_form",
+      "kind": "definition",
+      "statement": "m(A_k) = o(card(A_k)) is frozen in explicit epsilon form: for every rational eps > 0 there is an explicitly computable K(eps) such that m(A_k) <= eps * card(A_k) for all k >= K(eps). An unquantified 'improved constant', a single set achieving a small ratio, or a claim without a computable K does not meet the target.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "minimum_attained_and_nonpositive",
+      "kind": "lemma",
+      "statement": "f_A is continuous and 2*pi-periodic, so its minimum over [0, 2*pi) is attained. The mean of cos(a x) over a full period is 0 for every nonzero integer a, so the mean of f_A is 0 and therefore min f_A <= 0 and m(A) >= 0. These are standard textbook facts.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "chebyshev_reduction",
+      "kind": "lemma",
+      "statement": "For every nonnegative integer a, cos(a x) = T_a(cos x) where T_a is the Chebyshev polynomial of the first kind, defined by T_0 = 1, T_1(c) = c, T_(k+1)(c) = 2 c T_k(c) - T_(k-1)(c), and having integer coefficients. Hence f_A(x) = P_A(cos x) with P_A = sum over a in A of T_a in Z[c], and since cos x sweeps exactly [-1,1] as x sweeps [0, 2*pi), min over x of f_A(x) equals min over c in [-1,1] of P_A(c). This turns the analytic problem into exact minimization of an integer univariate polynomial on a rational interval.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "sturm_positivity_certificate",
+      "kind": "definition",
+      "statement": "An upper bound on m(A) is certified as follows and in no other way at tier one: exhibit a rational B > 0 and let Q = P_A + B in Z[c] after clearing the denominator of B; certify by a Sturm sequence over Q that Q has no real root in [-1,1], and exhibit one rational c_0 in [-1,1] with Q(c_0) > 0 by exact evaluation. Positivity of Q throughout [-1,1] follows, hence min P_A > -B and m(A) < B. Every step is exact integer or rational arithmetic and is replayable by an independent checker.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "exact_arithmetic_requirement",
+      "kind": "exact_arithmetic_requirement",
+      "statement": "No floating-point evaluation of a cosine, of f_A, or of a polynomial is ever a bound, at any precision, with any error estimate attached informally. The admitted exact routes are: certified analytic bounds with exact rational error terms, of which the frozen tier-one instance is the Sturm positivity certificate; exact algebraic-number evaluation at the relevant points, meaning evaluation of P_A at an algebraic c presented by an integer minimal polynomial and an isolating rational interval, with sign determination by exact algebraic comparison; and exact interval arithmetic with rational endpoints used only for exclusion. Nothing else may enter the trust path.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "interval_arithmetic_exclusion_only",
+      "kind": "route_trap",
+      "statement": "Rational-endpoint interval arithmetic, including enclosures of cosine by truncated series with an exact rational remainder bound, is admitted only to exclude a candidate, that is to prove that some rational or algebraic point drives f_A below a stated level so a claimed upper bound is false. A branch-and-bound covering of the whole period, even with rigorous rational enclosures, is not admitted as a positive global bound under current repository doctrine and would require a new ADR before use.",
+      "scope": "bounded"
+    },
+    {
+      "local_id": "numerical_sampling_not_a_bound",
+      "kind": "route_trap",
+      "statement": "Dense grid sampling, plotting, a floating-point global optimizer, an FFT-based scan, and a model assertion are exploration only and are individually and jointly incapable of bounding m(A). 'No sampled point fell below the level' is not a result, must never be recorded as a partial bound, and must not be used to select a family without the exact certificate then being produced. An unreplayed third-party computer-algebra transcript is refused for the same reason.",
+      "scope": "bounded"
+    },
+    {
+      "local_id": "untrusted_constants_report",
+      "kind": "untrusted_source_report",
+      "statement": "The operator notes compare constants 1 and 1/20 and refer to a concrete benchmark version of the problem. Those constants are untrusted comparison values with no acquired source. Which quantity they bound, in which direction, against which exponent of card(A), and under which normalization are all unknown here. They are not the target and must not be used as thresholds.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "untrusted_source_normalization",
+      "kind": "untrusted_source_report",
+      "statement": "The primary source's normalization, domain for x, and definition of negative excursion are not acquired. The definitions frozen in this intake are authored locally and may not coincide with the published ones. Until the operator supplies them, no result under this intake may be described as a result about the published problem, and the semantic alignment stays unresolved.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "untrusted_target_feasibility",
+      "kind": "untrusted_source_report",
+      "statement": "Whether the frozen target is already known to be impossible is unknown here. A published lower bound of the shape m(A) >= c * card(A) with a positive constant c would refute the target outright, and a published construction would settle it. The ADR-0055 pre-research novelty re-check must resolve this before any search spend, because otherwise the slice may be searching for an object already proved not to exist.",
+      "scope": "particular"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "exists an explicitly presented sequence (A_k)_(k>=1) of finite nonempty subsets of the positive integers with card(A_(k+1)) > card(A_k), exists a computable K : Q_(>0) -> N, forall eps in Q with eps > 0, forall k >= K(eps), m(A_k) <= eps * card(A_k), where m(A) = -min over x in [0, 2*pi) of P_A(cos x) and P_A = sum over a in A of T_a in Z[c]",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "exists an explicitly presented sequence (A_k) of finite nonempty sets of positive integers with strictly increasing cardinality",
+      "exists a computable K from positive rationals to positive integers",
+      "forall rational eps > 0",
+      "forall k >= K(eps)",
+      "min over x in [0, 2*pi), equivalently min over c in [-1,1] of the integer polynomial P_A"
+    ],
+    "assumption_local_ids": [
+      "finite_integer_set_definition",
+      "cosine_sum_and_normalization",
+      "domain_definition",
+      "negative_excursion_definition",
+      "asymptotic_epsilon_form",
+      "minimum_attained_and_nonpositive",
+      "chebyshev_reduction",
+      "sturm_positivity_certificate",
+      "exact_arithmetic_requirement",
+      "interval_arithmetic_exclusion_only",
+      "numerical_sampling_not_a_bound",
+      "untrusted_constants_report",
+      "untrusted_source_normalization",
+      "untrusted_target_feasibility"
+    ],
+    "approval_status": "needs_clarification"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      ["construct arbitrarily large finite sets A", "exists an explicitly presented sequence (A_k) with card(A_k) strictly increasing"],
+      ["in the domain fixed by the original problem", "x in [0, 2*pi), frozen locally because the original domain is not acquired"],
+      ["the magnitude of the negative excursion is o(card(A))", "forall rational eps > 0, forall k >= K(eps), m(A_k) <= eps * card(A_k) with K computable"],
+      ["f_A(x) = sum over a in A of cos(a x)", "P_A(cos x) with P_A = sum over a in A of T_a in Z[c]"]
+    ],
+    "definition_mapping": [
+      ["negative excursion", "m(A) = -min over x in [0, 2*pi) of f_A(x), a nonnegative real"],
+      ["normalization", "coefficients exactly 1, no scaling of f_A, comparison denominator card(A)"],
+      ["domain for x", "the real interval [0, 2*pi), which is the full real range by 2*pi-periodicity"],
+      ["A", "a finite nonempty set of distinct positive integers, not a multiset and not containing 0"],
+      ["o(card(A))", "the explicit epsilon form with a computable threshold K(eps)"],
+      ["improved constant", "a rejected reading of the target; a single better ratio for one set does not meet the frozen statement"]
+    ],
+    "assumption_delta": [
+      "All three conventions the planning dossier told us to copy from the primary source are instead authored locally, because no source is acquired; this is recorded as the reason approval_status is needs_clarification.",
+      "The Chebyshev reduction is added so that the target is an exact statement about integer polynomials on [-1,1] rather than an analytic statement requiring evaluation of transcendental functions.",
+      "The constants 1 and 1/20 from the notes are excluded from the target entirely rather than being reinterpreted as thresholds.",
+      "A computable threshold function K is required, which is stronger than an unquantified asymptotic statement and is required so that any claimed family is checkable at a stated index."
+    ],
+    "edge_case_delta": [
+      "m(A) >= 0 always, so the target is a statement about how small a nonnegative quantity can be made, never about a sign change.",
+      "A singleton A = {1} gives P_A(c) = c, min -1, m(A) = 1 and ratio 1, so the smallest cases are exactly computable and serve as verifier fixtures.",
+      "A = {1,2} gives P_A(c) = 2c^2 + c - 1 with exact minimum -9/8 at c = -1/4, so m(A) = 9/8 and the ratio 9/16 is exceeded only in exact rational arithmetic; the minimizing point is a real algebraic number and not a root of unity.",
+      "If 0 were admitted into A the mean of f_A would be 1 rather than 0 and m(A) could be 0, which is why 0 is excluded.",
+      "The degree of P_A is max(A), so the certificate cost is driven by the largest element and not by card(A); a family with small cardinality and huge elements is admissible under the target but expensive to certify."
+    ],
+    "strength_relation": "unresolved"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "candidate_families_defined",
+      "chebyshev_polynomials_constructed_exactly",
+      "sturm_certificates_verified",
+      "sturm_certificates_rejected",
+      "exact_rational_upper_bounds_established",
+      "exact_algebraic_point_refutations_completed",
+      "verifier_fixtures_reproduced_exactly",
+      "failed_routes_preserved",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "an explicitly presented family with a computable K(eps) and, for each checked index, an accepted Sturm positivity certificate establishing m(A_k) <= eps * card(A_k)",
+      "an exact refutation of a defined candidate family by exhibiting an algebraic point where f_A drops below the claimed level, verified by exact algebraic sign determination",
+      "an exact record of the best rational ratio bound m(A) / card(A) certified for each set examined, with the certificate replayed",
+      "or an explicit unresolved outcome that records the smallest remaining obligation together with the operator clarifications still outstanding"
+    ],
+    "stopping_rules": [
+      "stop immediately if the operator clarifications on normalization, domain, and negative excursion arrive and contradict the locally frozen definitions, because the target must then be refrozen",
+      "stop on an accepted certificate chain for an explicitly presented family with a computable threshold function",
+      "stop when the fresh model spend reaches USD 20",
+      "stop when no new certified bound, no new refuted family, and no new discharged obligation have been produced across two consecutive review points",
+      "never promote a finite collection of certified sets into the asymptotic statement, and never promote a sampled or floating-point observation into any bound"
+    ]
+  }
+}

@@ -91,16 +91,21 @@ def classify_claim(manuscript: Manuscript, claim_id: str) -> EvidenceClassificat
         outcome = attestation["outcome"]
         if outcome == "kernel_checked" and not unapproved:
             if claim["representation_status"] != "verified":
+                # A partial formalization cannot create a theorem, but it must
+                # not erase a separate exact certificate attached to the same
+                # claim. Fall through to that independent evidence channel.
+                if certificate is None:
+                    return classification(
+                        "proposal",
+                        "kernel-checked, but the LaTeX/Lean representation is "
+                        f"{claim['representation_status']} rather than verified",
+                    )
+            else:
                 return classification(
-                    "proposal",
-                    "kernel-checked, but the LaTeX/Lean representation is "
-                    f"{claim['representation_status']} rather than verified",
+                    "kernel_checked_theorem",
+                    "kernel-checked with no unapproved assumption, on a verified representation",
                 )
-            return classification(
-                "kernel_checked_theorem",
-                "kernel-checked with no unapproved assumption, on a verified representation",
-            )
-        if outcome == "kernel_checked_approved_standard_axioms" and not unapproved:
+        elif outcome == "kernel_checked_approved_standard_axioms" and not unapproved:
             if claim["representation_status"] != "verified":
                 return classification(
                     "proposal",
@@ -111,13 +116,14 @@ def classify_claim(manuscript: Manuscript, claim_id: str) -> EvidenceClassificat
                 "exact_certificate_proposition",
                 "kernel-checked on approved standard axioms, which the environment names",
             )
-        if unapproved:
+        elif unapproved:
             return classification(
                 "proposal",
                 "the attestation carries unapproved assumptions "
                 f"({', '.join(unapproved) or 'unnamed'})",
             )
-        return classification("proposal", f"the attestation outcome is {outcome}")
+        elif outcome != "kernel_checked":
+            return classification("proposal", f"the attestation outcome is {outcome}")
 
     if certificate is not None:
         role = claim["certificate_role"]
@@ -131,7 +137,7 @@ def classify_claim(manuscript: Manuscript, claim_id: str) -> EvidenceClassificat
                 )
             return classification(
                 "exact_certificate_proposition",
-                "an exact primal/dual certificate closes the gap to zero in "
+                "an exact certificate closes the gap to zero in "
                 f"{certificate['arithmetic']} arithmetic with no floating point",
             )
         if gap_is_zero:
@@ -142,7 +148,7 @@ def classify_claim(manuscript: Manuscript, claim_id: str) -> EvidenceClassificat
             )
         return classification(
             "exact_certificate_proposition",
-            f"an exact primal/dual certificate separates the two values by {certificate['gap']} "
+            f"an exact certificate separates the two values by {certificate['gap']} "
             f"in {certificate['arithmetic']} arithmetic with no floating point",
         )
 

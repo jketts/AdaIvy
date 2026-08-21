@@ -1,0 +1,148 @@
+{
+  "bundle_hash": "sha256:650a7d8b5dd8b726effb035b6c2ef25bf796f54e16e568ccb804303758498a27",
+  "canonicalization_version": "1.0.0",
+  "corpus_provenance": "project_authored",
+  "document_hash": "sha256:c824c35a66b7118190eb6614ed26bd92221020058f9deb73a9676baa57748a1d",
+  "evidence_class_counts": {
+    "exact_certificate_proposition": 1,
+    "kernel_checked_theorem": 0,
+    "proposal": 0
+  },
+  "files": [
+    {
+      "bytes": 1535,
+      "path": "README.md",
+      "sha256": "sha256:2eae963c9623c0cd2d7ca4e62ce2425d8de19f7b678823d1832e43b613dec258"
+    },
+    {
+      "bytes": 10918,
+      "path": "build.json",
+      "sha256": "sha256:c4b2db8c1592f0b5b6b1e285b4356337ac24f7343b73e882c51d922146262b71"
+    },
+    {
+      "bytes": 573,
+      "path": "lean/AdaIvyPhase3B_AdaIvyGraffiti322ArithmeticCertificate.lean",
+      "sha256": "sha256:afdb315fc4f30699c06adc3b768e59faa163ed59e62b297d85b5b13d210ad78f"
+    },
+    {
+      "bytes": 263570,
+      "path": "paper.pdf",
+      "sha256": "sha256:168a06aa9d1222292e7c479a30034e2872a615f16e2ed8d1b411197837f6fb82"
+    },
+    {
+      "bytes": 14908,
+      "path": "paper.tex",
+      "sha256": "sha256:c824c35a66b7118190eb6614ed26bd92221020058f9deb73a9676baa57748a1d"
+    },
+    {
+      "bytes": 640,
+      "path": "records/evidence.json",
+      "sha256": "sha256:353ba7325faee0abb6602c046aa41df3eb0e0080be17a1b37d78ecb9d6b07a56"
+    },
+    {
+      "bytes": 7541,
+      "path": "records/ledger.json",
+      "sha256": "sha256:193e978e77880e5ab7bc243126c2ead1eeecb83d061314599b71a63767fd34d0"
+    },
+    {
+      "bytes": 18147,
+      "path": "records/manuscript.json",
+      "sha256": "sha256:38bbe1f26c20e781be399343d3ee6e709f53ee7ba3027c7ccaff1e95b92ce4ec"
+    },
+    {
+      "bytes": 334,
+      "path": "records/prior-art.json",
+      "sha256": "sha256:310cc83e6849c6ab087387e3bed7b6f0b0c83e359bda516197998503cbe874d1"
+    },
+    {
+      "bytes": 2884,
+      "path": "records/probes.json",
+      "sha256": "sha256:d3e4035c98431ffc0fc2f3e2fd012e885fac045fa56d9e56946ac06866fd8985"
+    },
+    {
+      "bytes": 1218,
+      "path": "refs.bib",
+      "sha256": "sha256:f707c198fda4ec75dbd2fc345126714be4ae720cfe74e032df5c3329cbc8deda"
+    }
+  ],
+  "manuscript_hash": "sha256:847b01a7b1c69811860cc0ee987c8794dca714dc3ee0207ec222f0b3743d9e9c",
+  "manuscript_id": "ms.graffiti-322-counterexample.v1",
+  "novelty": {
+    "inferred_from_warrant": false,
+    "status": "not_assessed"
+  },
+  "pdf_sha256": "sha256:168a06aa9d1222292e7c479a30034e2872a615f16e2ed8d1b411197837f6fb82",
+  "policy_id": "publication.projection",
+  "policy_version": "1.3.0",
+  "prior_art": {
+    "creates_mathematical_warrant": false,
+    "novelty_status": "not_assessed",
+    "outcome": "not_assessed",
+    "recheck_hash": null,
+    "recheck_id": null,
+    "relationship": "not_assessed",
+    "report_classification": "not_assessed",
+    "resolution": "not_assessed",
+    "status": "not_assessed",
+    "target_resolution_status": "not_assessed",
+    "verification_status": "not_assessed"
+  },
+  "probes_flipped": 10,
+  "probes_total": 10,
+  "publication_approval": null,
+  "run_disclosure": {
+    "budget_cap_usd": "40",
+    "cost_usd": "0.029632",
+    "input_tokens": 13114,
+    "measurement_status": "partial",
+    "model_calls": 5,
+    "models": [
+      {
+        "calls": 5,
+        "model": "gpt-5-mini-2025-08-07",
+        "outcome": "recorded proposals and verifier calls; none contributed the counterexample construction",
+        "provider": "openai"
+      },
+      {
+        "calls": 0,
+        "model": "gpt-5.6-sol",
+        "outcome": "two HTTP 401 attempts with zero reported usage",
+        "provider": "azure_openai"
+      }
+    ],
+    "note": "Provider telemetry covers the bounded AdaIvy sessions only. The surrounding interactive Codex authoring session exposed no billable usage to the ledger and is neither included nor estimated.",
+    "output_tokens": 13175,
+    "run_id": "run.graffiti-322.two-rounds.v1",
+    "total_tokens": 26289,
+    "usage_scope": "two bounded Graffiti 322 research rounds recorded by AdaIvy"
+  },
+  "schema_version": "1.0.0",
+  "significance": {
+    "inferred_from_warrant": false,
+    "status": "not_assessed"
+  },
+  "statistics": {
+    "bibliography_entries": 2,
+    "blocks": 29,
+    "cite_keys": 2,
+    "claims": 1,
+    "derived_blocks": 13,
+    "evidence_class_counts": {
+      "exact_certificate_proposition": 1,
+      "kernel_checked_theorem": 0,
+      "proposal": 0
+    },
+    "manuscript_blocks": 16,
+    "obligations_open": 2,
+    "tex_bytes": 14908
+  },
+  "template_hash": "sha256:e58db90ca47d8d2be716af8ce4a1a0bba328ac56bdbbc338d7a1d4f1d8bfcca8",
+  "toolchain": {
+    "elan_version": "v4.2.1",
+    "lean_commit": "f054605aea4b840552cca2e725580bffd1e1b704",
+    "lean_version": "v4.32.1",
+    "mathlib_commit": "520045ab14e26149ee970e2e617ca04b09bde5d6",
+    "mathlib_version": "v4.32.1"
+  },
+  "typeset_status": "typeset"
+}

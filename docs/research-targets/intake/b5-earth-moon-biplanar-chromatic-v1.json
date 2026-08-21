@@ -1,0 +1,196 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "b5-earth-moon-biplanar-chromatic-v1",
+  "declared_domain": "graph-theory",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "Existence of a biplanar graph with no proper nine-colouring",
+    "informal_statement": "Decide whether there is a finite simple graph G whose edge set is the union of two planar graphs on the vertex set V(G) and whose chromatic number is at least 10.\n\nBiplanar is frozen as: E(G) is partitioned into E_1 and E_2 such that (V(G), E_1) and (V(G), E_2) are both planar. The edge-disjoint reading loses nothing, because if two planar layers overlap then removing the shared edges from the second layer leaves a subgraph of a planar graph, which is planar, and does not change the union.\n\nchi(G) >= 10 is frozen as: there is no proper vertex colouring of G with 9 colours. It does not require chi(G) = 10.\n\nA witness must arrive as a canonical edge list with a content hash, one combinatorial planarity certificate per layer, and an exact certificate that no proper 9-colouring exists. A drawing, coordinates, or a planarity-library verdict without a replayable certificate is not accepted.",
+    "problem_type": "explore",
+    "tags": [
+      "biplanar-graphs",
+      "chromatic-number",
+      "combinatorial-embedding",
+      "earth-moon-problem",
+      "exact-certificate",
+      "graph-theory"
+    ]
+  },
+  "target_claim": {
+    "local_id": "biplanar_graph_without_nine_colouring_exists",
+    "kind": "existence_claim",
+    "statement": "There exists a finite simple undirected graph G together with a partition of E(G) into sets E_1 and E_2 such that the spanning subgraphs (V(G), E_1) and (V(G), E_2) are both planar and there is no proper vertex colouring c : V(G) -> {1,...,9} with c(u) != c(v) for every edge uv in E(G).",
+    "scope": "existential"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "biplanar_definition",
+      "kind": "definition",
+      "statement": "G is a finite simple undirected graph: no loops, no multiple edges, finitely many vertices. G is biplanar iff E(G) can be partitioned into E_1 and E_2 such that the spanning subgraphs (V(G), E_1) and (V(G), E_2) on the same vertex set V(G) are both planar. Isolated vertices are permitted in either layer.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "planar_subgraph_closure",
+      "kind": "lemma",
+      "statement": "Every subgraph of a planar graph is planar. This is the standard textbook closure property of planarity under edge and vertex deletion.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "edge_disjointness_equivalence",
+      "kind": "derived_consequence",
+      "statement": "The overlapping reading, in which E(G) = E_1 union E_2 with the layers allowed to share edges, defines the same class of graphs as the frozen partition reading. Given overlapping planar layers, replace E_2 by E_2 minus E_1: it is a subgraph of a planar graph and therefore planar by planar_subgraph_closure, and the union is unchanged. The edge-disjoint reading is frozen because it makes the certificate a partition, so the verifier can check that every edge of G is covered exactly once rather than at least once.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "planarity_certificate_definition",
+      "kind": "definition",
+      "statement": "A layer is certified planar by a combinatorial embedding, not by a drawing: a rotation system giving, for every vertex, a cyclic order of its incident darts. The verifier traces faces using the next-dart permutation, checks that every dart is consumed exactly once, counts faces F per connected component, and checks Euler's formula V - E + F = 1 + c for the c components. A layer that fails is reported as not certified; a non-planarity claim about a layer would instead need an exhibited Kuratowski subdivision.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "chromatic_lower_bound_meaning",
+      "kind": "definition",
+      "statement": "chi(G) >= 10 means exactly that no proper vertex colouring c : V(G) -> {1,...,9} exists, where proper means c(u) != c(v) for every edge uv. It does not assert chi(G) = 10, does not assert chi(G) <= any value, and is not weakened to a fractional, list, or local chromatic parameter.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "canonical_graph_identity",
+      "kind": "definition",
+      "statement": "The identity of a witness is the labelled graph: vertices are 0..n-1, every edge is an ordered pair (u, v) with u < v, the edge list is sorted lexicographically, the layer assignment is recorded per edge, and the content hash is sha256 over the canonically serialized bytes. This hash identifies a labelled graph and is not an isomorphism invariant; two isomorphic witnesses may hash differently and that is accepted, because the claim is about one exhibited graph.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "planar_edge_bound",
+      "kind": "lemma",
+      "statement": "A simple planar graph on n >= 3 vertices has at most 3n - 6 edges. This is the standard textbook consequence of Euler's formula.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "biplanar_edge_bound",
+      "kind": "derived_consequence",
+      "statement": "A biplanar simple graph on n >= 3 vertices has at most 2 * (3n - 6) = 6n - 12 edges, because the two layers are edge-disjoint and each obeys planar_edge_bound.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "complete_graph_eleven_excluded",
+      "kind": "derived_consequence",
+      "statement": "K_11 is not biplanar: it has 55 edges while biplanar_edge_bound allows at most 6 * 11 - 12 = 54. Hence no complete graph on 11 or more vertices is biplanar, and the clique route to a chromatic lower bound cannot exceed 10. K_10 has 45 edges against the bound 48, so the edge count does not exclude it and its biplanarity is an open finite question for this slice.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "maximal_planar_reduction",
+      "kind": "derived_consequence",
+      "statement": "For n >= 3, K_n is biplanar if and only if some spanning maximal planar graph T on n vertices, with exactly 3n - 6 edges, has planar complement in K_n. Given planar edge-disjoint layers of K_n, extend the first layer to a maximal planar spanning graph T using only edges already present in K_n; the complement of T is then contained in the second layer and is planar by planar_subgraph_closure. The converse direction is immediate.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "exact_arithmetic_requirement",
+      "kind": "exact_arithmetic_requirement",
+      "statement": "Nothing on the trust path uses coordinates, geometry, or floating point. Planarity is decided combinatorially by rotation systems and integer face counts; colourability is decided by exact finite combinatorial search or by a checked UNSAT proof log. A picture, a force-directed layout, a numeric crossing count, and a spectral or relaxation bound on the chromatic number are exploration aids only and are never certificates.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "enumeration_exhaustiveness_obligation",
+      "kind": "route_trap",
+      "statement": "Any exhaustive statement about 10-vertex triangulations depends on the generator covering every isomorphism class. Generating triangulations by vertex splitting from K_4 relies on a completeness theorem that is not acquired here, so its exhaustiveness is an open proof obligation and must be cross-checked against brute-force generation at smaller n before any exhaustion claim is recorded. Isomorph rejection is an optimization only: over-counting isomorphic copies is safe, omitting a class is not, so a canonical-form bug must fail towards duplication.",
+      "scope": "bounded"
+    },
+    {
+      "local_id": "untrusted_lower_bound_interval",
+      "kind": "untrusted_source_report",
+      "statement": "The planning notes report the current interval for the maximum chromatic number of a biplanar graph as 9 through 12, and thereby imply that a 9-chromatic biplanar graph is known. Both halves are untrusted, no source is acquired, and neither may be repeated as fact. Whether the biplanarity of K_10 is already settled in the literature is likewise unknown here; if it is settled, this slice is a reproduction and must be reported as one. The ADR-0055 pre-research novelty re-check must cover all three points.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "untrusted_biplanar_source_definition",
+      "kind": "untrusted_source_report",
+      "statement": "The definition of biplanar used by the source that states the 9 through 12 interval is not acquired. Some authors define biplanar through thickness at most two, some through a union of two planar graphs, and some restrict to specific layer classes. The definition frozen here is authored locally; if the acquired source differs, the semantic alignment must be re-approved before any witness is reported against the source statement.",
+      "scope": "particular"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "exists G a finite simple graph, exists a partition E(G) = E_1 disjoint_union E_2, Planar(V(G), E_1) and Planar(V(G), E_2) and not exists c : V(G) -> {1,...,9} with (forall uv in E(G), c(u) != c(v))",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "exists G a finite simple undirected graph",
+      "exists a partition of E(G) into E_1 and E_2, both spanning subgraphs on V(G)",
+      "forall uv in E(G), the edge lies in exactly one of E_1 and E_2",
+      "not exists c : V(G) -> {1,...,9} proper on G, equivalently forall such c, exists an edge uv with c(u) = c(v)"
+    ],
+    "assumption_local_ids": [
+      "biplanar_definition",
+      "planar_subgraph_closure",
+      "edge_disjointness_equivalence",
+      "planarity_certificate_definition",
+      "chromatic_lower_bound_meaning",
+      "canonical_graph_identity",
+      "planar_edge_bound",
+      "biplanar_edge_bound",
+      "complete_graph_eleven_excluded",
+      "maximal_planar_reduction",
+      "exact_arithmetic_requirement",
+      "enumeration_exhaustiveness_obligation",
+      "untrusted_lower_bound_interval",
+      "untrusted_biplanar_source_definition"
+    ],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      ["construct a graph", "exists G a finite simple undirected graph"],
+      ["whose edge set is the union of two planar graphs", "exists a partition of E(G) into E_1 and E_2 with both spanning layers planar"],
+      ["whose chromatic number is at least 10", "not exists a proper colouring c : V(G) -> {1,...,9}"],
+      ["raise the lower bound from 9 to 10", "no quantifier; this is an interpretation of the witness and is deliberately not part of the frozen target"]
+    ],
+    "definition_mapping": [
+      ["biplanar", "E(G) partitioned into two edge sets whose spanning subgraphs are both planar"],
+      ["planar layer", "a spanning subgraph admitting a rotation system whose traced faces satisfy V - E + F = 1 + c"],
+      ["chromatic number at least 10", "no proper colouring with the 9 colours 1..9 exists"],
+      ["graph identity", "the sorted labelled edge list with per-edge layer assignment and its sha256 content hash"],
+      ["thickness at most two", "a rejected paraphrase; it coincides with the frozen definition only if the source means the same partition into planar spanning subgraphs"]
+    ],
+    "assumption_delta": [
+      "Edge-disjointness is added to the source phrasing 'union of two planar graphs'; edge_disjointness_equivalence shows the class is unchanged, so the addition is a certificate convention rather than a strengthening.",
+      "Both layers are spanning subgraphs on the same vertex set, so a layer may contain isolated vertices; the planning statement does not say this.",
+      "Finiteness and simplicity are stated explicitly, because the planar edge bound and the colouring search both need them.",
+      "Nothing is assumed about the current known lower bound; the target is an absolute existence statement and does not reference 9."
+    ],
+    "edge_case_delta": [
+      "A witness with chi(G) >= 11 also satisfies the frozen target; the target is a lower bound, not an equality.",
+      "n >= 10 is forced, because a graph on 9 or fewer vertices has a proper colouring with 9 colours.",
+      "A 10-clique inside G is by itself an exact certificate that no proper 9-colouring exists, and complete_graph_eleven_excluded shows this clique route caps at 10.",
+      "An empty second layer is admitted, so a planar graph would be biplanar; no planar graph can satisfy the colouring condition, so this edge case is consistent and harmless.",
+      "Adding an isolated vertex changes the canonical hash but neither planarity nor colourability, so witness identity is finer than the mathematical content."
+    ],
+    "strength_relation": "unresolved"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "candidate_graphs_canonically_hashed",
+      "planar_layer_certificates_verified",
+      "planar_layer_certificates_rejected",
+      "maximal_planar_graphs_enumerated",
+      "complement_planarity_tests_completed",
+      "nine_colourability_decisions_completed",
+      "exact_chromatic_lower_bound_certificates_verified",
+      "failed_routes_preserved",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "an exhibited biplanar witness whose canonical hash, two rotation-system planarity certificates, and exact no-9-colouring certificate are all accepted by an independent verifier",
+      "a completed exhaustive decision of whether K_10 is biplanar, reported with its enumeration exhaustiveness obligation either discharged or explicitly open",
+      "a recorded closure of the clique route, namely that no complete graph can supply a witness beyond K_10, derived from the exact edge bound",
+      "or an explicit unresolved outcome that records the smallest remaining obligation together with the graph classes already excluded"
+    ],
+    "stopping_rules": [
+      "stop on an exact witness whose planarity and non-9-colourability certificates are both independently replayed",
+      "stop when the frozen enumeration envelope for 10-vertex maximal planar graphs is exhausted, recording the bounded outcome and nothing stronger",
+      "stop when the fresh model spend reaches USD 20",
+      "stop when no new certified layer, no new excluded class, and no new refuted route have been produced across two consecutive review points",
+      "never promote a completed bounded enumeration into a claim that no biplanar graph has chromatic number at least 10, nor into a claim about the general chromatic bound"
+    ]
+  }
+}

@@ -82,6 +82,14 @@ another model agrees with it.
   proposer-only, replay makes no model call, and it creates no warrant or
   proof-obligation discharge. It activates no higher search tier and measures
   no retention gain.
+- **Provenance-closed research campaigns** (ADR-0057) put the material AI work
+  inside AdaIvy: the central lead can propose routes, write bounded programs,
+  receive exact sandbox observations, select a candidate, and submit only that
+  candidate to an isolated verifier. Every model attempt, program, tool result,
+  selection, usage record, and estimated cost is causally linked. Failed calls
+  remain visible; external Codex or human work is importable but cannot be
+  relabelled as AdaIvy discovery. Live generated-code execution remains off
+  until its digest-pinned OCI sandbox passes the separately named gate.
 - **Phase 4C** covers benchmark-scoped hybrid retrieval only: a frozen
   19-document, 17-query fixture set, an FTS5/BM25 lexical signal, a
   content-keyed alias table, and an exclusion-only evidentiary self-disclaimer
@@ -174,15 +182,31 @@ with an unsuppressible AdaIvy project note linking to
 [github.com/jketts/AdaIvy](https://github.com/jketts/AdaIvy). This derivation is
 a reproducible mathematical account; it is not represented as private model
 chain-of-thought.
-The same disclosure block names every usage-bearing provider/model, the number
-of completed model calls, measured USD spend and budget cap, plus input, output,
-and total tokens. Transport and authorization failures remain available in the
-machine-readable run record but are not paper content. Missing telemetry is
-printed as not recorded and never estimated. Located source references render
+The same disclosure block derives every usage-bearing provider/model, request
+attempt, completed/failed/incomplete response, estimated USD cost, and token
+total from a verified campaign export. Transport and authorization failures are
+paper-visible outcome counts rather than disappearing into a machine-only log.
+Missing telemetry is printed as unavailable and never converted into a complete
+campaign total. Located source references render
 as conventional LaTeX citations, with the recorded passage anchor in the
 optional citation locator.
 
 ## Running the tests
+
+Reader-facing solved-result papers use one automatic publication path. With the
+pinned BasicTeX toolchain installed, run:
+
+```bash
+make publication-build MANUSCRIPT=/path/to/manuscript.json \
+  CAMPAIGN_EXPORT=/path/to/campaign.json \
+  CAMPAIGN_LINK=/path/to/publication-campaign-link.json \
+  PUBLICATION_OUT=output/pdf/my-result
+```
+
+The command fails closed unless it can emit and verify the complete record
+bundle: `paper.tex`, linked Lean sources, `paper.pdf`, build metadata, and
+`MANIFEST.json`. Diagnostic phase reports remain JSON or Markdown and are not
+publication papers.
 
 The test suite is plain `unittest` — there is no pytest configuration, and the
 runtime deliberately has no third-party dependencies. `make check` exports

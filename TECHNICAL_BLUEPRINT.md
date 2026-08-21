@@ -254,6 +254,18 @@ can yield only `reported_proved` or `reported_refuted`; `already_proved` and
 the same, equivalent, or stronger result. Graffiti 197 is the frozen regression:
 `independent_verification` / `already_refuted`.
 ADR-0055 defines the executable lifecycle gates.
+
+### C19. Automatic solved-result publication artifacts
+
+Every reader-facing report containing a solved mathematical claim must be
+produced through one record-driven publication operation. That operation emits
+the deterministic classic-LaTeX source, every required linked Lean artifact,
+the content-addressed record and provenance bundle, and a PDF compiled twice by
+the pinned offline typesetter with identical bytes. A hand-written or
+alternative-renderer PDF is not an AdaIvy publication report. Typesetting never
+creates correctness, novelty, significance, applicability, or publication
+approval. Diagnostic JSON and Markdown gate reports remain outside this paper
+contract.
 ---
 
 ## 3. System context
@@ -2088,6 +2100,24 @@ The revision 0.2 roadmap placed mathematical tools in Phase 3 and literature
 memory in Phase 4. ADR-0012 supersedes that order without rewriting the
 historical record: bounded research memory is Phase 3A, formal grounding is
 Phase 3B, and broader acquisition and research automation are Phase 4.
+
+ADR-0057 adds a bounded campaign control plane above the Phase 2 gateway and
+ADR-0047 central lead. It does not add parallel specialists or a higher search
+tier. The single lead may emit a closed structured action to derive, write a
+program, request an allowlisted no-network run, inspect exact recorded output,
+select a candidate, and request independent verification. Provider calls,
+program bytes, tool observations, selections, verifier results, usage, and
+estimated costs form one causally closed export with separate semantic and
+operational hashes. Provider activation is an executed one-request observation,
+not an inference from static configuration.
+
+Publication consumes that export rather than trusting authored usage totals or
+generator labels. An external Codex, human, or external-system root remains
+typed as external even when AdaIvy later verifies and packages the result. A
+closed internal campaign may claim AdaIvy discovery only when its operational
+accounting is complete. Generated-code execution is still gated on a dedicated
+digest-pinned OCI enforcement suite; an injected scripted runner supplies the
+ordinary offline acceptance path.
 
 ### Phase 3A — Bounded manually supplied research memory
 

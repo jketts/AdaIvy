@@ -44,10 +44,39 @@ def session_facts(session: LeadSession, workspace: SQLiteWorkspace) -> dict[str,
     for record in session.iterations:
         calls.extend(dict(row) for row in workspace.list_model_calls(record.run_id))
     providers = sorted({str(row["provider"]) for row in calls})
+    derived_calls = len(calls)
+    derived_input_tokens = sum(int(row["input_tokens"]) for row in calls)
+    derived_output_tokens = sum(int(row["output_tokens"]) for row in calls)
+    derived_cost_microusd = sum(
+        int(
+            row["estimated_cost_microusd"]
+            if row["estimated_cost_microusd"] is not None
+            else row["cost_microusd"]
+        )
+        for row in calls
+    )
+    expected = (
+        session.usage.model_calls,
+        session.usage.input_tokens,
+        session.usage.output_tokens,
+        session.usage.cost_microusd,
+    )
+    observed = (
+        derived_calls,
+        derived_input_tokens,
+        derived_output_tokens,
+        derived_cost_microusd,
+    )
+    if observed != expected:
+        raise ValueError(
+            "runtime usage does not equal durable model-call rows: "
+            f"recorded={expected!r}, durable={observed!r}"
+        )
     return {
         "schema_version": session.schema_version,
         "session_id": session.session_id.value,
         "content_hash": session.content_hash,
+        "operational_hash": session.operational_hash,
         "session_configuration_id": session.session_configuration_id.value,
         "session_configuration_hash": session.session_configuration_hash,
         "target_claim_id": session.target.target_claim_id.value,
@@ -60,11 +89,11 @@ def session_facts(session: LeadSession, workspace: SQLiteWorkspace) -> dict[str,
             1 for item in session.iterations if item.duplicate_of_iteration is not None
         ),
         "productive_iterations": sum(1 for item in session.iterations if item.productive),
-        "model_calls": session.usage.model_calls,
-        "recorded_model_calls": len(calls),
-        "input_tokens": session.usage.input_tokens,
-        "output_tokens": session.usage.output_tokens,
-        "cost_microusd": session.usage.cost_microusd,
+        "model_calls": derived_calls,
+        "recorded_model_calls": derived_calls,
+        "input_tokens": derived_input_tokens,
+        "output_tokens": derived_output_tokens,
+        "estimated_cost_microusd": derived_cost_microusd,
         "providers_called": providers,
         "live_model_calls": [item for item in providers if item not in {"fixture", "scripted", "none"}],
         "verifier_manifest_hashes": [
@@ -85,6 +114,7 @@ def session_facts(session: LeadSession, workspace: SQLiteWorkspace) -> dict[str,
         "target_resolution_status": session.target_resolution_status,
         "retention_gain_measured": session.retention_gain_measured,
         "iteration_hashes": [item.content_hash for item in session.iterations],
+        "iteration_operational_hashes": [item.operational_hash for item in session.iterations],
         "timeline_replay_hash": canonical_hash([
             workspace.timeline(item.run_id) for item in session.iterations
         ]),
@@ -100,6 +130,7 @@ def render_session_report(session: LeadSession, workspace: SQLiteWorkspace) -> s
     lines.append(f"- Frozen target hash: `{facts['target_frozen_hash']}`")
     lines.append(f"- Session bounds: `{facts['session_configuration_id']}` (`{facts['session_configuration_hash']}`)")
     lines.append(f"- Session record hash: `{facts['content_hash']}`")
+    lines.append(f"- Session operational hash: `{facts['operational_hash']}`")
     lines.append(
         f"- Pre-research novelty re-check: `{facts['novelty_recheck_id']}` "
         f"(`{facts['novelty_recheck_hash']}`)"

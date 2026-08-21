@@ -1,0 +1,219 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "c1-baillie-psw-pseudoprime-v1",
+  "declared_domain": "computational-number-theory",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "A composite integer passing the frozen BPSW-SL-1000 probable-prime procedure",
+    "informal_statement": "Find a composite positive integer n on which one exactly specified Baillie-PSW variant returns PROBABLE_PRIME. The variant is frozen and named BPSW-SL-1000: trial division by every prime below 1000, a base-2 strong probable-prime test, a perfect-square exclusion, Selfridge Method A discriminant selection with P = 1 and Q = (1 - D)/4, and the strong Lucas test. The precise variant is part of the statement, not an implementation detail: changing the trial-division bound, the base, the discriminant rule, or the Lucas variant defines a different problem.\n\nNo witness is known to this definition and none may exist. The realistic deliverable is therefore a certified extension of the search frontier over exactly defined regions and families, each replayable from its frozen definition, and that negative outcome is retained as a first-class artifact rather than treated as failure. All arithmetic is exact integer arithmetic; no floating point appears on any trust path.",
+    "problem_type": "explore",
+    "tags": [
+      "baillie-psw",
+      "bounded-exclusion-record",
+      "computational-number-theory",
+      "exact-integer-arithmetic",
+      "existential-target",
+      "lucas-sequences",
+      "pseudoprimes",
+      "variant-frozen"
+    ]
+  },
+  "target_claim": {
+    "local_id": "bpsw_sl_1000_composite_witness",
+    "kind": "conjecture",
+    "statement": "There exists a composite positive integer n, that is an n admitting integers a, b with 1 < a <= b < n and n = a*b, such that the procedure BPSW-SL-1000 returns PROBABLE_PRIME on input n. BPSW-SL-1000 is defined on integers n >= 2 with verdict alphabet PRIME, COMPOSITE, PROBABLE_PRIME, PARAMETER_DEGENERATE, using exact integer arithmetic only, as follows. Step 1: if n < 1000, trial divide n by every integer 2 <= t <= isqrt(n) and return COMPOSITE if some t divides n, else PRIME. Step 2: for each of the 168 primes p < 1000 in increasing order, return COMPOSITE if p divides n. Step 3: write n - 1 = 2^s * d with d odd and s >= 1, set x_0 = 2^d mod n; if x_0 is 1 or n-1 continue, else for j = 1..s-1 set x_j = x_(j-1)^2 mod n and continue if some x_j = n-1, else return COMPOSITE. Step 4: if isqrt(n)^2 = n return COMPOSITE. Step 5: for i = 0, 1, 2, ... let D_i = (-1)^i * (2i+5), so the trial discriminants are 5, -7, 9, -11, 13, -15, ..., each congruent to 1 mod 4; compute the Kronecker-extended Jacobi symbol (D_i/n) exactly by quadratic reciprocity; if (D_i/n) = 0 and |D_i| < n return COMPOSITE because gcd(|D_i|, n) is a nontrivial divisor; stop at the least i with (D_i/n) = -1 and set D = D_i, P = 1, Q = (1 - D)/4, so that P^2 - 4Q = D. Step 6: let g = gcd(n, 2*Q*D); if 1 < g < n return COMPOSITE, and if g = n return PARAMETER_DEGENERATE, which is not a pass. Step 7: with U_0 = 0, U_1 = 1, V_0 = 2, V_1 = P and U_(t+1) = P*U_t - Q*U_(t-1), V_(t+1) = P*V_t - Q*V_(t-1), write n + 1 = 2^k * m with m odd and k >= 1; return PROBABLE_PRIME if U_m = 0 mod n or if V_(m*2^j) = 0 mod n for some 0 <= j <= k-1, else return COMPOSITE.",
+    "scope": "existential"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "frozen_variant_definition",
+      "kind": "definition",
+      "statement": "The frozen procedure is exactly the seven-step BPSW-SL-1000 written in the target claim, and no other procedure. Its four choices are load-bearing parts of the statement: the trial-division bound is every prime below 1000, the probable-prime test is the strong test to the single base 2, the discriminant rule is the signed sequence D_i = (-1)^i (2i+5) with P = 1 and Q = (1-D)/4, and the Lucas test is the strong one. Any procedure differing in any of the four defines a different problem.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "strong_probable_prime_definition",
+      "kind": "definition",
+      "statement": "For odd n >= 3 with n - 1 = 2^s * d and d odd, n is a strong probable prime to base 2 iff 2^d = 1 mod n or 2^(d*2^j) = n-1 mod n for some 0 <= j <= s-1. This is step 3 and is not the Fermat condition 2^(n-1) = 1 mod n.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "selfridge_method_a_definition",
+      "kind": "definition",
+      "statement": "The frozen discriminant rule takes the least i >= 0 with Jacobi symbol (D_i/n) = -1 where D_i = (-1)^i (2i+5), then sets P = 1 and Q = (1-D)/4. Every D_i is congruent to 1 modulo 4 so Q is an integer, and P^2 - 4Q = D. Here (D/n) is the Kronecker-extended Jacobi symbol for odd n > 0 and any integer D, computed exactly by the binary reciprocity algorithm with (D/n) = (-1/n)*(|D|/n) for D < 0 and (-1/n) = (-1)^((n-1)/2); the Legendre symbol is a rejected reading because it is undefined for composite modulus. The perfect-square exclusion of step 4 precedes this search because for a perfect square n no D_i has Jacobi symbol -1 and the search would not terminate. Rejected alternatives, each a different problem: a rule retrying D = 5 specially, a rule stepping |D| by 4, the extra-strong rule choosing P with ((P^2-4)/n) = -1 and Q = 1, and a rule ordering candidates by smallest |D|.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "strong_lucas_definition",
+      "kind": "definition",
+      "statement": "With Lucas sequences defined by U_0 = 0, U_1 = 1, V_0 = 2, V_1 = P and, for t >= 1, U_(t+1) = P*U_t - Q*U_(t-1) and V_(t+1) = P*V_t - Q*V_(t-1), and with n + 1 = 2^k * m where m is odd and k >= 1, n is a strong Lucas probable prime for parameters (P, Q) iff U_m = 0 mod n or V_(m*2^j) = 0 mod n for some 0 <= j <= k-1. Residues modulo the odd n are computed by the exact doubling identities U_(2t) = U_t*V_t and V_(2t) = V_t^2 - 2*Q^t together with U_(t+1) = (P*U_t + V_t)*inv2 mod n and V_(t+1) = (D*U_t + P*V_t)*inv2 mod n, where inv2 = (n+1)/2 is the exact inverse of 2 modulo n. Rejected readings: the standard Lucas condition U_(n+1) = 0 mod n, and the extra-strong condition which additionally requires V_m to be congruent to plus or minus 2.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "composite_and_certificate_definition",
+      "kind": "definition",
+      "statement": "n is composite iff there are integers a, b with 1 < a <= b < n and n = a*b; the reading 'not prime' is rejected because it would admit n = 1, and 'has two distinct prime factors' is rejected because it would exclude prime powers. A compositeness certificate is an exhibited factorization re-multiplied to n by exact big-integer arithmetic, with every factor strictly between 1 and n. A probable-prime test returning COMPOSITE, a library primality verdict, and an unre-multiplied printed factorization are all rejected as certificates.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "pass_means_probable_prime",
+      "kind": "definition",
+      "statement": "'Passes the frozen test' means the procedure returns PROBABLE_PRIME. The verdict PARAMETER_DEGENERATE, reached when gcd(n, 2*Q*D) = n, is explicitly not a pass, and an input halting there is not a witness even though the procedure never called it composite.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "exact_arithmetic_requirement",
+      "kind": "exact_arithmetic_requirement",
+      "statement": "Every step on a trust path uses exact integer arithmetic only. In particular isqrt is an exact integer square root and never a floating-point square root, no logarithm is used to size or bound a decision, and no floating-point value may enter a verdict, a certificate, or an exclusion record. Floating-point or model-suggested values may guide which region to search next and are labelled exploration-only.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "strong_implies_fermat_base_two",
+      "kind": "lemma",
+      "statement": "Every strong probable prime to base 2 is a Fermat probable prime to base 2, that is 2^(n-1) = 1 mod n. This standard fact is what licenses the necessary-condition congruence filter used in the semiprime sub-slice; a filter that is not provably necessary would turn an exhaustive exclusion into a sampled one.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "witness_lower_bound_from_bound",
+      "kind": "derived_consequence",
+      "statement": "Because step 2 rejects every n with a prime factor below 1000, any witness is composite with all prime factors at least 1009, hence n >= 1009^2 = 1018081. The trial-division bound therefore changes the witness set and is part of the frozen statement rather than an optimization.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "no_witness_below_two_to_64_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "The planning notes report that no BPSW counterexample exists below 2^64. This is an untrusted candidate, is not a premise of any computation, and must be revalidated by the ADR-0055 pre-research re-check, which must also establish which BPSW variant the cited enumeration used, because a frontier for one variant is not a frontier for BPSW-SL-1000. Direct sweeping cannot revalidate it: reaching 2^64 by the bounded interval method would need about 1.8*10^12 windows of the frozen size.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "method_a_naming_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "The attribution of the name Selfridge Method A to the frozen discriminant rule, and the attribution of the strong Lucas definitions to Baillie and Wagstaff 1980, are untrusted recollections pending acquisition. If acquisition shows the name belongs to a different rule, the written content of BPSW-SL-1000 is unchanged and only the naming row is corrected.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "heuristic_abundance_route_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "The reported heuristic that counterexamples should be plentiful is untrusted and is exploration-only route guidance. It may inform the choice of which family to freeze next, and it must never filter candidates inside an already frozen family, because a heuristic filter silently converts an exhaustive exclusion record into a sampled one without changing its wording.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "variant_conflation_trap",
+      "kind": "route_trap",
+      "statement": "Do not repeat the route that reports a base-2 strong pseudoprime, a Lucas pseudoprime, a Carmichael number, or a pass under the extra-strong or standard Lucas variant as a witness for the frozen target. Each is a distinct recorded outcome. An unreplayed third-party primality or BPSW library verdict is likewise refused as a certificate: it is an untrusted candidate until the independent verifier recomputes every step from the frozen specification, and adopting such a library is separately a pinned-dependency decision.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "bounded_search_boundary",
+      "kind": "bounded_search_boundary",
+      "statement": "Exhausting a frozen interval, a frozen construction family, or a frozen congruence-filtered range establishes exactly that no candidate in that region passes the frozen procedure, and nothing about any integer outside it. No such exhaustion may be promoted into a claim that no composite passes the frozen procedure, and failure of a search is never evidence for the negation of the target.",
+      "scope": "bounded"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "exists n : N, n >= 2 and (exists a b : N, 1 < a and a <= b and b < n and n = a*b) and BPSW_SL_1000(n) = PROBABLE_PRIME, where BPSW_SL_1000 is the seven-step total procedure frozen in the target claim and evaluated in exact integer arithmetic",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "exists n in N with n >= 2, unbounded above",
+      "exists a, b in N witnessing n = a*b with 1 < a <= b < n",
+      "forall p over the 168 primes below 1000 in step 2",
+      "exists j with 1 <= j <= s-1 in step 3, where n - 1 = 2^s * d and d is odd",
+      "exists i >= 0 least with Jacobi symbol (D_i/n) = -1 in step 5, terminating for non-squares because step 4 precedes it",
+      "exists j with 0 <= j <= k-1 in step 7, where n + 1 = 2^k * m and m is odd"
+    ],
+    "assumption_local_ids": [
+      "frozen_variant_definition",
+      "strong_probable_prime_definition",
+      "selfridge_method_a_definition",
+      "strong_lucas_definition",
+      "composite_and_certificate_definition",
+      "pass_means_probable_prime",
+      "exact_arithmetic_requirement",
+      "strong_implies_fermat_base_two",
+      "witness_lower_bound_from_bound",
+      "no_witness_below_two_to_64_untrusted",
+      "method_a_naming_untrusted",
+      "heuristic_abundance_route_untrusted",
+      "variant_conflation_trap",
+      "bounded_search_boundary"
+    ],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      [
+        "n",
+        "a composite positive integer, unbounded above"
+      ],
+      [
+        "a, b",
+        "the exhibited nontrivial factorization certifying that n is composite"
+      ],
+      [
+        "bounded quantifiers of the procedure",
+        "introduced by the frozen variant; they have no counterpart in the source line"
+      ]
+    ],
+    "definition_mapping": [
+      [
+        "the exactly specified Baillie-PSW probable-prime test",
+        "the seven-step procedure BPSW-SL-1000 written in the target claim and no other procedure"
+      ],
+      [
+        "passes",
+        "the procedure returns PROBABLE_PRIME; PARAMETER_DEGENERATE is not a pass"
+      ],
+      [
+        "composite positive integer",
+        "n = a*b with 1 < a <= b < n"
+      ],
+      [
+        "compositeness certificate",
+        "an exhibited factorization re-multiplied to n by exact big-integer arithmetic"
+      ],
+      [
+        "replay of the frozen test",
+        "recomputation of every step from the frozen specification, with every recorded intermediate compared to a freshly computed one"
+      ]
+    ],
+    "assumption_delta": [
+      "The source line fixes no trial-division bound, no base set, no discriminant rule, and no Lucas variant; this dossier fixes all four and each choice changes the target.",
+      "The bound 1000 is not cosmetic: it forces every witness to satisfy n >= 1009^2 = 1018081.",
+      "A distinct PARAMETER_DEGENERATE verdict is added so that the degenerate parameter case is neither a pass nor a compositeness claim.",
+      "If an acquired primary source fixes a different variant, the strength relation becomes unresolved and the target is re-frozen as a new dossier rather than adjusted in place."
+    ],
+    "edge_case_delta": [
+      "Inputs below 1000 are decided by exact trial division and can never be witnesses.",
+      "Perfect squares are rejected in step 4 before the discriminant search, which is what makes that search terminate.",
+      "n = 1 is outside the procedure's domain and is not composite under the frozen definition.",
+      "An input halting with PARAMETER_DEGENERATE is recorded as such and is not a witness."
+    ],
+    "strength_relation": "weaker"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "candidates_tested_with_frozen_variant",
+      "composite_witnesses_with_exact_factorization",
+      "certified_exclusion_regions_recorded",
+      "frozen_family_members_exhausted",
+      "frozen_test_step_replays_verified",
+      "failed_routes_preserved",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "an exhibited composite n with an exact nontrivial factorization re-multiplied to n and a fully replayed PROBABLE_PRIME transcript under the frozen BPSW-SL-1000 procedure",
+      "a rigorous proof that no composite positive integer passes the frozen BPSW-SL-1000 procedure",
+      "or an explicit unresolved outcome carrying a replayable certified exclusion record and a statement of the smallest remaining obligation"
+    ],
+    "stopping_rules": [
+      "stop on an exact certificate: a certified composite witness whose frozen-test transcript replays step by step",
+      "stop when the fresh model spend reaches USD 25",
+      "stop when two consecutive review points close no obligation and add no new certified exclusion region",
+      "never promote exhaustion of a frozen interval or of the frozen construction family into any claim that no composite passes the frozen procedure",
+      "halt and re-freeze rather than continue if a candidate passes a BPSW variant other than the frozen one"
+    ]
+  }
+}

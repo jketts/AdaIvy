@@ -1,0 +1,237 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "a2-mub-dimension-six-fourier-pair-v1",
+  "declared_domain": "quantum-information-theory",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "Unextendibility of the frozen dimension-six MUB pair standard basis with the Fourier basis",
+    "informal_statement": "Decide whether the pair of mutually unbiased bases of C^6 consisting of the standard basis and the columns of (1/sqrt(6))*F_6, where F_6 is the 6x6 discrete Fourier complex Hadamard matrix with (j,k) entry zeta^(j*k) for zeta a fixed primitive sixth root of unity and 0 <= j,k <= 5, extends to a triple of mutually unbiased bases. The frozen target is the negative statement that no third basis exists; problem_type is explore because an explicit third basis is an equally acceptable and decisive outcome. All arithmetic is exact over the cyclotomic field Q(zeta_12); the factor 1/6 is carried as a rational scalar so that no square root enters the arithmetic. Numerical failure to find an extension is never an unextendibility proof, and exhausting any root-of-unity envelope answers only a restricted sub-question.",
+    "problem_type": "explore",
+    "tags": [
+      "mutually-unbiased-bases",
+      "dimension-six",
+      "complex-hadamard-matrices",
+      "discrete-fourier-matrix",
+      "cyclotomic-exact-arithmetic",
+      "groebner-nullstellensatz-certificate",
+      "rational-sum-of-squares",
+      "quantum-information-theory"
+    ]
+  },
+  "target_claim": {
+    "local_id": "fourier_pair_does_not_extend_to_triple",
+    "kind": "conjecture",
+    "statement": "Let B_1 = (e_0,...,e_5) be the standard orthonormal basis of C^6 and let B_2 = (f_0,...,f_5) be the columns of (1/sqrt(6))*F_6, where F_6 is the 6x6 matrix with entries (F_6)_{j,k} = zeta^(j*k) for 0 <= j,k <= 5 and zeta is a fixed primitive sixth root of unity. Two orthonormal bases (x_0,...,x_5) and (y_0,...,y_5) of C^6 are unbiased iff the squared modulus of the inner product of x_a with y_b equals 1/6 for all 0 <= a,b <= 5. The claim is that there exists no orthonormal basis B_3 of C^6 that is unbiased to B_1 and unbiased to B_2; equivalently, the pair (B_1, B_2) does not extend to a triple of pairwise mutually unbiased bases, where extension is considered modulo the frozen equivalence group of section 2.",
+    "scope": "particular"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "fourier_matrix_definition",
+      "kind": "definition",
+      "statement": "F_6 is exactly the discrete Fourier matrix of the cyclic group Z_6 in 0-based indexing: (F_6)_{j,k} = zeta^(j*k) for 0 <= j,k <= 5 with zeta a fixed primitive sixth root of unity satisfying zeta^2 - zeta + 1 = 0. It is not an arbitrary 6x6 complex Hadamard matrix, not a member of an affine Hadamard family at a nonzero parameter, and not its own entrywise conjugate. Fixing zeta rather than merely saying primitive sixth root is part of the freeze.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "normalization_convention",
+      "kind": "definition",
+      "statement": "The frozen second basis is the sequence of columns of (1/sqrt(6))*F_6, so that the matrix is unitary. Every exact computation is performed on the unnormalized F_6 with the factor 1/6 carried as an exact rational scalar; sqrt(6) is never represented and never enters any coefficient field. Absorbing 1/sqrt(6) into the entries is a rejected convention because it forces an irrational into the arithmetic.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "coefficient_field",
+      "kind": "definition",
+      "statement": "The frozen coefficient field is the cyclotomic field Q(zeta_12), of degree 4 over Q with minimal polynomial Phi_12(x) = x^4 - x^2 + 1. It contains zeta_6 = zeta_12^2, the imaginary unit i = zeta_12^3, and sqrt(3) = zeta_12 + zeta_12^(-1). Elements are represented as integer or rational coefficient vectors in the basis (1, zeta_12, zeta_12^2, zeta_12^3) reduced by Phi_12. Every polynomial coefficient and every certificate coefficient lies in Q(zeta_12). The entries of the unknown third basis are not restricted to this field: they range over all of C.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "unbiasedness_definition",
+      "kind": "definition",
+      "statement": "Two orthonormal bases (x_0,...,x_5) and (y_0,...,y_5) of C^6 are unbiased iff for every pair of indices a,b the squared modulus of the inner product of x_a with y_b equals exactly 1/6. Approximate, tolerance-based, or partial unbiasedness on a subset of index pairs is a rejected reading, as is quasi-unbiasedness with a different constant.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "extension_to_triple_definition",
+      "kind": "definition",
+      "statement": "The pair (B_1, B_2) extends to a triple iff there exists one further orthonormal basis B_3 of C^6 that is unbiased to B_1 and unbiased to B_2. Rejected readings: extension to a quadruple; extension by a single additional vector rather than a complete basis; extension by a basis unbiased to only one of the two; extension restricted to some named family of bases.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "symmetry_quotient",
+      "kind": "definition",
+      "statement": "The frozen equivalence group is generated by one global unitary applied simultaneously to all bases, independent reordering of the six vectors within each basis, and independent multiplication of individual basis vectors by unit-modulus scalars. Quotienting by this group is part of the frozen target. Explicitly excluded from the group: entrywise complex conjugation, and permutation of the roles of the three bases. Including either changes counts of inequivalent solutions but not the yes-or-no answer, so the exclusion must be stated wherever a count is reported.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "dephasing_normal_form",
+      "kind": "definition",
+      "statement": "Using only the per-vector phase and reordering freedom of the third basis, B_3 is taken to be the columns of (1/sqrt(6))*H for a 6x6 matrix H whose entries all have modulus 1 and whose first row is all ones, leaving 30 unknown entries. Fixing the first column of H as well is a rejected step: it would require left diagonal freedom, which is constrained to the stabilizer of the pair (B_1, B_2). That stabilizer is computed exactly by the slice and its order is not assumed.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "root_of_unity_envelope_is_a_restriction",
+      "kind": "definition",
+      "statement": "The bounded slice searches third bases whose dephased matrix H has every entry in mu_12, the group of twelfth roots of unity, with a declared optional widening to mu_24. This is a strict restriction of the frozen target and not the frozen target. Exhausting the envelope answers only the restricted sub-question, and no report may present envelope exhaustion as unextendibility over C.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "hadamard_mub_criterion",
+      "kind": "lemma",
+      "statement": "For dimension d, the bases given by the columns of the identity, of (1/sqrt(d))*H_1, and of (1/sqrt(d))*H_2 are pairwise mutually unbiased if and only if H_1 and H_2 are complex Hadamard matrices, meaning all entries have modulus 1 and the conjugate transpose times the matrix is d times the identity, and (1/sqrt(d))*(conjugate transpose of H_1)*H_2 is also a complex Hadamard matrix.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "crt_tensor_extension_lemmas",
+      "kind": "lemma",
+      "statement": "Two standard facts combine to give an immediate extension candidate. First, for coprime positive integers m and n the discrete Fourier matrix of Z_(m*n) equals P*(F_m tensor F_n)*Q for permutation matrices P and Q given by the Chinese Remainder Theorem bijection between Z_(m*n) and Z_m times Z_n; in particular F_6 is a permutation of F_2 tensor F_3. Second, if A_1,...,A_r are pairwise mutually unbiased bases of C^a and B_1,...,B_r are pairwise mutually unbiased bases of C^b, then the bases whose vectors are the tensor products of the vectors of A_t with the vectors of B_t, for t = 1,...,r, are pairwise mutually unbiased bases of C^(a*b).",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "exact_arithmetic_requirement",
+      "kind": "exactness_requirement",
+      "statement": "Every quantity on a trust path is an exact element of Q(zeta_12) or an exact rational, represented as integer or rational coefficient vectors reduced by Phi_12. Unbiasedness is decided as an exact equality of algebraic integers, using the integral norm form rather than any square root. No tolerance, residual, or floating-point number exists on the trust path, and a certificate containing one is rejected outright rather than rounded.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "numerical_nonexistence_is_not_a_proof",
+      "kind": "refused_route",
+      "statement": "The planning dossier's own primary risk, restated as a binding constraint: failure of a numerical search, a floating-point semidefinite bound, an interval computation with floating endpoints, or an optimizer reporting no solution never certifies unextendibility. The repository owner rejects floating-point solvers outright and ADR-0035 admits no solver and records that no interval or residual-reconstruction path exists. Such output is exploration-only, must be labelled as such, and must never be replayed as a bound. Reports of published numerical evidence for unextendibility of any pair are subject to the same rule.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "review_problem_and_families_report",
+      "kind": "untrusted_source_report",
+      "statement": "The planning notes report that McNulty and Weigert's 2026 review contains Problem 10.6, asking that a given pair of mutually unbiased bases in C^6 be shown non-extendible to a triple or quadruple; that Problem 10.2 is the headline conjecture that no four such bases exist in dimension 6; that the review lists pair families named M_6^(1), K_6^(2), and K_6^(3); and that strong published numerical evidence of unextendibility exists for some parameter values. The review is not acquired. The exact problem statements, the family names, their parametrizations, and the membership of the frozen pair are all unverified, as is any recollection of how many mutually unbiased bases are known in dimension 6. The ADR-0055 pre-research novelty re-check must cover every one of these.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "frozen_pair_may_itself_be_extendible",
+      "kind": "untrusted_source_report",
+      "statement": "No source has been acquired establishing whether the frozen pair extends, and this dossier asserts nothing in either direction. Two structural facts are visible without any source: 6 factors as 2 times 3, and F_6 is the discrete Fourier matrix of Z_6, so by the Chinese Remainder factorization and the tensor-product lemma an extension candidate built from mutually unbiased bases of C^2 and C^3 is immediate to write down. The slice therefore tests that candidate exactly and first. If it succeeds, the frozen target is refuted cheaply and completely, which is an acceptable outcome under problem_type explore and triggers the operator substitution recorded in the dossier's section 13.",
+      "scope": "particular"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "let zeta : C with zeta^2 - zeta + 1 = 0 and zeta a primitive 6th root of unity; let F6 : Matrix(6,6,C) with F6[j][k] = zeta^(j*k) for 0 <= j,k <= 5; let B1 = columns(Identity(6)) and B2 = columns((1/sqrt 6) * F6); then not (exists B3 : orthonormal_basis(C^6), (forall a b in {0..5}, abs2(inner(B1[a], B3[b])) = 1/6) and (forall a b in {0..5}, abs2(inner(B2[a], B3[b])) = 1/6)), where the existential ranges over orthonormal bases modulo the frozen equivalence group of global unitary conjugation, per-basis vector reordering, and per-vector unit-modulus rescaling",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "fixed zeta a primitive sixth root of unity with zeta^2 - zeta + 1 = 0",
+      "fixed F6 the 6x6 matrix with entries zeta^(j*k), 0 <= j,k <= 5",
+      "not exists B3 an orthonormal basis of C^6, modulo the frozen equivalence group",
+      "forall a in {0,...,5} and forall b in {0,...,5}, in each unbiasedness condition"
+    ],
+    "assumption_local_ids": [
+      "fourier_matrix_definition",
+      "normalization_convention",
+      "coefficient_field",
+      "unbiasedness_definition",
+      "extension_to_triple_definition",
+      "symmetry_quotient",
+      "dephasing_normal_form",
+      "root_of_unity_envelope_is_a_restriction",
+      "hadamard_mub_criterion",
+      "crt_tensor_extension_lemmas",
+      "exact_arithmetic_requirement",
+      "numerical_nonexistence_is_not_a_proof",
+      "review_problem_and_families_report",
+      "frozen_pair_may_itself_be_extendible"
+    ],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      [
+        "a given pair of mutually unbiased bases in C^6",
+        "the single frozen pair (standard basis, columns of (1/sqrt 6)*F_6), with zeta fixed"
+      ],
+      [
+        "cannot be extended to a triple",
+        "there is no orthonormal basis B_3 of C^6 unbiased to both, the existential quantifier taken modulo the frozen equivalence group"
+      ],
+      [
+        "or quadruple",
+        "dropped; a quadruple is a strictly weaker demand on the pair and a different target"
+      ],
+      [
+        "the indices of the unbiasedness conditions",
+        "forall a, b in {0,...,5}, all 36 conditions per pair of bases, none omitted"
+      ],
+      [
+        "the family parameter of a review-listed pair",
+        "eliminated: no free parameter remains, which is what makes this pair exactly specifiable without an acquired source"
+      ]
+    ],
+    "definition_mapping": [
+      [
+        "mutually unbiased",
+        "squared modulus of every cross inner product equals exactly 1/6"
+      ],
+      [
+        "extend to a triple",
+        "existence of one further complete orthonormal basis unbiased to both frozen bases"
+      ],
+      [
+        "one exact algebraic member of a review-listed pair family",
+        "replaced by the discrete Fourier pair {I, F_6}, which is parameter-free and exactly specifiable with no acquired source"
+      ],
+      [
+        "coefficient field",
+        "Q(zeta_12), degree 4 over Q, minimal polynomial x^4 - x^2 + 1; the pair itself needs only Q(zeta_6) but the tensor-product extension candidate needs the imaginary unit"
+      ],
+      [
+        "normalization",
+        "the factor 1/6 carried as an exact rational scalar; sqrt(6) never represented"
+      ],
+      [
+        "symmetry quotient",
+        "global unitary, per-basis vector reordering, per-vector unit-modulus rescaling; complex conjugation and role permutation of the bases excluded"
+      ],
+      [
+        "exact certificate",
+        "a replayable exact identity over Q(zeta_12): a Nullstellensatz cofactor representation of 1, a rational sum-of-squares Positivstellensatz identity, or a complete exact interval-exclusion cover with rational endpoints"
+      ]
+    ],
+    "assumption_delta": [
+      "The planning dossier requires one exact algebraic member of a review-listed pair family. The review is not acquired in this task, so no review-listed parameter value can be copied; the parameter-free Fourier pair is frozen instead, and that substitution is the whole reason this target is specifiable now.",
+      "The or-quadruple disjunct of the planning subproblem is dropped, because a disjunction is not a target under cross-cutting rule 1.",
+      "The planning slice permits an exhaustive algebraic certificate; here the admissible certificate routes are named exactly, ordered, and restricted to exact ones, and the numerical route is refused rather than merely discouraged.",
+      "Whether the frozen pair lies within the review's intended pair set cannot be settled before the review is acquired, so the relation to Problem 10.6 is asserted only at the level of one pair versus a family. Relative to Problem 10.2, which concerns quadruples for all pairs, the frozen target is strictly weaker.",
+      "The frozen pair may itself be extendible. That is not asserted here in either direction, but the slice tests the Chinese-remainder tensor candidate first because a positive result refutes the frozen target at negligible cost."
+    ],
+    "edge_case_delta": [
+      "Unbiasedness of the third basis to the standard basis is automatic once every entry of the dephased matrix H has modulus 1, so that family of 36 conditions collapses to a modulus condition.",
+      "Unbiasedness to the Fourier basis is a per-column condition on H: each column must satisfy six exact equalities against the rows of the conjugate transpose of F_6, independently of the other columns. Column orthogonality is the only condition coupling columns.",
+      "Zero is not a permitted entry of H; every entry has modulus exactly 1, so no degenerate all-zero column can satisfy the conditions vacuously.",
+      "A found third basis is a set of vectors, so any reordering or rephasing of it is the same solution; counts of solutions are only meaningful modulo the frozen group, and the group excludes conjugation and role permutation.",
+      "If the exact stabilizer of the frozen pair is larger than expected, the search space shrinks but no solution is lost, because the stabilizer is computed rather than assumed."
+    ],
+    "strength_relation": "weaker"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "dephased_column_candidates_enumerated",
+      "exact_unbiased_columns_retained",
+      "orthogonal_six_tuples_found",
+      "exact_certificate_identities_replayed",
+      "floating_point_values_admitted_to_trust_path",
+      "failed_routes_preserved",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "an explicit third orthonormal basis with exact Q(zeta_12) entries, verified against every one of the 72 exact conditions, refuting the frozen unextendibility target",
+      "an exact unextendibility certificate over all of C for the frozen pair, replayed as a polynomial identity by an independent verifier",
+      "or an explicit unresolved outcome recording the exhausted root-of-unity envelope, the exact cardinality and content hash of the retained column set, and the smallest remaining obligation"
+    ],
+    "stopping_rules": [
+      "stop on an explicit third basis whose 72 exact conditions are all verified",
+      "stop on an exact unextendibility certificate replayed as a polynomial identity by an independent verifier",
+      "stop when fresh model spend reaches USD 20",
+      "stop when two consecutive review points close no obligation and widen no envelope",
+      "never promote exhaustion of a root-of-unity envelope, or failure of any search, to unextendibility over C",
+      "abandon the clique search and record the frontier when the frozen node budget is reached",
+      "discard rather than round any floating-point value that reaches a certificate"
+    ]
+  }
+}

@@ -1,0 +1,203 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "b8-efx-four-agents-complete-v1",
+  "declared_domain": "discrete-fair-division",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "EFX existence for exactly four agents with additive nonnegative rational valuations and complete allocations",
+    "informal_statement": "Freeze one convention set and one direction. For every finite instance with exactly four agents, additive valuations over a finite set of indivisible goods, and rational nonnegative values, does there exist a complete allocation, a partition of every good among the four agents with no donated or unallocated pile, that is envy-free up to any good? EFX is frozen as: for every ordered pair of distinct agents i, j and every good g in the bundle of j with v_i({g}) > 0, agent i values its own bundle at least as much as the bundle of j with g removed. Both a proof and an exact finite counterexample are acceptable outcomes. Rejected variants, recorded in the definitions table, are: at least four rather than exactly four agents, strictly positive valuations, the EFX_0 reading that also removes zero-valued goods, partial allocations with a charity pile, forbidding empty bundles, and non-additive valuations. A search heuristic that fails to find an EFX allocation is never a nonexistence result.",
+    "problem_type": "explore",
+    "tags": [
+      "fair-division",
+      "efx-allocation",
+      "indivisible-goods",
+      "additive-valuations",
+      "four-agents",
+      "complete-allocation",
+      "exact-rational-arithmetic",
+      "exhaustive-finite-check"
+    ]
+  },
+  "target_claim": {
+    "local_id": "efx_exists_for_exactly_four_agents_complete",
+    "kind": "conjecture",
+    "statement": "For every finite set M of indivisible goods and every family of four valuations v_1, v_2, v_3, v_4 on subsets of M that are additive with v_i(S) = sum over g in S of v_i({g}), v_i(empty) = 0, and v_i({g}) a nonnegative rational for every g in M, there exists a complete allocation X = (X_1, X_2, X_3, X_4) whose parts are pairwise disjoint, possibly empty, and satisfy X_1 union X_2 union X_3 union X_4 = M, such that for every ordered pair of distinct agents i != j in {1,2,3,4} and every g in X_j with v_i({g}) > 0 the inequality v_i(X_i) >= v_i(X_j minus {g}) holds.",
+    "scope": "unrestricted_universal"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "agent_count_exactly_four",
+      "kind": "definition",
+      "statement": "The agent set is N = {1,2,3,4} with exactly four agents. The planning phrase at least four agents is rejected as a target because it is a disjunction over agent counts; the four-agent case is frozen and instances with three or five or more agents are out of scope and may not be used as evidence for or against the frozen claim.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "additive_nonnegative_rational_valuation",
+      "kind": "definition",
+      "statement": "Each valuation v_i is determined by its values on singletons and extended additively: v_i(S) = sum over g in S of v_i({g}) and v_i(empty) = 0. Each v_i({g}) is a rational number with v_i({g}) >= 0, so zero-valued goods are permitted. Strict positivity is rejected. Real, monotone non-additive, submodular, and general combinatorial valuations are out of scope.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "complete_allocation_definition",
+      "kind": "definition",
+      "statement": "An allocation X = (X_1, X_2, X_3, X_4) is an ordered tuple of pairwise disjoint subsets of M whose union is exactly M. Every good is allocated to exactly one agent: there is no charity pile, no donated set, and no unallocated remainder. Bundles may be empty. Partial allocations and allocations with a discarded set are rejected readings and are not admissible outputs for the frozen target.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "efx_inequality_definition",
+      "kind": "definition",
+      "statement": "X is EFX iff for all i, j in N with i != j and for all g in X_j with v_i({g}) > 0 we have v_i(X_i) >= v_i(X_j minus {g}). The pair i = j imposes nothing because v_i(X_i) >= v_i(X_i minus {g}) holds by nonnegativity. The quantifier ranges only over goods that i values strictly positively; the EFX_0 reading, which also requires the inequality after removing a good with v_i({g}) = 0, is a strictly stronger and rejected reading. The EF1 reading, which requires the inequality for some g in X_j rather than every such g, is a strictly weaker and rejected reading.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "additive_removal_identity",
+      "kind": "lemma",
+      "statement": "Under additivity, v_i(X_j minus {g}) = v_i(X_j) - v_i({g}) for every g in X_j, so the frozen EFX inequality is equivalent to v_i(X_i) >= v_i(X_j) - v_i({g}). The two forms are interchangeable only because valuations are additive; for general monotone valuations they differ, so the subtraction form must never be used outside the frozen additive class.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "positive_scaling_and_relabeling_invariance",
+      "kind": "lemma",
+      "statement": "The EFX property of an allocation is preserved by relabeling agents, by relabeling goods, and by multiplying all values of a single agent by a fixed positive rational, because every EFX inequality involves only one agent's valuation on both sides. Consequently EFX existence is a property of the orbit of an instance under the group S_4 acting on agents times S_M acting on goods times per-agent positive rational scaling.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "integer_normalization_lemma",
+      "kind": "lemma",
+      "statement": "For any finite instance, multiplying each agent's values by the least common multiple of the denominators of that agent's values yields an instance with nonnegative integer values whose EFX allocations are exactly those of the original. Every stored instance on the trust path is therefore in integer normal form.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "globally_zero_good_is_inert",
+      "kind": "edge_case_note",
+      "statement": "A good g with v_i({g}) = 0 for every i in N generates no EFX inequality and changes no bundle value, so it can be placed in any bundle without affecting whether an allocation is EFX. Such goods are retained in the instance rather than deleted, because deleting them changes the instance identity and its content hash, but they are recorded as inert so an apparent counterexample cannot rest on them.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "efx_three_agent_status_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "Unsourced recollection carried into this dossier and explicitly untrusted: EFX existence for additive valuations is reported settled for two and for three agents and reported open from four agents upward, which is why the planning dossier phrases the item as at least four agents. This status statement is not acquired, not quoted, and not verified. It is one of the claims the ADR-0055 pre-research novelty re-check must cover, and the frozen four-agent target must not be described as open on the strength of it.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "efx_variant_divergence_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "The planning dossier reports that EFX variants in the literature differ on positivity, zero-valued goods, charity or unallocated goods, and complete versus partial allocation. This is an untrusted planning-note statement. It is treated as the reason the convention set is frozen here, and every acquired source must be re-read against the frozen conventions before any of its statements is aligned with this target.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "charity_results_do_not_settle_the_target",
+      "kind": "known_trap",
+      "statement": "Results reported for EFX with a donated or charity pile, for approximate EFX, or for partial allocations do not settle the frozen complete-allocation target and must never be cited as if they did. Alignment of any such result with this target requires an explicit assumption-delta row showing which frozen convention the result violates.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "search_failure_is_not_nonexistence",
+      "kind": "known_trap",
+      "statement": "The failure of any heuristic, local-search, or bounded procedure to find an EFX allocation for an instance is not a nonexistence result. Nonexistence for one instance requires exhaustive exact checking of all 4^card(M) complete allocations of that instance, or a proof. Nonexistence for the frozen class requires one exhibited instance carrying that exhaustive per-instance check with a replayable certificate.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "envelope_growth_and_canonicalization_trap",
+      "kind": "known_trap",
+      "statement": "The instance space grows as card(V)^(4 * card(M)) for a value alphabet V, so any enumeration is a declared finite envelope and its exhaustion must be recorded together with its exact envelope definition. Canonicalization under agent and good relabeling may be used to prune only because positive_scaling_and_relabeling_invariance is proved; the canonical-form routine must additionally be falsifiability-probed against unreduced enumeration on a small block, because a wrong canonical form silently deletes instances and would turn a missed counterexample into a false empty result.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "exact_rational_arithmetic_requirement",
+      "kind": "exactness_requirement",
+      "statement": "All valuations are stored as exact integers after integer normalization, or as exact rationals with explicit numerator and denominator, and every EFX inequality is decided by exact integer comparison. No floating-point number, decimal approximation, tolerance, or linear-programming relaxation output may appear on any trust path. Numerical or solver output may guide exploration only and must be labelled exploration-only in the record; it can never be a certificate.",
+      "scope": "definitional"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "forall finite M, forall (v_1,v_2,v_3,v_4) with v_i({g}) in Q and v_i({g}) >= 0 for all g in M and v_i(S) = sum(v_i({g}) for g in S), exists (X_1,X_2,X_3,X_4) with X_i pairwise disjoint, union of X_i equal to M, such that forall i,j in {1,2,3,4} with i != j, forall g in X_j with v_i({g}) > 0: v_i(X_i) >= v_i(X_j minus {g})",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "forall M a finite set of indivisible goods, card(M) >= 0",
+      "forall i in N = {1,2,3,4}, forall v_i additive with nonnegative rational singleton values",
+      "exists X = (X_1,X_2,X_3,X_4) a complete ordered partition of M into possibly empty bundles",
+      "forall ordered pairs (i,j) in N x N with i != j",
+      "forall g in X_j with v_i({g}) > 0"
+    ],
+    "assumption_local_ids": [
+      "agent_count_exactly_four",
+      "additive_nonnegative_rational_valuation",
+      "complete_allocation_definition",
+      "efx_inequality_definition",
+      "additive_removal_identity",
+      "positive_scaling_and_relabeling_invariance",
+      "integer_normalization_lemma",
+      "globally_zero_good_is_inert",
+      "efx_three_agent_status_untrusted",
+      "efx_variant_divergence_untrusted",
+      "charity_results_do_not_settle_the_target",
+      "search_failure_is_not_nonexistence",
+      "envelope_growth_and_canonicalization_trap",
+      "exact_rational_arithmetic_requirement"
+    ],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      ["every finite instance with at least four agents", "every finite instance with exactly four agents, N = {1,2,3,4}"],
+      ["additive valuations", "v_i(S) = sum over g in S of v_i({g}) with v_i({g}) a nonnegative rational"],
+      ["admits an allocation", "there exists a complete ordered partition (X_1,X_2,X_3,X_4) of M with possibly empty parts"],
+      ["envy-free up to any good", "for all i != j and all g in X_j with v_i({g}) > 0, v_i(X_i) >= v_i(X_j minus {g})"],
+      ["the precise convention for unallocated goods fixed at intake", "there are no unallocated goods: the allocation is complete and no charity pile exists"]
+    ],
+    "definition_mapping": [
+      ["EFX", "for every ordered pair of distinct agents and every positively valued good in the other bundle, own bundle value is at least the other bundle minus that good"],
+      ["EFX_0", "rejected reading that also quantifies over goods valued zero by the envying agent"],
+      ["EF1", "rejected weaker reading that quantifies over some rather than every removable good"],
+      ["allocation", "complete ordered partition of M into four pairwise disjoint possibly empty bundles"],
+      ["charity or donated pile", "rejected: a fifth unallocated part is not permitted"],
+      ["valuation positivity", "nonnegative rational singleton values; strictly positive values are the rejected reading"],
+      ["agent count", "exactly four; at least four is the rejected reading"]
+    ],
+    "assumption_delta": [
+      "The planning statement says at least four agents; the frozen target fixes exactly four, so it is a strict special case of the planning statement.",
+      "Valuations are nonnegative rather than strictly positive, so zero-valued goods exist and the EFX quantifier is restricted to positively valued goods; this is the weaker of the two EFX readings and it is frozen deliberately.",
+      "The allocation must be complete, which is strictly more demanding than the charity-pile variants reported in the planning notes.",
+      "Empty bundles are permitted, so an allocation giving one agent nothing is admissible provided every EFX inequality holds.",
+      "No claim is made about the open status of the four-agent case; open status is not_assessed and is an acquisition question."
+    ],
+    "edge_case_delta": [
+      "card(M) = 0 gives the all-empty allocation, which is EFX because every inner quantifier is empty.",
+      "card(M) < 4 forces at least one empty bundle, which is admissible under the frozen conventions.",
+      "A good valued zero by every agent is inert: it generates no inequality and can sit in any bundle.",
+      "A good valued zero by i but positively by j still generates no inequality for i on that good, while j's own inequalities are unaffected by i's valuation.",
+      "Two agents with identical valuations are permitted; the instance space is not restricted to distinct valuations.",
+      "Ties, that is equality in an EFX inequality, satisfy the frozen non-strict inequality and are not violations."
+    ],
+    "strength_relation": "weaker"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "canonical_instances_enumerated",
+      "instances_exhaustively_decided",
+      "complete_allocations_exactly_checked",
+      "efx_inequalities_exactly_evaluated",
+      "instances_with_no_efx_allocation",
+      "canonicalization_probes_flipped",
+      "reduction_lemmas_proved",
+      "failed_routes_preserved",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "an exact counterexample instance in integer normal form together with an exhaustive replayed check that none of its 4^card(M) complete allocations is EFX",
+      "a rigorous proof of existence for every instance with exactly four agents under the frozen conventions",
+      "a proved reduction that replaces the frozen class by an exactly stated smaller class of instances, with the reduction's direction and convention preservation proved",
+      "or an explicit unresolved outcome that records the smallest remaining obligation"
+    ],
+    "stopping_rules": [
+      "stop on an exact certificate: a replayed exhaustive nonexistence instance or a completed existence proof for exactly four agents",
+      "stop when fresh model spend for this target reaches USD 20",
+      "stop when no proof obligation has been discharged and no new exclusion recorded for two consecutive review points",
+      "never promote exhaustion of the declared enumeration envelope into the unrestricted universal claim, and never record the failure of a heuristic as a nonexistence result"
+    ]
+  }
+}

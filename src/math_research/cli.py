@@ -41,6 +41,8 @@ def main(argv: list[str] | None = None) -> int:
     problem.add_argument("problem_args", nargs=argparse.REMAINDER)
     novelty = subparsers.add_parser("novelty", help="novelty re-check records and gates (ADR-0055)")
     novelty.add_argument("novelty_args", nargs=argparse.REMAINDER)
+    conventions = subparsers.add_parser("conventions", help="definitional-reading records and derived claim scope")
+    conventions.add_argument("conventions_args", nargs=argparse.REMAINDER)
     phase2 = subparsers.add_parser("phase2", help="Phase 2 durable workspace commands")
     phase2.add_argument("phase2_args", nargs=argparse.REMAINDER)
     phase3a = subparsers.add_parser("phase3a", help="bounded Phase 3A research-memory commands")
@@ -73,6 +75,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "novelty":
         from .novelty_cli import main as novelty_main
         return novelty_main(args.novelty_args)
+    if args.command == "conventions":
+        from .conventions_cli import main as conventions_main
+        return conventions_main(args.conventions_args)
     if args.command == "phase2":
         from .phase2_cli import main as phase2_main
         return phase2_main(args.phase2_args)

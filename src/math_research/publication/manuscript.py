@@ -66,6 +66,11 @@ RIGHTS_PERMITTED = "permitted"
 PROBE_OUTCOMES = frozenset({"refusal", "demotion"})
 LEAN_VERIFICATION_STATUSES = frozenset({"pending", "kernel_checked", "failed"})
 AI_GENERATOR = "AdaIvy project"
+AI_GENERATORS = frozenset({
+    AI_GENERATOR,
+    "external Codex",
+    "mixed external and AdaIvy campaign",
+})
 
 
 def _mapping(value: Any, field: str) -> Mapping[str, Any]:
@@ -332,10 +337,11 @@ def _validate_claim(value: Mapping[str, Any], field: str) -> None:
     )
     ai_generated = _bool(authorship["ai_generated"], f"{field}.authorship.ai_generated")
     escape_prose(str(authorship["generator"]), f"{field}.authorship.generator")
-    if ai_generated and authorship["generator"] != AI_GENERATOR:
+    if ai_generated and authorship["generator"] not in AI_GENERATORS:
         raise PublicationValidationError(
             "ai_generator_mismatch",
-            f"{field}.authorship.generator must be {AI_GENERATOR!r} when ai_generated is true",
+            f"{field}.authorship.generator must identify an admitted derived origin "
+            "when ai_generated is true",
         )
     artifact = value["lean_artifact"]
     if artifact is not None:
@@ -507,7 +513,7 @@ def _validate_run_disclosure(value: Mapping[str, Any], field: str) -> None:
             raise PublicationValidationError("usd_amount_invalid", f"{field}.{key}")
     if value["measurement_status"] == "complete":
         required_usage = (
-            "model_calls", "cost_usd", "budget_cap_usd", "input_tokens",
+            "model_calls", "cost_usd", "input_tokens",
             "output_tokens", "total_tokens",
         )
         if any(value[key] is None for key in required_usage):

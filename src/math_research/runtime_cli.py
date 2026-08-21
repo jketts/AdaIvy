@@ -233,12 +233,16 @@ def _load_session(path: Path) -> LeadSession:
             usage=IterationUsage(**item["usage"]),
             productive=item["productive"],
             content_hash=item["content_hash"],
+            operational_hash=item["operational_hash"],
         )
         for item in payload["iterations"]
     )
     for item, stored in zip(iterations, payload["iterations"]):
-        if item.with_content_hash().content_hash != stored["content_hash"]:
+        expected = item.with_content_hash()
+        if expected.content_hash != stored["content_hash"]:
             raise ValueError(f"iteration {item.iteration_index} content_hash mismatch")
+        if expected.operational_hash != stored["operational_hash"]:
+            raise ValueError(f"iteration {item.iteration_index} operational_hash mismatch")
     session = LeadSession(
         session_id=OpaqueId(payload["session_id"]),
         dossier_id=OpaqueId(payload["dossier_id"]),
@@ -260,9 +264,14 @@ def _load_session(path: Path) -> LeadSession:
         prior_resolution_verification=payload["prior_resolution_verification"],
         report_classification=payload["report_classification"],
         target_resolution_status=payload["target_resolution_status"],
-    ).with_content_hash()
-    if session.content_hash != payload["content_hash"]:
+        content_hash=payload["content_hash"],
+        operational_hash=payload["operational_hash"],
+    )
+    expected_session = session.with_content_hash()
+    if expected_session.content_hash != payload["content_hash"]:
         raise ValueError("session content_hash mismatch")
+    if expected_session.operational_hash != payload["operational_hash"]:
+        raise ValueError("session operational_hash mismatch")
     try:
         recheck = read_recheck(path.parent / "novelty-recheck.json")
     except (NoveltyRecheckError, OSError) as error:

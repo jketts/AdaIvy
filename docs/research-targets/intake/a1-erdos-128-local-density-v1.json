@@ -1,0 +1,232 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "a1-erdos-128-local-density-v1",
+  "declared_domain": "extremal-graph-theory",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "Erdos 128: local edge density on half the vertices forcing a triangle",
+    "informal_statement": "Decide the frozen universal implication: for every integer n >= 1 and every finite simple graph G on exactly n vertices, if every induced subgraph of G on at least floor(n/2) vertices has more than n^2/50 edges, then G contains a triangle. The constant 50 and the threshold floor(n/2) are both pinned; an improved constant is a different target. Both a proof and a single triangle-free counterexample are acceptable outcomes. Every comparison is exact integer arithmetic: e(G[S]) > n^2/50 is evaluated as 50*e(G[S]) > n^2 over Z. Bounded enumeration of small triangle-free graphs is evidence only and never becomes the universal statement.",
+    "problem_type": "explore",
+    "tags": [
+      "erdos-128",
+      "extremal-graph-theory",
+      "local-density",
+      "triangle-free-graphs",
+      "c5-blow-up",
+      "petersen-graph",
+      "exact-integer-arithmetic",
+      "bounded-canonical-sweep"
+    ]
+  },
+  "target_claim": {
+    "local_id": "erdos_128_pinned_constant_fifty",
+    "kind": "conjecture",
+    "statement": "For every integer n >= 1 and every finite simple undirected graph G with exactly n vertices: if for every subset S of V(G) with |S| >= floor(n/2) the induced subgraph G[S] satisfies 50*e(G[S]) > n^2, where e(H) denotes the number of edges of H, then there exist three distinct pairwise adjacent vertices of G.",
+    "scope": "unrestricted_universal"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "graph_conventions",
+      "kind": "definition",
+      "statement": "A graph means a finite simple undirected graph: no loops, no multiple edges, no edge or vertex weights, no orientation. The order n = |V(G)| satisfies n >= 1. Multigraphs, digraphs, hypergraphs, infinite graphs, and the order-zero graph are outside the frozen target.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "order_scope_of_n",
+      "kind": "definition",
+      "statement": "The symbol n is the order of the whole graph G and is fixed before the hypothesis is read. The same n appears in the vertex threshold floor(n/2) and in the edge bound n^2/50. It is never the order of the induced subgraph, so the bound does not shrink with |S|.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "induced_subgraph_definition",
+      "kind": "definition",
+      "statement": "For S a subset of V(G), the induced subgraph G[S] has vertex set S and edge set exactly those edges of G with both endpoints in S. e(G[S]) is its edge count. Non-induced subgraphs on S are outside the frozen hypothesis.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "threshold_and_bound_strictness",
+      "kind": "definition",
+      "statement": "The vertex threshold is non-strict: S ranges over every subset with |S| >= floor(n/2), where floor(n/2) = (n - (n mod 2))/2. The edge bound is strict: more than n^2/50 edges, evaluated exactly over Z as 50*e(G[S]) > n^2. Reading the threshold as strict, as ceil(n/2), or as exactly floor(n/2), or reading the edge bound as non-strict, each defines a different target. The constant 50 is likewise pinned and is not a parameter: the planning dossier's improved-constant result shape, an unknown c in place of 50, is a distinct frozen target requiring its own problem definition and is neither settled nor advanced by this one.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "triangle_definition",
+      "kind": "definition",
+      "statement": "G contains a triangle iff there exist three distinct vertices that are pairwise adjacent, equivalently a K_3 subgraph. Because K_3 has no non-adjacent pair, induced and non-induced readings coincide. Odd cycles of length greater than three, closed walks of length three, and triangles of the complement are rejected readings.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "edge_count_monotone_under_supersets",
+      "kind": "lemma",
+      "statement": "For subsets S contained in T of V(G), every edge of G[S] is an edge of G[T], so e(G[S]) <= e(G[T]). Consequently the minimum of e(G[S]) over all S with |S| >= t is attained at some S with |S| = t exactly, and the frozen hypothesis is equivalent to its restriction to subsets of size exactly floor(n/2).",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "independent_set_blocks_hypothesis",
+      "kind": "lemma",
+      "statement": "If the independence number alpha(G) is at least floor(n/2), then some admissible S is independent, so e(G[S]) = 0 and 50*0 > n^2 fails for every n >= 1. Hence every graph satisfying the frozen hypothesis has alpha(G) < floor(n/2), and the implication holds vacuously for all other graphs.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "mantel_bound",
+      "kind": "lemma",
+      "statement": "A triangle-free graph on m vertices has at most floor(m^2/4) edges, attained by the balanced complete bipartite graph. This bounds e(G[S]) from above for triangle-free G and is used only for pruning, never as a certificate.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "exact_arithmetic_requirement",
+      "kind": "exactness_requirement",
+      "statement": "Every comparison on a trust path is exact integer or rational arithmetic. The edge bound is decided as 50*e(G[S]) > n^2 over Z, never as a floating-point comparison against n^2/50. Blow-up edge counts, independence numbers, and per-order records are exact integers; density records are reduced exact fractions. Any floating-point or semidefinite number is labelled exploration-only and can never enter a certificate.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "flag_algebra_sdp_route_refused",
+      "kind": "refused_route",
+      "statement": "The planning dossier names flag-algebra and SDP exploration as a fit reason. Those routes produce floating-point numbers, the repository owner rejects floating-point solvers outright, and ADR-0035 admits no solver. This route may guide exploration only, must be labelled exploration-only wherever it appears, and must never be replayed as a bound or certificate. An exact rational sum-of-squares replacement in graph profile space does not exist in this repository.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "catalogue_falsifiable_label_report",
+      "kind": "untrusted_source_report",
+      "statement": "The planning notes report that the Erdos Problems catalogue labels entry 128 FALSIFIABLE rather than OPEN. The catalogue page is not acquired, the label's meaning is not established, and this creates no open status, no refuted status, and no novelty or significance effect. The ADR-0055 pre-research novelty re-check must cover it.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "catalogue_claimed_proof_report",
+      "kind": "untrusted_source_report",
+      "statement": "The planning notes report that the catalogue entry lists a claimed proof. Neither the claim, its thread, nor any post-2025 literature has been acquired or reviewed. The claim may resolve the frozen target entirely, may address a different statement, or may be wrong; none of these is decided here. The ADR-0055 pre-research novelty re-check must cover it.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "reported_best_constant_and_boundary_examples",
+      "kind": "untrusted_source_report",
+      "statement": "The planning notes report that the constant 50 is best possible, with blow-ups of C_5 and the Petersen graph supplying the boundary examples, and that earlier constants exist. Untrusted and unacquired. The bounded slice recomputes the relevant edge counts as exact integers from the constructions themselves rather than relying on this report, and a mismatch is recorded as a source discrepancy rather than silently corrected.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "reported_triangle_free_class_counts",
+      "kind": "untrusted_source_report",
+      "statement": "The numbers of isomorphism classes of triangle-free simple graphs reported for orders 1 through 12 are 1, 2, 3, 7, 14, 38, 107, 410, 1897, 12172, 105071, 1262180. Untrusted and unacquired. The sweep recomputes each per-order class count and treats any disagreement as a candidate-generator fault that halts the sweep, rather than as a correction to either number.",
+      "scope": "particular"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "forall n : Z, n >= 1 -> forall G a finite simple undirected graph with |V(G)| = n, (forall S subset of V(G), |S| >= floor(n/2) -> 50 * edge_count(induced(G, S)) > n^2) -> exists u v w in V(G), u, v, w pairwise distinct and pairwise adjacent in G",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "forall n an integer with n >= 1",
+      "forall G a finite simple undirected graph with exactly n vertices",
+      "forall S a subset of V(G) with |S| >= floor(n/2), in the hypothesis",
+      "exists u, v, w three distinct pairwise adjacent vertices of G, in the conclusion"
+    ],
+    "assumption_local_ids": [
+      "graph_conventions",
+      "order_scope_of_n",
+      "induced_subgraph_definition",
+      "threshold_and_bound_strictness",
+      "triangle_definition",
+      "edge_count_monotone_under_supersets",
+      "independent_set_blocks_hypothesis",
+      "mantel_bound",
+      "exact_arithmetic_requirement",
+      "flag_algebra_sdp_route_refused",
+      "catalogue_falsifiable_label_report",
+      "catalogue_claimed_proof_report",
+      "reported_best_constant_and_boundary_examples",
+      "reported_triangle_free_class_counts"
+    ],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      [
+        "n",
+        "integer n >= 1, the order of the whole graph G"
+      ],
+      [
+        "G",
+        "finite simple undirected graph on exactly n vertices"
+      ],
+      [
+        "S",
+        "subset of V(G) with |S| >= floor(n/2), universally quantified in the hypothesis"
+      ],
+      [
+        "the triangle",
+        "existentially quantified triple of distinct pairwise adjacent vertices of G"
+      ],
+      [
+        "the question mark in the planning statement",
+        "frozen as the universal implication in the affirmative direction; problem_type explore keeps a counterexample an acceptable outcome without making the target a disjunction"
+      ]
+    ],
+    "definition_mapping": [
+      [
+        "induced subgraph on at least floor(n/2) vertices",
+        "G[S] for every S subset of V(G) with |S| >= floor(n/2), non-strict on the vertex count"
+      ],
+      [
+        "more than n^2/50 edges",
+        "e(G[S]) > n^2/50, decided exactly over Z as 50*e(G[S]) > n^2, strict"
+      ],
+      [
+        "n",
+        "the order of G, not the order of G[S]"
+      ],
+      [
+        "contains a triangle",
+        "three distinct pairwise adjacent vertices, equivalently a K_3 subgraph"
+      ],
+      [
+        "blow-up of C_5",
+        "balanced blow-up B(m) with five parts of size m, complete bipartite between cyclically consecutive parts and empty inside each part; the lexicographic product C_5[K_m] is a rejected reading because it has triangles inside parts"
+      ],
+      [
+        "Petersen graph",
+        "the Kneser graph K(5,2): vertices the 2-element subsets of {1,...,5}, adjacent iff disjoint"
+      ]
+    ],
+    "assumption_delta": [
+      "The planning statement is a question; the frozen target is the universal implication with the constant 50 and the threshold floor(n/2) both pinned.",
+      "The planning dossier's initial result shape includes an improved constant; that disjunct is removed, because a disjunction of possible wins is not a target under cross-cutting rule 1.",
+      "The frozen target quantifies over all n >= 1 with no sufficiently-large-n clause. Whether the source states it for all n or asymptotically cannot be decided before the catalogue entry and the original Erdos source are acquired, which is why the strength relation is unresolved rather than equivalent.",
+      "Order zero is excluded so that n^2/50 is positive and the hypothesis is non-degenerate.",
+      "Flag-algebra and SDP exploration named in the planning dossier is admitted as exploration-only and never as a bound; no exact replacement for it exists in this repository."
+    ],
+    "edge_case_delta": [
+      "For n = 1, 2, 3 the threshold floor(n/2) is 0 or 1, so an empty or singleton S has zero edges and 50*0 > n^2 fails; the implication is vacuously true.",
+      "Whenever alpha(G) >= floor(n/2) the hypothesis fails on an independent admissible S, so the implication is vacuous; a counterexample must satisfy alpha(G) < floor(n/2).",
+      "By superset monotonicity of e(G[S]) the hypothesis need only be checked on subsets of size exactly floor(n/2).",
+      "At n = 10 the bound n^2/50 equals exactly 2, so a triangle-free graph of order 10 whose every 5-vertex induced subgraph has at least 3 edges would be a counterexample; both named boundary constructions sit at exactly 2 at that order.",
+      "S may be the empty set when floor(n/2) = 0, and e of the empty graph is 0."
+    ],
+    "strength_relation": "unresolved"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "triangle_free_classes_exhausted",
+      "hypothesis_satisfying_graphs_found",
+      "boundary_constructions_reproduced_exactly",
+      "exact_local_density_records_stored",
+      "generator_count_mismatches",
+      "failed_routes_preserved",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "an exact triangle-free graph satisfying the frozen hypothesis, refuting the universal implication",
+      "a rigorous proof of the universal implication for every finite simple graph",
+      "or an explicit unresolved outcome recording the highest exhausted order, the exact per-order table of c(n) = max over triangle-free G of order n of minlocal(G)/n^2 as reduced fractions, and the smallest remaining obligation"
+    ],
+    "stopping_rules": [
+      "stop on an exact triangle-free graph satisfying the frozen hypothesis",
+      "stop on a rigorous derivation covering every finite simple graph in scope",
+      "stop when fresh model spend reaches USD 20",
+      "stop when two consecutive review points close no obligation and raise no exhausted order",
+      "never promote a completed bounded sweep to the universal implication; record the exhausted order and the exact c(n) table instead",
+      "halt and report a generator fault if any recomputed isomorphism-class count disagrees with the recorded count"
+    ]
+  }
+}

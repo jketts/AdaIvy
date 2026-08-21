@@ -1,0 +1,194 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "a4-planar-total-coloring-degree-six-v1",
+  "declared_domain": "graph-coloring",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "Total 8-colouring of planar graphs with maximum degree exactly six and no triangle at a degree-six vertex",
+    "informal_statement": "Prove that every finite simple planar graph G whose maximum degree is exactly 6, and in which no vertex of degree 6 lies on a 3-cycle, satisfies chi''(G) <= 8.\n\nThis is one frozen subclass of the degree-six planar total-colouring question, not that question. The subclass condition is the single forbidden configuration 'a vertex of degree 6 together with two adjacent neighbours'. Whether the subclass is already settled in the literature is not verifiable without acquisition and is recorded as an untrusted status claim.",
+    "problem_type": "prove",
+    "tags": [
+      "total-coloring",
+      "planar-graphs",
+      "maximum-degree-six",
+      "reducible-configuration",
+      "discharging",
+      "forbidden-configuration",
+      "exact-coloring-extension"
+    ]
+  },
+  "target_claim": {
+    "local_id": "planar_delta_six_no_triangle_at_six_vertex",
+    "kind": "conjecture",
+    "statement": "For every finite simple planar graph G with Delta(G) = 6 such that no vertex of degree 6 is contained in a 3-cycle of G, the total chromatic number satisfies chi''(G) <= 8, where a total k-colouring is a map c from V(G) union E(G) to a set of k colours such that c(u) != c(v) for every edge uv, c(e) != c(f) for every two distinct edges sharing an endpoint, and c(v) != c(e) for every vertex v incident with an edge e.",
+    "scope": "unrestricted_universal"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "total_colouring_definition",
+      "kind": "definition",
+      "statement": "A total colouring of G is a proper colouring of the element set V(G) union E(G) under the conflict relation in which two elements conflict exactly when they are two adjacent vertices, two distinct edges sharing an endpoint, or a vertex and an edge incident with it. Adjacency and incidence both conflict; non-incident vertex-edge pairs and disjoint edges do not.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "total_chromatic_number_definition",
+      "kind": "definition",
+      "statement": "chi''(G) is the least k for which a total k-colouring of G exists. Colours are unlabelled: any permutation of the colour set maps total colourings to total colourings, and the colour set is fixed as {1,...,8} for this target.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "planarity_convention",
+      "kind": "definition",
+      "statement": "Planar means G admits an embedding in the plane; no embedding is part of the input and no embedding is fixed by the statement. If the proof route fixes one embedding, that choice is a proof device and must be recorded with the argument, together with the reason the conclusion does not depend on it.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "maximum_degree_exactly_six",
+      "kind": "definition",
+      "statement": "Delta(G) = 6 means some vertex of G has degree exactly 6 and no vertex has degree greater than 6. The frozen class is Delta exactly 6, not Delta at most 6: planar graphs with Delta(G) <= 5 are outside the class rather than assumed to be covered.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "forbidden_configuration_t6",
+      "kind": "definition",
+      "statement": "The frozen subclass condition is: there is no triple of vertices v, u, w with deg_G(v) = 6 and with uv, vw, uw all edges of G. Equivalently, no 3-cycle of G contains a vertex of degree 6. The condition is on the abstract graph, not on faces of an embedding, so a triangle that bounds no face is still forbidden. Membership is decidable in polynomial time by enumerating the neighbourhood of each degree-6 vertex.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "simple_finite_graph",
+      "kind": "definition",
+      "statement": "G is finite, simple, loopless, and has no parallel edges. Connectivity is not assumed and disconnected graphs are inside the class. Multigraphs and graphs with loops are outside it, because incidence conflicts would then be ill defined.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "trivial_lower_bound",
+      "kind": "lemma",
+      "statement": "For every graph G, chi''(G) >= Delta(G) + 1, because a vertex of maximum degree and its incident edges form a set of Delta(G) + 1 pairwise conflicting elements. On the frozen class this gives chi''(G) >= 7, so the target is a gap-of-one statement.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "disjoint_union_reduction",
+      "kind": "lemma",
+      "statement": "For a disjoint union G = G1 + G2, chi''(G) = max(chi''(G1), chi''(G2)), since components can be coloured independently from the same colour set.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "degree_six_planar_exceptional_case_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "The operator-supplied planning notes report that chi'' <= Delta + 2 is settled for planar graphs of every maximum degree except 6, leaving Delta = 6 as the exceptional case. This is an untrusted report: it has not been acquired, quoted from a primary source, or reviewed, and it must be covered by the ADR-0055 pre-research novelty re-check.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "subclass_open_status_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "Whether the frozen subclass, planar with Delta exactly 6 and no 3-cycle through a degree-6 vertex, is already settled in the literature is unknown here and cannot be checked offline. This is the load-bearing untrusted status claim of this dossier: the target is frozen as a statement, and nothing in this package asserts that it is open, novel, or unproved.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "stronger_hypotheses_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "The planning notes report partial results for planar graphs with Delta = 6 under stronger hypotheses of girth and cycle type, such as girth at least 5, absence of 4-cycles, or absence of adjacent triangles. The exact hypotheses, bounds, and attributions are untrusted and unacquired. The frozen condition is weaker than triangle-freeness as a matter of definition; that it is weaker than any published hypothesis is not claimed.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "exact_arithmetic_requirement",
+      "kind": "exactness_constraint",
+      "statement": "Every colouring computation is exact and finite-domain: colours are integers in {1,...,8}, extension checks are exhaustive backtracking over finite domains, and no floating-point value enters any trust path. A SAT result is admitted only as a checked UNSAT proof log replayed by an independent proof checker; a solver's bare verdict is not a certificate. Linear or semidefinite relaxations of the colouring polytope are exploration-only and may never appear in a certificate.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "reducibility_is_not_the_theorem",
+      "kind": "route_constraint",
+      "statement": "A verified set of reducible configurations does not establish the target. The global argument, a discharging computation over a plane embedding using Euler's formula to show that every graph in the class contains one of the configurations, is a separate obligation that this slice does not discharge. Computer-checked reducibility constrains a minimal counterexample and nothing more, and must never be reported as a proof of the universal statement.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "interface_convention_trap",
+      "kind": "route_constraint",
+      "statement": "A configuration reducible under one interface convention may be irreducible under another. Precolouring only the boundary edges, precolouring boundary vertices and edges, and allowing the identification or deletion of interface vertices are three different reducibility notions with different answers. The interface convention must be frozen before any search and recorded inside every certificate; a reducibility claim without its convention is not interpretable.",
+      "scope": "particular"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "forall G, (G finite and simple and planar and Delta(G) = 6 and not exists v,u,w in V(G) with deg_G(v) = 6 and uv in E(G) and vw in E(G) and uw in E(G)) implies exists c : V(G) union E(G) -> {1,...,8} such that (forall uv in E(G), c(u) != c(v)) and (forall distinct e,f in E(G) sharing an endpoint, c(e) != c(f)) and (forall v in V(G), forall e in E(G) incident with v, c(v) != c(e))",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "forall G a finite simple planar graph with Delta(G) = 6",
+      "forall v in V(G) with deg_G(v) = 6 and forall u,w in V(G): not (uv, vw, uw all in E(G))",
+      "exists c a map from V(G) union E(G) to {1,...,8}"
+    ],
+    "assumption_local_ids": [
+      "total_colouring_definition",
+      "total_chromatic_number_definition",
+      "planarity_convention",
+      "maximum_degree_exactly_six",
+      "forbidden_configuration_t6",
+      "simple_finite_graph",
+      "trivial_lower_bound",
+      "disjoint_union_reduction",
+      "degree_six_planar_exceptional_case_untrusted",
+      "subclass_open_status_untrusted",
+      "stronger_hypotheses_untrusted",
+      "exact_arithmetic_requirement",
+      "reducibility_is_not_the_theorem",
+      "interface_convention_trap"
+    ],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      ["every finite simple planar graph G with Delta(G) = 6", "the same class intersected with the frozen condition that no degree-6 vertex lies on a 3-cycle; the frozen class is a proper subclass"],
+      ["Delta(G) = 6", "some vertex has degree exactly 6 and no vertex has degree above 6; Delta(G) <= 5 is excluded, not covered"],
+      ["chi''(G) <= Delta(G) + 2 = 8", "there exists a total colouring c with values in the fixed set {1,...,8}"],
+      ["the subclass condition", "for all v with deg_G(v) = 6 and all u,w in V(G), not all three of uv, vw, uw are edges"]
+    ],
+    "definition_mapping": [
+      ["total coloring", "proper colouring of V(G) union E(G) where adjacency of vertices, sharing of an endpoint by edges, and vertex-edge incidence all conflict"],
+      ["chi''(G)", "least size of a colour set admitting a total colouring; the target fixes that set to {1,...,8}"],
+      ["planar", "admits an embedding in the plane; embeddability, not a supplied embedding"],
+      ["3-cycle", "three pairwise adjacent vertices of the abstract graph; facial or non-facial makes no difference to the condition"],
+      ["reducible configuration", "a subgraph H with a frozen interface such that every total 8-colouring of the interface extends to H, so that H cannot occur in a minimal counterexample"]
+    ],
+    "assumption_delta": [
+      "The headline problem quantifies over all planar graphs with Delta(G) = 6; the frozen target adds the forbidden configuration and is therefore strictly weaker than the headline problem.",
+      "Delta(G) = 6 is read as exact equality rather than as an upper bound, so the Delta <= 5 planar cases are outside the claim.",
+      "No embedding, no connectivity, no 2-connectivity, and no minimum-degree hypothesis is assumed.",
+      "No published bound, reducible configuration, or discharging rule is assumed as an input; anything reused from the literature becomes an acquisition item and an open obligation until acquired."
+    ],
+    "edge_case_delta": [
+      "chi''(G) >= 7 holds on the whole class, so the target closes a gap of one colour rather than an unbounded gap.",
+      "Every graph in the class has at least 7 vertices, since a degree-6 vertex needs six distinct neighbours.",
+      "Disjoint unions stay in scope but a component may have maximum degree below 6, so any component reduction moves the hypothesis from Delta = 6 to Delta <= 6 and must be restated when used.",
+      "Triangles among vertices of degree at most 5 are permitted; the condition restricts only triangles containing a vertex of degree 6.",
+      "A degree-6 vertex whose two neighbours are adjacent is forbidden even when the resulting triangle bounds no face in a given embedding."
+    ],
+    "strength_relation": "weaker"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "configurations_enumerated",
+      "configurations_proved_reducible",
+      "configurations_refuted_reducible",
+      "interface_precolourings_checked",
+      "unsat_proof_logs_replayed",
+      "discharging_obligations_open",
+      "failed_routes_preserved",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "one configuration proved reducible for total 8-colouring under the frozen interface convention, with a replayable extension table covering every canonical interface precolouring",
+      "one published hypothesis for planar graphs with Delta = 6 weakened to the frozen condition on an exactly identified subfamily, with the weakened hypothesis and the surviving hypotheses both stated",
+      "or an explicit unresolved outcome recording the smallest remaining obligation, namely the exact list of configurations whose reducibility is undecided together with the discharging obligation that stays open"
+    ],
+    "stopping_rules": [
+      "stop when one configuration is proved reducible with an independently replayed extension certificate",
+      "stop when a claimed reducibility is refuted by a checked UNSAT proof log replayed by an independent proof checker",
+      "stop when the fresh model spend reaches USD 20",
+      "stop when no configuration has changed status for two consecutive review points",
+      "never promote an exhausted configuration list into the universal statement: a bounded enumeration constrains a minimal counterexample and supplies no discharging argument"
+    ]
+  }
+}

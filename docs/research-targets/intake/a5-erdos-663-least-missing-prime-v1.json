@@ -1,0 +1,192 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "a5-erdos-663-least-missing-prime-v1",
+  "declared_domain": "analytic-number-theory",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "Erdos 663 at the frozen value k = 3: the least prime missing from three consecutive integers",
+    "informal_statement": "Let q(n,3) be the least prime that does not divide (n+1)(n+2)(n+3). Prove that for every rational epsilon > 0 there is a positive integer N such that q(n,3) < (1 + epsilon) * log n for every integer n > N, where log is the natural logarithm.\n\nThe asymptotic is written in explicit epsilon-N form so that the quantifier order is auditable, and k is frozen to the single value 3. Nothing is claimed for any other k. Every threshold and error term produced by work on this target must be an explicit function of epsilon and of the frozen k = 3.",
+    "problem_type": "prove",
+    "tags": [
+      "erdos-663",
+      "least-missing-prime",
+      "consecutive-integers",
+      "explicit-epsilon-form",
+      "fixed-k",
+      "chebyshev-theta",
+      "crt-extremal-search"
+    ]
+  },
+  "target_claim": {
+    "local_id": "erdos_663_k_three_epsilon_form",
+    "kind": "conjecture",
+    "statement": "For every rational epsilon > 0 there exists a positive integer N such that for every integer n > N, q(n,3) < (1 + epsilon) * log n, where q(n,3) is the least prime p that does not divide the product (n+1)(n+2)(n+3) and log is the natural logarithm.",
+    "scope": "unrestricted_universal"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "q_definition",
+      "kind": "definition",
+      "statement": "For an integer k >= 2 and a positive integer n, q(n,k) is the least prime p such that p does not divide the product of (n+i) over 1 <= i <= k. The product is over i from 1 to k inclusive, so it starts at n+1 and not at n. The product is a positive integer greater than 1 with finitely many prime divisors, so q(n,k) exists and is unique.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "frozen_k",
+      "kind": "definition",
+      "statement": "k is frozen to the single value 3, so the product is (n+1)(n+2)(n+3). k = 3 is chosen because it is the least k for which the forced divisors are exactly the two primes 2 and 3 and for which the residue condition per prime already covers three of p residue classes, giving a nontrivial extremal search; k = 2 is a materially different and easier configuration. No claim is made for k = 2 or for any k >= 4.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "n_range",
+      "kind": "definition",
+      "statement": "n ranges over the positive integers from 1 upward. Zero and negative n are outside the statement. Since log 1 = 0 and q(1,3) = 5, small n are genuine false instances of the inequality and are absorbed by the threshold N rather than treated as counterexamples.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "log_base",
+      "kind": "definition",
+      "statement": "log denotes the natural logarithm, base e. A base-2 or base-10 reading multiplies the right-hand side by a constant and is a different claim; both are rejected readings.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "epsilon_rational",
+      "kind": "definition",
+      "statement": "epsilon is quantified over the positive rationals rather than the positive reals. The two statements are equivalent because the inequality is monotone increasing in epsilon and the positive rationals are dense in the positive reals: any real epsilon > 0 is bounded below by a positive rational. Rational epsilon is chosen so that every threshold computation stays inside exact rational arithmetic.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "two_and_three_always_divide",
+      "kind": "lemma",
+      "statement": "Among any three consecutive integers one is divisible by 2 and exactly one is divisible by 3, so 2 and 3 divide (n+1)(n+2)(n+3) for every n >= 1 and therefore q(n,3) >= 5 for every n >= 1.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "prime_divides_iff_residue",
+      "kind": "lemma",
+      "statement": "For a prime p >= 5, p divides (n+1)(n+2)(n+3) if and only if n mod p lies in the set {p-1, p-2, p-3}, and those three residues are distinct. Consequently q(n,3) > P holds if and only if n satisfies one of exactly 3 residue conditions modulo each prime p with 5 <= p <= P, and by the Chinese remainder theorem the set of such n is a union of residue classes modulo the product of those primes.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "chebyshev_theta",
+      "kind": "lemma",
+      "statement": "The Chebyshev function theta(x) = sum of log p over primes p <= x satisfies theta(x) = x + o(x) as x -> infinity, and elementary explicit bounds of the form theta(x) < c*x hold for all x >= 2 with an explicit constant c. This is a textbook fact; any explicit constant actually used must be cited to an acquired source or re-derived, not assumed at the value a model recalls.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "easy_upper_bound_route",
+      "kind": "route_note",
+      "statement": "The easy upper bound q(n,3) <= (1 + o(1)) * 3 * log n follows because every prime below q(n,3) divides (n+1)(n+2)(n+3), so theta(q(n,3)) - log q(n,3) <= log((n+1)(n+2)(n+3)) <= 3*log(n+3), and theta(x) = x + o(x) then bounds q(n,3). This route must be re-derived inside the slice with explicit constants and an explicit threshold as a function of epsilon and of k = 3. It is recorded as the route, not assumed as a result, and the factor 3 it produces is the gap to the target constant 1.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "catalogue_status_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "The planning dossier reports Erdos Problem 663 as a catalogue entry asking whether q(n,k) < (1 + o(1)) log n for every fixed k, and reports the (1 + o(1)) k log n bound as easy. Both the statement and the status are untrusted: nothing has been acquired, quoted from a primary source, or reviewed, and both must be covered by the ADR-0055 pre-research novelty re-check before work starts.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "source_statement_variant_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "Whether the original source states the product as (n+1)...(n+k) or as n(n+1)...(n+k-1), and whether it asks the question for every fixed k or uniformly in k, is not verifiable offline. The frozen reading is the product from n+1 to n+3 with k fixed first. A different indexing shifts n by one and a uniform-in-k reading is a strictly stronger statement; both are rejected readings recorded for audit.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "exact_arithmetic_requirement",
+      "kind": "exactness_constraint",
+      "statement": "All integer work is exact: products, factorizations, residues, and Chinese remainder reconstructions use arbitrary-precision integers. Comparisons against log n are performed with rational interval enclosures of log n whose endpoints are rationals from a truncated series with a certified remainder bound, used only to exclude, never to conclude equality. Floating-point ratios such as q(n,3) / log n may be printed as exploration-only guidance and may never enter a certificate.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "finite_search_not_asymptotic",
+      "kind": "route_constraint",
+      "statement": "No computation over a finite range of n can establish the asymptotic claim, and no finite range can refute it either, because the claim only constrains n beyond an unspecified threshold. A finite sweep can produce certified extremal n, a certified lower bound on sup over the swept range of q(n,3) / log n, and structural characterizations of long initial-prime coverage. It can never be promoted to the limit statement in either direction.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "threshold_depends_on_k",
+      "kind": "route_constraint",
+      "statement": "Every threshold N, error term, and implied constant produced by work on this target must be written as an explicit function of epsilon and of the frozen k = 3. An unquantified o(1), an implied constant left unnamed, or a threshold that silently absorbs a k-dependence is not admissible output, because the whole point of freezing k is that the k-dependence of the threshold is where the problem hides.",
+      "scope": "definitional"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "forall epsilon in Q with epsilon > 0, exists N in Z with N >= 1, forall n in Z with n > N, q(n,3) < (1 + epsilon) * log(n), where q(n,3) = min { p : p prime and p does not divide (n+1)*(n+2)*(n+3) } and log is the natural logarithm",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "forall epsilon a positive rational",
+      "exists N a positive integer, depending on epsilon and on the frozen value k = 3",
+      "forall n an integer with n > N"
+    ],
+    "assumption_local_ids": [
+      "q_definition",
+      "frozen_k",
+      "n_range",
+      "log_base",
+      "epsilon_rational",
+      "two_and_three_always_divide",
+      "prime_divides_iff_residue",
+      "chebyshev_theta",
+      "easy_upper_bound_route",
+      "catalogue_status_untrusted",
+      "source_statement_variant_untrusted",
+      "exact_arithmetic_requirement",
+      "finite_search_not_asymptotic",
+      "threshold_depends_on_k"
+    ],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      ["for every fixed k >= 2", "k is frozen to the single value 3; no other k is in scope"],
+      ["as n -> infinity", "forall epsilon in Q with epsilon > 0, exists N, forall integers n > N"],
+      ["q(n,k) < (1 + o(1)) log n", "q(n,3) < (1 + epsilon) * log n with epsilon quantified before N and N allowed to depend on epsilon"],
+      ["n", "n an integer with n > N; the underlying range is the positive integers from 1"]
+    ],
+    "definition_mapping": [
+      ["q(n,k)", "the least prime not dividing the product of (n+i) for 1 <= i <= k"],
+      ["product over 1 <= i <= k of (n+i)", "(n+1)(n+2)(n+3) for the frozen k = 3; the product starts at n+1, not at n"],
+      ["log n", "natural logarithm of n, base e"],
+      ["long initial-prime coverage of k consecutive integers", "the property that every prime at most P divides (n+1)(n+2)(n+3), which is exactly the condition q(n,3) > P"],
+      ["extremal n", "an n that attains the maximum of q(n,3) over a stated finite range, or the least n with q(n,3) > P for a stated P"]
+    ],
+    "assumption_delta": [
+      "The source quantifies over every fixed k >= 2; the frozen target fixes k = 3, so it is a strict special case and claims nothing about other k.",
+      "The implicit (1 + o(1)) is replaced by the explicit epsilon-N form with epsilon quantified before N; this is the same statement written so the quantifier order cannot drift.",
+      "epsilon is quantified over positive rationals rather than positive reals; the statements are equivalent by monotonicity in epsilon and density of the rationals, and the rational choice keeps threshold computations exact.",
+      "The logarithm base is pinned to e; no published constant is assumed, including the explicit Chebyshev constant used in any re-derivation."
+    ],
+    "edge_case_delta": [
+      "n = 1 and n = 2 satisfy log n <= 0.7 while q(n,3) >= 5, so the inequality fails there; these are absorbed by N and are not counterexamples to the frozen claim.",
+      "q(n,3) >= 5 for every n >= 1, because 2 and 3 always divide a product of three consecutive integers, so the left-hand side is never 2 or 3.",
+      "n ranges over positive integers only; the statement says nothing about n <= 0, where the product can vanish and q would be undefined.",
+      "The inequality is strict, and the right-hand side is irrational for every n >= 2 and rational epsilon, so the boundary case of equality does not arise; the frozen statement does not rely on that observation."
+    ],
+    "strength_relation": "weaker"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "extremal_n_certified",
+      "crt_branches_enumerated",
+      "primes_covered_max",
+      "rational_enclosures_verified",
+      "derivation_obligations_closed",
+      "failed_routes_preserved",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "an exact re-derivation of the easy upper bound at k = 3 with an explicit threshold N as a function of epsilon and explicit constants, every step replayable in exact rational arithmetic",
+      "an exactly certified extremal n together with the complete list of primes dividing (n+1)(n+2)(n+3) and a rational enclosure of log n that pins the ratio q(n,3) / log n at that n",
+      "or an explicit unresolved outcome recording the smallest remaining obligation, namely the exact gap between the re-derived constant at k = 3 and the target constant 1"
+    ],
+    "stopping_rules": [
+      "stop when the easy upper bound at k = 3 is re-derived with explicit constants and an explicit threshold as a function of epsilon",
+      "stop when an exact certificate establishes a new largest certified value of q(n,3) / log n inside the frozen search envelope",
+      "stop when the fresh model spend reaches USD 20",
+      "stop when no derivation obligation has been closed and no new extremal n has been certified for two consecutive review points",
+      "never promote a finite sweep of n into the asymptotic claim or into its refutation: exhausting any range of n leaves the limit untouched"
+    ]
+  }
+}

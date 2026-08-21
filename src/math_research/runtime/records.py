@@ -15,7 +15,7 @@ from enum import Enum
 from ..domain.entities import OpaqueId
 from ..novelty import NoveltyRecheckError, classify_prior_art
 from . import POLICY_VERSION, SCHEMA_VERSION
-from .serialization import canonical_hash
+from .serialization import canonical_hash, public_value
 
 
 class ValueEnum(str, Enum):
@@ -143,6 +143,7 @@ class IterationRecord:
     usage: IterationUsage
     productive: bool
     content_hash: str = ""
+    operational_hash: str = ""
 
     def with_content_hash(self) -> IterationRecord:
         from dataclasses import replace
@@ -162,7 +163,16 @@ class IterationRecord:
             "verifier_manifest_hash": self.verifier_manifest_hash,
             "verifier_recommendation": self.verifier_recommendation,
         }
-        return replace(self, content_hash=canonical_hash(preimage))
+        content_hash = canonical_hash(preimage)
+        operational_preimage = public_value(
+            replace(self, content_hash=content_hash, operational_hash="")
+        )
+        operational_preimage.pop("operational_hash", None)
+        return replace(
+            self,
+            content_hash=content_hash,
+            operational_hash=canonical_hash(operational_preimage),
+        )
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -215,6 +225,7 @@ class LeadSession:
     policy_version: str = POLICY_VERSION
     schema_version: str = SCHEMA_VERSION
     content_hash: str = ""
+    operational_hash: str = ""
 
     def __post_init__(self) -> None:
         if self.epistemic_warrant_created:
@@ -223,6 +234,16 @@ class LeadSession:
             raise ValueError("a runtime session cannot discharge a proof obligation")
         if self.retention_gain_measured:
             raise ValueError("nothing in this runtime measures retention gain (ADR-0029)")
+        expected_usage = SessionUsage(
+            iterations=len(self.iterations),
+            model_calls=sum(item.usage.model_calls for item in self.iterations),
+            input_tokens=sum(item.usage.input_tokens for item in self.iterations),
+            output_tokens=sum(item.usage.output_tokens for item in self.iterations),
+            cost_microusd=sum(item.usage.cost_microusd for item in self.iterations),
+            elapsed_milliseconds=self.usage.elapsed_milliseconds,
+        )
+        if self.usage != expected_usage:
+            raise ValueError("session usage does not equal the sum of iteration usage")
         try:
             classification = classify_prior_art(
                 outcome=self.prior_art_outcome,
@@ -273,4 +294,13 @@ class LeadSession:
             "usage_iterations": self.usage.iterations,
             "usage_model_calls": self.usage.model_calls,
         }
-        return replace(self, content_hash=canonical_hash(preimage))
+        content_hash = canonical_hash(preimage)
+        operational_preimage = public_value(
+            replace(self, content_hash=content_hash, operational_hash="")
+        )
+        operational_preimage.pop("operational_hash", None)
+        return replace(
+            self,
+            content_hash=content_hash,
+            operational_hash=canonical_hash(operational_preimage),
+        )

@@ -1,0 +1,193 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "b4-rational-diophantine-septuple-v1",
+  "declared_domain": "number-theory",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "Existence of a rational Diophantine septuple of nonzero distinct rationals",
+    "informal_statement": "Decide whether there is a set of seven pairwise distinct nonzero rational numbers a_1,...,a_7 such that a_i a_j + 1 is the square of a rational number for every pair i != j.\n\nEntries are rationals rather than integers. Zero is excluded because 0 * a + 1 = 1 = 1^2 holds for every a, so admitting zero would turn any sextuple into a septuple and would not address the question. Negative entries are admitted; the square condition itself forces a_i a_j + 1 >= 0. Square in Q means there is r in Q with r^2 = a_i a_j + 1.\n\nEither an exhibited septuple with all 21 exact rational square roots, or a proved obstruction for a fully defined construction family, is a useful outcome. A proved obstruction for one family is an outcome shape and not a second target: it does not bear on global existence.",
+    "problem_type": "explore",
+    "tags": [
+      "diophantine-tuples",
+      "existential-target",
+      "exact-rational-arithmetic",
+      "height-bounded-enumeration",
+      "number-theory"
+    ]
+  },
+  "target_claim": {
+    "local_id": "rational_diophantine_septuple_exists",
+    "kind": "existence_claim",
+    "statement": "There exists a set S = {a_1,...,a_7} of seven pairwise distinct nonzero rational numbers such that for every pair of indices i != j there exists r_ij in Q with r_ij^2 = a_i a_j + 1.",
+    "scope": "existential"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "entries_are_nonzero_rationals",
+      "kind": "definition",
+      "statement": "Each a_i lies in Q and a_i != 0. Integrality is not required. Zero is excluded because 0 * a + 1 = 1 = 1^2 for every a, so admitting zero would let any six-element solution be extended to seven elements without addressing the question.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "pairwise_distinctness",
+      "kind": "definition",
+      "statement": "Distinctness means a_i != a_j as rational numbers for all i != j, checked on the lowest-terms normal form: the pairs (numerator, denominator) must differ. Seven entries are therefore seven distinct rationals, not a multiset of size seven.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "rational_square_meaning",
+      "kind": "definition",
+      "statement": "The phrase 'a_i a_j + 1 is a square in Q' means there exists r in Q with r^2 = a_i a_j + 1. It does not mean that a_i a_j + 1 is the square of an integer, nor that it is a square modulo anything, nor that a_i a_j + 1 is a square in some larger field.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "zero_square_value_admitted",
+      "kind": "definition",
+      "statement": "The value r = 0 is admitted, so a pair with a_i a_j = -1 satisfies the condition under the frozen reading. Any exhibited septuple containing such a pair must be reported with that fact flagged, because the stricter convention requiring r != 0 would reject it and the operator has not yet chosen between the two.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "set_and_global_sign_symmetry",
+      "kind": "definition",
+      "statement": "The target is an unordered set, so index order carries no meaning. Replacing every a_i by -a_i preserves all products a_i a_j and hence the whole condition, so a set and its pointwise negation are the same solution for counting and canonicalization purposes.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "height_normal_form",
+      "kind": "definition",
+      "statement": "Every rational is stored as p/q with q > 0 and gcd(p, q) = 1, and its height is max(abs(p), q). A height bound H means every entry of the candidate set satisfies height <= H. Height is a property of the normal form, not of an arbitrary representation.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "reduced_square_criterion",
+      "kind": "lemma",
+      "statement": "For a nonnegative rational written in lowest terms as p/q with q > 0 and gcd(p, q) = 1, p/q is the square of a rational if and only if p and q are both perfect squares of integers. This is the standard textbook criterion and reduces the rational square test to two exact integer square tests.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "exact_arithmetic_requirement",
+      "kind": "exact_arithmetic_requirement",
+      "statement": "Every square test, distinctness test and re-squaring check runs in exact integer or exact rational arithmetic: integer square testing by an exact integer square root with a remainder check, products and sums by unbounded integers. No floating-point square root, no float comparison, and no tolerance may appear on any trust path, including inside the enumeration that produces a candidate.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "bounded_exhaustion_boundary",
+      "kind": "search_boundary_rule",
+      "statement": "Exhausting all candidate sets whose entries have height at most H supports exactly one claim: no rational Diophantine septuple exists all of whose entries have height at most H. It does not entail that no septuple exists, does not bound the height of a septuple, and may never be reported as nonexistence or as evidence for nonexistence.",
+      "scope": "bounded"
+    },
+    {
+      "local_id": "family_obstruction_boundary",
+      "kind": "route_trap",
+      "statement": "A proved obstruction for a defined construction family states only that no member of that family yields a septuple. It implies nothing about septuples outside the family and nothing about global nonexistence. The family must be defined by an explicit parametrization before the obstruction is attempted, or the obstruction has no stated scope.",
+      "scope": "bounded"
+    },
+    {
+      "local_id": "numerical_route_exploration_only",
+      "kind": "route_trap",
+      "statement": "Approximate real solutions of the 21 simultaneous square conditions, obtained by any numerical or optimization method, are exploration hints only. They may propose a candidate set of rationals but may never be rounded, reported, or treated as a partial result. A candidate becomes a result only after the exact rational verifier accepts it.",
+      "scope": "bounded"
+    },
+    {
+      "local_id": "untrusted_sextuple_family_report",
+      "kind": "untrusted_source_report",
+      "statement": "The planning notes report that infinite families of rational Diophantine sextuples are known and that no septuple is known. This is an untrusted inherited report with no acquired source. It must be revalidated against an acquired primary source and covered by the ADR-0055 pre-research novelty re-check before any search starts.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "untrusted_open_status_report",
+      "kind": "untrusted_source_report",
+      "statement": "The planning notes treat the existence of a rational Diophantine septuple as an open question. Open status is untrusted here: no source is acquired, and an empty search never establishes that a question is open.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "untrusted_definition_convention",
+      "kind": "untrusted_source_report",
+      "statement": "The literature convention for a rational Diophantine m-tuple, specifically whether entries must be nonzero, whether they must be distinct, whether they must be positive, and whether the value zero counts as a square, is not acquired. The conventions frozen here are authored locally. If an acquired source differs, the semantic alignment must be re-approved before any result is reported against the source statement.",
+      "scope": "particular"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "exists a_1,...,a_7 in Q, (forall i, a_i != 0) and (forall i != j, a_i != a_j) and (forall i != j, exists r_ij in Q, r_ij^2 = a_i * a_j + 1)",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "exists a_1,...,a_7 in Q, pairwise distinct and each nonzero",
+      "forall unordered pairs {i,j} with i != j, of which there are exactly 21",
+      "exists r_ij in Q for each such pair, with r_ij^2 = a_i * a_j + 1"
+    ],
+    "assumption_local_ids": [
+      "entries_are_nonzero_rationals",
+      "pairwise_distinctness",
+      "rational_square_meaning",
+      "zero_square_value_admitted",
+      "set_and_global_sign_symmetry",
+      "height_normal_form",
+      "reduced_square_criterion",
+      "exact_arithmetic_requirement",
+      "bounded_exhaustion_boundary",
+      "family_obstruction_boundary",
+      "numerical_route_exploration_only",
+      "untrusted_sextuple_family_report",
+      "untrusted_open_status_report",
+      "untrusted_definition_convention"
+    ],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      ["find seven distinct rational numbers", "exists a_1,...,a_7 in Q, pairwise distinct"],
+      ["for every i != j", "forall 21 unordered pairs {i,j} drawn from seven indices"],
+      ["a_i a_j + 1 is a rational square", "exists r_ij in Q with r_ij^2 = a_i a_j + 1"],
+      ["nonzero entries", "forall i, a_i != 0, frozen locally and not read off an acquired source"]
+    ],
+    "definition_mapping": [
+      ["rational square", "the square of an element of Q; zero is admitted as 0^2"],
+      ["distinct", "distinct as rationals, compared in lowest terms with positive denominator"],
+      ["seven rationals", "an unordered seven-element set, invariant under pointwise negation"],
+      ["height of an entry", "max(abs(numerator), denominator) in lowest terms, used only to bound enumeration"],
+      ["rational Diophantine septuple", "a seven-element set satisfying the frozen pairwise square condition"]
+    ],
+    "assumption_delta": [
+      "Nonzero entries are added as an explicit assumption; the candidate statement in the planning dossier does not say it, and without it any sextuple plus zero would qualify.",
+      "Negative entries are admitted, so the square condition carries the implicit side condition a_i a_j + 1 >= 0 rather than an assumed positivity of entries.",
+      "The value zero is admitted as a rational square, which is a permissive choice; the stricter convention requiring a nonzero square root is recorded as rejected and flagged for operator confirmation.",
+      "Height bounds are a device of the bounded protocol only and are not part of the frozen target."
+    ],
+    "edge_case_delta": [
+      "A pair with a_i a_j = -1 satisfies the frozen condition with r_ij = 0 and must be flagged in any exhibited septuple.",
+      "Entries with denominator 1 are admitted, so an integer septuple would also satisfy the frozen target.",
+      "The 21 square roots are not required to be distinct, and their signs are irrelevant because r and -r certify the same value.",
+      "A set of seven rationals containing a repeated value is not a septuple even if all products satisfy the square condition."
+    ],
+    "strength_relation": "unresolved"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "normalized_rationals_enumerated",
+      "exact_rational_square_tests_performed",
+      "pairwise_compatible_edges_found",
+      "largest_exactly_verified_tuple_size",
+      "septuple_certificates_independently_verified",
+      "height_bounded_exhaustions_completed",
+      "construction_families_defined_and_refuted",
+      "failed_routes_preserved",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "an exhibited seven-element set of distinct nonzero rationals with all 21 exact rational square roots re-squared and accepted by an independent exact verifier",
+      "a proved obstruction for an explicitly parametrized construction family, with the family definition and the exact algebraic certificate both recorded",
+      "a completed height-bounded exhaustion reported strictly as a bounded exclusion with its height bound stated",
+      "or an explicit unresolved outcome that records the smallest remaining obligation together with the exclusion set already established"
+    ],
+    "stopping_rules": [
+      "stop on an exact septuple certificate accepted by the independent verifier",
+      "stop when the frozen height envelope is fully exhausted, recording the bounded exclusion and nothing stronger",
+      "stop when the fresh model spend reaches USD 20",
+      "stop when no new compatible pair, no larger verified tuple, and no new refuted family have been produced across two consecutive review points",
+      "never promote a completed bounded search into a nonexistence claim, an asymptotic claim, or evidence for either"
+    ]
+  }
+}

@@ -23,6 +23,7 @@ from .errors import PublicationValidationError  # noqa: E402
 from .evidence import EVIDENCE_CLASSES, classify_claim  # noqa: E402
 from .manuscript import Manuscript, load_manuscript, manuscript_hash  # noqa: E402
 from .probes import run_probes  # noqa: E402
+from .production import produce_publication  # noqa: E402
 from .render import (  # noqa: E402
     TEMPLATE_HASH,
     RenderedDocument,
@@ -46,6 +47,7 @@ __all__ = [
     "classify_claim",
     "load_manuscript",
     "manuscript_hash",
+    "produce_publication",
     "render_manuscript",
     "run_probes",
     "verify_ledger_closure",

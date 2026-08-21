@@ -1,0 +1,203 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "b9-imaginary-quadratic-3-rank-nine-v1",
+  "declared_domain": "algebraic-number-theory",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "One imaginary quadratic field whose class group has 3-rank at least nine",
+    "informal_statement": "Freeze one prime and one target rank. Exhibit one squarefree integer d > 0 such that the class group of the maximal order of K = Q(sqrt(-d)) has 3-rank at least 9, where the 3-rank is the F_3-dimension of Cl(K)/Cl(K)^3. The prime is frozen at 3 and the target rank is frozen at 9; other primes and other target ranks are out of scope. The operator notes report a record 3-rank of 8, which is untrusted and must be revalidated, so 9 is the smallest target that would exceed the reported record if that report is correct. The lower-bound trust path is unconditional: by the cubic-field correspondence, 3-rank at least 9 for a fundamental discriminant D is equivalent to the existence of at least (3^9 - 1)/2 = 9841 pairwise non-isomorphic cubic number fields of discriminant exactly D, and each such field is certified by an exact integral binary cubic form. A class-group relation matrix reduced modulo 3 bounds the 3-rank from above only, unless the generating set and the relation lattice are proved complete, and any rank derived from a GRH-conditional class-group algorithm is a conditional result and is labelled as one.",
+    "problem_type": "compute",
+    "tags": [
+      "algebraic-number-theory",
+      "imaginary-quadratic-field",
+      "class-group",
+      "three-rank",
+      "cubic-field-correspondence",
+      "binary-cubic-forms",
+      "unconditional-certificate",
+      "grh-conditional-labelling"
+    ]
+  },
+  "target_claim": {
+    "local_id": "imaginary_quadratic_three_rank_at_least_nine",
+    "kind": "existence_claim",
+    "statement": "There exists a squarefree integer d > 0 such that, with K = Q(sqrt(-d)), fundamental discriminant D = -d when d is congruent to 3 modulo 4 and D = -4d otherwise, O_K the maximal order of K, Cl(K) the group of fractional O_K-ideals modulo principal fractional O_K-ideals, and r_3(K) = dim over F_3 of Cl(K)/Cl(K)^3, the inequality r_3(K) >= 9 holds, accompanied by an exact unconditional certificate of that lower bound.",
+    "scope": "existential"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "squarefree_radicand_convention",
+      "kind": "definition",
+      "statement": "The field is K = Q(sqrt(-d)) with d a squarefree integer and d > 0, so K is imaginary quadratic with defining polynomial x^2 + d, which is irreducible over Q for every such d. Non-squarefree radicands are excluded because they name the same field as their squarefree kernel and would make the parameter non-canonical.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "fundamental_discriminant_convention",
+      "kind": "definition",
+      "statement": "The discriminant used throughout is the fundamental discriminant D of K: D = -d if d is congruent to 3 modulo 4, and D = -4d otherwise. D is negative, and D is the discriminant of the maximal order O_K, not of an arbitrary order and not the radicand. Any non-fundamental discriminant, and in particular the form discriminant of a non-maximal order, is a rejected reading.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "class_group_of_maximal_order",
+      "kind": "definition",
+      "statement": "Cl(K) means the ideal class group of the maximal order O_K: nonzero fractional O_K-ideals modulo nonzero principal fractional O_K-ideals. It is not the class group of a non-maximal order, not a ray class group, not a relative class group, and not the S-class group. For imaginary quadratic K the narrow class group coincides with Cl(K) because K has no real embedding, so the wide and narrow readings agree here and the distinction cannot silently change the rank.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "three_rank_definition",
+      "kind": "definition",
+      "statement": "r_3(K) = dim over F_3 of Cl(K)/Cl(K)^3, equivalently the number of invariant factors of the finite abelian group Cl(K) that are divisible by 3, equivalently the minimal number of generators of the 3-Sylow subgroup of Cl(K). It is not the 3-adic valuation of the class number, not the order of the 3-Sylow subgroup, and not the exponent of the 3-part; those three readings are rejected because they differ from the rank on any non-elementary 3-group.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "target_rank_frozen_at_nine",
+      "kind": "definition",
+      "statement": "The prime is frozen at ell = 3 and the target rank at 9, so a witness is any single field with r_3 >= 9; ranks larger than 9 also satisfy the target. Other primes ell, other target ranks, real quadratic fields, and asymptotic or infinite-family statements about rank growth are out of scope for this dossier.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "cubic_field_correspondence",
+      "kind": "lemma",
+      "statement": "Standard fact from class field theory, in the form due to Hasse: for a fundamental discriminant D not equal to 1, the number of isomorphism classes of cubic number fields whose field discriminant equals exactly D is (3^r - 1)/2, where r is the 3-rank of the class group of Q(sqrt(D)). The load-bearing hypotheses are that D is fundamental, that the cubic discriminant is exactly D rather than D times a square, and that the count is of isomorphism classes rather than of forms or of orders. The exact statement and hypotheses must be checked against an acquired primary source before the formula is used to close a certificate.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "rank_nine_needs_9841_cubic_fields",
+      "kind": "derived_criterion",
+      "statement": "Since (3^r - 1)/2 is strictly increasing in r, the cubic-field correspondence gives r_3 >= 9 for a fundamental discriminant D if and only if there are at least (3^9 - 1)/2 = 9841 pairwise non-isomorphic cubic number fields of discriminant exactly D. Exhibiting 9841 such fields with exact certificates is therefore an unconditional lower-bound certificate for r_3 >= 9, and exhibiting N such fields certifies r_3 >= r for the largest r with (3^r - 1)/2 <= N.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "relation_matrix_bounds_rank_from_above_only",
+      "kind": "known_trap",
+      "statement": "A class-group relation matrix built from a chosen set of ideals gives the group generated by those ideals modulo the relations actually found. Absent a proof that the chosen ideals generate all of Cl(K) and that the found relations span the full relation lattice, the F_3-rank of the computed quotient bounds r_3(K) from above and is not a lower-bound certificate. Reducing a relation matrix modulo 3 and reporting its rank as the 3-rank is the central trap for this item and is refused as a lower-bound trust path. The relation matrix is still retained in the certificate, with its exact entailment stated.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "grh_conditional_output_is_conditional",
+      "kind": "known_trap",
+      "statement": "Class-group algorithms whose completeness rests on a GRH-derived bound for the generating set produce a GRH-conditional group. Any rank read from such a computation is a conditional result, must be labelled conditional in every record and report, and may never be silently merged with an unconditional certificate. Such output is admissible only as exploration guidance for choosing candidate discriminants, never as the certificate itself.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "cubic_form_maximality_and_isomorphism_trap",
+      "kind": "known_trap",
+      "statement": "Counting cubic fields is not counting integral binary cubic forms. Two distinct forms can be GL_2(Z)-equivalent and define the same field, and a form of discriminant D can correspond to a non-maximal cubic order, so its field discriminant is not D. A count that omits the canonical reduction to one representative per GL_2(Z)-class, or that omits the Davenport-Heilbronn maximality condition at each prime, overcounts and would inflate the certified rank. Every certified cubic field must carry its canonical reduced form, an irreducibility check, an exact field-discriminant computation equal to D, and a pairwise non-isomorphism argument.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "reported_record_rank_eight_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "The planning dossier reports, from operator-supplied notes, a record 3-rank of 8 for imaginary quadratic class groups. This is an untrusted planning-note statement: it is not acquired, not quoted from a primary source, and not verified. It must be revalidated by the ADR-0055 pre-research novelty re-check. If the true published record is lower than 8, the frozen target of 9 is unchanged; if it is 9 or higher, the frozen target is already attained in the literature and the re-check must surface that before any work starts.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "unachieved_target_pairs_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "The planning dossier reports that the operator notes list multiple unachieved prime and target-rank pairs for this item. Which pairs those are, and whether any is already achieved, is untrusted and unverified. This dossier freezes exactly the pair (ell, rank) = (3, 9); no other pair is claimed, targeted, or evidenced by any outcome of this slice.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "tooling_gate_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "The planning dossier reports that serious algebraic-number-theory tooling is required for this item and must be separately pinned, licensed, and gated before use. This dossier treats that as an untrusted planning statement and as a hard constraint on scope: no computer-algebra dependency is pinned, licensed, added, or assumed here, and the bounded first slice is restricted to what exact standard-library integer arithmetic can certify.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "exact_integer_arithmetic_requirement",
+      "kind": "exactness_requirement",
+      "statement": "Every quantity on the trust path is an exact integer: form coefficients, form and field discriminants, reduction covariants, prime-by-prime maximality tests, and the Gaussian elimination that computes ranks over F_3. No floating-point number appears on any trust path; in particular no floating-point evaluation of an L-function, of the analytic class number formula, of a Minkowski or Bach bound, or of a lattice reduction may enter a certificate. Such computations are exploration-only and must be labelled as such in the record.",
+      "scope": "definitional"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "exists d in Z with d > 0 and d squarefree such that, with K = Q(sqrt(-d)), D = -d if d = 3 mod 4 else D = -4d, O_K the maximal order of K, Cl(K) = I(O_K)/P(O_K), and r_3(K) = dim_{F_3}(Cl(K)/Cl(K)^3), we have r_3(K) >= 9; equivalently, by the cubic-field correspondence for the fundamental discriminant D, there exist at least (3^9 - 1)/2 = 9841 pairwise non-isomorphic cubic number fields whose field discriminant equals exactly D",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "exists d an integer with d > 0 and d squarefree",
+      "forall primes p, the maximality test for a candidate cubic order at p is decided exactly",
+      "forall pairs of exhibited cubic fields, non-isomorphism is decided exactly by canonical reduced form comparison",
+      "the prime ell is fixed to 3 and the target rank is fixed to 9, with no quantification over either"
+    ],
+    "assumption_local_ids": [
+      "squarefree_radicand_convention",
+      "fundamental_discriminant_convention",
+      "class_group_of_maximal_order",
+      "three_rank_definition",
+      "target_rank_frozen_at_nine",
+      "cubic_field_correspondence",
+      "rank_nine_needs_9841_cubic_fields",
+      "relation_matrix_bounds_rank_from_above_only",
+      "grh_conditional_output_is_conditional",
+      "cubic_form_maximality_and_isomorphism_trap",
+      "reported_record_rank_eight_untrusted",
+      "unachieved_target_pairs_untrusted",
+      "tooling_gate_untrusted",
+      "exact_integer_arithmetic_requirement"
+    ],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      ["for a fixed prime ell and a frozen target rank", "ell = 3 and target rank = 9, both fixed constants with no quantifier"],
+      ["construct an imaginary quadratic field", "exists a squarefree integer d > 0 giving K = Q(sqrt(-d))"],
+      ["whose ideal class group has ell-rank at least that target", "r_3(K) = dim over F_3 of Cl(K)/Cl(K)^3 satisfies r_3(K) >= 9"],
+      ["certified rank lower bound", "an unconditional exact certificate, by default 9841 pairwise non-isomorphic cubic fields of discriminant exactly D"]
+    ],
+    "definition_mapping": [
+      ["ell-rank", "F_3-dimension of Cl(K)/Cl(K)^3, equal to the number of invariant factors divisible by 3"],
+      ["ideal class group", "class group of the maximal order O_K, fractional ideals modulo principal fractional ideals"],
+      ["imaginary quadratic field", "K = Q(sqrt(-d)) with d squarefree and d > 0, defining polynomial x^2 + d"],
+      ["discriminant", "fundamental discriminant D = -d for d congruent to 3 modulo 4 and D = -4d otherwise"],
+      ["class-group relation data", "a relation matrix retained in the certificate whose F_3 rank bounds r_3 from above only"],
+      ["independently replayed rank certificate", "a separate verifier that recomputes every form discriminant, maximality test, canonical reduction, and F_3 rank from the stored exact integers"]
+    ],
+    "assumption_delta": [
+      "The planning statement quantifies over a fixed prime and a frozen target rank without naming either; this dossier fixes ell = 3 and rank 9 and claims nothing for any other pair.",
+      "The planning verification shape names a class-group relation matrix; this dossier keeps it but demotes it to an upper bound on the rank absent proofs of generation and relation completeness, and promotes the cubic-field correspondence to the unconditional lower-bound path.",
+      "GRH-conditional class-group computation is admitted only as exploration guidance, never as the certificate; a conditional rank is labelled conditional.",
+      "No algebraic-number-theory computer-algebra dependency is assumed, pinned, or licensed by this dossier; the bounded first slice is restricted to exact standard-library integer arithmetic.",
+      "No novelty, record, or significance claim is made; whether rank 9 exceeds the published record is not_assessed and is an acquisition question."
+    ],
+    "edge_case_delta": [
+      "d = 1 and d = 2 give D = -4 and D = -8 with trivial class group and r_3 = 0; they are in scope as instances and simply fail the target.",
+      "d congruent to 3 modulo 4 gives D = -d, odd; all other squarefree d give D = -4d, so the parity of D is determined by d and must not be chosen independently.",
+      "d = 3 gives D = -3, whose class group is trivial while Q(sqrt(-3)) contains extra roots of unity; the cubic-field correspondence hypotheses must be re-read for this discriminant rather than assumed.",
+      "A cubic field of discriminant D times a nonunit square is not counted; only field discriminant exactly D counts.",
+      "A reducible integral binary cubic form defines no cubic field and must be discarded by an exact irreducibility test before any count.",
+      "Two GL_2(Z)-equivalent forms define the same field and must be counted once, so the count is over canonical reduced representatives.",
+      "For imaginary quadratic K the narrow and wide class groups coincide, so no rank differs between those two readings."
+    ],
+    "strength_relation": "weaker"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "cubic_forms_enumerated",
+      "reducible_forms_discarded",
+      "non_maximal_orders_discarded",
+      "canonical_reduced_classes_retained",
+      "discriminant_buckets_populated",
+      "three_rank_lower_bounds_certified",
+      "certificates_independently_replayed",
+      "conditional_results_labelled_conditional",
+      "failed_routes_preserved",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "one squarefree d > 0 with an unconditional exact certificate that r_3(K) >= 9, replayed end to end by an independent verifier from stored exact integers",
+      "an unconditional exact certificate of the largest 3-rank attained inside the frozen enumeration box, recorded as a bounded frontier observation with no record, novelty, or significance claim attached",
+      "a replayable exact verifier for the cubic-field lower-bound criterion, together with a labelled statement of exactly which hypotheses of the cubic-field correspondence remain unacquired",
+      "or an explicit unresolved outcome that records the smallest remaining obligation"
+    ],
+    "stopping_rules": [
+      "stop on an exact unconditional certificate that r_3(K) >= 9 for one exhibited d",
+      "stop when fresh model spend for this target reaches USD 20",
+      "stop when no proof obligation has been discharged and no new certified frontier bound recorded for two consecutive review points",
+      "never promote exhaustion of the frozen enumeration box into a statement about discriminants outside the box, and never promote a bounded frontier observation into a record or novelty claim",
+      "refuse any GRH-conditional or floating-point-derived rank as an unconditional certificate and stop rather than relabel it"
+    ]
+  }
+}

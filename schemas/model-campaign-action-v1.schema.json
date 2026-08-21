@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaivy.local/schemas/model-campaign-action-v1.schema.json",
+  "title": "AdaIvy bounded campaign planner action",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "action_type", "branch_id", "rationale", "artifact_text",
+    "program_source", "tool_request", "selected_candidate_hash",
+    "selected_tool_artifact_hashes", "report_text"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "action_type": {
+      "enum": [
+        "derive", "write_program", "run_program", "inspect_result", "falsify",
+        "verify", "ask_user", "suspend_branch", "report"
+      ]
+    },
+    "branch_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "rationale": {"type": "string", "minLength": 1, "maxLength": 2000},
+    "artifact_text": {"type": ["string", "null"], "maxLength": 262144},
+    "program_source": {"type": ["string", "null"], "maxLength": 262144},
+    "tool_request": {
+      "anyOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tool_id", "program_artifact_hash", "input_artifact_hashes", "arguments",
+            "resource_limits", "network"
+          ],
+          "properties": {
+            "tool_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+            "program_artifact_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+            "input_artifact_hashes": {
+              "type": "array", "uniqueItems": true,
+              "items": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+            },
+            "arguments": {
+              "type": "array",
+              "items": {"type": "string", "pattern": "^[A-Za-z0-9_.:=+,-]{0,128}$"}
+            },
+            "resource_limits": {
+              "type": "object", "additionalProperties": false,
+              "required": [
+                "cpu_milliseconds", "wall_milliseconds", "memory_bytes", "output_bytes",
+                "process_count"
+              ],
+              "properties": {
+                "cpu_milliseconds": {"type": "integer", "minimum": 1},
+                "wall_milliseconds": {"type": "integer", "minimum": 1},
+                "memory_bytes": {"type": "integer", "minimum": 1},
+                "output_bytes": {"type": "integer", "minimum": 1},
+                "process_count": {"type": "integer", "minimum": 1}
+              }
+            },
+            "network": {"const": "none"}
+          }
+        }
+      ]
+    },
+    "selected_candidate_hash": {
+      "anyOf": [
+        {"type": "null"},
+        {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+      ]
+    },
+    "selected_tool_artifact_hashes": {
+      "type": "array", "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+    },
+    "report_text": {"type": ["string", "null"], "maxLength": 65536}
+  }
+}
