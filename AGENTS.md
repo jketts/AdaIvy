@@ -11,9 +11,11 @@ the current work. Its offline acquisition, persistence, deletion, replay,
 strict HTML/TeX/PDF candidates, and exact Linux/arm64 OCI parser gate are
 implemented. The digest-pinned OCI gate reproduces all twelve parser fixtures
 with zero false admissions and demonstrates kernel memory, CPU, process, file,
-network-none, read-only-root, noexec-temp, and ambient-secret controls. Network
-remains off by default. The separately acknowledged live HTTPS gate is the
-final activation step; its absence must never be counted as a pass.
+network-none, read-only-root, noexec-temp, and ambient-secret controls. The
+separately acknowledged live HTTPS gate has executed, and ADR-0050 activates
+only public unauthenticated, human-planned exact-URL acquisition. Network
+remains off by default. Credentials, caller-supplied request headers, retries,
+crawling, scheduling, and autonomous origin selection remain disabled.
 
 Phases 0 through 6 remain implemented and authoritative. Phase 5 now has three
 scopes and all must be stated exactly. The sealed scope is exact

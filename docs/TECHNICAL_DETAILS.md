@@ -404,9 +404,30 @@ make check-phase4b-oci
 ```
 
 The offline acquisition/parsing metadata path is part of `make check`. The
-strict OCI parser gate has passed; the separately acknowledged live HTTPS gate
-is the final activation step, and its absence must never be counted as a pass.
-See `docs/phase-4b/` and ADR-0028 for the frozen gate package.
+strict OCI parser gate and separately acknowledged live HTTPS gate have passed.
+ADR-0050 activates only public unauthenticated acquisition of one exact URL per
+invocation. Network remains off by default; URL query strings, credentials,
+caller-supplied request headers, redirects, retries, crawling, autonomous
+origin selection, and scheduled acquisition are not enabled.
+
+Validate a plan without opening a socket or creating a workspace:
+
+```bash
+PYTHONPATH=src python3 -m math_research.cli phase4b public-acquire \
+  work/public-source source.public.example PLAN.json \
+  --activation config/phase4b-public-acquisition-activation-v1.json \
+  --activation-evidence reports/phase-4b-activation/activation-evidence.json
+```
+
+Execution additionally requires `--execute`,
+`--confirm-live-network I_ACKNOWLEDGE_PHASE4B_LIVE_NETWORK`, and
+`--confirm-plan-hash` equal to the verified plan hash printed by the dry run.
+The plan must contain current human-reviewed terms, robots, acquisition-right,
+and storage/retention-right snapshots. Public reachability is not treated as a
+licence or as permission to redistribute. At execution the plan timestamp must
+be within five minutes of the system clock, preventing an old terms/robots
+snapshot from remaining executable indefinitely. See `docs/phase-4b/`,
+ADR-0028 and ADR-0050.
 
 ## Phase 5 exact adaptive quantum benchmark
 

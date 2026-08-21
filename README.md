@@ -45,11 +45,12 @@ another model agrees with it.
 - **Phase 4B** (authorized HTTPS acquisition and exact HTML/TeX/PDF parsing) is
   implementation-complete: its offline acquisition, persistence, deletion,
   replay, and strict digest-pinned OCI parser gate all pass. The separately
-  acknowledged live HTTPS gate has been executed once under explicit owner
-  authorization, so the combined activation evidence is complete and now awaits
-  owner activation; a live acquisition yields an untrusted candidate carrying no
-  mathematical warrant, and is never itself counted as activation. Network
-  remains off by default.
+  acknowledged live HTTPS gate has been executed and ADR-0050 activates its
+  public unauthenticated exact-URL subset. Each invocation still requires a
+  human-final content-hashed plan plus an exact execution acknowledgement;
+  credentials, caller-supplied headers, crawling, and autonomous origin
+  selection remain disabled. A live acquisition yields an untrusted candidate
+  carrying no mathematical warrant. Network remains off by default.
 - **Phase 5** retains the sealed exact commuting/diagonal slice, verifies
   human-supplied noncommuting certificates, and now discovers certificates for
   the bounded two-outcome, 2×2 `Q(sqrt(d))(i)` domain (ADR-0049). Every generated
@@ -83,8 +84,9 @@ another model agrees with it.
   ADR-0032. Exclusion removes a candidate from a result list and asserts
   nothing about applicability.
 - Deferred: general noncommuting SDP beyond ADR-0049's exact bounded domain,
-  retrieval embeddings and vector indexes, broader media/acquisition, higher
-  adaptive-search tiers, and external evaluation.
+  retrieval embeddings and vector indexes, credentialed or autonomous
+  acquisition, crawling, broader media, higher adaptive-search tiers, and
+  external evaluation.
   Novelty and significance are recorded as `not_assessed`.
 - Retrieval uses no embedding and no model provider, so the live provider
   boundary can change without affecting it. Before embeddings are added, note

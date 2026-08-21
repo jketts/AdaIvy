@@ -152,6 +152,13 @@ phase4b:
 	    "$$d/phase4b-export.json" >/dev/null && \
 	  $(PY) -m math_research.cli phase4b gate . "$$d/gate" \
 	    --output "$$d/phase4b-feasible-gate.json" >/dev/null && \
+	  $(PY) -m math_research.cli phase4b public-acquire "$$d/public-dry-run" \
+	    source.phase4b.public-dry-run fixtures/phase4b/public-acquisition-plan-v1.json \
+	    --activation config/phase4b-public-acquisition-activation-v1.json \
+	    --activation-evidence reports/phase-4b-activation/activation-evidence.json \
+	    --output "$$d/public-acquisition-dry-run.json" >/dev/null && \
+	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["execution_status"] == "not_executed" and r["candidate_count"] == 0; assert not __import__("pathlib").Path(sys.argv[2]).exists()' \
+	    "$$d/public-acquisition-dry-run.json" "$$d/public-dry-run" && \
 	  rm -rf "$$d" && printf 'phase 4B ok\n'
 
 # Phase 4C measures all seven gates as passing under ADR-0032, on the third

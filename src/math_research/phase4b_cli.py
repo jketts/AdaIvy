@@ -89,6 +89,19 @@ def main(argv: list[str] | None = None) -> int:
     live_gate.add_argument("--execute", action="store_true")
     live_gate.add_argument("--confirm-live-network")
     live_gate.add_argument("--confirm-plan-hash")
+    public_acquire = commands.add_parser(
+        "public-acquire",
+        help="acquire one public unauthenticated exact URL; dry-run by default",
+    )
+    public_acquire.add_argument("workspace", type=Path)
+    public_acquire.add_argument("source_id")
+    public_acquire.add_argument("plan", type=Path)
+    public_acquire.add_argument("--activation", type=Path, required=True)
+    public_acquire.add_argument("--activation-evidence", type=Path, required=True)
+    public_acquire.add_argument("--output", type=Path)
+    public_acquire.add_argument("--execute", action="store_true")
+    public_acquire.add_argument("--confirm-live-network")
+    public_acquire.add_argument("--confirm-plan-hash")
     oci_gate = commands.add_parser(
         "oci-gate", help="run the strict exact-image parser activation gate"
     )
@@ -163,6 +176,83 @@ def main(argv: list[str] | None = None) -> int:
             ):
                 parser.error("live-network confirmations are valid only with --execute")
             value = not_executed_report(plan)
+        data = json.dumps(value, indent=2, sort_keys=True) + "\n"
+        if args.output is not None:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_bytes(canonical_bytes(value))
+        print(data, end="")
+        return 0
+
+    if args.command == "public-acquire":
+        from .phase4b.live_gate import MAX_PLAN_BYTES, live_gate_plan_hash, load_live_gate_plan
+        from .phase4b.public_acquisition import (
+            LIVE_NETWORK_ACKNOWLEDGEMENT, MAX_ACTIVATION_BYTES, MAX_EVIDENCE_BYTES,
+            acquire_public_plan, load_public_activation, validate_public_plan,
+        )
+
+        plan = load_live_gate_plan(
+            read_interchange_file(args.plan, max_bytes=MAX_PLAN_BYTES)
+        )
+        activation_data = read_interchange_file(
+            args.activation, max_bytes=MAX_ACTIVATION_BYTES
+        )
+        evidence_data = read_interchange_file(
+            args.activation_evidence, max_bytes=MAX_EVIDENCE_BYTES
+        )
+        activation = load_public_activation(activation_data, evidence_data)
+        validate_public_plan(plan)
+        if args.execute:
+            if args.confirm_live_network != LIVE_NETWORK_ACKNOWLEDGEMENT:
+                parser.error(
+                    "--execute requires --confirm-live-network "
+                    "I_ACKNOWLEDGE_PHASE4B_LIVE_NETWORK"
+                )
+            if args.confirm_plan_hash != live_gate_plan_hash(plan):
+                parser.error(
+                    "--execute requires --confirm-plan-hash equal to the exact "
+                    "verified plan content_hash"
+                )
+            from .phase4b.live_transport import (
+                OptInHttpsTransport, OptInSystemResolver, SystemMonotonicClock,
+            )
+            from .phase4b.service import Phase4BService
+            import time
+
+            with Phase4BWorkspace(args.workspace) as workspace:
+                with Phase4BService(workspace) as service:
+                    stored = acquire_public_plan(
+                        service, args.source_id, plan,
+                        activation_data=activation_data,
+                        activation_evidence_data=evidence_data,
+                        execution_epoch=int(time.time()),
+                        resolver=OptInSystemResolver(plan.permit),
+                        transport=OptInHttpsTransport(plan.permit),
+                        start_clock=SystemMonotonicClock(),
+                        network_acknowledgement=args.confirm_live_network,
+                        confirmed_plan_hash=args.confirm_plan_hash,
+                    )
+            value = {
+                "schema_version": "adaivy.phase4b-public-acquisition-result.v1",
+                "execution_status": "executed",
+                "activation_hash": activation["content_hash"],
+                "plan_hash": live_gate_plan_hash(plan),
+                "semantic_hash": "sha256:" + stored.result.semantic_hash,
+                "operational_hash": "sha256:" + stored.result.operational_hash,
+                "candidate_count": len(stored.result.candidates),
+                "record_ids": [item["record_id"] for item in stored.records],
+            }
+        else:
+            if args.confirm_live_network is not None or args.confirm_plan_hash is not None:
+                parser.error("live-network confirmations are valid only with --execute")
+            value = {
+                "schema_version": "adaivy.phase4b-public-acquisition-result.v1",
+                "execution_status": "not_executed",
+                "activation_hash": activation["content_hash"],
+                "plan_hash": live_gate_plan_hash(plan),
+                "source_id": args.source_id,
+                "candidate_count": 0,
+                "record_ids": [],
+            }
         data = json.dumps(value, indent=2, sort_keys=True) + "\n"
         if args.output is not None:
             args.output.parent.mkdir(parents=True, exist_ok=True)

@@ -3,10 +3,12 @@
 **Document status:** Architecture baseline 0.7 — bounded Phase 4B acquisition
 and exact-source parsing, local Phase 5 and Phase 6 slices, and the ADR-0027
 exploratory-synthesis slice are accepted and implemented on 20 August 2026.
-The exact OCI parser gate passes; the separately acknowledged live HTTPS gate
-is the final Phase 4B activation step. Noncommuting SDP, higher adaptive-search
-tiers, hybrid retrieval, broader acquisition/media, and external evaluation
-remain deferred. ADR-0029 refines the future adaptive
+The exact OCI parser gate and separately acknowledged live HTTPS gate pass.
+ADR-0050 activates only public unauthenticated, human-planned exact-URL
+acquisition; credentials, crawling, autonomous origin selection, and broader
+acquisition/media remain deferred. Noncommuting SDP beyond ADR-0049's bounded
+domain, higher adaptive-search tiers, broader hybrid retrieval, and external
+evaluation remain deferred. ADR-0029 refines the future adaptive
 search architecture without activating those tiers. ADR-0012 preserves the
 superseded roadmap history.
 
@@ -2128,8 +2130,13 @@ Implemented bounded Phase 4B slice (ADR-0028):
 - two independent deterministic feasible-gate runs and twelve exact parser
   disposition matches with zero false admissions.
 
-The separately acknowledged external live HTTPS observation remains the final
-activation condition. It is not part of deterministic offline acceptance.
+The separately acknowledged external live HTTPS observation has executed.
+ADR-0050 activates only its public unauthenticated exact-URL subset: one
+human-final plan and one explicit operator acknowledgement per invocation, with
+no credentials, caller-supplied request headers, retries, crawling, scheduling,
+or autonomous origin selection. It remains outside deterministic offline
+acceptance, and a fetched candidate creates no mathematical warrant or
+applicability decision.
 
 Build:
 
