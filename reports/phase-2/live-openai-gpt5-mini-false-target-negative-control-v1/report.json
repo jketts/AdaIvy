@@ -1,0 +1,310 @@
+{
+  "accepted_dossier": {
+    "blockers": [
+      "open_obligation:obligation.one-mod-four-is-sum-of-two-squares.alignment_unapproved",
+      "open_obligation:obligation.one-mod-four-is-sum-of-two-squares.target_unwarranted",
+      "semantic_target_not_resolved"
+    ],
+    "content_hash": "sha256:7271288d66afe7de69f4fb5275efe522fb2d729840b71214d3fb43af6ae76783",
+    "dossier_id": "dossier.one-mod-four-is-sum-of-two-squares.intake.sha256-ce3fb72c2b5ffb9c",
+    "evidence_ids": [],
+    "logical_status": "unknown",
+    "obligation_ids": [
+      "obligation.one-mod-four-is-sum-of-two-squares.alignment_unapproved",
+      "obligation.one-mod-four-is-sum-of-two-squares.target_unwarranted"
+    ],
+    "semantic_alignment_status": "not_approved_equivalent",
+    "target_claim_id": "claim.one-mod-four-is-sum-of-two-squares.one_mod_four_is_sum_of_two_squares",
+    "warrant_ids": []
+  },
+  "audit_replay_hash": "sha256:ae0779d5ad9e03e131038c8818d2c70850d85ad1e8894e5c115591331da76219",
+  "audit_timeline": [
+    {
+      "aggregate_id": "run.falsetarget.live.v1",
+      "created_at": "2026-08-21T07:19:06.899088Z",
+      "event_id": "event.run.falsetarget.live.v1.created",
+      "event_type": "run_created",
+      "idempotency_key": "run-created:run.falsetarget.live.v1",
+      "payload": {
+        "dossier_hash": "sha256:7271288d66afe7de69f4fb5275efe522fb2d729840b71214d3fb43af6ae76783",
+        "dossier_id": "dossier.one-mod-four-is-sum-of-two-squares.intake.sha256-ce3fb72c2b5ffb9c"
+      },
+      "schema_version": "2.0.0",
+      "sequence": 1
+    },
+    {
+      "aggregate_id": "run.falsetarget.live.v1",
+      "created_at": "2026-08-21T07:19:06.899088Z",
+      "event_id": "event.run:run.falsetarget.live.v1:running",
+      "event_type": "run_running",
+      "idempotency_key": "run:run.falsetarget.live.v1:running",
+      "payload": {
+        "from": "queued",
+        "to": "running"
+      },
+      "schema_version": "2.0.0",
+      "sequence": 2
+    },
+    {
+      "aggregate_id": "run.falsetarget.live.v1",
+      "created_at": "2026-08-21T07:19:24.503643Z",
+      "event_id": "event.proposal:run.falsetarget.live.v1:proposer",
+      "event_type": "proposal_imported",
+      "idempotency_key": "proposal:run.falsetarget.live.v1:proposer",
+      "payload": {
+        "artifact_hash": "sha256:8325a62083c74af6e8934b5175c483ef35d58d0ffb5a79232e203b7148264891",
+        "disposition": "proposal",
+        "proposal_id": "proposal.run.falsetarget.live.v1.proposer"
+      },
+      "schema_version": "2.0.0",
+      "sequence": 3
+    },
+    {
+      "aggregate_id": "run.falsetarget.live.v1",
+      "created_at": "2026-08-21T07:19:24.503912Z",
+      "event_id": "event.job:run.falsetarget.live.v1:proposer:succeeded",
+      "event_type": "job_succeeded",
+      "idempotency_key": "job:run.falsetarget.live.v1:proposer:succeeded",
+      "payload": {
+        "job_id": "job.run.falsetarget.live.v1.proposer",
+        "result_hash": "sha256:8325a62083c74af6e8934b5175c483ef35d58d0ffb5a79232e203b7148264891"
+      },
+      "schema_version": "2.0.0",
+      "sequence": 4
+    },
+    {
+      "aggregate_id": "run.falsetarget.live.v1",
+      "created_at": "2026-08-21T07:19:38.140309Z",
+      "event_id": "event.proposal:run.falsetarget.live.v1:verifier",
+      "event_type": "proposal_imported",
+      "idempotency_key": "proposal:run.falsetarget.live.v1:verifier",
+      "payload": {
+        "artifact_hash": "sha256:ed713e234473149059fda18bedd73f83428a36cb13162a8aec5109032400cca3",
+        "disposition": "proposal",
+        "proposal_id": "proposal.run.falsetarget.live.v1.verifier"
+      },
+      "schema_version": "2.0.0",
+      "sequence": 5
+    },
+    {
+      "aggregate_id": "run.falsetarget.live.v1",
+      "created_at": "2026-08-21T07:19:38.141254Z",
+      "event_id": "event.job:run.falsetarget.live.v1:verifier:succeeded",
+      "event_type": "job_succeeded",
+      "idempotency_key": "job:run.falsetarget.live.v1:verifier:succeeded",
+      "payload": {
+        "job_id": "job.run.falsetarget.live.v1.verifier",
+        "result_hash": "sha256:ed713e234473149059fda18bedd73f83428a36cb13162a8aec5109032400cca3"
+      },
+      "schema_version": "2.0.0",
+      "sequence": 6
+    },
+    {
+      "aggregate_id": "run.falsetarget.live.v1",
+      "created_at": "2026-08-21T07:19:38.141633Z",
+      "event_id": "event.run:run.falsetarget.live.v1:awaiting_review",
+      "event_type": "run_awaiting_review",
+      "idempotency_key": "run:run.falsetarget.live.v1:awaiting_review",
+      "payload": {
+        "from": "running",
+        "to": "awaiting_review"
+      },
+      "schema_version": "2.0.0",
+      "sequence": 7
+    }
+  ],
+  "budget": {
+    "budget_id": "budget.run.falsetarget.live.v1",
+    "elapsed_milliseconds": 31242,
+    "exhausted_dimensions": [
+      "attempts"
+    ],
+    "limits": {
+      "max_attempts": 2,
+      "max_cost_microusd": 20000,
+      "max_input_tokens": 20000,
+      "max_output_tokens": 4096,
+      "max_wall_milliseconds": 300000,
+      "schema_version": "2.0.0"
+    },
+    "schema_version": "2.0.0",
+    "used_attempts": 2,
+    "used_cost_microusd": 5889,
+    "used_input_tokens": 2745,
+    "used_output_tokens": 2601
+  },
+  "cost_estimates": [
+    {
+      "call_id": "call.run.falsetarget.live.v1.proposer.attempt.1",
+      "created_at": "2026-08-21T07:19:06.904840Z",
+      "estimate_id": "estimate.call.run.falsetarget.live.v1.proposer.attempt.1",
+      "estimated_cost_microusd": 4377,
+      "input_token_estimate": 1121,
+      "output_token_estimate": 2048,
+      "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+      "run_id": "run.falsetarget.live.v1",
+      "schema_version": "2.0.0"
+    },
+    {
+      "call_id": "call.run.falsetarget.live.v1.verifier.attempt.1",
+      "created_at": "2026-08-21T07:19:24.509731Z",
+      "estimate_id": "estimate.call.run.falsetarget.live.v1.verifier.attempt.1",
+      "estimated_cost_microusd": 4366,
+      "input_token_estimate": 1079,
+      "output_token_estimate": 2048,
+      "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+      "run_id": "run.falsetarget.live.v1",
+      "schema_version": "2.0.0"
+    }
+  ],
+  "jobs": [
+    {
+      "attempts": 1,
+      "deadline_at": "2026-08-21T07:21:06.899923Z",
+      "idempotency_key": "job:run.falsetarget.live.v1:proposer",
+      "job_id": "job.run.falsetarget.live.v1.proposer",
+      "kind": "proposer",
+      "lease_owner": null,
+      "lease_until": null,
+      "max_attempts": 2,
+      "payload_hash": "sha256:7271288d66afe7de69f4fb5275efe522fb2d729840b71214d3fb43af6ae76783",
+      "result_hash": "sha256:8325a62083c74af6e8934b5175c483ef35d58d0ffb5a79232e203b7148264891",
+      "run_id": "run.falsetarget.live.v1",
+      "schema_version": "2.0.0",
+      "status": "succeeded"
+    },
+    {
+      "attempts": 1,
+      "deadline_at": "2026-08-21T07:21:06.899923Z",
+      "idempotency_key": "job:run.falsetarget.live.v1:verifier",
+      "job_id": "job.run.falsetarget.live.v1.verifier",
+      "kind": "verifier",
+      "lease_owner": null,
+      "lease_until": null,
+      "max_attempts": 2,
+      "payload_hash": "sha256:8325a62083c74af6e8934b5175c483ef35d58d0ffb5a79232e203b7148264891",
+      "result_hash": "sha256:ed713e234473149059fda18bedd73f83428a36cb13162a8aec5109032400cca3",
+      "run_id": "run.falsetarget.live.v1",
+      "schema_version": "2.0.0",
+      "status": "succeeded"
+    }
+  ],
+  "model_calls": [
+    {
+      "call_id": "call.run.falsetarget.live.v1.proposer.attempt.1",
+      "capabilities_json": "[\"responses_api\",\"structured_output\",\"refusal\"]",
+      "cost_microusd": 2942,
+      "created_at": "2026-08-21T07:19:24.503158Z",
+      "estimated_cost_microusd": 2942,
+      "idempotency_key": "call:run.falsetarget.live.v1:proposer:attempt:1",
+      "incomplete_reason": null,
+      "input_tokens": 1311,
+      "model_identifier": "gpt-5-mini-2025-08-07",
+      "output_tokens": 1307,
+      "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+      "provider": "openai",
+      "provider_request_id": "resp_0d3c7d12007332a1016a87fbecb36c87d0b9e48d692579c6fa",
+      "purpose": "proposer",
+      "request_hash": "sha256:fac22e7b8b223f1770e2d1e151f78cbc43319e7d9212d1122afe991ac238aaeb",
+      "result_hash": "sha256:2a53bec4b43820d0f8d5de20d169fb13627932a499c32130254df68a30f2b482",
+      "retry_classification": "none",
+      "run_id": "run.falsetarget.live.v1",
+      "schema_version": "2.0.0",
+      "status": "succeeded",
+      "total_tokens": 2618,
+      "usage_source": "api_reported"
+    },
+    {
+      "call_id": "call.run.falsetarget.live.v1.verifier.attempt.1",
+      "capabilities_json": "[\"responses_api\",\"structured_output\",\"refusal\"]",
+      "cost_microusd": 2947,
+      "created_at": "2026-08-21T07:19:38.139367Z",
+      "estimated_cost_microusd": 2947,
+      "idempotency_key": "call:run.falsetarget.live.v1:verifier:attempt:1",
+      "incomplete_reason": null,
+      "input_tokens": 1434,
+      "model_identifier": "gpt-5-mini-2025-08-07",
+      "output_tokens": 1294,
+      "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+      "provider": "openai",
+      "provider_request_id": "resp_0cb363645e3e2b9b016a87fbfccfac87d0bb69f9ccbd9867cb",
+      "purpose": "verifier",
+      "request_hash": "sha256:6d03ecdfe2b00d56eaca2b0cf5701429517a2b352b393f9f01517cb075606d31",
+      "result_hash": "sha256:99a4e279e49f4dc54f5b0902cbed8157db0b0886ad30bd19576c06aff7965881",
+      "retry_classification": "none",
+      "run_id": "run.falsetarget.live.v1",
+      "schema_version": "2.0.0",
+      "status": "succeeded",
+      "total_tokens": 2728,
+      "usage_source": "api_reported"
+    }
+  ],
+  "proposals": [
+    {
+      "artifact_hash": "sha256:8325a62083c74af6e8934b5175c483ef35d58d0ffb5a79232e203b7148264891",
+      "disposition": "proposal",
+      "proposal_id": "proposal.run.falsetarget.live.v1.proposer",
+      "proposal_kind": "counterexample",
+      "run_id": "run.falsetarget.live.v1",
+      "schema_version": "2.0.0",
+      "source_id": "call.run.falsetarget.live.v1.proposer.attempt.1",
+      "source_kind": "model",
+      "target_claim_id": "claim.one-mod-four-is-sum-of-two-squares.one_mod_four_is_sum_of_two_squares"
+    },
+    {
+      "artifact_hash": "sha256:ed713e234473149059fda18bedd73f83428a36cb13162a8aec5109032400cca3",
+      "disposition": "proposal",
+      "proposal_id": "proposal.run.falsetarget.live.v1.verifier",
+      "proposal_kind": "verifier_finding",
+      "run_id": "run.falsetarget.live.v1",
+      "schema_version": "2.0.0",
+      "source_id": "call.run.falsetarget.live.v1.verifier.attempt.1",
+      "source_kind": "model",
+      "target_claim_id": "claim.one-mod-four-is-sum-of-two-squares.one_mod_four_is_sum_of_two_squares"
+    }
+  ],
+  "run": {
+    "budget_id": "budget.run.falsetarget.live.v1",
+    "created_at": "2026-08-21T07:19:06.899088Z",
+    "dossier_hash": "sha256:7271288d66afe7de69f4fb5275efe522fb2d729840b71214d3fb43af6ae76783",
+    "dossier_id": "dossier.one-mod-four-is-sum-of-two-squares.intake.sha256-ce3fb72c2b5ffb9c",
+    "run_id": "run.falsetarget.live.v1",
+    "schema_version": "2.0.0",
+    "status": "awaiting_review",
+    "updated_at": "2026-08-21T07:19:38.141633Z"
+  },
+  "schema_version": "2.0.0",
+  "verifier_context_manifest": {
+    "context_artifact_hash": "sha256:de2aaa803c8ccab5f680a35ec1d11a1f0ed1a16482439fe58a5dab2b63e82589",
+    "excluded_entity_ids": [
+      "call.run.falsetarget.live.v1.proposer.attempt.1",
+      "event.one-mod-four-is-sum-of-two-squares.problem_definition_recorded",
+      "obligation.one-mod-four-is-sum-of-two-squares.alignment_unapproved",
+      "obligation.one-mod-four-is-sum-of-two-squares.target_unwarranted",
+      "problem.one-mod-four-is-sum-of-two-squares",
+      "protocol.one-mod-four-is-sum-of-two-squares.v1"
+    ],
+    "included_entity_ids": [
+      "alignment.one-mod-four-is-sum-of-two-squares.v1",
+      "claim.one-mod-four-is-sum-of-two-squares.one_mod_four_is_sum_of_two_squares",
+      "claim.one-mod-four-is-sum-of-two-squares.square_residues_mod_four",
+      "formalization.one-mod-four-is-sum-of-two-squares.v1",
+      "proposal.run.falsetarget.live.v1.proposer"
+    ],
+    "independence": {
+      "context_isolated": true,
+      "deterministic_checker": false,
+      "different_model": false,
+      "different_provider": false,
+      "formal_kernel": false,
+      "independently_implemented_checker": false,
+      "schema_version": "2.0.0",
+      "separate_model_call": true
+    },
+    "manifest_id": "manifest.run.falsetarget.live.v1.verifier",
+    "policy_version": "phase1-trust-policy-v1",
+    "run_id": "run.falsetarget.live.v1",
+    "schema_version": "2.0.0",
+    "serialized_context_hash": "sha256:de2aaa803c8ccab5f680a35ec1d11a1f0ed1a16482439fe58a5dab2b63e82589"
+  }
+}

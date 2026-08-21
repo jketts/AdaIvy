@@ -32,3 +32,25 @@ rational primal and dual points are feasible but leave an exact `1/4` gap.
 Finding the irrational optimum for those pure-state pairs requires a numerical
 solver or a separate symbolic derivation; accepting a tolerance-sized gap would
 violate the benchmark's exact semantics.
+
+## Addendum, 21 August 2026 (ADR-0033)
+
+The paragraph above still describes the two rational-candidate fixtures, which
+are retained unchanged. It is no longer the whole picture, and the sentence
+"requires a numerical solver or a separate symbolic derivation" was too strong
+in one direction: the second disjunct was taken, with no dependency.
+
+The `1/4` gap on the two noncommuting pure-state pairs is now closed to exactly
+zero by project-authored certificates written over one real quadratic extension
+of the rationals, checked by the exact arithmetic in `algebraic.py`. No adapter
+was adopted, no solver was called, no float was introduced, and no tolerance
+exists anywhere on the path. The adoption result above is unchanged: still no
+package.
+
+Two things this does not do. It does not *search*: the certificates were
+derived by hand from the two-state closed form and the checker only verifies
+them, so a case with no closed form still has no route to a candidate. And it
+does not extend to every instance -- see the measured `real-noncommuting-irreducible-cubic-boundary`
+fixture, whose optimum is provably outside every quadratic extension. That case
+is exactly the one where an SDP adapter would still be the only route to a
+candidate, so the comparison table above remains live for it.

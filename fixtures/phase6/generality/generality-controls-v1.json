@@ -1,0 +1,420 @@
+{
+  "schema_version": "adaivy.generality-control-suite.v1",
+  "suite_id": "suite.phase6.generality-controls-v1",
+  "version": 1,
+  "control_corpus_provenance": "project_authored",
+  "limitations": [
+    "Every fixture in this suite is project-authored. The suite demonstrates boundary enforcement on KNOWN traps; it is not evidence of generality against unseen traps, because the party that must pass the controls also wrote them.",
+    "GC-04 substitutes a recorded FORMAL_ARTIFACT bound to the statement it actually proves for a real formal kernel. Running Lean on a weakened translation needs the sealed Phase 3B runtime and the ADR-0016 v5 image, which the offline check deliberately excludes.",
+    "GC-05 uses synthetic source spans and a synthetic imported statement. The benchmark paper arXiv:quant-ph/0201109 is metadata-only with no licensed local content.",
+    "GC-01 is one hand-built dossier. It makes the suite non-vacuous; it does not measure known-theorem coverage, which at any meaningful scale means mathlib or a literature corpus.",
+    "GC-09A tests the Section 18.2 plugin CONTRACT with a minimal second-domain fixture. Building an actual second domain plugin is out of scope.",
+    "No metric of the form 'catches X per cent of unseen traps' is computable from repository data. The release package's baseline_comparison counts enforced trust boundaries, which is not a generality rate and must not be read as one.",
+    "Novelty and significance are not assessed anywhere in this suite. External expert review is out-of-repo labour and is not substituted for."
+  ],
+  "controls": [
+    {
+      "control_id": "GC-01",
+      "category": "known_theorems",
+      "blueprint_reference": "TECHNICAL_BLUEPRINT.md Section 18.4 known theorems; Section 17.5 tier 1",
+      "polarity": "positive",
+      "engine": "phase1_target_warrant_status",
+      "parameters": {"warrant_status": "active"},
+      "expected": {
+        "target_logical_status": "proved",
+        "target_semantic_alignment_status": "approved_equivalent",
+        "target_blockers": [],
+        "target_warrant_kinds": ["rigorous_derivation"],
+        "dossier_valid": true
+      },
+      "probe": {
+        "probe_id": "GC-01-P1",
+        "field": "warrant_status",
+        "value": "withdrawn",
+        "forbidden_outcome": "The suite reports all controls passing while having proved nothing, because every control asserts non-admission and the system under test rejects everything.",
+        "expected": {"target_logical_status": "unknown", "target_warrant_kinds": []}
+      },
+      "limitations": [
+        "One hand-built dossier, not a known-theorem corpus."
+      ]
+    },
+    {
+      "control_id": "GC-02A",
+      "category": "false_conjectures",
+      "blueprint_reference": "TECHNICAL_BLUEPRINT.md Section 18.4 false conjectures; Section 17.5 tier 2; Section 20 scenario C",
+      "polarity": "negative",
+      "engine": "phase1_target_warrant_kind",
+      "parameters": {
+        "warrant_kind": "exact_counterexample",
+        "evidence_kind": "counterexample",
+        "target_statement": "For all integers a and b, if a and b are even, then a + b is odd."
+      },
+      "expected": {
+        "target_logical_status": "disproved",
+        "target_warrant_kinds": ["exact_counterexample"],
+        "dossier_valid": true
+      },
+      "probe": {
+        "probe_id": "GC-02A-P1",
+        "field": "warrant_kind",
+        "value": "experimental_observation",
+        "forbidden_outcome": "A false universal reaches proved or supported status, or any warrant kind at all is allowed to report it disproved.",
+        "expected": {"target_logical_status": "supported"}
+      },
+      "limitations": [
+        "The counterexample is recorded, not searched for. No counterexample search exists in this slice."
+      ]
+    },
+    {
+      "control_id": "GC-02B",
+      "category": "false_conjectures",
+      "blueprint_reference": "TECHNICAL_BLUEPRINT.md Section 18.4 false conjectures; Section 17.5 tier 5 numerical-to-exact",
+      "polarity": "negative",
+      "engine": "phase5_exact_diagonal_case",
+      "parameters": {
+        "case_id": "gc-02b-boundary-fixed-point",
+        "statement_variant": "arbitrary-initialization",
+        "weights": [["1/3"], ["2/3"]],
+        "initial_povm": [[1], [0]],
+        "iterations": 2,
+        "expected_classification": "restricts"
+      },
+      "expected": {
+        "fixed_point": true,
+        "nonoptimal_fixed_point": true,
+        "primal_dual_gap": "1/3",
+        "final_objective": "1/3",
+        "independent_primal_optimum": "2/3",
+        "independent_dual_optimum": "2/3",
+        "independent_primal_dual_agreement": true,
+        "closed_form_accumulation_point_optimal": false,
+        "initial_full_support": false,
+        "graph_admitted": false
+      },
+      "probe": {
+        "probe_id": "GC-02B-P1",
+        "field": "initial_povm",
+        "value": [["1/2"], ["1/2"]],
+        "forbidden_outcome": "An exact nonoptimal fixed point of the JRF iteration is reported as convergence to the optimum, so the false universal convergence conjecture looks confirmed.",
+        "expected": {
+          "fixed_point": false,
+          "nonoptimal_fixed_point": false,
+          "closed_form_accumulation_point_optimal": true
+        }
+      },
+      "limitations": [
+        "The case is carried inline. Appending it to fixtures/phase5/quantum-diagonal-v1.json would change that fixture's canonical hash, which the confirmatory protocol pins."
+      ]
+    },
+    {
+      "control_id": "GC-03",
+      "category": "missing_assumption_traps",
+      "blueprint_reference": "TECHNICAL_BLUEPRINT.md Section 18.4 missing-assumption traps; Section 17.5 tier 3",
+      "polarity": "negative",
+      "engine": "phase1_alignment_assumption_delta",
+      "parameters": {
+        "assumption_delta": ["the local target assumes a and b are even; the formalization omits that hypothesis"]
+      },
+      "expected": {
+        "target_logical_status": "unknown",
+        "target_semantic_alignment_status": "not_approved_equivalent",
+        "target_blockers": ["semantic_target_not_resolved"],
+        "target_projection_logical_status": "proved",
+        "target_projection_semantic_alignment_status": "approved_equivalent",
+        "dossier_valid": true
+      },
+      "probe": {
+        "probe_id": "GC-03-P1",
+        "field": "assumption_delta",
+        "value": [],
+        "forbidden_outcome": "The target resolves as proved while a named hypothesis is missing, or the omission silently demotes the translated claim too, collapsing semantic custody and logical status into one axis.",
+        "expected": {
+          "target_logical_status": "proved",
+          "target_semantic_alignment_status": "approved_equivalent",
+          "target_blockers": []
+        }
+      },
+      "limitations": [
+        "The omitted hypothesis is named by the fixture, not detected. Nothing here discovers a missing assumption."
+      ]
+    },
+    {
+      "control_id": "GC-04",
+      "category": "semantic_mistranslations",
+      "blueprint_reference": "TECHNICAL_BLUEPRINT.md Section 18.4 semantic mistranslations; Section 17.5 tier 6; Section 20 scenario H",
+      "polarity": "negative",
+      "engine": "phase1_formal_target_binding",
+      "parameters": {"formal_statement": "When a=0 and b=0, a+b is even."},
+      "expected": {
+        "formal_claim_logical_status": "proved",
+        "formal_artifact_binds_target": false,
+        "target_logical_status": "unknown",
+        "target_projection_logical_status": "unknown",
+        "dossier_valid": true
+      },
+      "probe": {
+        "probe_id": "GC-04-P1",
+        "field": "formal_statement",
+        "value": "For all integers a and b, if a and b are even, then a + b is even.",
+        "forbidden_outcome": "A formal artifact that proves a weakened statement resolves the original target, so a mistranslation carries the target's warrant.",
+        "expected": {
+          "formal_artifact_binds_target": true,
+          "target_logical_status": "proved",
+          "formal_claim_logical_status": "proved"
+        }
+      },
+      "limitations": [
+        "No formal kernel runs. The formal warrant is a recorded FORMAL_ARTIFACT whose verification record is bound to the statement hash it actually covers; Lean on a weakened translation needs the sealed Phase 3B runtime."
+      ]
+    },
+    {
+      "control_id": "GC-05",
+      "category": "inapplicable_citations",
+      "blueprint_reference": "TECHNICAL_BLUEPRINT.md Section 18.4 inapplicable citations; Section 17.5 tier 7; Section 20 scenario I",
+      "polarity": "negative",
+      "engine": "phase1_source_applicability",
+      "parameters": {"hypothesis_compatibility": "incompatible"},
+      "expected": {
+        "discharge_allowed": false,
+        "discharge_reason": "source_hypotheses_incompatible",
+        "obligation_status_after_call": "open",
+        "supporting_claim_logical_status": "proved",
+        "target_logical_status": "unknown",
+        "target_blocker_prefixes": ["open_obligation"],
+        "dossier_valid": true
+      },
+      "probe": {
+        "probe_id": "GC-05-P1",
+        "field": "hypothesis_compatibility",
+        "value": "compatible",
+        "forbidden_outcome": "A real but inapplicable source closes a literature_applicability obligation, so the proof step stops being an obligation without an applicability check.",
+        "expected": {"discharge_allowed": true, "discharge_reason": "policy_allows_discharge"}
+      },
+      "limitations": [
+        "The imported statement, its hypotheses, and the source span are synthetic. No licensed local content for a real inapplicable citation exists in this repository."
+      ]
+    },
+    {
+      "control_id": "GC-06A",
+      "category": "cross_representation_problems",
+      "blueprint_reference": "TECHNICAL_BLUEPRINT.md Section 18.4 cross-representation problems; Section 17.5 tier 4; Section 20 scenario D",
+      "polarity": "negative",
+      "engine": "phase1_representation_status",
+      "parameters": {"map_status": "partially_verified", "bridge_obligation_status": "discharged"},
+      "expected": {
+        "target_logical_status": "unknown",
+        "target_blocker_prefixes": ["representation_map_not_verified"],
+        "dossier_valid": true
+      },
+      "probe": {
+        "probe_id": "GC-06A-P1",
+        "field": "map_status",
+        "value": "verified",
+        "forbidden_outcome": "A transformed result carries weight for the original claim across a representation map that is only partially verified.",
+        "expected": {"target_logical_status": "proved", "target_blocker_prefixes": []}
+      },
+      "limitations": [
+        "One representation map over integer algebra. No real cross-representation corpus exists here."
+      ]
+    },
+    {
+      "control_id": "GC-06B",
+      "category": "cross_representation_problems",
+      "blueprint_reference": "TECHNICAL_BLUEPRINT.md Section 18.4 cross-representation problems; Section 20 scenario D",
+      "polarity": "negative",
+      "engine": "phase1_representation_status",
+      "parameters": {"map_status": "verified", "bridge_obligation_status": "open"},
+      "expected": {
+        "target_logical_status": "unknown",
+        "target_blocker_prefixes": ["representation_bridge_open"],
+        "dossier_valid": true
+      },
+      "probe": {
+        "probe_id": "GC-06B-P1",
+        "field": "bridge_obligation_status",
+        "value": "discharged",
+        "forbidden_outcome": "A transformed result carries weight for the original claim while its bridge obligation is still open.",
+        "expected": {"target_logical_status": "proved", "target_blocker_prefixes": []}
+      },
+      "limitations": [
+        "The bridge obligation is toggled by the fixture, not discovered by a bridge verifier."
+      ]
+    },
+    {
+      "control_id": "GC-07",
+      "category": "unsupported_consensus",
+      "blueprint_reference": "TECHNICAL_BLUEPRINT.md Section 20 scenario A unsupported consensus; ADR-0024 control unsupported_consensus",
+      "polarity": "negative",
+      "engine": "phase1_target_warrant_kind",
+      "parameters": {
+        "warrant_kind": "model_agreement",
+        "evidence_kind": "model_output",
+        "target_statement": null
+      },
+      "expected": {
+        "target_logical_status": "supported",
+        "target_warrant_kinds": ["model_agreement"],
+        "dossier_valid": true
+      },
+      "probe": {
+        "probe_id": "GC-07-P1",
+        "field": "warrant_kind",
+        "value": "rigorous_derivation",
+        "forbidden_outcome": "Agreement between models produces proof status. The probe also shows the control discriminates on warrant kind rather than always answering supported.",
+        "expected": {"target_logical_status": "proved", "target_warrant_kinds": ["rigorous_derivation"]}
+      },
+      "limitations": [
+        "No model is called. The MODEL_AGREEMENT warrant is recorded, which is the only offline form of this scenario."
+      ]
+    },
+    {
+      "control_id": "GC-08A",
+      "category": "finite_experiment_overreach",
+      "blueprint_reference": "TECHNICAL_BLUEPRINT.md Section 20 scenario B experimental overreach; ADR-0024 control finite_experiment_overreach",
+      "polarity": "negative",
+      "engine": "phase1_target_warrant_kind",
+      "parameters": {
+        "warrant_kind": "experimental_observation",
+        "evidence_kind": "experiment",
+        "target_statement": null
+      },
+      "expected": {
+        "target_logical_status": "supported",
+        "target_claim_scope": "unrestricted_universal",
+        "target_warrant_kinds": ["experimental_observation"],
+        "dossier_valid": true
+      },
+      "probe": {
+        "probe_id": "GC-08A-P1",
+        "field": "warrant_kind",
+        "value": "formal_proof",
+        "forbidden_outcome": "Finitely many verified inputs are reported as a universal proof of an unrestricted_universal claim.",
+        "expected": {"target_logical_status": "proved", "target_warrant_kinds": ["formal_proof"]}
+      },
+      "limitations": [
+        "The enforcement measured here is the warrant-kind branch in domain/policies.py. The explicit scope demotion at policies.py lines 127-131 is unreachable, so this control does not exercise it; see ADR-0034."
+      ]
+    },
+    {
+      "control_id": "GC-08B",
+      "category": "premise_smuggling",
+      "blueprint_reference": "TECHNICAL_BLUEPRINT.md Section 20 scenario J premise smuggling; Section 17.4 helper lemma restates the target",
+      "polarity": "negative",
+      "engine": "phase1_helper_lemma",
+      "parameters": {"helper_statement": null},
+      "expected": {
+        "discharge_allowed": false,
+        "discharge_reason": "helper_restates_target",
+        "obligation_status_after_call": "open",
+        "helper_restates_target": true,
+        "dossier_valid": true
+      },
+      "probe": {
+        "probe_id": "GC-08B-P1",
+        "field": "helper_statement",
+        "value": "For all integers k, 2k is even.",
+        "forbidden_outcome": "A helper lemma described as standard, whose statement is the unresolved target, closes the target obligation.",
+        "expected": {
+          "discharge_allowed": true,
+          "discharge_reason": "policy_allows_discharge",
+          "helper_restates_target": false
+        }
+      },
+      "limitations": [
+        "Detection is exact normalized-statement equality. A paraphrased restatement is not detected."
+      ]
+    },
+    {
+      "control_id": "GC-09A",
+      "category": "plugin_core_contract",
+      "blueprint_reference": "TECHNICAL_BLUEPRINT.md Section 18.4 later domain plugins must pass the same core contract without changing core entity semantics",
+      "polarity": "positive",
+      "engine": "phase1_plugin_core_contract",
+      "parameters": {"warrant_kind": "rigorous_derivation"},
+      "expected": {
+        "domain_id": "graph-two-colouring",
+        "entity_schema_version": "1.0.0",
+        "entity_types_outside_core": [],
+        "projection_axes": [
+          "schema_version",
+          "claim_id",
+          "semantic_alignment_status",
+          "logical_status",
+          "warrant_kinds",
+          "novelty_status",
+          "significance_status",
+          "contribution_status",
+          "blockers"
+        ],
+        "target_logical_status": "proved",
+        "target_semantic_alignment_status": "approved_equivalent",
+        "dossier_valid": true
+      },
+      "probe": {
+        "probe_id": "GC-09A-P1",
+        "field": "warrant_kind",
+        "value": "model_agreement",
+        "forbidden_outcome": "A second domain needs a new core entity type, a new enum member, or its own trust rule, or the same trust rules stop discriminating once the domain changes.",
+        "expected": {
+          "target_logical_status": "supported",
+          "entity_types_outside_core": [],
+          "projection_axes": [
+            "schema_version",
+            "claim_id",
+            "semantic_alignment_status",
+            "logical_status",
+            "warrant_kinds",
+            "novelty_status",
+            "significance_status",
+            "contribution_status",
+            "blockers"
+          ]
+        }
+      },
+      "limitations": [
+        "This is the contract, not a second domain. One minimal graph-theory dossier is not evidence of coverage in graph theory."
+      ]
+    },
+    {
+      "control_id": "GC-09B",
+      "category": "evaluation_leakage",
+      "blueprint_reference": "TECHNICAL_BLUEPRINT.md Section 20 scenario L evaluation leakage; Section 17.4 a search process selects a result after inspecting held-out outcomes",
+      "polarity": "negative",
+      "engine": "phase6_heldout_boundary",
+      "parameters": {
+        "benchmark_id": "GC-09B-SYNTHETIC",
+        "fixture": [
+          {"case_id": "gc-09b-frozen-case", "note": "the only preregistered case"},
+          {"case_id": "gc-09b-exploratory-case", "note": "present in the fixture, outside the frozen scope"},
+          {"case_id": "gc-09b-tuning-case", "note": "present in the fixture, outside the frozen scope"}
+        ],
+        "frozen_case_id": "gc-09b-frozen-case",
+        "requested_case_id": "gc-09b-exploratory-case"
+      },
+      "expected": {
+        "refused": true,
+        "error_type": "Phase6ValidationError",
+        "resolved_case_id": null,
+        "violation_kinds": ["heldout_access_violation"],
+        "violation_count": 1,
+        "visible_case_ids": ["gc-09b-frozen-case"],
+        "fixture_case_count": 3
+      },
+      "probe": {
+        "probe_id": "GC-09B-P1",
+        "field": "requested_case_id",
+        "value": "gc-09b-frozen-case",
+        "forbidden_outcome": "A case outside the frozen held-out scope is readable, or it is refused with no recorded violation. The probe also shows the boundary is not simply refusing everything.",
+        "expected": {
+          "refused": false,
+          "resolved_case_id": "gc-09b-frozen-case",
+          "violation_count": 0,
+          "violation_kinds": []
+        }
+      },
+      "limitations": [
+        "The fixture is synthetic and inline; the control never reads the real frozen held-out case. Binding the same refusal to a durable record is Phase6Service.resolve_heldout_case, not this control."
+      ]
+    }
+  ]
+}

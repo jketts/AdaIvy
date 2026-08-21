@@ -13,9 +13,14 @@ rule before execution. The evaluator receives only the named held-out case,
 records one access, permits no adaptation, and requires an existing Phase 5
 run plus its material-result trace.
 
-The generality suite executes five deterministic trust controls: unsupported
+The generality suite covers five deterministic trust controls: unsupported
 model consensus, finite-experiment overreach, a mistranslated formal target,
-an inapplicable source, and an open representation bridge. Phase 6 reports its
+an inapplicable source, and an open representation bridge. **Superseded in part
+by ADR-0034.** As shipped, those five were a literal table that executed
+nothing: `passed` was derived from a hard-coded `admitted is False`, so the pass
+count was a constant. ADR-0034 replaces them with thirteen controls that execute
+against real Phase 1 policy, the exact Phase 5 engine, and the Phase 6 held-out
+boundary, each with a mandatory falsifiability probe. Phase 6 reports its
 measured improvement over the arithmetic-only baseline as those additional
 trust-boundary rejections, with zero external spend and zero extra expert
 actions.

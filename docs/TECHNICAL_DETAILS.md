@@ -417,11 +417,35 @@ acceptance paths are byte-reproducible; the `Makefile` pins the same instants as
 Phase 6 freezes the held-out case, exact method, metrics, capability allowlist,
 success criteria, and stopping rule before execution. Its one-pass evaluator
 can see only the preregistered case and cannot adapt after observing the
-outcome. It consumes the persisted Phase 5 run and material event, executes the
-five generality trust controls, records novelty and significance as separate
-unassessed dimensions, attributes contributions, and writes a canonical
-restart-safe release package plus a traceable report.
-ADR-0024 freezes this slice and its explicit limitations.
+outcome, because `HeldOutView` drops every non-frozen case before execution and
+records a durable `heldout_access_violation` for any other request. It consumes
+the persisted Phase 5 run and material event, executes the Section 18.4
+generality control suite, records novelty and significance as separate unassessed
+dimensions, attributes contributions, and writes a canonical restart-safe release
+package plus a traceable report.
+ADR-0024 freezes this slice and its explicit limitations; ADR-0034 replaces its
+declarative five-control table with the executed suite.
+
+The suite is a content-hashed manifest at
+`fixtures/phase6/generality/generality-controls-v1.json` whose `suite_id` and
+`canonical_hash` are pinned by `generality_suite_id`/`generality_suite_hash` in
+the confirmatory protocol and verified before the first durable write, so the
+suite cannot be edited after a failing run. Thirteen controls execute against
+Phase 1 `TrustPolicy`, the exact Phase 5 diagonal engine, or the Phase 6 held-out
+boundary. Each carries one falsifiability probe: a named single-field mutation of
+its own parameters that must both satisfy the probe's stated forbidden verdict and
+break the control's expectation. Two release gates apply --
+`controls_passed == controls_total` and `probes_flipped == probes_total` -- because
+a control that cannot be made to fail proves nothing. Two controls are positive
+(GC-01 known theorem, GC-09A plugin core contract), so a system that rejects
+everything cannot score full marks.
+
+The control corpus is `project_authored`, recorded as such in the manifest, the
+durable `generality_control_suite` record, the release package and the report.
+The suite demonstrates boundary enforcement on known traps; it is not evidence of
+generality against unseen traps. `baseline_comparison` reports eleven enforced
+trust boundaries against a baseline of zero and carries
+`is_generality_measure: false`; that count is not a generality rate.
 
 Run the complete offline Phase 5 → Phase 6 workflow:
 

@@ -1,0 +1,73 @@
+[
+  {
+    "content": {
+      "mathematical_payload": {
+        "statement": "For every integer n with n = 3 (mod 4), there do not exist integers a and b with n = a^2 + b^2.",
+        "steps": [
+          "Assume, for contradiction, that n is an integer with n \u2261 3 (mod 4) and there exist integers a and b with n = a^2 + b^2.",
+          "By the accepted lemma (claim.sum-two-squares-mod-four.square_residues_mod_four), a^2 \u2261 0 or 1 (mod 4) and b^2 \u2261 0 or 1 (mod 4).",
+          "Therefore the possible values of a^2 + b^2 modulo 4 are 0+0 \u2261 0, 0+1 \u2261 1, 1+0 \u2261 1, or 1+1 \u2261 2; hence a^2 + b^2 \u2261 0, 1, or 2 (mod 4).",
+          "This contradicts the hypothesis n \u2261 3 (mod 4). Hence no such integers a and b exist."
+        ],
+        "witness": null
+      },
+      "referenced_entity_ids": [
+        "claim.sum-two-squares-mod-four.square_residues_mod_four"
+      ],
+      "result_type": "proof_attempt",
+      "schema_version": "2.0.0",
+      "target_claim_id": "claim.sum-two-squares-mod-four.three_mod_four_not_sum_of_two_squares"
+    },
+    "record": {
+      "artifact_hash": "sha256:c827d7211e983713fe8f264ce277d89b8fe97484cb7ec15c608820063d23a613",
+      "disposition": "proposal",
+      "proposal_id": "proposal.run.mod4.live.v1.proposer",
+      "proposal_kind": "proof_attempt",
+      "run_id": "run.mod4.live.v1",
+      "schema_version": "2.0.0",
+      "source_id": "call.run.mod4.live.v1.proposer.attempt.1",
+      "source_kind": "model",
+      "target_claim_id": "claim.sum-two-squares-mod-four.three_mod_four_not_sum_of_two_squares"
+    }
+  },
+  {
+    "content": {
+      "candidate_artifact_hash": "sha256:c827d7211e983713fe8f264ce277d89b8fe97484cb7ec15c608820063d23a613",
+      "declared_rationale": "The proof correctly applies the accepted lemma that any integer square is 0 or 1 mod 4, enumerates the four possible pairs of residues for a^2 and b^2 (0+0, 0+1, 1+0, 1+1) giving possible sums 0,1,2 (mod 4), and observes that 3 (mod 4) is not among them. This yields a direct contradiction to n \u2261 3 (mod 4). The argument covers all integers (the lemma applies to all integers and modular congruence is valid for negatives as treated by least nonnegative residue), so the candidate proof is correct up to routine details.",
+      "findings": [
+        {
+          "code": "lemma_residues_mod_four_applies",
+          "detail": "The accepted premise claim.sum-two-squares-mod-four.square_residues_mod_four states that for every integer a, a^2 \u2261 0 or 1 (mod 4). This premise is applicable to both a and b in the candidate proof and is used correctly.",
+          "outcome": "supports",
+          "referenced_entity_ids": [
+            "claim.sum-two-squares-mod-four.square_residues_mod_four"
+          ]
+        },
+        {
+          "code": "sum_of_two_squares_mod_four_possibilities",
+          "detail": "Using the lemma, the possible residues of a^2 + b^2 (mod 4) are 0, 1, or 2 (from 0+0, 0+1/1+0, 1+1). Therefore a^2 + b^2 cannot be congruent to 3 (mod 4). This contradicts the assumption n \u2261 3 (mod 4), so no integers a,b can satisfy n = a^2 + b^2. The modular arithmetic and case enumeration are correct and exhaustive.",
+          "outcome": "supports",
+          "referenced_entity_ids": [
+            "claim.sum-two-squares-mod-four.square_residues_mod_four",
+            "claim.sum-two-squares-mod-four.three_mod_four_not_sum_of_two_squares"
+          ]
+        }
+      ],
+      "recommendation": "manual_review",
+      "result_type": "finding",
+      "schema_version": "2.0.0",
+      "target_claim_id": "claim.sum-two-squares-mod-four.three_mod_four_not_sum_of_two_squares"
+    },
+    "record": {
+      "artifact_hash": "sha256:11133961b52e553728523375f3bdf560aa6dd1853ea9480c9bfc2f325d2afb87",
+      "disposition": "proposal",
+      "proposal_id": "proposal.run.mod4.live.v1.verifier",
+      "proposal_kind": "verifier_finding",
+      "run_id": "run.mod4.live.v1",
+      "schema_version": "2.0.0",
+      "source_id": "call.run.mod4.live.v1.verifier.attempt.1",
+      "source_kind": "model",
+      "target_claim_id": "claim.sum-two-squares-mod-four.three_mod_four_not_sum_of_two_squares"
+    }
+  }
+]

@@ -1,18 +1,27 @@
 """Acceptance suite for the bounded Phase 4C hybrid-retrieval slice.
 
-Per ADR-0026 and the "Consequences" section of ADR-0031, this suite is the only
+Per ADR-0026 and the "Consequences" section of ADR-0032, this suite is the only
 executable record of this slice's thresholds, and each forbidden outcome must be
 demonstrated impossible rather than left untested. So the tests are written as
 properties over the whole frozen query set, not as a happy path:
 
 * label separation -- a token that exists only in an id or a classification
   label retrieves nothing;
-* demotion-only -- over all fifteen queries the hedge never raises a fused
-  score and never introduces a document;
-* cue-class partition -- the two classes are disjoint, object-level cues cannot
-  demote, and neither contradiction gold is demoted;
-* cue neutrality -- with the demoting table emptied the fused ordering is
-  exactly the pure lexical ordering;
+* exclusion never changes a score -- over all seventeen queries every fused
+  score equals the score the lexical and alias signals produced;
+* exclusion preserves relative order among retained documents, and is
+  deliberately allowed to move a retained document *into* the top-k, which is
+  why the duplicate gate is re-measured rather than argued;
+* compositionality -- neither vocabulary fires alone, emptying either restores
+  the pure lexical ordering, and no single absence operator and no single
+  evidence noun is coextensive with the set of non-applicable documents;
+* subjecthood -- `uses no` and bare `no` are demonstrated to exclude the
+  applicable `hypothesis-free-supremum` gold, which is why neither is an
+  operator; object-level cues can never exclude; neither contradiction gold is
+  excluded;
+* generalization -- `residual-bound-gap` is excluded through the
+  `no ... is given` frame, which appears in no ADR-0031 enumerated phrase, and
+  the ADR-0031 table is demonstrated to miss that document entirely;
 * alias hygiene -- no document identifier anywhere in the alias fixture, at
   least five entries exercised by no query and matching no document, and
   removing one exercised entry fails exactly its own query;
@@ -21,9 +30,11 @@ properties over the whole frozen query set, not as a happy path:
 * determinism, bounds, zero external cost, and pinned measured values kept
   separate from the proposed thresholds.
 
-Measured values below are OBSERVATIONS, not targets. One of them records a gate
-failure. They are pinned so that any retrieval, cue, weighting, fusion, or
-metric change has to be a deliberate edit to this file.
+Measured values below are OBSERVATIONS, not targets. They are pinned so that any
+retrieval, vocabulary, weighting, fusion, or metric change has to be a
+deliberate edit to this file. They describe the ADR-0032 fixture set -- 19
+documents and 17 queries, the third extension -- and are not comparable with any
+value measured before it.
 """
 
 from __future__ import annotations
@@ -42,8 +53,8 @@ from unittest.mock import patch
 
 from math_research.phase4c import aliases as alias_module
 from math_research.phase4c import benchmark as benchmark_module
+from math_research.phase4c import disclaimer as disclaimer_module
 from math_research.phase4c import fusion as fusion_module
-from math_research.phase4c import hedging as hedging_module
 from math_research.phase4c import lexical as lexical_module
 from math_research.phase4c import text as text_module
 from math_research.phase4c.aliases import ALIAS_PHRASE_POINTS, EmptyAliasSignal
@@ -61,16 +72,18 @@ from math_research.phase4c.bounds import (
     THRESHOLD_KEYS,
     TOP_K_BY_CATEGORY,
 )
+from math_research.phase4c.disclaimer import (
+    ABSENCE_OPERATORS,
+    EVIDENCE_NOUNS,
+    OBJECT_LEVEL_CUES,
+    SelfDisclaimerSignal,
+    render_operator,
+)
 from math_research.phase4c.fixtures import (
     load_aliases,
     load_corpus,
     load_gold,
     load_object,
-)
-from math_research.phase4c.hedging import (
-    OBJECT_LEVEL_CUES,
-    SELF_DISCLAIMING_CUES,
-    HedgingScopeSignal,
 )
 from math_research.phase4c.lexical import EmptyLexicalIndex, probe
 from math_research.phase4c.serialization import (
@@ -87,21 +100,25 @@ CLI_SOURCE = REPO_ROOT / "src" / "math_research" / "phase4c_cli.py"
 
 # --------------------------------------------------------------------------
 # Pinned MEASURED values. Separate from the fixture's proposed thresholds.
+#
+# Measured on the ADR-0032 fixture set: 19 documents, 17 queries, 6 of them
+# applicability. This is the THIRD fixture extension, so these values are not
+# comparable with any pinned before it.
 # --------------------------------------------------------------------------
 
 MEASURED_METRICS = {
     "necessary_lemma_recall_at_5": 1.0,
-    # MEASURED FAILURE, recorded rather than tuned away. The hedge fires
-    # correctly on three of four applicability queries but cannot move this
-    # number: every applicability query's fused candidate set has at most five
-    # members against a top-k of five, so a demotion-only reordering cannot
-    # remove a demoted document from the retrieved set. On the fourth query,
-    # `applicability-selfadjoint`, the same-sentence scope rule does not fire.
-    "applicability_precision_at_5": 0.6,
+    # Reached by exclusion, not by reordering: every non-applicable relevant
+    # document leaves the result list, so the denominator shrinks from 14 to 8
+    # and the numerator stays at 8.
+    "applicability_precision_at_5": 1.0,
     "contradiction_recall_at_5": 1.0,
     "notation_variant_recall_at_5": 1.0,
     "renamed_known_result_recall_at_10": 1.0,
-    "duplicate_rate_at_5": 1 / 54,
+    # Exclusion SHRINKS the duplicate denominator, so the rate RISES at a
+    # constant numerator: 1/61 lexical, 1/50 hybrid. ADR-0032 predicted this
+    # and requires the denominator to stay at or above 20 for the 0.05 gate.
+    "duplicate_rate_at_5": 1 / 50,
     "external_spend_usd": 0,
     "network_calls": 0,
     "model_or_api_calls": 0,
@@ -109,99 +126,94 @@ MEASURED_METRICS = {
 }
 MEASURED_SUPPORT = {
     "necessary_lemma_recall_at_5": (3, 3),
-    "applicability_precision_at_5": (6, 10),
+    "applicability_precision_at_5": (8, 8),
     "contradiction_recall_at_5": (2, 2),
     "notation_variant_recall_at_5": (2, 2),
     "renamed_known_result_recall_at_10": (4, 4),
-    "duplicate_rate_at_5": (1, 54),
+    "duplicate_rate_at_5": (1, 50),
 }
 MEASURED_GATE_STATUS = {
     "necessary_lemma_recall_at_5": "pass",
-    "applicability_precision_at_5": "fail",
+    "applicability_precision_at_5": "pass",
     "contradiction_recall_at_5": "pass",
     "notation_variant_recall_at_5": "pass",
     "renamed_known_result_recall_at_10": "pass",
     "duplicate_rate_at_5_maximum": "pass",
     "external_spend_usd": "pass",
 }
-MEASURED_GATE_SUMMARY = {"pass": 6, "fail": 1, "undetermined": 0, "overall": "not_pass"}
+MEASURED_GATE_SUMMARY = {"pass": 7, "fail": 0, "undetermined": 0, "overall": "pass"}
 
 # Measured lexical-baseline values on the same extended fixtures, for the
 # "may not worsen a metric the baseline already met" comparison.
 BASELINE_METRICS = {
     "necessary_lemma_recall_at_5": 1.0,
-    "applicability_precision_at_5": 0.6,
+    "applicability_precision_at_5": 8 / 14,
     "contradiction_recall_at_5": 1.0,
     "notation_variant_recall_at_5": 1.0,
     "renamed_known_result_recall_at_10": 0.0,
-    "duplicate_rate_at_5": 1 / 50,
+    "duplicate_rate_at_5": 1 / 61,
 }
 
 MEASURED_ORDERED_IDS = {
     "lemma-compactness": (
         "compactness-lemma", "spectral-lemma", "banach-notation",
-        "separation-lemma", "finite-dimensional-spectral",
+        "finite-dimensional-spectral", "renamed-uniform-bound-result",
     ),
-    "lemma-spectral": (
-        "spectral-lemma", "finite-dimensional-spectral", "unbounded-spectral-mismatch",
-    ),
+    "lemma-spectral": ("spectral-lemma", "finite-dimensional-spectral"),
     "lemma-separation": ("separation-lemma", "compactness-lemma", "renamed-cover-result"),
-    "applicability-spectral": (
-        "finite-dimensional-spectral", "spectral-lemma",
-        "unbounded-spectral-mismatch", "topology-distractor",
-    ),
+    "applicability-spectral": ("finite-dimensional-spectral", "spectral-lemma"),
     "applicability-certificate": (
         "duplicate-certificate-a", "duplicate-certificate-b",
         "renamed-maximal-chain-result", "renamed-uniform-bound-result",
-        "optimization-distractor",
     ),
     "applicability-compactness": (
         "compactness-lemma", "finite-dimensional-spectral", "separation-lemma",
-        "topology-distractor", "unbounded-spectral-mismatch",
+        "hypothesis-free-supremum",
     ),
     "applicability-selfadjoint": (
-        "spectral-lemma", "unbounded-spectral-mismatch",
-        "finite-dimensional-spectral", "renamed-uniform-bound-result",
+        "spectral-lemma", "finite-dimensional-spectral",
+        "renamed-uniform-bound-result",
+    ),
+    "applicability-psd-cone": ("psd-notation",),
+    "applicability-supremum": (
+        "hypothesis-free-supremum", "separation-lemma", "compactness-lemma",
+        "renamed-cover-result", "finite-dimensional-spectral",
     ),
     "contradiction-boundary": (
         "boundary-contradiction", "monotonicity-contradiction", "renamed-cover-result",
     ),
     "contradiction-monotonicity": ("monotonicity-contradiction", "boundary-contradiction"),
     "notation-banach": ("banach-notation", "boundary-contradiction"),
-    "notation-psd": (
-        "psd-notation", "finite-dimensional-spectral", "unbounded-spectral-mismatch",
-    ),
+    "notation-psd": ("psd-notation", "finite-dimensional-spectral"),
     "renamed-uniform-bound": (
         "renamed-uniform-bound-result", "banach-notation",
-        "finite-dimensional-spectral", "unbounded-spectral-mismatch",
-        "topology-distractor",
+        "finite-dimensional-spectral",
     ),
     "renamed-maximal-chain": (
-        "renamed-maximal-chain-result", "separation-lemma", "spectral-lemma",
-        "compactness-lemma",
+        "renamed-maximal-chain-result", "separation-lemma", "hypothesis-free-supremum",
+        "spectral-lemma", "compactness-lemma",
     ),
     "renamed-container-count": ("renamed-container-count-result", "renamed-cover-result"),
-    "renamed-known": (
-        "renamed-cover-result", "finite-dimensional-spectral",
-        "unbounded-spectral-mismatch", "topology-distractor",
-    ),
+    "renamed-known": ("renamed-cover-result", "finite-dimensional-spectral"),
 }
-MEASURED_DEMOTED_IDS = {
+MEASURED_EXCLUDED_IDS = {
     "lemma-compactness": ("topology-distractor", "unbounded-spectral-mismatch"),
-    "lemma-spectral": (),
+    "lemma-spectral": ("unbounded-spectral-mismatch",),
     "lemma-separation": (),
     "applicability-spectral": ("topology-distractor", "unbounded-spectral-mismatch"),
     "applicability-certificate": ("optimization-distractor",),
     "applicability-compactness": ("topology-distractor", "unbounded-spectral-mismatch"),
-    "applicability-selfadjoint": (),
+    "applicability-selfadjoint": ("unbounded-spectral-mismatch",),
+    "applicability-psd-cone": ("residual-bound-gap", "topology-distractor"),
+    "applicability-supremum": ("topology-distractor", "unbounded-spectral-mismatch"),
     "contradiction-boundary": (),
-    "contradiction-monotonicity": (),
+    "contradiction-monotonicity": ("residual-bound-gap",),
     "notation-banach": (),
-    "notation-psd": ("unbounded-spectral-mismatch",),
-    "renamed-uniform-bound": ("topology-distractor",),
+    "notation-psd": ("residual-bound-gap", "unbounded-spectral-mismatch"),
+    "renamed-uniform-bound": ("topology-distractor", "unbounded-spectral-mismatch"),
     "renamed-maximal-chain": (),
     "renamed-container-count": (),
-    "renamed-known": ("topology-distractor",),
+    "renamed-known": ("topology-distractor", "unbounded-spectral-mismatch"),
 }
 # Alias entries the frozen query set exercises, and the query each one serves.
 MEASURED_EXERCISED_ALIASES = {
@@ -219,6 +231,29 @@ MEASURED_UNEXERCISED_ALIASES = (
     "tychonoff-product-theorem",
 )
 MEASURED_CONTRADICTION_GOLDS = ("boundary-contradiction", "monotonicity-contradiction")
+# The four non-applicable corpus documents. The compositional rule is measured
+# against this set; no SINGLE vocabulary entry may be coextensive with it.
+MEASURED_NON_APPLICABLE_DOCUMENTS = (
+    "optimization-distractor",
+    "residual-bound-gap",
+    "topology-distractor",
+    "unbounded-spectral-mismatch",
+)
+# ADR-0032's two adversarial controls, authored against the principles rather
+# than against the vocabularies.
+GENERALIZATION_CONTROL = "residual-bound-gap"
+OVER_EXCLUSION_CONTROL = "hypothesis-free-supremum"
+# The ADR-0031 enumerated self-disclaiming table, retained here as a control
+# rather than as a signal: the compositional rule must catch a document this
+# list misses.
+ADR_0031_ENUMERATED_CUES = (
+    "does not provide",
+    "inapplicable",
+    "insufficient",
+    "may look",
+    "states no",
+    "as stated",
+)
 
 _REPORT_CACHE: dict[bool, dict] = {}
 
@@ -325,99 +360,490 @@ class Phase4CLabelSeparationTests(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
-# 2, 3, 4, 5. The hedging signal
+# 2, 3, 4, 5. The self-disclaimer signal
 # --------------------------------------------------------------------------
 
 
-class Phase4CHedgeIsDemotionOnlyTests(unittest.TestCase):
-    def setUp(self) -> None:
-        self.with_hedge = frozen_report()
-        self.without_hedge = evaluate_hybrid(FIXTURES, self_disclaiming_cues=())
+def _fires_on(**overrides) -> set[str]:
+    """Corpus-wide audit: which documents the composition fires on.
 
-    def test_hedge_never_raises_a_fused_score_over_every_query(self) -> None:
-        hedged = {item["id"]: item for item in self.with_hedge["operational"]["results"]}
-        plain = {item["id"]: item for item in self.without_hedge["operational"]["results"]}
-        self.assertEqual(len(hedged), BOUNDS.query_count)
-        self.assertEqual(set(hedged), set(plain))
+    Query-independent, so it measures the vocabularies rather than the query
+    set. Each document is probed with its own text as the query, which makes
+    the "the query reached this document" conservatism rule vacuously true and
+    isolates the composition.
+    """
+
+    documents = load_corpus(FIXTURES)
+    signal = SelfDisclaimerSignal(documents, **overrides)
+    fired: set[str] = set()
+    for document in documents:
+        verdict = signal.verdicts(document.text, [document.identifier])[0]
+        if verdict.excluded:
+            fired.add(document.identifier)
+    return fired
+
+
+def _gold_ids(entry: dict) -> set[str]:
+    """The documents this query must retrieve.
+
+    For an applicability query that is `applicable_ids`: the other relevant
+    documents are topically relevant and deliberately not applicable, and
+    removing them is the whole point of the signal. For every other category it
+    is `relevant_ids`.
+    """
+
+    if entry.get("applicable_ids") is not None:
+        return set(entry["applicable_ids"])
+    return set(entry["relevant_ids"])
+
+
+class _StubDocument:
+    """The minimal shape `SelfDisclaimerSignal` reads: an id and its text.
+
+    Used only to make a single sentence its own retrieval unit, so ADR-0031's
+    sentence scope can be measured against ADR-0032's document scope.
+    """
+
+    def __init__(self, identifier: str, text: str) -> None:
+        self.identifier = identifier
+        self.text = text
+
+
+class Phase4CExclusionInvariantTests(unittest.TestCase):
+    """ADR-0032's three invariants, as properties over all seventeen queries."""
+
+    def setUp(self) -> None:
+        self.with_signal = frozen_report()
+        self.without_signal = evaluate_hybrid(FIXTURES, absence_operators=())
+
+    def test_exclusion_never_changes_a_score_over_every_query(self) -> None:
+        # Invariant 1. Two independent checks: the fused score equals the
+        # pre-score inside the frozen run, and it equals the score the same
+        # document gets when the signal is switched off entirely.
+        excluded = {
+            item["id"]: item for item in self.with_signal["operational"]["results"]
+        }
+        plain = {
+            item["id"]: item for item in self.without_signal["operational"]["results"]
+        }
+        self.assertEqual(len(excluded), BOUNDS.query_count)
+        self.assertEqual(set(excluded), set(plain))
         compared = 0
-        for query_id, hedged_entry in hedged.items():
-            hedged_scores = {
-                hit["document_id"]: hit["fused_score"] for hit in hedged_entry["hits"]
-            }
+        for query_id, entry in excluded.items():
             plain_scores = {
                 hit["document_id"]: hit["fused_score"] for hit in plain[query_id]["hits"]
             }
-            self.assertEqual(set(hedged_scores), set(plain_scores), query_id)
-            for document_id, score in hedged_scores.items():
-                with self.subTest(query=query_id, document=document_id):
-                    self.assertLessEqual(score, plain_scores[document_id])
+            observed = {hit["document_id"]: hit["fused_score"] for hit in entry["hits"]}
+            self.assertEqual(set(observed), set(plain_scores), query_id)
+            for hit in entry["hits"]:
+                with self.subTest(query=query_id, document=hit["document_id"]):
+                    self.assertEqual(hit["fused_score"], hit["pre_score"])
+                    self.assertEqual(
+                        hit["fused_score"], plain_scores[hit["document_id"]]
+                    )
                 compared += 1
         self.assertGreater(compared, 0)
 
-    def test_hedge_never_introduces_a_document_over_every_query(self) -> None:
-        hedged = result_by_id(self.with_hedge)
-        plain = result_by_id(self.without_hedge)
-        for query_id, entry in hedged.items():
+    def test_excluded_hits_are_scored_exactly_like_retained_hits(self) -> None:
+        # The invariant has to hold for the EXCLUDED documents too, or the
+        # signal would be a penalty wearing a boolean.
+        semantic = result_by_id(self.with_signal)
+        operational = {
+            item["id"]: item for item in self.with_signal["operational"]["results"]
+        }
+        observed = 0
+        for query_id, entry in semantic.items():
+            scores = {
+                hit["document_id"]: hit for hit in operational[query_id]["hits"]
+            }
+            for document_id in entry["excluded_ids"]:
+                hit = scores[document_id]
+                with self.subTest(query=query_id, document=document_id):
+                    self.assertEqual(hit["fused_score"], hit["pre_score"])
+                observed += 1
+        self.assertGreater(observed, 0)
+
+    def test_exclusion_preserves_relative_order_among_retained_documents(self) -> None:
+        # Invariant 2: the retained subsequence of the fused ordering equals the
+        # signal-free ordering restricted to the retained ids.
+        excluded = result_by_id(self.with_signal)
+        plain = result_by_id(self.without_signal)
+        for query_id, entry in excluded.items():
+            retained = [
+                identifier
+                for identifier in entry["fused_candidate_ids"]
+                if identifier not in set(entry["excluded_ids"])
+            ]
+            expected = [
+                identifier
+                for identifier in plain[query_id]["fused_candidate_ids"]
+                if identifier not in set(entry["excluded_ids"])
+            ]
+            with self.subTest(query=query_id):
+                self.assertEqual(retained, expected)
+                self.assertEqual(entry["ordered_ids"], retained[: entry["top_k"]])
+
+    def test_exclusion_may_move_a_retained_document_into_the_top_k(self) -> None:
+        # ADR-0032 states invariant 2 is deliberately weaker than ADR-0031's
+        # "never promotes": a retained document CAN enter the cutoff because
+        # something above it left. This is the measured demonstration, and it is
+        # why the duplicate gate is re-measured rather than argued.
+        excluded = result_by_id(self.with_signal)
+        plain = result_by_id(self.without_signal)
+        promoted: dict[str, list[str]] = {}
+        for query_id, entry in excluded.items():
+            gained = [
+                identifier
+                for identifier in entry["ordered_ids"]
+                if identifier not in plain[query_id]["ordered_ids"]
+            ]
+            if gained:
+                promoted[query_id] = gained
+        self.assertTrue(promoted, "no retained document entered a cutoff window")
+        for query_id, gained in promoted.items():
+            with self.subTest(query=query_id):
+                # Whatever entered was retained, and something left above it.
+                self.assertTrue(set(gained) <= set(excluded[query_id]["ordered_ids"]))
+                self.assertTrue(excluded[query_id]["excluded_ids"])
+
+    def test_exclusion_never_introduces_a_document_over_every_query(self) -> None:
+        # Invariant 3.
+        excluded = result_by_id(self.with_signal)
+        plain = result_by_id(self.without_signal)
+        for query_id, entry in excluded.items():
             with self.subTest(query=query_id):
                 self.assertEqual(
                     set(entry["fused_candidate_ids"]),
                     set(plain[query_id]["fused_candidate_ids"]),
                 )
                 self.assertLessEqual(
-                    set(entry["demoted_ids"]), set(entry["fused_candidate_ids"])
+                    set(entry["excluded_ids"]), set(entry["fused_candidate_ids"])
                 )
                 self.assertLessEqual(
-                    set(entry["demoted_ids"]),
+                    set(entry["excluded_ids"]),
                     set(entry["lexical_candidate_ids"])
                     | set(entry["alias_introduced_ids"]),
                 )
+                self.assertLessEqual(
+                    set(entry["ordered_ids"]), set(entry["fused_candidate_ids"])
+                )
 
-    def test_fusion_rejects_a_hedge_verdict_outside_the_candidate_set(self) -> None:
-        from math_research.phase4c.ports import HedgeVerdict, LexicalCandidate
+    def test_fusion_rejects_a_verdict_outside_the_candidate_set(self) -> None:
+        from math_research.phase4c.ports import DisclaimerVerdict, LexicalCandidate
 
         with self.assertRaises(Phase4CValidationError):
             fusion_module.fuse(
                 [LexicalCandidate(document_id="a", bm25=-1.0)],
                 [],
                 [
-                    HedgeVerdict(
+                    DisclaimerVerdict(
                         document_id="intruder",
-                        demoted=True,
-                        self_disclaiming_cues=("insufficient",),
+                        excluded=True,
+                        absence_operators=("is insufficient",),
+                        evidence_nouns=("bound",),
                         object_level_cues=(),
-                        scoped_query_terms=("x",),
+                        matched_query_terms=("x",),
                     )
                 ],
                 alias_phrase_points=ALIAS_PHRASE_POINTS,
             )
 
-    def test_demoted_hits_rank_below_every_non_demoted_hit(self) -> None:
-        for entry in self.with_hedge["results"]:
-            demoted_flags = [hit["demoted"] for hit in entry["hits"]]
-            with self.subTest(query=entry["id"]):
-                # Non-demoted hits all precede demoted hits: the flag sequence
-                # is monotone.
-                self.assertEqual(demoted_flags, sorted(demoted_flags))
-
-
-class Phase4CCueClassTests(unittest.TestCase):
-    def test_cue_classes_are_disjoint(self) -> None:
-        self.assertEqual(set(SELF_DISCLAIMING_CUES) & set(OBJECT_LEVEL_CUES), set())
-        self.assertEqual(len(set(SELF_DISCLAIMING_CUES)), len(SELF_DISCLAIMING_CUES))
-        self.assertEqual(len(set(OBJECT_LEVEL_CUES)), len(OBJECT_LEVEL_CUES))
-
-    def test_overlapping_cue_classes_are_rejected(self) -> None:
-        documents = load_corpus(FIXTURES)
+    def test_the_disclaimer_signal_rejects_an_unknown_document(self) -> None:
+        signal = SelfDisclaimerSignal(load_corpus(FIXTURES))
         with self.assertRaises(Phase4CValidationError):
-            HedgingScopeSignal(
-                documents,
-                self_disclaiming_cues=("fails",),
-                object_level_cues=("fails",),
-            )
+            signal.verdicts("compact", ["not-a-corpus-document"])
 
-    def test_object_level_cues_cannot_cause_a_demotion(self) -> None:
-        # Emptying the object-level table changes neither the fused ordering
-        # nor a single demotion, so object-level cues have no ordering effect.
+    def test_fusion_carries_no_penalty_term_at_all(self) -> None:
+        # ADR-0032 deletes the penalty rather than retaining it at zero: a term
+        # that can no longer change an outcome is dead complexity.
+        self.assertFalse(hasattr(fusion_module, "HEDGE_PENALTY_RULE"))
+        self.assertNotIn("HEDGE_PENALTY_RULE", fusion_module.__all__)
+        fields = set(fusion_module.FusedHit.__dataclass_fields__)
+        self.assertEqual(
+            fields,
+            {
+                "document_id",
+                "signals",
+                "lexical_relevance",
+                "alias_points",
+                "alias_entry_ids",
+                "alias_matched_phrases",
+                "pre_score",
+                "fused_score",
+                "excluded",
+                "absence_operators",
+                "evidence_nouns",
+                "object_level_cues",
+                "matched_query_terms",
+            },
+        )
+        for removed in ("hedge_penalty", "demoted", "self_disclaiming_cues", "scoped_query_terms"):
+            self.assertNotIn(removed, fields)
+        for entry in self.with_signal["results"]:
+            for hit in entry["hits"]:
+                for removed in ("hedge_penalty", "demoted", "self_disclaiming_cues"):
+                    self.assertNotIn(removed, hit)
+        for entry in self.with_signal["operational"]["results"]:
+            for hit in entry["hits"]:
+                self.assertNotIn("hedge_penalty", hit)
+        self.assertEqual(
+            self.with_signal["declared_method"]["fusion"]["composition"],
+            "fused_score = (-bm25) + alias_points",
+        )
+
+    def test_the_declared_ordering_covers_excluded_hits_too(self) -> None:
+        # Exclusion marks a hit; it does not move it. The whole candidate list,
+        # excluded members included, is ordered by the declared key.
+        operational = {
+            item["id"]: item for item in self.with_signal["operational"]["results"]
+        }
+        for entry in self.with_signal["results"]:
+            scores = {
+                hit["document_id"]: hit["fused_score"]
+                for hit in operational[entry["id"]]["hits"]
+            }
+            expected = sorted(
+                entry["fused_candidate_ids"],
+                key=lambda document_id: (-scores[document_id], document_id),
+            )
+            with self.subTest(query=entry["id"]):
+                self.assertEqual(entry["fused_candidate_ids"], expected)
+        self.assertEqual(
+            self.with_signal["declared_method"]["fusion"]["ordering"],
+            "fused_score DESC, document_id ASC",
+        )
+
+    def test_every_excluded_document_stays_fully_in_the_report(self) -> None:
+        # Nothing is filtered from the report: an excluded document keeps its
+        # hit, its operator, its noun, and its matched query terms.
+        observed = 0
+        for entry in self.with_signal["results"]:
+            hits = {hit["document_id"]: hit for hit in entry["hits"]}
+            self.assertEqual(list(hits), entry["fused_candidate_ids"])
+            for document_id in entry["excluded_ids"]:
+                with self.subTest(query=entry["id"], document=document_id):
+                    self.assertIn(document_id, entry["fused_candidate_ids"])
+                    self.assertNotIn(document_id, entry["ordered_ids"])
+                    hit = hits[document_id]
+                    self.assertTrue(hit["excluded"])
+                    self.assertTrue(hit["absence_operators"])
+                    self.assertTrue(hit["evidence_nouns"])
+                    self.assertTrue(hit["matched_query_terms"])
+                observed += 1
+        self.assertGreater(observed, 0)
+
+
+class Phase4CCompositionalRuleTests(unittest.TestCase):
+    def test_neither_vocabulary_fires_alone(self) -> None:
+        # The operator vocabulary carries subjecthood and the noun vocabulary
+        # carries evidentiality. Presence of one half excludes nothing.
+        self.assertEqual(_fires_on(absence_operators=()), set())
+        self.assertEqual(_fires_on(evidence_nouns=()), set())
+        for overrides in ({"absence_operators": ()}, {"evidence_nouns": ()}):
+            report = evaluate_hybrid(FIXTURES, **overrides)
+            with self.subTest(**overrides):
+                for entry in report["results"]:
+                    self.assertEqual(entry["excluded_ids"], [])
+                    for hit in entry["hits"]:
+                        self.assertFalse(hit["excluded"])
+
+    def test_emptying_either_vocabulary_restores_the_pure_lexical_ordering(self) -> None:
+        for overrides in ({"absence_operators": ()}, {"evidence_nouns": ()}):
+            report = evaluate_hybrid(
+                FIXTURES, alias_signal=EmptyAliasSignal(), **overrides
+            )
+            for entry in report["results"]:
+                with self.subTest(query=entry["id"], **overrides):
+                    self.assertEqual(entry["excluded_ids"], [])
+                    self.assertEqual(
+                        entry["ordered_ids"],
+                        entry["lexical_candidate_ids"][: entry["top_k"]],
+                    )
+
+    def test_the_vocabularies_are_the_only_thing_that_changes_the_ordering(self) -> None:
+        plain = result_by_id(
+            evaluate_hybrid(
+                FIXTURES, absence_operators=(), alias_signal=EmptyAliasSignal()
+            )
+        )
+        composed = result_by_id(evaluate_hybrid(FIXTURES, alias_signal=EmptyAliasSignal()))
+        changed = sorted(
+            query_id
+            for query_id, entry in composed.items()
+            if entry["ordered_ids"] != plain[query_id]["ordered_ids"]
+        )
+        self.assertGreater(len(changed), 0)
+        for query_id in changed:
+            with self.subTest(query=query_id):
+                # An ordering change implies an exclusion. Nothing else moved.
+                self.assertTrue(composed[query_id]["excluded_ids"])
+
+    def test_no_single_absence_operator_is_coextensive_with_the_target_set(self) -> None:
+        target = set(MEASURED_NON_APPLICABLE_DOCUMENTS)
+        self.assertEqual(
+            target,
+            {
+                document.identifier
+                for document in load_corpus(FIXTURES)
+                if document.applicability != "applicable"
+            },
+        )
+        # The composition of the two full vocabularies does land on the target
+        # set. No single operator does, so the gate measures the rule and not a
+        # list authored against the corpus.
+        self.assertEqual(_fires_on(), target)
+        self.assertGreaterEqual(len(ABSENCE_OPERATORS), 6)
+        for operator in ABSENCE_OPERATORS:
+            fired = _fires_on(absence_operators=(operator,))
+            with self.subTest(operator=render_operator(operator)):
+                self.assertNotEqual(fired, target)
+                self.assertLess(len(fired), len(target))
+
+    def test_no_single_evidence_noun_is_coextensive_with_the_target_set(self) -> None:
+        target = set(MEASURED_NON_APPLICABLE_DOCUMENTS)
+        self.assertGreaterEqual(len(EVIDENCE_NOUNS), 10)
+        for noun in EVIDENCE_NOUNS:
+            fired = _fires_on(evidence_nouns=(noun,))
+            with self.subTest(noun=noun):
+                self.assertNotEqual(fired, target)
+                self.assertLess(len(fired), len(target))
+
+    def test_both_halves_must_share_one_sentence(self) -> None:
+        # Detection is per sentence even though scope is the document. A frame
+        # whose two parts straddle a sentence boundary composes nothing, and an
+        # operator in one sentence with a noun in another composes nothing.
+        straddling = "No such object exists. A proof is given in the appendix."
+        joined = "No proof of the claim is given here."
+        for text in (straddling, joined):
+            self.assertIn("proof", text_module.tokens(text))
+            self.assertIn("given", text_module.tokens(text))
+        self.assertEqual(len(text_module.sentences(straddling)), 2)
+        self.assertEqual(len(text_module.sentences(joined)), 1)
+        probe_documents = [
+            _StubDocument("straddling", straddling),
+            _StubDocument("joined", joined),
+        ]
+        signal = SelfDisclaimerSignal(probe_documents)
+        verdicts = {
+            item.document_id: item
+            for item in signal.verdicts("proof claim object", ["straddling", "joined"])
+        }
+        self.assertFalse(verdicts["straddling"].excluded)
+        self.assertTrue(verdicts["joined"].excluded)
+        self.assertEqual(verdicts["joined"].absence_operators, ("no ... is given",))
+        # And the frozen corpus case: the two halves that DO fire share one
+        # sentence in `residual-bound-gap`.
+        documents = load_corpus(FIXTURES)
+        gap = next(
+            document
+            for document in documents
+            if document.identifier == GENERALIZATION_CONTROL
+        )
+        firing = [
+            sentence
+            for sentence in text_module.sentences(gap.text)
+            if "no proof" in sentence and "is given" in sentence
+        ]
+        self.assertEqual(len(firing), 1)
+        verdict = SelfDisclaimerSignal(documents).verdicts(gap.text, [gap.identifier])[0]
+        self.assertTrue(verdict.excluded)
+
+    def test_the_frames_have_no_gap_width_parameter(self) -> None:
+        # A tuned gap width would be exactly the free parameter this signal is
+        # built to avoid. The sentence is the only bound.
+        self.assertEqual(disclaimer_module.FRAME_GAP_BOUND, "sentence")
+        declared = frozen_report()["declared_method"]["disclaimer_signal"]
+        self.assertEqual(declared["frame_gap_bound"], "sentence")
+        source = (PACKAGE_DIR / "disclaimer.py").read_text(encoding="utf-8")
+        for forbidden in ("max_gap", "gap_width", "max_distance", "window_size"):
+            self.assertNotIn(forbidden, source)
+        for operator in ABSENCE_OPERATORS:
+            with self.subTest(operator=render_operator(operator)):
+                self.assertIn(len(operator), (1, 2))
+                self.assertTrue(all(isinstance(part, str) for part in operator))
+
+    def test_there_is_no_cue_count_threshold(self) -> None:
+        self.assertIsNone(disclaimer_module.CUE_COUNT_THRESHOLD)
+        declared = frozen_report()["declared_method"]["disclaimer_signal"]
+        self.assertIsNone(declared["cue_count_threshold"])
+        self.assertEqual(declared["direction"], "exclusion_only")
+        self.assertEqual(
+            declared["detection_rule"],
+            "absence-operator-and-evidence-noun-co-occur-in-one-sentence",
+        )
+        self.assertEqual(
+            declared["scope_rule"],
+            "detected-per-sentence-applied-to-the-whole-single-claim-unit",
+        )
+        self.assertEqual(declared["scope_unit"], "single-claim-document")
+        self.assertEqual(
+            declared["composition"], "operator AND evidence_noun, in one sentence"
+        )
+
+    def test_the_vocabularies_are_disjoint_and_overlap_is_rejected(self) -> None:
+        documents = load_corpus(FIXTURES)
+        self.assertEqual(set(EVIDENCE_NOUNS) & set(OBJECT_LEVEL_CUES), set())
+        self.assertEqual(len(set(EVIDENCE_NOUNS)), len(EVIDENCE_NOUNS))
+        self.assertEqual(len(set(OBJECT_LEVEL_CUES)), len(OBJECT_LEVEL_CUES))
+        self.assertEqual(len(set(ABSENCE_OPERATORS)), len(ABSENCE_OPERATORS))
+        with self.assertRaises(Phase4CValidationError):
+            SelfDisclaimerSignal(
+                documents, evidence_nouns=("fails",), object_level_cues=("fails",)
+            )
+        # An operator may not smuggle an evidence noun into its own phrase,
+        # which would collapse the composition into a single list.
+        with self.assertRaises(Phase4CValidationError):
+            SelfDisclaimerSignal(documents, absence_operators=(("states no proof",),))
+        for bad in ((), ("no", "is", "given")):
+            with self.subTest(operator=bad), self.assertRaises(Phase4CValidationError):
+                SelfDisclaimerSignal(documents, absence_operators=(bad,))
+
+    def test_document_scope_is_what_reaches_the_adr_0031_residual(self) -> None:
+        """The measured cause of prediction 1, asserted rather than asserted-of.
+
+        On `applicability-selfadjoint` the disclaiming sentence of
+        `unbounded-spectral-mismatch` shares no token with the query and the
+        matched terms sit in a preceding sentence. ADR-0031's sentence scope
+        therefore could not fire; ADR-0032's document scope does.
+        """
+
+        documents = load_corpus(FIXTURES)
+        signal = SelfDisclaimerSignal(documents)
+        queries, _ = load_gold(FIXTURES, documents)
+        query = next(
+            item for item in queries if item.identifier == "applicability-selfadjoint"
+        )
+        verdict = signal.verdicts(query.query, ["unbounded-spectral-mismatch"])[0]
+        self.assertTrue(verdict.excluded)
+        self.assertTrue(verdict.matched_query_terms)
+        document = next(
+            item for item in documents if item.identifier == "unbounded-spectral-mismatch"
+        )
+        # Emulate ADR-0031's sentence scope by making each sentence its own
+        # retrieval unit. Under that scope nothing fires.
+        sentence_scope = [
+            SelfDisclaimerSignal(
+                [_StubDocument(f"sentence-{index}", sentence)]
+            ).verdicts(query.query, [f"sentence-{index}"])[0]
+            for index, sentence in enumerate(text_module.sentences(document.text))
+        ]
+        self.assertGreater(len(sentence_scope), 1)
+        self.assertFalse(
+            any(item.excluded for item in sentence_scope),
+            "sentence scope would have fired, so this is not the ADR-0031 residual",
+        )
+        # The composition does fire in one sentence; that sentence just carries
+        # no query term, which is exactly why sentence scope missed it.
+        self.assertTrue(
+            any(item.absence_operators and item.evidence_nouns for item in sentence_scope)
+        )
+
+
+class Phase4CSubjecthoodTests(unittest.TestCase):
+    def test_object_level_cues_cannot_cause_an_exclusion(self) -> None:
+        # Emptying the object-level vocabulary changes neither the fused
+        # ordering nor a single exclusion, so object-level cues have no
+        # ordering effect at all.
         neutralised = evaluate_hybrid(FIXTURES, object_level_cues=())
         frozen = result_by_id(frozen_report())
         for entry in neutralised["results"]:
@@ -426,142 +852,219 @@ class Phase4CCueClassTests(unittest.TestCase):
                     entry["ordered_ids"], frozen[entry["id"]]["ordered_ids"]
                 )
                 self.assertEqual(
-                    entry["demoted_ids"], frozen[entry["id"]]["demoted_ids"]
+                    entry["excluded_ids"], frozen[entry["id"]]["excluded_ids"]
                 )
+        self.assertEqual(neutralised["metrics"], frozen_report()["metrics"])
 
-    def test_a_document_with_only_object_level_cues_is_never_demoted(self) -> None:
+    def test_a_document_with_only_object_level_cues_is_never_excluded(self) -> None:
         observed = 0
         for entry in frozen_report()["results"]:
             for hit in entry["hits"]:
-                if hit["object_level_cues"] and not hit["self_disclaiming_cues"]:
+                if hit["object_level_cues"] and not hit["absence_operators"]:
                     observed += 1
                     with self.subTest(query=entry["id"], document=hit["document_id"]):
-                        self.assertFalse(hit["demoted"])
+                        self.assertFalse(hit["excluded"])
         self.assertGreater(observed, 0)
 
-    def test_neither_contradiction_gold_is_ever_demoted(self) -> None:
+    def test_neither_contradiction_gold_is_ever_excluded(self) -> None:
         for entry in frozen_report()["results"]:
             for gold in MEASURED_CONTRADICTION_GOLDS:
                 with self.subTest(query=entry["id"], gold=gold):
-                    self.assertNotIn(gold, entry["demoted_ids"])
+                    self.assertNotIn(gold, entry["excluded_ids"])
+        self.assertEqual(
+            _fires_on() & set(MEASURED_CONTRADICTION_GOLDS), set()
+        )
 
     def test_boundary_contradiction_carries_object_level_cues_in_query_scope(self) -> None:
         # This is the exact case a naive negation signal breaks: an applicable
         # contradiction gold whose matched query terms share a sentence with
         # `fails`, `violates`, and `counterexample`.
         documents = load_corpus(FIXTURES)
-        signal = HedgingScopeSignal(documents)
+        signal = SelfDisclaimerSignal(documents)
         queries, _ = load_gold(FIXTURES, documents)
         query = next(
             item for item in queries if item.identifier == "contradiction-boundary"
         )
         verdict = signal.verdicts(query.query, ["boundary-contradiction"])[0]
-        self.assertFalse(verdict.demoted)
-        self.assertEqual(verdict.self_disclaiming_cues, ())
+        self.assertFalse(verdict.excluded)
+        self.assertEqual(verdict.absence_operators, ())
+        self.assertEqual(verdict.evidence_nouns, ())
         self.assertEqual(
             set(verdict.object_level_cues), {"fails", "violates", "counterexample"}
         )
-        self.assertTrue(verdict.scoped_query_terms == ())
+        self.assertTrue(verdict.matched_query_terms)
+        cue_sentences = [
+            sentence
+            for sentence in text_module.sentences(
+                next(
+                    document.text
+                    for document in documents
+                    if document.identifier == "boundary-contradiction"
+                )
+            )
+            if set(text_module.tokens(sentence)) & set(text_module.tokens(query.query))
+            and set(text_module.tokens(sentence)) & set(OBJECT_LEVEL_CUES)
+        ]
+        self.assertTrue(cue_sentences)
 
-    def test_the_excluded_cues_stay_excluded(self) -> None:
-        # `without` and bare `no` are mathematical content, not disclaimers.
-        # Bare `no` false-positives on an applicable renamed gold, which this
-        # test demonstrates rather than asserts.
-        for excluded in ("without", "no"):
-            self.assertNotIn(excluded, SELF_DISCLAIMING_CUES)
-            self.assertNotIn(excluded, OBJECT_LEVEL_CUES)
+    def test_uses_no_and_bare_no_are_not_operators_because_they_exclude_a_gold(
+        self,
+    ) -> None:
+        """Subjecthood, demonstrated rather than asserted.
+
+        `the argument uses no compactness hypothesis` has the mathematics as its
+        subject, and a missing hypothesis there is a strength. Admitting either
+        `uses no` or bare `no` as an absence operator excludes
+        `hypothesis-free-supremum`, an applicable gold. That is the measured
+        reason both stay out, not a listed exception.
+        """
+
+        for candidate in (("uses no",), ("no",)):
+            fired = _fires_on(absence_operators=(candidate,))
+            with self.subTest(operator=render_operator(candidate)):
+                self.assertIn(OVER_EXCLUSION_CONTROL, fired)
+                self.assertNotIn(candidate, ABSENCE_OPERATORS)
+        self.assertNotIn(OVER_EXCLUSION_CONTROL, _fires_on())
+
+    def test_the_adr_0031_operator_exclusions_stay_excluded(self) -> None:
+        # `without` states a hypothesis; `may look` has the score as its
+        # subject; `as stated` is not about supply at all. None is an operator,
+        # and each would fire somewhere the composition should not.
+        rendered = {render_operator(operator) for operator in ABSENCE_OPERATORS}
+        for excluded in ("without", "may look", "as stated", "no", "uses no"):
+            with self.subTest(candidate=excluded):
+                self.assertNotIn(excluded, rendered)
+        self.assertIn("does not provide", rendered)
+        self.assertIn("no ... is given", rendered)
+        self.assertNotIn("no", set(EVIDENCE_NOUNS) | set(OBJECT_LEVEL_CUES))
+
+
+class Phase4CGoldSafetyTests(unittest.TestCase):
+    def test_no_gold_is_excluded_in_any_category(self) -> None:
+        # ADR-0032 prediction 2, over EVERY query and EVERY category, not just
+        # applicability. A gold is `applicable_ids` for an applicability query
+        # and `relevant_ids` everywhere else.
+        checked = 0
+        for entry in frozen_report()["results"]:
+            gold = _gold_ids(entry)
+            self.assertTrue(gold)
+            with self.subTest(query=entry["id"], category=entry["category"]):
+                self.assertEqual(gold & set(entry["excluded_ids"]), set())
+                for hit in entry["hits"]:
+                    if hit["document_id"] in gold:
+                        self.assertFalse(hit["excluded"])
+            checked += 1
+        self.assertEqual(checked, BOUNDS.query_count)
+        for category, count in CATEGORY_COUNTS.items():
+            observed = sum(
+                1
+                for entry in frozen_report()["results"]
+                if entry["category"] == category
+            )
+            with self.subTest(category=category):
+                self.assertEqual(observed, count)
+
+    def test_only_non_applicable_documents_are_ever_excluded(self) -> None:
+        excluded = {
+            document_id
+            for entry in frozen_report()["results"]
+            for document_id in entry["excluded_ids"]
+        }
+        self.assertEqual(excluded, set(MEASURED_NON_APPLICABLE_DOCUMENTS))
+        applicability = {
+            document.identifier: document.applicability
+            for document in load_corpus(FIXTURES)
+        }
+        for document_id in excluded:
+            with self.subTest(document=document_id):
+                self.assertNotEqual(applicability[document_id], "applicable")
+
+    def test_the_over_exclusion_control_is_never_excluded_by_any_query(self) -> None:
+        """ADR-0032 prediction 4, the least certain one.
+
+        `hypothesis-free-supremum` states an absence claim about a mathematical
+        object -- `the argument uses no compactness hypothesis` -- and is
+        applicable. If document scope were too coarse this is where it would
+        show.
+        """
+
         documents = load_corpus(FIXTURES)
-        container = next(
+        control = next(
             document
             for document in documents
-            if document.identifier == "renamed-container-count-result"
+            if document.identifier == OVER_EXCLUSION_CONTROL
         )
-        self.assertIn("no distribution", container.text)
-        signal = HedgingScopeSignal(
-            documents, self_disclaiming_cues=("no",), object_level_cues=()
-        )
-        verdict = signal.verdicts(
-            "Dirichlet drawer principle distribution", ["renamed-container-count-result"]
-        )[0]
-        self.assertTrue(
-            verdict.demoted,
-            "bare `no` demotes an applicable gold, which is why it is excluded",
-        )
-
-    def test_cue_matching_is_word_boundary_anchored(self) -> None:
-        pattern = text_module.cue_pattern("is not")
-        self.assertIsNone(pattern.search("this note states no theorem"))
-        self.assertIsNotNone(pattern.search("the hypothesis is not satisfied"))
-
-    def test_there_is_no_cue_count_threshold(self) -> None:
-        self.assertIsNone(hedging_module.CUE_COUNT_THRESHOLD)
-        declared = frozen_report()["declared_method"]["hedging_signal"]
-        self.assertIsNone(declared["cue_count_threshold"])
-        self.assertEqual(declared["direction"], "demotion_only")
-        self.assertEqual(
-            declared["scope_rule"],
-            "matched-query-term-in-same-sentence-as-self-disclaiming-cue",
-        )
-
-    def test_the_cue_table_hits_exactly_the_non_applicable_documents(self) -> None:
-        # Corpus-wide audit of the demoting table, independent of any query.
-        documents = load_corpus(FIXTURES)
-        patterns = [text_module.cue_pattern(cue) for cue in SELF_DISCLAIMING_CUES]
-        hit = {
-            document.identifier
-            for document in documents
-            if any(
-                pattern.search(sentence.casefold())
-                for sentence in text_module.sentences(document.text)
-                for pattern in patterns
-            )
-        }
-        non_applicable = {
-            document.identifier
-            for document in documents
-            if document.applicability != "applicable"
-        }
-        self.assertEqual(hit, non_applicable)
-        self.assertEqual(
-            non_applicable,
-            {
-                "optimization-distractor",
-                "topology-distractor",
-                "unbounded-spectral-mismatch",
-            },
-        )
-
-
-class Phase4CCueNeutralityTests(unittest.TestCase):
-    def test_removing_every_demoting_cue_yields_the_pure_lexical_ordering(self) -> None:
-        report = evaluate_hybrid(
-            FIXTURES, self_disclaiming_cues=(), alias_signal=EmptyAliasSignal()
-        )
-        for entry in report["results"]:
+        self.assertIn("uses no compactness hypothesis", control.text)
+        self.assertEqual(control.applicability, "applicable")
+        signal = SelfDisclaimerSignal(documents)
+        queries, _ = load_gold(FIXTURES, documents)
+        for query in queries:
+            verdict = signal.verdicts(query.query, [OVER_EXCLUSION_CONTROL])[0]
+            with self.subTest(query=query.identifier):
+                self.assertFalse(verdict.excluded)
+                self.assertEqual(verdict.absence_operators, ())
+        for entry in frozen_report()["results"]:
             with self.subTest(query=entry["id"]):
-                self.assertEqual(entry["demoted_ids"], [])
-                self.assertEqual(
-                    entry["ordered_ids"],
-                    entry["lexical_candidate_ids"][: entry["top_k"]],
-                )
+                self.assertNotIn(OVER_EXCLUSION_CONTROL, entry["excluded_ids"])
+        # And it is retrieved as the applicable gold of its own query.
+        results = result_by_id(frozen_report())
+        self.assertIn(
+            OVER_EXCLUSION_CONTROL, results["applicability-supremum"]["ordered_ids"]
+        )
 
-    def test_the_cues_are_the_only_thing_that_changes_the_ordering(self) -> None:
-        plain = result_by_id(
-            evaluate_hybrid(
-                FIXTURES, self_disclaiming_cues=(), alias_signal=EmptyAliasSignal()
-            )
+    def test_the_generalization_control_is_excluded_through_the_frame(self) -> None:
+        """ADR-0032 prediction 3.
+
+        `residual-bound-gap` self-disclaims through `no ... is given` over the
+        evidence noun `proof`. The frame appears in no ADR-0031 enumerated
+        phrase and in no other corpus document.
+        """
+
+        documents = load_corpus(FIXTURES)
+        control = next(
+            document
+            for document in documents
+            if document.identifier == GENERALIZATION_CONTROL
         )
-        hedged = result_by_id(evaluate_hybrid(FIXTURES, alias_signal=EmptyAliasSignal()))
-        changed = sorted(
-            query_id
-            for query_id, entry in hedged.items()
-            if entry["ordered_ids"] != plain[query_id]["ordered_ids"]
+        self.assertIn("no proof of the claimed cone membership is given", control.text)
+        signal = SelfDisclaimerSignal(documents)
+        verdict = signal.verdicts(
+            "positive semidefinite cone membership proof", [GENERALIZATION_CONTROL]
+        )[0]
+        self.assertTrue(verdict.excluded)
+        self.assertEqual(verdict.absence_operators, ("no ... is given",))
+        self.assertEqual(verdict.evidence_nouns, ("proof",))
+        results = result_by_id(frozen_report())
+        self.assertIn(
+            GENERALIZATION_CONTROL, results["applicability-psd-cone"]["excluded_ids"]
         )
-        self.assertGreater(len(changed), 0)
-        for query_id in changed:
-            with self.subTest(query=query_id):
-                # An ordering change implies a demotion. Nothing else moved.
-                self.assertTrue(hedged[query_id]["demoted_ids"])
+        self.assertNotIn(
+            GENERALIZATION_CONTROL, results["applicability-psd-cone"]["ordered_ids"]
+        )
+        # The frame fires on this document and on no other.
+        self.assertEqual(
+            _fires_on(absence_operators=(("no", "is given"),)),
+            {GENERALIZATION_CONTROL},
+        )
+
+    def test_the_adr_0031_enumerated_table_misses_the_generalization_control(self) -> None:
+        # The control was authored against the principle, not the vocabulary.
+        # An enumerated table would have missed it entirely, which is what the
+        # composition is for.
+        documents = load_corpus(FIXTURES)
+        control = next(
+            document
+            for document in documents
+            if document.identifier == GENERALIZATION_CONTROL
+        )
+        folded = control.text.casefold()
+        for cue in ADR_0031_ENUMERATED_CUES:
+            with self.subTest(cue=cue):
+                self.assertIsNone(text_module.cue_pattern(cue).search(folded))
+        # And no enumerated phrase contains the frame that does fire.
+        for cue in ADR_0031_ENUMERATED_CUES:
+            with self.subTest(cue=cue):
+                self.assertNotIn("is given", cue)
 
 
 # --------------------------------------------------------------------------
@@ -715,8 +1218,9 @@ class Phase4CDeterminismTests(unittest.TestCase):
                 cwd=str(REPO_ROOT),
                 env=environment,
             )
-            # Exit 1 is the measured gate failure, not a crash.
-            self.assertIn(completed.returncode, (0, 1), completed.stderr)
+            # Every gate passes on this fixture set, so the CLI exits 0. A
+            # non-zero status here is a real failure, not a recorded one.
+            self.assertEqual(completed.returncode, 0, completed.stderr)
             return json.loads(output.read_text(encoding="utf-8"))
 
     def test_three_normal_builds_are_byte_identical(self) -> None:
@@ -870,7 +1374,7 @@ class Phase4CHonestMetricTests(unittest.TestCase):
                     "duplicate_ids_at_5",
                     "inapplicable_retrieved_ids",
                     "zero_hit",
-                    "demoted_ids",
+                    "excluded_ids",
                     "hits",
                     "alias_expansions",
                     "lexical_candidate_ids",
@@ -908,7 +1412,16 @@ class Phase4CHonestMetricTests(unittest.TestCase):
             "applicability-certificate",
             [item["id"] for item in results if item["duplicate_ids_at_5"]],
         )
-        self.assertTrue(any(item["inapplicable_retrieved_ids"] for item in results))
+        # Exclusion is not filtering: every excluded document keeps its hit and
+        # its `fused_candidate_ids` entry, and no applicability query retrieves
+        # an inapplicable document any more.
+        self.assertTrue(any(item["excluded_ids"] for item in results))
+        for entry in results:
+            with self.subTest(query=entry["id"]):
+                self.assertTrue(
+                    set(entry["excluded_ids"]) <= set(entry["fused_candidate_ids"])
+                )
+                self.assertEqual(entry["inapplicable_retrieved_ids"], [])
 
     def test_declared_provenance_is_the_executed_sql(self) -> None:
         declared = frozen_report()["declared_method"]["lexical_signal"]
@@ -929,10 +1442,15 @@ class Phase4CHonestMetricTests(unittest.TestCase):
         self.assertEqual(fusion["space"], "score")
         self.assertFalse(fusion["rank_only_combiner"])
         self.assertFalse(fusion["reciprocal_rank_fusion"])
-        # BM25 magnitudes survive: with the alias signal disabled and the cue
-        # table emptied, every fused score equals -bm25 exactly.
+        self.assertEqual(
+            fusion["exclusion_rule"],
+            "an excluded candidate is removed from the ordering; no score "
+            "changes and no penalty term exists",
+        )
+        # BM25 magnitudes survive: with the alias signal disabled and the
+        # operator vocabulary emptied, every fused score equals -bm25 exactly.
         plain = evaluate_hybrid(
-            FIXTURES, self_disclaiming_cues=(), alias_signal=EmptyAliasSignal()
+            FIXTURES, absence_operators=(), alias_signal=EmptyAliasSignal()
         )
         documents = load_corpus(FIXTURES)
         connection = lexical_module.open_index(lexical_module.corpus_rows(documents))
@@ -978,8 +1496,8 @@ class Phase4CBoundsTests(unittest.TestCase):
         (root / "gold-queries.json").write_text(json.dumps(payload), encoding="utf-8")
 
     def test_bounds_policy_hash_is_stable_and_declared(self) -> None:
-        self.assertEqual(BOUNDS.document_count, 17)
-        self.assertEqual(BOUNDS.query_count, 15)
+        self.assertEqual(BOUNDS.document_count, 19)
+        self.assertEqual(BOUNDS.query_count, 17)
         self.assertEqual(BOUNDS.max_query_bytes, 4_096)
         self.assertEqual(BOUNDS.top_k_default, 5)
         self.assertEqual(BOUNDS.top_k_renamed_control, 10)
@@ -1000,6 +1518,7 @@ class Phase4CBoundsTests(unittest.TestCase):
             declared["category_counts"], dict(sorted(CATEGORY_COUNTS.items()))
         )
         self.assertEqual(sum(CATEGORY_COUNTS.values()), BOUNDS.query_count)
+        self.assertEqual(CATEGORY_COUNTS["applicability"], 6)
         self.assertEqual(set(TOP_K_BY_CATEGORY.values()), {5, 10})
 
     def test_report_and_database_stay_inside_their_byte_bounds(self) -> None:
@@ -1331,13 +1850,20 @@ class Phase4CPinnedMeasurementTests(unittest.TestCase):
         self.assertEqual(thresholds["applicability_precision_at_5"], 1.0)
         self.assertEqual(thresholds["renamed_known_result_recall_at_10"], 1.0)
         self.assertEqual(thresholds["duplicate_rate_at_5_maximum"], 0.05)
-        # The measured applicability precision is strictly below its gate. This
-        # slice does not meet that gate and the suite records the fact.
-        self.assertLess(
-            report["metrics"]["applicability_precision_at_5"],
-            thresholds["applicability_precision_at_5"],
+        # The measured values are pinned in this file, independently of the
+        # fixture's proposed thresholds, and the two are not the same numbers:
+        # the duplicate rate is measured at 1/50 against a gate of 0.05.
+        self.assertNotEqual(
+            report["metrics"]["duplicate_rate_at_5"],
+            thresholds["duplicate_rate_at_5_maximum"],
         )
-        self.assertEqual(MEASURED_GATE_STATUS["applicability_precision_at_5"], "fail")
+        self.assertLess(
+            report["metrics"]["duplicate_rate_at_5"],
+            thresholds["duplicate_rate_at_5_maximum"],
+        )
+        # Every gate is met on this fixture set. Recorded as a measurement, so
+        # a regression is a pinned-value edit rather than a silent drift.
+        self.assertEqual(set(MEASURED_GATE_STATUS.values()), {"pass"})
 
     def test_ordered_ids_are_pinned_per_query(self) -> None:
         results = result_by_id(frozen_report())
@@ -1346,14 +1872,37 @@ class Phase4CPinnedMeasurementTests(unittest.TestCase):
             with self.subTest(query=query_id):
                 self.assertEqual(tuple(results[query_id]["ordered_ids"]), expected)
 
-    def test_demotions_are_pinned_per_query(self) -> None:
+    def test_exclusions_are_pinned_per_query(self) -> None:
         results = result_by_id(frozen_report())
-        for query_id, expected in MEASURED_DEMOTED_IDS.items():
+        self.assertEqual(set(results), set(MEASURED_EXCLUDED_IDS))
+        for query_id, expected in MEASURED_EXCLUDED_IDS.items():
             with self.subTest(query=query_id):
-                self.assertEqual(tuple(results[query_id]["demoted_ids"]), expected)
+                self.assertEqual(tuple(results[query_id]["excluded_ids"]), expected)
+
+    def test_ordered_ids_are_the_post_exclusion_result_list(self) -> None:
+        for entry in frozen_report()["results"]:
+            with self.subTest(query=entry["id"]):
+                self.assertEqual(
+                    set(entry["ordered_ids"]) & set(entry["excluded_ids"]), set()
+                )
+                self.assertLessEqual(len(entry["ordered_ids"]), entry["top_k"])
+                self.assertEqual(
+                    entry["ordered_ids"],
+                    [
+                        identifier
+                        for identifier in entry["fused_candidate_ids"]
+                        if identifier not in set(entry["excluded_ids"])
+                    ][: entry["top_k"]],
+                )
 
     def test_hybrid_does_not_worsen_a_metric_the_baseline_already_met(self) -> None:
         metrics = frozen_report()["metrics"]
+        baseline = evaluate_hybrid(
+            FIXTURES, absence_operators=(), alias_signal=EmptyAliasSignal()
+        )["metrics"]
+        for name, expected in BASELINE_METRICS.items():
+            with self.subTest(metric=name):
+                self.assertAlmostEqual(baseline[name], expected, places=12)
         for name in (
             "necessary_lemma_recall_at_5",
             "contradiction_recall_at_5",
@@ -1361,68 +1910,106 @@ class Phase4CPinnedMeasurementTests(unittest.TestCase):
         ):
             with self.subTest(metric=name):
                 self.assertGreaterEqual(metrics[name], BASELINE_METRICS[name])
-        self.assertLessEqual(
-            metrics["duplicate_rate_at_5"], BASELINE_METRICS["duplicate_rate_at_5"]
-        )
-        # The required gain: the renamed gate moves from 0.0 to 1.0.
+        # The two required gains: the alias signal moves the renamed gate from
+        # 0.0 to 1.0, and exclusion moves applicability precision from 8/14 to
+        # 1.0 by removing the non-applicable relevant documents.
         self.assertGreater(
             metrics["renamed_known_result_recall_at_10"],
             BASELINE_METRICS["renamed_known_result_recall_at_10"],
         )
-        # And the honest non-gain: applicability precision does not move.
-        self.assertEqual(
+        self.assertGreater(
             metrics["applicability_precision_at_5"],
             BASELINE_METRICS["applicability_precision_at_5"],
         )
+        # The honest cost, recorded rather than hidden: exclusion SHRINKS the
+        # duplicate denominator, so the rate rises from 1/61 to 1/50 at a
+        # constant numerator. ADR-0032 predicted this arithmetic and requires
+        # the gate to be asserted against the measured value, which is done
+        # here with both endpoints pinned.
+        self.assertGreater(
+            metrics["duplicate_rate_at_5"], BASELINE_METRICS["duplicate_rate_at_5"]
+        )
+        self.assertAlmostEqual(metrics["duplicate_rate_at_5"], 1 / 50, places=12)
+        self.assertLessEqual(
+            metrics["duplicate_rate_at_5"],
+            frozen_report()["proposed_thresholds"]["duplicate_rate_at_5_maximum"],
+        )
+        self.assertEqual(
+            frozen_report()["metric_support"]["duplicate_rate_at_5"]["numerator"], 1
+        )
+        self.assertGreaterEqual(
+            frozen_report()["metric_support"]["duplicate_rate_at_5"]["denominator"], 20
+        )
 
-    def test_why_the_applicability_gate_cannot_be_met_by_demotion(self) -> None:
-        """The measured failure has two causes; both are recorded here.
+    def test_how_the_applicability_gate_is_met_by_exclusion(self) -> None:
+        """The measured mechanism, recorded so it cannot be mistaken for luck.
 
-        1. On three of four applicability queries the hedge demotes exactly the
-           inapplicable relevant document, but the fused candidate set is no
-           larger than top-k, so a demotion-only reordering cannot remove it
-           from the retrieved set.
-        2. On `applicability-selfadjoint` the same-sentence scope rule does not
-           fire at all: the self-disclaiming sentence of
-           `unbounded-spectral-mismatch` shares no token with that query.
+        On every applicability query the non-applicable relevant documents are
+        excluded and the applicable ones are retained, so the precision
+        denominator shrinks rather than the numerator rising. ADR-0031's
+        demotion-only rule could not have done this: on four of the six queries
+        the fused candidate set is no larger than top-k, so every reordering
+        leaves the same set retrieved.
         """
 
         results = result_by_id(frozen_report())
-        for query_id in (
-            "applicability-spectral",
-            "applicability-certificate",
-            "applicability-compactness",
-            "applicability-selfadjoint",
-        ):
-            entry = results[query_id]
-            with self.subTest(query=query_id):
-                self.assertLessEqual(len(entry["fused_candidate_ids"]), entry["top_k"])
-        for query_id in (
-            "applicability-spectral",
-            "applicability-certificate",
-            "applicability-compactness",
-        ):
-            entry = results[query_id]
-            inapplicable_relevant = {
-                identifier
-                for identifier in entry["relevant_ids"]
-                if identifier not in entry["applicable_ids"]
-            }
-            with self.subTest(query=query_id):
-                self.assertTrue(inapplicable_relevant <= set(entry["demoted_ids"]))
-                # Demoted, still retrieved: the demotion had nowhere to go.
-                self.assertTrue(inapplicable_relevant <= set(entry["ordered_ids"]))
-        self.assertEqual(results["applicability-selfadjoint"]["demoted_ids"], [])
+        applicability = [
+            entry
+            for entry in frozen_report()["results"]
+            if entry["category"] == "applicability"
+        ]
+        self.assertEqual(len(applicability), CATEGORY_COUNTS["applicability"])
+        for entry in applicability:
+            inapplicable_relevant = set(entry["relevant_ids"]) - set(
+                entry["applicable_ids"]
+            )
+            with self.subTest(query=entry["id"]):
+                self.assertTrue(inapplicable_relevant)
+                self.assertTrue(inapplicable_relevant <= set(entry["excluded_ids"]))
+                self.assertEqual(
+                    inapplicable_relevant & set(entry["ordered_ids"]), set()
+                )
+                self.assertTrue(
+                    set(entry["applicable_ids"]) <= set(entry["ordered_ids"])
+                )
+                self.assertEqual(entry["inapplicable_retrieved_ids"], [])
+        at_or_below_cutoff = sorted(
+            entry["id"]
+            for entry in applicability
+            if len(entry["fused_candidate_ids"]) <= entry["top_k"]
+        )
+        self.assertEqual(
+            at_or_below_cutoff,
+            [
+                "applicability-certificate",
+                "applicability-psd-cone",
+                "applicability-selfadjoint",
+                "applicability-spectral",
+            ],
+        )
+        # The ADR-0031 residual is now excluded on its own query.
         self.assertIn(
             "unbounded-spectral-mismatch",
-            results["applicability-selfadjoint"]["inapplicable_retrieved_ids"],
+            results["applicability-selfadjoint"]["excluded_ids"],
         )
 
     def test_schema_version_and_method_are_pinned(self) -> None:
-        self.assertEqual(SCHEMA_VERSION, "adaivy.phase4c-hybrid-retrieval.v1")
+        # The report shape changed with ADR-0032, so the schema version moved.
+        self.assertEqual(SCHEMA_VERSION, "adaivy.phase4c-hybrid-retrieval.v2")
         self.assertEqual(frozen_report()["schema_version"], SCHEMA_VERSION)
         self.assertEqual(frozen_report()["method"], benchmark_module.METHOD)
-        self.assertEqual(benchmark_module.METHOD, "phase4c-hybrid-score-space-fusion")
+        self.assertEqual(
+            benchmark_module.METHOD,
+            "phase4c-hybrid-score-space-fusion-with-exclusion",
+        )
+        self.assertEqual(
+            benchmark_module.FUSION_METHOD,
+            "score-space-additive-fusion-with-candidate-exclusion",
+        )
+        self.assertEqual(
+            frozen_report()["declared_method"]["fusion"]["method"],
+            benchmark_module.FUSION_METHOD,
+        )
 
 
 # --------------------------------------------------------------------------
@@ -1431,7 +2018,7 @@ class Phase4CPinnedMeasurementTests(unittest.TestCase):
 
 
 class Phase4CCliTests(unittest.TestCase):
-    def test_benchmark_exits_one_on_a_measured_gate_failure(self) -> None:
+    def test_benchmark_exits_zero_only_when_every_gate_passes(self) -> None:
         from math_research.phase4c_cli import main
 
         with tempfile.TemporaryDirectory() as directory:
@@ -1439,11 +2026,25 @@ class Phase4CCliTests(unittest.TestCase):
             status = main(
                 ["benchmark", "--fixtures", str(FIXTURES), "--output", str(output)]
             )
-            self.assertEqual(status, 1)
+            self.assertEqual(status, 0)
             report = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(report["gate_summary"], MEASURED_GATE_SUMMARY)
             self.assertEqual(report["content_hash"], frozen_report()["content_hash"])
             self.assertEqual(output.read_bytes(), canonical_bytes(report))
-            self.assertEqual(main(["inspect", str(output)]), 1)
+            self.assertEqual(main(["inspect", str(output)]), 0)
+
+    def test_benchmark_exits_one_when_a_gate_fails(self) -> None:
+        # Exit 0 must be earned. A collapsed retriever leaves two gates
+        # undetermined, and undetermined is never a pass.
+        from math_research.phase4c_cli import _summary
+
+        report = evaluate_hybrid(
+            FIXTURES,
+            lexical_signal=EmptyLexicalIndex(),
+            alias_signal=EmptyAliasSignal(),
+        )
+        self.assertEqual(report["gate_summary"]["overall"], "not_pass")
+        self.assertEqual(_summary(report)["queries_with_exclusions"], [])
 
     def test_missing_fixtures_exit_two(self) -> None:
         from math_research.phase4c_cli import main
@@ -1460,7 +2061,7 @@ class Phase4CCliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "report.json"
             report = json.loads(json.dumps(frozen_report()))
-            report["metrics"]["applicability_precision_at_5"] = 1.0
+            report["metrics"]["applicability_precision_at_5"] = 0.5
             path.write_bytes(canonical_bytes(report))
             self.assertEqual(main(["inspect", str(path)]), 1)
 

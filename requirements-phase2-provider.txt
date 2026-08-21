@@ -1,3 +1,8 @@
 # Optional live-provider boundary only; offline Phase 0-2 checks do not install it.
 # PyPI wheel SHA-256: ded6b2112e6d299c7a2573ff6f165dc92fb64ceaa4d7daa42345f091157bd373
 openai==3.3.0
+# Anthropic Messages adapter only. MIT licence, requires Python >= 3.10.
+# No PyPI publish attestation exists for this release, so provenance rests on the
+# wheel digest alone -- a weaker position than the attested `openai` pin above.
+# PyPI wheel SHA-256: 32dd52e9e1d774393b27182f451398ba4262287a4d0eab30887f89f1481b3ae4
+anthropic==1.0.0

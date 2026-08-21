@@ -35,6 +35,7 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("phase5_run_id")
     run.add_argument("recorded_at")
     run.add_argument("--output-dir", type=Path, required=True)
+    run.add_argument("--generality-suite", type=Path, default=None)
     demo = commands.add_parser("demo", help="run the complete Phase 5 to Phase 6 workflow")
     demo.add_argument("workspace", type=Path)
     demo.add_argument("protocol", type=Path)
@@ -42,6 +43,7 @@ def main(argv: list[str] | None = None) -> int:
     demo.add_argument("phase5_recorded_at")
     demo.add_argument("phase6_recorded_at")
     demo.add_argument("--output-dir", type=Path, required=True)
+    demo.add_argument("--generality-suite", type=Path, default=None)
     export = commands.add_parser("export")
     export.add_argument("workspace", type=Path)
     export.add_argument("output", type=Path)
@@ -85,7 +87,9 @@ def main(argv: list[str] | None = None) -> int:
         else:
             phase5_run_id = args.phase5_run_id
             recorded_at = args.recorded_at
-        result = Phase6Service(workspace).confirm(
+        result = Phase6Service(
+            workspace, generality_suite_path=args.generality_suite,
+        ).confirm(
             protocol=protocol, phase5_fixture=fixture,
             phase5_run_id=phase5_run_id, recorded_at=recorded_at,
         )
@@ -96,6 +100,11 @@ def main(argv: list[str] | None = None) -> int:
             "release_hash": result["release_hash"],
             "status": result["confirmatory_result"]["status"],
             "controls": f"{result['controls_passed']}/{result['controls_total']}",
+            "probes_flipped": f"{result['probes_flipped']}/{result['probes_total']}",
+            "generality_suite_hash": result["generality_suite_hash"],
+            "positive_control_admitted": result["positive_control_admitted"],
+            "control_corpus_provenance": result["control_corpus_provenance"],
+            "heldout_accesses": result["heldout_accesses"],
             "material_result_count": result["material_result_count"],
         }
         print(json.dumps(summary, indent=2, sort_keys=True))

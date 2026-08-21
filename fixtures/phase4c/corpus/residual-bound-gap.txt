@@ -1,0 +1,1 @@
+Project-authored informal note. A sampled residual suggests the matrix stays inside the positive semidefinite cone at the tested points, but no proof of the claimed cone membership is given for the untested points.

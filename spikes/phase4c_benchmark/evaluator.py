@@ -58,14 +58,17 @@ FIELD_SOURCES = {
     "unit_type": "empty-corpus-has-no-unit-type-content",
 }
 
-# Extended from 14/10 under ADR-0031 with owner approval. The extension exists
-# so the applicability and renamed-known-result gates measure generalization
-# rather than a one-to-one fit: three renamed controls over genuine mathematical
-# name aliases, and two applicability controls exercising documents the
-# discrimination signal was not authored against. Measured values before and
-# after the extension describe different corpora and are not comparable.
-DOCUMENT_COUNT = 17
-QUERY_COUNT = 15
+# Extended from 14/10 under ADR-0031 and again from 17/15 under ADR-0032, both
+# with owner approval. The extensions exist so the applicability and
+# renamed-known-result gates measure generalization rather than a one-to-one
+# fit: three renamed controls over genuine mathematical name aliases, two
+# applicability controls exercising documents the discrimination signal was not
+# authored against, and under ADR-0032 two adversarial applicability controls
+# authored against the stated principles rather than against any vocabulary.
+# Measured values from before either extension describe different corpora and
+# are not comparable. This is the third fixture extension.
+DOCUMENT_COUNT = 19
+QUERY_COUNT = 17
 MAX_QUERY_BYTES = 4_096
 MAX_REPORT_BYTES = 262_144
 MAX_DERIVED_DB_BYTES = 2_097_152
@@ -75,7 +78,7 @@ DUPLICATE_CUTOFF = 5
 CATEGORIES = ("necessary_lemma", "applicability", "contradiction", "notation_variant", "renamed_known_result")
 CATEGORY_COUNTS = {
     "necessary_lemma": 3,
-    "applicability": 4,
+    "applicability": 6,
     "contradiction": 2,
     "notation_variant": 2,
     "renamed_known_result": 4,

@@ -18,9 +18,9 @@ from .live_config import LiveRunConfiguration, live_run_configuration_payload
 from .model_gateway import redact_secrets
 from .openai_schema import ProviderSchemaError, project_openai_schema
 from .provider_registry import (
-    UnknownProviderError, build_gateway, provider_spec,
+    UnknownProviderError, build_gateway, provider_secret_values, provider_spec,
 )
-from .pricing import estimate_cost_microusd
+from .pricing import estimate_cost_microusd, pricing_snapshot_is_confirmed
 from .records import PricingSnapshot, RunStatus, VerifierIndependence
 from .reporting import render_durable_report, report_hash
 from .serialization import canonical_hash, canonical_json
@@ -74,6 +74,13 @@ def preflight_live_gate(
     for variable in spec.required_credentials:
         if not environment.get(variable):
             missing.append(variable)
+    # Non-secret settings are reported the same way and from the same scan. They
+    # moved out of `.env` into `.env.settings`, and reporting them separately --
+    # or not at all -- would mean a run with a resolved key and no endpoint
+    # passed the preflight and failed inside the adapter instead.
+    for variable in spec.required_settings:
+        if not environment.get(variable):
+            missing.append(variable)
     api_key = environment.get(spec.required_credentials[0])
     if not configuration.provider:
         missing.append("config.provider")
@@ -85,6 +92,15 @@ def preflight_live_gate(
         failed.append("pricing_provider_mismatch")
     if configuration.model_identifier != pricing.model_identifier:
         failed.append("pricing_model_identifier_mismatch")
+    if not pricing_snapshot_is_confirmed(pricing):
+        # ADR-0030 recorded placeholder rates for providers whose price could
+        # not be confirmed offline, and nothing consumed that marker: an
+        # UNCONFIRMED snapshot passed exactly like a quoted rate, so a cost
+        # budget was enforced against a number nobody had verified. Spending
+        # real money on an unverified rate is a fail-closed condition. The
+        # operator clears it by recording the actual rates with
+        # `phase2 pricing-create`; no rate is asserted here.
+        failed.append(f"pricing_snapshot_unconfirmed:{pricing.snapshot_id.value}")
     try:
         adapter = build_gateway(
             configuration.provider, configuration.model_identifier,
@@ -250,8 +266,15 @@ def execute_live_gate(
         regenerated_hash = report_hash(replayed, run_id)
         if regenerated != first_report:
             raise RuntimeError("report regeneration changed after database restart")
-    api_key = os.environ["OPENAI_API_KEY"]
-    leaked_paths, leaked_database_fields = scan_persisted_secret(root, database, api_key)
+    # Every secret the selected provider actually uses, not OpenAI's key: a
+    # non-OpenAI live gate previously raised KeyError here, and a Bedrock secret
+    # access key or session token was never scanned for at all.
+    leaked_paths: tuple[str, ...] = ()
+    leaked_database_fields: tuple[str, ...] = ()
+    for secret in provider_secret_values(configuration.provider, os.environ):
+        paths, fields = scan_persisted_secret(root, database, secret)
+        leaked_paths += paths
+        leaked_database_fields += fields
     if leaked_paths or leaked_database_fields:
         raise RuntimeError("credential leakage detected in persisted live-gate state")
     return {

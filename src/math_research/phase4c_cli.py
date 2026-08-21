@@ -52,8 +52,8 @@ def _summary(report: dict[str, Any]) -> dict[str, Any]:
         "queries_with_inapplicable_hits": sorted(
             item["id"] for item in results if item["inapplicable_retrieved_ids"]
         ),
-        "queries_with_demotions": sorted(
-            item["id"] for item in results if item["demoted_ids"]
+        "queries_with_exclusions": sorted(
+            item["id"] for item in results if item["excluded_ids"]
         ),
         "alias_entries_exercised_by_no_query": sorted(
             item["entry_id"]

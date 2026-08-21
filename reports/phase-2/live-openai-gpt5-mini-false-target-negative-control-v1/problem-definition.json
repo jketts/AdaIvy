@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "one-mod-four-is-sum-of-two-squares",
+  "declared_domain": "number-theory",
+  "originating_principal": "actor.josh_kettlewell",
+  "problem": {
+    "title": "Every integer congruent to one modulo four is a sum of two squares",
+    "informal_statement": "Show that if an integer n leaves remainder one on division by four, then n can be written as a sum of two integer squares.\n\nThe target is stated for every such integer, with no upper bound. The small cases are 1 = 0 + 1, 5 = 1 + 4, 9 = 0 + 9, 13 = 4 + 9, and 17 = 1 + 16.",
+    "problem_type": "prove",
+    "tags": ["number-theory", "quadratic-residues", "unrestricted-universal-target"]
+  },
+  "target_claim": {
+    "local_id": "one_mod_four_is_sum_of_two_squares",
+    "kind": "theorem",
+    "statement": "For every integer n with n = 1 (mod 4) and n > 0, there exist integers a and b such that n = a^2 + b^2.",
+    "scope": "unrestricted_universal"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "square_residues_mod_four",
+      "kind": "lemma",
+      "statement": "For every integer a, a^2 = 0 (mod 4) or a^2 = 1 (mod 4).",
+      "scope": "unrestricted_universal"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "forall n : Integer, n > 0 and n mod 4 = 1 implies exists a b : Integer, n = a * a + b * b",
+    "formal_language": "typed_informal_math",
+    "quantifiers": ["forall n a positive integer"],
+    "assumption_local_ids": ["square_residues_mod_four"],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [["n", "a positive integer congruent to one modulo four"]],
+    "definition_mapping": [["n mod 4", "the least nonnegative residue of n modulo four"]],
+    "assumption_delta": ["The informal statement says 'remainder one on division by four'; the formalization writes n mod 4 = 1 and adds the positivity hypothesis explicitly."],
+    "edge_case_delta": ["Negative n are excluded by the positivity hypothesis, so no sign convention is needed."],
+    "strength_relation": "equivalent"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": ["obligations_opened", "obligations_discharged"],
+    "success_criteria": ["a derivation covering every positive integer congruent to one modulo four, not a finite sample", "or a checked counterexample"],
+    "stopping_rules": ["stop on a checked counterexample", "stop when the open obligation set is unchanged across two review points"]
+  }
+}

@@ -15,12 +15,12 @@ extraction fidelity, mathematical warrant, and graph admission remain separate.
 
 ## Corpus and query contract
 
-- `fixtures/phase4c/corpus-manifest.json` names exactly 17 UTF-8 documents.
+- `fixtures/phase4c/corpus-manifest.json` names exactly 19 UTF-8 documents.
 - Every document is project-authored under
   `LicenseRef-AdaIvy-Synthetic-Fixture` and carries an applicability class,
   source class, contradiction flag, and optional duplicate group.
-- `fixtures/phase4c/gold-queries.json` names exactly 15 frozen queries: three
-  necessary-lemma, four applicability, two contradiction, two notation-variant,
+- `fixtures/phase4c/gold-queries.json` names exactly 17 frozen queries: three
+  necessary-lemma, six applicability, two contradiction, two notation-variant,
   and four renamed-known-result controls.
 - `fixtures/phase4c/name-aliases.json` names a content-keyed alias table of at
   least nine entries. Each entry maps an alias name phrase to content phrases
@@ -34,7 +34,7 @@ extraction fidelity, mathematical warrant, and graph admission remain separate.
 - Raw BM25 floats and wall time are operational observations. Canonical identity
   binds corpus/query hashes, ordered result IDs, classifications, and metrics.
 
-## Fixture extension, 21 August 2026
+## Fixture extension, 21 August 2026 (ADR-0031)
 
 This corpus and query set were extended from 14 documents and 10 queries under
 ADR-0031, with owner approval, before the hybrid candidate was measured.
@@ -59,6 +59,67 @@ here, in ADR-0031, and in the fixture manifest so that it is visible rather than
 inferred. The lexical baseline's own pinned values were re-established from
 scratch on the extended fixtures.
 
+## Third fixture extension, 21 August 2026 (ADR-0032)
+
+The corpus and query set were extended a third time, from 17 documents and 15
+queries to 19 and 17, with owner approval, before the exclusion candidate was
+measured. **Anyone comparing against a measurement recorded before this
+extension is comparing across corpora.** Three extensions now sit between the
+originally frozen benchmark and the current numbers, and every previously pinned
+value has been re-established from scratch.
+
+The two added documents are adversarial applicability controls authored against
+ADR-0032's stated principles and deliberately *not* against its two frozen
+vocabularies:
+
+- `residual-bound-gap`, a non-applicable document that self-disclaims through
+  `no proof ... is given` -- a composition of in-vocabulary parts that appears
+  in none of ADR-0031's six enumerated phrases. It probes whether a
+  compositional rule generalizes where an enumerated table would have missed.
+- `hypothesis-free-supremum`, an applicable document whose absence claim is
+  about a *mathematical* object rather than an evidentiary one (`the argument
+  uses no compactness hypothesis`). It probes over-exclusion, and it is the
+  control that could have broken document scope.
+
+Two applicability queries, `applicability-psd-cone` and
+`applicability-supremum`, exercise them.
+
+### Exclusion direction
+
+Under ADR-0032 the second signal EXCLUDES rather than demotes. It returns no
+scores and no documents, so it can only remove a candidate: fused scores are
+`(-bm25) + alias_points` with no penalty term, and an excluded document is
+removed from the result list rather than pushed down it. Three invariants are
+enforced at runtime and asserted in the acceptance suite: exclusion never
+changes any document's score, it preserves the relative order of every retained
+document, and it never names a document outside the candidate set. The second
+invariant is deliberately weaker than "never promotes" -- a retained document
+can enter the top-k because something above it left -- so the duplicate gate is
+re-measured rather than argued.
+
+### Re-pinned measured values
+
+| Metric | Lexical baseline | Hybrid with exclusion | Gate |
+|---|---|---|---|
+| Necessary-lemma recall@5 | 1.0 (3/3) | 1.0 (3/3) | pass |
+| Applicability precision@5 | 0.571 (8/14) | 1.0 (8/8) | pass |
+| Contradiction recall@5 | 1.0 (2/2) | 1.0 (2/2) | pass |
+| Notation-variant recall@5 | 1.0 (2/2) | 1.0 (2/2) | pass |
+| Renamed-known-result recall@10 | 0.0 (0/4) | 1.0 (4/4) | pass |
+| Duplicate rate@5 | 0.0164 (1/61) | 0.02 (1/50) | pass |
+| External cost | 0 | 0 | pass |
+
+The duplicate rate is the one measured cost and is recorded rather than
+smoothed. Exclusion shrinks the retrieved-hit denominator at a constant
+numerator, so the rate rises from `1/61` to `1/50` while staying well inside the
+`0.05` gate. Against the pure lexical baseline this does worsen a metric the
+baseline already met, which the "Required comparison" clause below otherwise
+reads against; ADR-0032 derived the arithmetic before measuring, requires the
+denominator to stay at or above 20, and asserts the gate against the measured
+value with both endpoints pinned in the acceptance suite. The report schema
+version moved to `adaivy.phase4c-hybrid-retrieval.v2` because the report shape
+changed with the direction.
+
 ## Metrics
 
 | Metric | Definition | Proposed Phase 4C gate |
@@ -72,7 +133,7 @@ scratch on the extended fixtures.
 | Deterministic rebuild | Ordered IDs and canonical report hash across three normal builds, one reverse-insertion build, and one fresh-process run | exact equality |
 | External cost | Network, model/API calls, downloaded artifacts, and external spend | all `0`; USD `0` |
 
-Resource gates are: exactly 17 documents, exactly 15 queries, maximum query
+Resource gates are: exactly 19 documents, exactly 17 queries, maximum query
 length 4,096 UTF-8 bytes, top-k 5 except renamed control top-k 10, at most 50
 candidates per future signal, canonical report at most 262,144 bytes, derived
 benchmark database at most 2,097,152 bytes, and a 10-second parent-process hard

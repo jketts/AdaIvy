@@ -1,0 +1,193 @@
+{
+  "api_reported_total_tokens": 5346,
+  "audit_replay_hash": "sha256:ae0779d5ad9e03e131038c8818d2c70850d85ad1e8894e5c115591331da76219",
+  "bound_live_run_configuration": {
+    "configuration_id": "config.phase2.live.gpt5-mini.v3",
+    "content_hash": "sha256:03fcff9d4007985799bbf6b1e670a1b9c5900660ee444904c1bc681b04802da3",
+    "created_at": "2026-08-21T07:19:06.900620Z",
+    "model_identifier": "gpt-5-mini",
+    "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+    "provider": "openai",
+    "run_id": "run.falsetarget.live.v1"
+  },
+  "budget": {
+    "budget_id": "budget.run.falsetarget.live.v1",
+    "elapsed_milliseconds": 31242,
+    "exhausted_dimensions": [
+      "attempts"
+    ],
+    "limits": {
+      "max_attempts": 2,
+      "max_cost_microusd": 20000,
+      "max_input_tokens": 20000,
+      "max_output_tokens": 4096,
+      "max_wall_milliseconds": 300000,
+      "schema_version": "2.0.0"
+    },
+    "schema_version": "2.0.0",
+    "used_attempts": 2,
+    "used_cost_microusd": 5889,
+    "used_input_tokens": 2745,
+    "used_output_tokens": 2601
+  },
+  "call_statuses": [
+    "succeeded",
+    "succeeded"
+  ],
+  "calls": [
+    {
+      "call_id": "call.run.falsetarget.live.v1.proposer.attempt.1",
+      "capabilities_json": "[\"responses_api\",\"structured_output\",\"refusal\"]",
+      "cost_microusd": 2942,
+      "created_at": "2026-08-21T07:19:24.503158Z",
+      "estimated_cost_microusd": 2942,
+      "idempotency_key": "call:run.falsetarget.live.v1:proposer:attempt:1",
+      "incomplete_reason": null,
+      "input_tokens": 1311,
+      "model_identifier": "gpt-5-mini-2025-08-07",
+      "output_tokens": 1307,
+      "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+      "provider": "openai",
+      "provider_request_id": "resp_0d3c7d12007332a1016a87fbecb36c87d0b9e48d692579c6fa",
+      "purpose": "proposer",
+      "request_hash": "sha256:fac22e7b8b223f1770e2d1e151f78cbc43319e7d9212d1122afe991ac238aaeb",
+      "result_hash": "sha256:2a53bec4b43820d0f8d5de20d169fb13627932a499c32130254df68a30f2b482",
+      "retry_classification": "none",
+      "run_id": "run.falsetarget.live.v1",
+      "schema_version": "2.0.0",
+      "status": "succeeded",
+      "total_tokens": 2618,
+      "usage_source": "api_reported"
+    },
+    {
+      "call_id": "call.run.falsetarget.live.v1.verifier.attempt.1",
+      "capabilities_json": "[\"responses_api\",\"structured_output\",\"refusal\"]",
+      "cost_microusd": 2947,
+      "created_at": "2026-08-21T07:19:38.139367Z",
+      "estimated_cost_microusd": 2947,
+      "idempotency_key": "call:run.falsetarget.live.v1:verifier:attempt:1",
+      "incomplete_reason": null,
+      "input_tokens": 1434,
+      "model_identifier": "gpt-5-mini-2025-08-07",
+      "output_tokens": 1294,
+      "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+      "provider": "openai",
+      "provider_request_id": "resp_0cb363645e3e2b9b016a87fbfccfac87d0bb69f9ccbd9867cb",
+      "purpose": "verifier",
+      "request_hash": "sha256:6d03ecdfe2b00d56eaca2b0cf5701429517a2b352b393f9f01517cb075606d31",
+      "result_hash": "sha256:99a4e279e49f4dc54f5b0902cbed8157db0b0886ad30bd19576c06aff7965881",
+      "retry_classification": "none",
+      "run_id": "run.falsetarget.live.v1",
+      "schema_version": "2.0.0",
+      "status": "succeeded",
+      "total_tokens": 2728,
+      "usage_source": "api_reported"
+    }
+  ],
+  "calls_recorded": 2,
+  "cost_microusd": 5889,
+  "credential_leak_matches": 0,
+  "credentials_scanned": 2,
+  "dossier_hash": "sha256:7271288d66afe7de69f4fb5275efe522fb2d729840b71214d3fb43af6ae76783",
+  "dossier_id": "dossier.one-mod-four-is-sum-of-two-squares.intake.sha256-ce3fb72c2b5ffb9c",
+  "entry_path": "phase2 start --execute --problem",
+  "independent_exact_recheck": {
+    "conclusion": "The proposed witness is correct and the check is a finite exhaustive search over integers below n. Nothing in AdaIvy performs it, so the refutation stays a model proposal and the target stays `unknown` rather than `disproved`.",
+    "counterexamples_below_200_congruent_to_1_mod_4": [
+      21,
+      33,
+      57,
+      69,
+      77,
+      93,
+      105,
+      129,
+      133,
+      141,
+      161,
+      165,
+      177,
+      189
+    ],
+    "creates_verification_record": false,
+    "grants_warrant": false,
+    "is_an_adaivy_trust_component": false,
+    "performed_by": "the evidence-assembly script, in exact integer arithmetic",
+    "small_cases_that_do_hold": [
+      1,
+      5,
+      9,
+      13,
+      17
+    ],
+    "witness_21_is_a_sum_of_two_squares": false
+  },
+  "measured_trust": {
+    "blockers": [
+      "open_obligation:obligation.one-mod-four-is-sum-of-two-squares.alignment_unapproved",
+      "open_obligation:obligation.one-mod-four-is-sum-of-two-squares.target_unwarranted",
+      "semantic_target_not_resolved"
+    ],
+    "evidence_ids": [],
+    "logical_status": "unknown",
+    "semantic_alignment_status": "not_approved_equivalent",
+    "warrant_ids": []
+  },
+  "negative_control": {
+    "designed_failure_mode": "converse error -- the supplied lemma makes n = 1 (mod 4) NECESSARY for a sum of two squares, not SUFFICIENT, and the five listed small cases all hold",
+    "manufactured_a_proof_of_the_false_claim": false,
+    "model_outcome": "refuted",
+    "proposer_switched_result_type_to": "counterexample",
+    "target_claim_truth_value": "false",
+    "verifier_issued_contradicts_finding": true,
+    "witness_proposed": "n = 21"
+  },
+  "note": "Negative control for the ADR-0038 run path. The target claim is FALSE by construction: n = 21 satisfies 21 > 0 and 21 = 1 (mod 4) and is not a sum of two integer squares. The problem was authored as a near-twin of `sum-two-squares-mod-four-v1`, which the same model and configuration had just proved correctly, and its informal statement lists 1, 5, 9, 13, 17 as a lure toward a small-case generalisation. The declared `problem_type` is `prove`, so the system was asked to prove something false.",
+  "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+  "problem_definition_canonical_hash": "sha256:ce3fb72c2b5ffb9ced7089e62daa090e758f8d75a7bc4cb0e6b54ae17776d8c3",
+  "problem_definition_id": "one-mod-four-is-sum-of-two-squares",
+  "proposal_dispositions": [
+    "proposal"
+  ],
+  "proposal_kinds": [
+    "counterexample",
+    "verifier_finding"
+  ],
+  "proposal_source_kinds": [
+    "model"
+  ],
+  "resolved_model_identifiers": [
+    "gpt-5-mini-2025-08-07"
+  ],
+  "response_ids": [
+    "resp_0d3c7d12007332a1016a87fbecb36c87d0b9e48d692579c6fa",
+    "resp_0cb363645e3e2b9b016a87fbfccfac87d0bb69f9ccbd9867cb"
+  ],
+  "run_id": "run.falsetarget.live.v1",
+  "schema_version": "2.0.0",
+  "status": "passed",
+  "verifier_finding_outcomes": [
+    "contradicts",
+    "supports"
+  ],
+  "verifier_independence": {
+    "context_isolated": true,
+    "deterministic_checker": false,
+    "different_model": false,
+    "different_provider": false,
+    "formal_kernel": false,
+    "independently_implemented_checker": false,
+    "schema_version": "2.0.0",
+    "separate_model_call": true
+  },
+  "verifier_manifests": [
+    {
+      "canonical_json": "{\"context_artifact_hash\":\"sha256:de2aaa803c8ccab5f680a35ec1d11a1f0ed1a16482439fe58a5dab2b63e82589\",\"excluded_entity_ids\":[\"call.run.falsetarget.live.v1.proposer.attempt.1\",\"event.one-mod-four-is-sum-of-two-squares.problem_definition_recorded\",\"obligation.one-mod-four-is-sum-of-two-squares.alignment_unapproved\",\"obligation.one-mod-four-is-sum-of-two-squares.target_unwarranted\",\"problem.one-mod-four-is-sum-of-two-squares\",\"protocol.one-mod-four-is-sum-of-two-squares.v1\"],\"included_entity_ids\":[\"alignment.one-mod-four-is-sum-of-two-squares.v1\",\"claim.one-mod-four-is-sum-of-two-squares.one_mod_four_is_sum_of_two_squares\",\"claim.one-mod-four-is-sum-of-two-squares.square_residues_mod_four\",\"formalization.one-mod-four-is-sum-of-two-squares.v1\",\"proposal.run.falsetarget.live.v1.proposer\"],\"independence\":{\"context_isolated\":true,\"deterministic_checker\":false,\"different_model\":false,\"different_provider\":false,\"formal_kernel\":false,\"independently_implemented_checker\":false,\"schema_version\":\"2.0.0\",\"separate_model_call\":true},\"manifest_id\":\"manifest.run.falsetarget.live.v1.verifier\",\"policy_version\":\"phase1-trust-policy-v1\",\"run_id\":\"run.falsetarget.live.v1\",\"schema_version\":\"2.0.0\",\"serialized_context_hash\":\"sha256:de2aaa803c8ccab5f680a35ec1d11a1f0ed1a16482439fe58a5dab2b63e82589\"}",
+      "created_at": "2026-08-21T07:19:24.508192Z",
+      "manifest_id": "manifest.run.falsetarget.live.v1.verifier",
+      "run_id": "run.falsetarget.live.v1",
+      "schema_version": "2.0.0",
+      "serialized_context_hash": "sha256:de2aaa803c8ccab5f680a35ec1d11a1f0ed1a16482439fe58a5dab2b63e82589"
+    }
+  ]
+}

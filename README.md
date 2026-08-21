@@ -52,16 +52,28 @@ another model agrees with it.
   remains off by default.
 - **Phase 5** covers the exact commuting/diagonal benchmark slice only; search
   tiers 2–4 are recorded and disabled.
-- **Phase 6** covers one frozen local held-out case with deterministic
-  generality controls and canonical replay.
+- **Phase 6** covers one frozen local held-out case with canonical replay and
+  the executed Section 18.4 generality control suite (ADR-0034): thirteen
+  controls that drive real Phase 1 trust policy, the exact Phase 5 engine, or the
+  held-out capability boundary, each carrying a named single-field falsifiability
+  probe that must produce the forbidden verdict. Two controls are positive, so an
+  all-reject system cannot pass. The control corpus is project-authored, so the
+  suite demonstrates boundary enforcement on known traps and is **not** evidence
+  of generality against unseen traps.
 - Bounded exploratory synthesis is implemented over the sealed Phase 6
   workspace.
-- Deferred: noncommuting SDP, hybrid retrieval and embeddings, broader
+- **Phase 4C** covers benchmark-scoped hybrid retrieval only: a frozen
+  19-document, 17-query fixture set, an FTS5/BM25 lexical signal, a
+  content-keyed alias table, and an exclusion-only evidentiary self-disclaimer
+  signal, fused in score space. All seven gates are measured as passing under
+  ADR-0032. Exclusion removes a candidate from a result list and asserts
+  nothing about applicability.
+- Deferred: noncommuting SDP, retrieval embeddings and vector indexes, broader
   media/acquisition, higher adaptive-search tiers, and external evaluation.
   Novelty and significance are recorded as `not_assessed`.
-- Retrieval is lexical only and does not depend on any model provider, so the
-  live provider boundary can change without affecting it. Before embeddings are
-  added, note the mixed-vector-space constraint in
+- Retrieval uses no embedding and no model provider, so the live provider
+  boundary can change without affecting it. Before embeddings are added, note
+  the mixed-vector-space constraint in
   [`docs/TECHNICAL_DETAILS.md`](docs/TECHNICAL_DETAILS.md#multiple-model-providers-embeddings-and-retrieval)
   and `TECHNICAL_BLUEPRINT.md` Section 12.2.1: vectors from different providers
   or embedding models may never share a similarity space, and mixing them

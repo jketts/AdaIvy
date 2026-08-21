@@ -1,19 +1,21 @@
 """Protocol ports for the three Phase 4C retrieval signals.
 
 The ports exist so the acceptance suite can substitute a degenerate signal --
-a lexical signal that retrieves nothing, an empty cue table, an alias table
-with one entry removed -- without the benchmark harness growing a branch for
-each case. ADR-0031 requires the acceptance suite to demonstrate the
-demotion-only and label-separation boundaries as properties, and a property
-over a signal needs the signal to be substitutable.
+a lexical signal that retrieves nothing, an empty absence-operator vocabulary,
+an alias table with one entry removed -- without the benchmark harness growing
+a branch for each case. ADR-0032 requires the acceptance suite to demonstrate
+the exclusion invariants and the label-separation boundary as properties, and a
+property over a signal needs the signal to be substitutable.
 
 The ports also record the direction of each signal in the type system:
 
 * `LexicalSignal` is the only port that may introduce a document.
 * `AliasSignal` may introduce a document, and only through content phrases.
-* `HedgeSignal` returns verdicts, never scores and never documents. Fusion
-  applies the penalty, so no implementation of `HedgeSignal` is able to raise a
-  fused score or add a candidate.
+* `DisclaimerSignal` returns verdicts, never scores and never documents. Its
+  recorded direction under ADR-0032 is that the signal may only *remove* a
+  candidate: it returns no scores and no documents, so no implementation is
+  able to raise a fused score or add a candidate. Fusion applies the removal,
+  and it leaves every score exactly as the lexical and alias signals set it.
 """
 
 from __future__ import annotations
@@ -42,19 +44,21 @@ class AliasExpansion:
 
 
 @dataclass(frozen=True)
-class HedgeVerdict:
-    """A demotion verdict for one candidate document.
+class DisclaimerVerdict:
+    """An exclusion verdict for one candidate document.
 
-    `demoted` is boolean: presence of an in-scope self-disclaiming cue, with no
-    cue-count threshold. `object_level_cues` is recorded for transparency and
-    never affects `demoted`.
+    `excluded` is boolean: an absence operator and an evidence noun co-occur in
+    one sentence of the document, and the query reached the document at all.
+    There is no cue-count threshold. `object_level_cues` is recorded for
+    transparency and never affects `excluded`.
     """
 
     document_id: str
-    demoted: bool
-    self_disclaiming_cues: tuple[str, ...]
+    excluded: bool
+    absence_operators: tuple[str, ...]
+    evidence_nouns: tuple[str, ...]
     object_level_cues: tuple[str, ...]
-    scoped_query_terms: tuple[str, ...]
+    matched_query_terms: tuple[str, ...]
 
 
 @runtime_checkable
@@ -70,18 +74,18 @@ class AliasSignal(Protocol):
 
 
 @runtime_checkable
-class HedgeSignal(Protocol):
+class DisclaimerSignal(Protocol):
     def verdicts(
         self, query: str, document_ids: Sequence[str]
-    ) -> tuple[HedgeVerdict, ...]:
+    ) -> tuple[DisclaimerVerdict, ...]:
         ...
 
 
 __all__ = [
     "AliasExpansion",
     "AliasSignal",
-    "HedgeSignal",
-    "HedgeVerdict",
+    "DisclaimerSignal",
+    "DisclaimerVerdict",
     "LexicalCandidate",
     "LexicalSignal",
 ]

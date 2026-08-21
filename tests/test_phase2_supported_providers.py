@@ -108,7 +108,7 @@ class PreflightProviderScopeTests(unittest.TestCase):
             Path("config/phase2-live-minimax-v1.json")
         )
         pricing = load_pricing_snapshot(
-            Path("config/minimax-text-01-pricing-unconfirmed-2026-08-21.json")
+            Path("config/minimax-m3-pricing-2026-08-21.json")
         )
         result = preflight_live_gate(configuration, pricing, environment={})
         self.assertFalse(result.passed)
@@ -126,7 +126,7 @@ class PreflightProviderScopeTests(unittest.TestCase):
             Path("config/phase2-live-minimax-v1.json")
         )
         pricing = load_pricing_snapshot(
-            Path("config/minimax-text-01-pricing-unconfirmed-2026-08-21.json")
+            Path("config/minimax-m3-pricing-2026-08-21.json")
         )
         unadmitted = replace(configuration, provider="not-a-real-provider")
         self.assertNotIn(unadmitted.provider, SUPPORTED_LIVE_PROVIDERS)

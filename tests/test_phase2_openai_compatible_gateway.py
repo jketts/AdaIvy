@@ -46,10 +46,13 @@ from math_research.phase2.openai_compatible_gateway import (
     qwen_dashscope_config,
     resolve_endpoint,
 )
+from math_research.phase2.live_config import load_live_run_configuration
 from math_research.phase2.pricing import (
     PRICING_SNAPSHOT_SCHEMA_VERSION,
     PRICING_UNITS,
     _FIELDS as PRICING_FIELDS,
+    estimate_cost_microusd,
+    load_pricing_snapshot,
 )
 from math_research.phase2.records import ModelRequest, ModelResultStatus
 from math_research.phase2.serialization import canonical_hash, canonical_json
@@ -812,11 +815,27 @@ class OfflineSafetyTests(unittest.TestCase):
 
 
 PROVIDER_FILES = (
-    ("minimax", "phase2-live-minimax-v1.json", "minimax-text-01-pricing-unconfirmed-2026-08-21.json"),
-    ("qwen_dashscope", "phase2-live-qwen-dashscope-v1.json", "qwen-plus-pricing-unconfirmed-2026-08-21.json"),
-    ("deepseek", "phase2-live-deepseek-v1.json", "deepseek-chat-pricing-unconfirmed-2026-08-21.json"),
-    ("azure_openai", "phase2-live-azure-openai-v1.json", "azure-openai-gpt5-mini-pricing-unconfirmed-2026-08-21.json"),
+    ("minimax", "phase2-live-minimax-v1.json", "minimax-m3-pricing-2026-08-21.json"),
+    ("qwen_dashscope", "phase2-live-qwen-dashscope-v1.json", "qwen-plus-pricing-2026-08-21.json"),
+    ("deepseek", "phase2-live-deepseek-v1.json", "deepseek-v4-flash-pricing-2026-08-21.json"),
+    ("azure_openai", "phase2-live-azure-openai-v1.json", "azure-openai-gpt5-6-sol-pricing-2026-08-21.json"),
 )
+
+# The rates captured on 2026-08-21, as (model identifier, input, output) in
+# micro-USD per million tokens. Each is the *highest* published on-demand rate
+# the shipped adapter could incur, because the adapter pins none of the
+# dimensions the vendors price separately: DeepSeek's peak hours and cache
+# misses, MiniMax's undiscounted standard tier, Qwen's thinking mode, and
+# Azure's Data Zone scope and unstated context-tier boundary. Recording a lower rate than a call can
+# actually cost would let a budget admit a call it cannot pay for, so the table
+# is asserted exactly -- a change here has to be a deliberate re-capture, with
+# the reasoning in each snapshot's `source`.
+CONFIRMED_RATES = {
+    "minimax": ("MiniMax-M3", 600_000, 2_400_000),
+    "qwen_dashscope": ("qwen-plus", 400_000, 4_000_000),
+    "deepseek": ("deepseek-v4-flash", 440_000, 1_320_000),
+    "azure_openai": ("gpt-5.6-sol", 11_000_000, 49_500_000),
+}
 
 
 class ProviderConfigurationFileTests(unittest.TestCase):
@@ -863,15 +882,57 @@ class ProviderConfigurationFileTests(unittest.TestCase):
                     unhashed["content_hash"] = None
                     self.assertEqual(canonical_hash(unhashed), payload["content_hash"])
 
-    def test_placeholder_rates_are_labelled_unconfirmed_with_a_source(self) -> None:
-        for _, _, pricing_name in PROVIDER_FILES:
-            with self.subTest(pricing_name=pricing_name):
+    def test_rates_are_the_confirmed_capture_not_a_placeholder(self) -> None:
+        """Every OpenAI-compatible provider ships a confirmed, sourced rate.
+
+        This replaces an earlier guard that asserted the opposite: while no rate
+        had been captured, each of these four snapshots had to be an explicit
+        `UNCONFIRMED PLACEHOLDER` so a budget would refuse the call. The rates
+        are now captured, so the invariant inverts -- a placeholder reappearing
+        here would be a silent regression to a provider nobody can call, and a
+        rate drifting off the capture would be a budget computed from a number
+        no vendor published.
+        """
+        for provider, _, pricing_name in PROVIDER_FILES:
+            with self.subTest(provider=provider):
                 pricing = self._payload(pricing_name)
-                self.assertIn("UNCONFIRMED PLACEHOLDER", pricing["source"])
+                model, expected_input, expected_output = CONFIRMED_RATES[provider]
+                self.assertEqual(model, pricing["model_identifier"])
+                self.assertEqual(
+                    expected_input, pricing["input_microusd_per_million_tokens"],
+                )
+                self.assertEqual(
+                    expected_output, pricing["output_microusd_per_million_tokens"],
+                )
+                self.assertNotIn("unconfirmed", pricing["snapshot_id"])
+                self.assertNotIn("UNCONFIRMED", pricing["source"])
                 self.assertIn("https://", pricing["source"])
-                self.assertIn("unconfirmed", pricing["snapshot_id"])
-                self.assertGreater(pricing["input_microusd_per_million_tokens"], 0)
-                self.assertGreater(pricing["output_microusd_per_million_tokens"], 0)
+                self.assertIn("captured 2026-08-21", pricing["source"])
+
+    def test_the_shipped_budget_still_admits_two_calls_at_those_rates(self) -> None:
+        """A rate rise must not quietly leave a configuration unable to run.
+
+        `live_gate` refuses a run whose budget cannot cover two calls at the
+        pinned rates. Pairing each configuration with its own snapshot here
+        catches the failure at its source -- a re-capture that raises a rate
+        without raising the budget -- rather than as an opaque
+        `budget_cost_below_two_calls` at gate time.
+        """
+        for provider, config_name, pricing_name in PROVIDER_FILES:
+            with self.subTest(provider=provider):
+                configuration = load_live_run_configuration(
+                    Path("config") / config_name
+                )
+                snapshot = load_pricing_snapshot(Path("config") / pricing_name)
+                per_call = estimate_cost_microusd(
+                    snapshot,
+                    input_tokens=configuration.per_call_input_token_reserve,
+                    output_tokens=configuration.per_call_output_token_reserve,
+                )
+                self.assertGreater(per_call, 0)
+                self.assertLessEqual(
+                    2 * per_call, configuration.budget.max_cost_microusd,
+                )
 
     def test_shipped_model_identifiers_are_constructible(self) -> None:
         for provider, config_name, _ in PROVIDER_FILES:

@@ -1,0 +1,641 @@
+{
+  "abstract": "Three statements about the frozen QD-FS-01 diagonal benchmark are backed by exact primal/dual certificates in rational arithmetic with no floating point and no tolerance: one determines an optimum, and two separate a value from an optimum. Two further statements about the noncommuting case are backed by nothing in this repository and are rendered as conjectures. The distinction is computed from the records rather than asserted by the text.",
+  "attestations": [],
+  "authors": [
+    {
+      "name": "AdaIvy repository owner",
+      "role": "researcher and maintainer"
+    }
+  ],
+  "certificates": [
+    {
+      "arithmetic": "fractions-exact",
+      "case_id": "qd-fs-01-orthogonal-2d",
+      "certificate_id": "cert.orthogonal-2d-optimum",
+      "classification": "optimum_determined",
+      "dual_value": "1",
+      "engine": "exact_diagonal_jrf_v1",
+      "float_used": false,
+      "gap": "0",
+      "primal_value": "1",
+      "result_hash": "sha256:24cf1beb9917a21af6675bbf61c417e23195f2fd12d984b563791176af9e7d4b",
+      "run_id": "run.phase5.eb20eaf23a20a6233f8dc4bb"
+    },
+    {
+      "arithmetic": "fractions-exact",
+      "case_id": "qd-fs-01-scalar-full-support",
+      "certificate_id": "cert.scalar-iterate-separation",
+      "classification": "values_separated",
+      "dual_value": "2/3",
+      "engine": "exact_diagonal_jrf_v1",
+      "float_used": false,
+      "gap": "1/196611",
+      "primal_value": "43691/65537",
+      "result_hash": "sha256:b0245ef68e7cafceeecac8610276b46658c2cc1fb9aed76bf459207e1cf79f1d",
+      "run_id": "run.phase5.eb20eaf23a20a6233f8dc4bb"
+    },
+    {
+      "arithmetic": "fractions-exact",
+      "case_id": "qd-ce-01-boundary-fixed-point",
+      "certificate_id": "cert.boundary-fixed-point-separation",
+      "classification": "values_separated",
+      "dual_value": "2/3",
+      "engine": "exact_diagonal_jrf_v1",
+      "float_used": false,
+      "gap": "1/3",
+      "primal_value": "1/3",
+      "result_hash": "sha256:7a1a828f11f680c2a48161834f427f230e027ea16f2f0b6c7106fe9425f09f8a",
+      "run_id": "run.phase5.eb20eaf23a20a6233f8dc4bb"
+    }
+  ],
+  "citations": [
+    {
+      "citation_class": "source_record",
+      "citation_id": "cite.adr-0023.diagonal-reduction",
+      "cited_object": "definition",
+      "intended_use": "publication",
+      "passage_id": "psg.adr-0023.diagonal-reduction",
+      "source_id": "src.adr-0023-exact-commuting"
+    },
+    {
+      "citation_class": "source_record",
+      "citation_id": "cite.adr-0033.cubic-boundary",
+      "cited_object": "lemma",
+      "intended_use": "publication",
+      "passage_id": "psg.adr-0033.cubic-boundary",
+      "source_id": "src.adr-0033-quadratic-extension"
+    },
+    {
+      "citation_class": "source_record",
+      "citation_id": "cite.adr-0035.verification-only",
+      "cited_object": "hypothesis",
+      "intended_use": "publication",
+      "passage_id": "psg.adr-0035.verification-only",
+      "source_id": "src.adr-0035-verification-only"
+    },
+    {
+      "citation_class": "mathlib_declaration",
+      "citation_id": "cite.mathlib.rat-num-div-den",
+      "declaration": "Rat.num_div_den",
+      "mathlib_commit": "520045ab14e26149ee970e2e617ca04b09bde5d6"
+    },
+    {
+      "citation_class": "unresolved_folklore",
+      "citation_id": "cite.folklore.jrf-convergence",
+      "description": "That the inverse-JRF iteration converges to the optimum for general noncommuting ensembles is treated as standard in the surrounding literature. This repository holds no acquisition record for any statement of it.",
+      "obligation_id": "obl.jrf-general-convergence"
+    }
+  ],
+  "claims": [
+    {
+      "attestation_id": null,
+      "certificate_id": "cert.orthogonal-2d-optimum",
+      "certificate_role": "determines_optimum",
+      "citations": [
+        "cite.adr-0023.diagonal-reduction",
+        "cite.mathlib.rat-num-div-den"
+      ],
+      "claim_id": "cl.orthogonal-2d-optimum",
+      "latex_statement": "\\mathrm{val}(\\mathcal{E}_{\\mathrm{orth}}) = 1",
+      "lean_statement": null,
+      "prose_statement": "For the orthogonal two-dimensional diagonal ensemble of the frozen QD-FS-01 fixture, the exact primal value attained by the iteration and the exact independent dual optimum coincide, so the optimum is determined rather than approximated.",
+      "representation_id": "rep.orthogonal-2d-optimum",
+      "representation_status": "proposed"
+    },
+    {
+      "attestation_id": null,
+      "certificate_id": "cert.scalar-iterate-separation",
+      "certificate_role": "separates_values",
+      "citations": [
+        "cite.adr-0023.diagonal-reduction"
+      ],
+      "claim_id": "cl.scalar-iterate-separation",
+      "latex_statement": "\\tfrac{2}{3} - \\tfrac{43691}{65537} = \\tfrac{1}{196611} > 0",
+      "lean_statement": null,
+      "prose_statement": "For the scalar full-support case, eight iterations leave the objective strictly below the exact optimum, and the residual is an exact rational. The iteration therefore approaches the optimum without attaining it in finitely many steps on this case.",
+      "representation_id": "rep.scalar-iterate-separation",
+      "representation_status": "proposed"
+    },
+    {
+      "attestation_id": null,
+      "certificate_id": "cert.boundary-fixed-point-separation",
+      "certificate_role": "separates_values",
+      "citations": [
+        "cite.adr-0023.diagonal-reduction"
+      ],
+      "claim_id": "cl.nonoptimal-fixed-point",
+      "latex_statement": "\\tfrac{1}{3} < \\tfrac{2}{3}",
+      "lean_statement": null,
+      "prose_statement": "A fixed point of the iteration need not be optimal. On the boundary case, an initialization without full support reaches a fixed point whose exact objective is strictly below the exact independent optimum.",
+      "representation_id": "rep.nonoptimal-fixed-point",
+      "representation_status": "proposed"
+    },
+    {
+      "attestation_id": null,
+      "certificate_id": null,
+      "certificate_role": null,
+      "citations": [
+        "cite.adr-0033.cubic-boundary",
+        "cite.adr-0035.verification-only"
+      ],
+      "claim_id": "cl.cubic-optimum-degree",
+      "latex_statement": "\\deg_{\\mathbb{Q}} \\mathrm{val}(\\mathcal{E}_{\\mathrm{cubic}}) = 3",
+      "lean_statement": null,
+      "prose_statement": "For a two-outcome noncommuting ensemble in dimension three whose difference operator has an irreducible cubic characteristic polynomial, the optimum has degree three over the rationals, so no certificate over any quadratic extension can close its gap. This repository records the boundary as a measured rejection and holds no proof of the statement.",
+      "representation_id": "rep.cubic-optimum-degree",
+      "representation_status": "proposed"
+    },
+    {
+      "attestation_id": null,
+      "certificate_id": null,
+      "certificate_role": null,
+      "citations": [
+        "cite.adr-0035.verification-only"
+      ],
+      "claim_id": "cl.general-noncommuting-convergence",
+      "latex_statement": "\\lim_{n \\to \\infty} \\mathrm{obj}(P^{(n)}) = \\mathrm{val}(\\mathcal{E})",
+      "lean_statement": null,
+      "prose_statement": "For general noncommuting ensembles the inverse-JRF iteration converges to the optimum. Nothing in this repository bears on this statement: the noncommuting slice verifies certificates supplied to it and never discovers them, so it produces no evidence about convergence in either direction.",
+      "representation_id": "rep.general-noncommuting-convergence",
+      "representation_status": "proposed"
+    }
+  ],
+  "corpus_provenance": "project_authored",
+  "manuscript_id": "ms.qd-fs-01-exact-boundaries.v1",
+  "novelty": {
+    "inferred_from_warrant": false,
+    "status": "not_assessed"
+  },
+  "obligations": [
+    {
+      "obligation_id": "obl.jrf-general-convergence",
+      "reason": "The reliance is real and the record is absent. Rendering it as a citation would imply reading that did not happen.",
+      "statement": "Locate and record an acquisition-backed statement of inverse-JRF convergence for general noncommuting ensembles, with a located passage, before any part of this document relies on it.",
+      "status": "open"
+    },
+    {
+      "obligation_id": "obl.latex-lean-representation-binding",
+      "reason": "No claim in this document carries a Lean statement, so every representation status is proposed and the drift guard has nothing to compare.",
+      "statement": "Bind each rendered LaTeX statement to a Lean statement under one verified representation record, so that a mismatch between the two becomes a record inconsistency rather than a reader's problem.",
+      "status": "open"
+    }
+  ],
+  "publication_approval": null,
+  "render_probes": [
+    {
+      "expected": {
+        "claim_id": "cl.orthogonal-2d-optimum",
+        "evidence_class": "proposal"
+      },
+      "expected_outcome": "demotion",
+      "field": "certificates[cert.orthogonal-2d-optimum].gap",
+      "probe_id": "pr.zero-gap-required-to-determine",
+      "rationale": "A certificate that leaves a gap bounds an optimum without determining it.",
+      "value": "1/4"
+    },
+    {
+      "expected": {
+        "claim_id": "cl.scalar-iterate-separation",
+        "evidence_class": "proposal"
+      },
+      "expected_outcome": "demotion",
+      "field": "certificates[cert.scalar-iterate-separation].gap",
+      "probe_id": "pr.nonzero-gap-required-to-separate",
+      "rationale": "A closed gap certifies that there is nothing to separate.",
+      "value": "0"
+    },
+    {
+      "expected": {
+        "code": "certificate_not_exact"
+      },
+      "expected_outcome": "refusal",
+      "field": "certificates[cert.orthogonal-2d-optimum].float_used",
+      "probe_id": "pr.float-arithmetic-refused",
+      "rationale": "A floating-point certificate is not reportable at any strength.",
+      "value": true
+    },
+    {
+      "expected": {
+        "code": "certificate_not_exact"
+      },
+      "expected_outcome": "refusal",
+      "field": "certificates[cert.scalar-iterate-separation].arithmetic",
+      "probe_id": "pr.inexact-arithmetic-kind-refused",
+      "rationale": "The arithmetic kind is checked against an allowlist of exact kinds.",
+      "value": "float64"
+    },
+    {
+      "expected": {
+        "code": "rights_outcome_forbids_use"
+      },
+      "expected_outcome": "refusal",
+      "field": "sources[src.adr-0023-exact-commuting].rights.publication",
+      "probe_id": "pr.publication-rights-required",
+      "rationale": "A bibliography entry requires a rights outcome permitting publication.",
+      "value": "missing_or_unknown"
+    },
+    {
+      "expected": {
+        "code": "lemma_citation_without_passage"
+      },
+      "expected_outcome": "refusal",
+      "field": "citations[cite.adr-0033.cubic-boundary].passage_id",
+      "probe_id": "pr.lemma-citation-needs-passage",
+      "rationale": "A paper can exist while the lemma cited from it does not.",
+      "value": null
+    },
+    {
+      "expected": {
+        "code": "unsafe_latex_primitive"
+      },
+      "expected_outcome": "refusal",
+      "field": "claims[cl.orthogonal-2d-optimum].latex_statement",
+      "probe_id": "pr.unsafe-latex-primitive-refused",
+      "rationale": "LaTeX executes at compile time, so process output is refused by class.",
+      "value": "\\write18{id}"
+    },
+    {
+      "expected": {
+        "code": "unknown_latex_macro"
+      },
+      "expected_outcome": "refusal",
+      "field": "claims[cl.nonoptimal-fixed-point].latex_statement",
+      "probe_id": "pr.unknown-latex-macro-refused",
+      "rationale": "The allowlist admits; it does not merely deny a blocklist.",
+      "value": "\\definitelynotamacro{1}"
+    },
+    {
+      "expected": {
+        "code": "folklore_without_open_obligation"
+      },
+      "expected_outcome": "refusal",
+      "field": "obligations[obl.jrf-general-convergence].status",
+      "probe_id": "pr.folklore-needs-open-obligation",
+      "rationale": "Unrecorded background stays an open obligation until a record exists.",
+      "value": "discharged"
+    },
+    {
+      "expected": {
+        "code": "folklore_citation_in_prose"
+      },
+      "expected_outcome": "refusal",
+      "field": "blocks[blk.scope.exactness].citations",
+      "probe_id": "pr.folklore-not-citable-in-prose",
+      "rationale": "Unrecorded background must never render as a citation.",
+      "value": [
+        "cite.folklore.jrf-convergence"
+      ]
+    },
+    {
+      "expected": {
+        "code": "block_without_record_ref"
+      },
+      "expected_outcome": "refusal",
+      "field": "blocks[blk.scope.commuting-tier].record_refs",
+      "probe_id": "pr.block-requires-record-reference",
+      "rationale": "A block with no backing record cannot enter the ledger.",
+      "value": []
+    },
+    {
+      "expected": {
+        "code": "record_ref_unresolved"
+      },
+      "expected_outcome": "refusal",
+      "field": "blocks[blk.determined.reading].record_refs",
+      "probe_id": "pr.unresolvable-record-reference",
+      "rationale": "A reference that resolves to nothing is not provenance.",
+      "value": [
+        "cert.does-not-exist"
+      ]
+    },
+    {
+      "expected": {
+        "code": "content_hash_malformed"
+      },
+      "expected_outcome": "refusal",
+      "field": "sources[src.adr-0033-quadratic-extension].content_hash",
+      "probe_id": "pr.source-content-hash-required",
+      "rationale": "An entry with no usable content hash cannot be re-checked by a reader.",
+      "value": "sha256:deadbeef"
+    },
+    {
+      "expected": {
+        "code": "mathlib_commit_mismatch"
+      },
+      "expected_outcome": "refusal",
+      "field": "citations[cite.mathlib.rat-num-div-den].mathlib_commit",
+      "probe_id": "pr.mathlib-commit-must-match-toolchain",
+      "rationale": "A library citation is only resolvable against the pinned commit.",
+      "value": "0000000000000000000000000000000000000000"
+    },
+    {
+      "expected": {
+        "code": "bibliography_entry_uncited"
+      },
+      "expected_outcome": "refusal",
+      "field": "claims[cl.cubic-optimum-degree].citations",
+      "probe_id": "pr.uncited-source-refused",
+      "rationale": "An uncited bibliography entry implies reading that did not happen.",
+      "value": [
+        "cite.adr-0035.verification-only"
+      ]
+    },
+    {
+      "expected": {
+        "code": "assessment_not_withheld"
+      },
+      "expected_outcome": "refusal",
+      "field": "novelty.status",
+      "probe_id": "pr.assessment-must-stay-withheld",
+      "rationale": "No automated novelty or significance assessment exists in this system.",
+      "value": "established"
+    },
+    {
+      "expected": {
+        "code": "certificate_role_unpaired"
+      },
+      "expected_outcome": "refusal",
+      "field": "claims[cl.orthogonal-2d-optimum].certificate_role",
+      "probe_id": "pr.certificate-role-must-be-paired",
+      "rationale": "A certificate whose role is unstated cannot be read as supporting anything.",
+      "value": null
+    }
+  ],
+  "schema_version": "1.0.0",
+  "sections": [
+    {
+      "blocks": [
+        {
+          "block_id": "blk.scope.exactness",
+          "citations": [
+            "cite.adr-0023.diagonal-reduction"
+          ],
+          "kind": "prose",
+          "record_refs": [
+            "cert.orthogonal-2d-optimum",
+            "cl.orthogonal-2d-optimum"
+          ],
+          "runs": [
+            {
+              "t": "text",
+              "v": "Every value in this document is an exact rational. The engine carries no floating-point path, so no statement here rests on a tolerance, and the diagonal primal/dual reduction that supplies the independent optimum is the one recorded in the decision cited below."
+            }
+          ]
+        },
+        {
+          "block_id": "blk.scope.commuting-tier",
+          "citations": [
+            "cite.adr-0035.verification-only"
+          ],
+          "kind": "prose",
+          "record_refs": [
+            "cl.cubic-optimum-degree",
+            "cl.general-noncommuting-convergence"
+          ],
+          "runs": [
+            {
+              "t": "text",
+              "v": "The certified statements are confined to the commuting tier: diagonal weighted states and diagonal POVMs. The noncommuting slice verifies supplied certificates and never discovers them, so it produces no evidence about the general case."
+            }
+          ]
+        }
+      ],
+      "section_id": "sec.scope",
+      "title": "Scope and evidence"
+    },
+    {
+      "blocks": [
+        {
+          "block_id": "blk.determined.claim",
+          "claim_id": "cl.orthogonal-2d-optimum",
+          "kind": "claim",
+          "record_refs": [
+            "cl.orthogonal-2d-optimum",
+            "cert.orthogonal-2d-optimum"
+          ]
+        },
+        {
+          "block_id": "blk.determined.certificate",
+          "certificate_id": "cert.orthogonal-2d-optimum",
+          "kind": "certificate_table",
+          "record_refs": [
+            "cert.orthogonal-2d-optimum"
+          ]
+        },
+        {
+          "block_id": "blk.determined.reading",
+          "citations": [],
+          "kind": "prose",
+          "record_refs": [
+            "cert.orthogonal-2d-optimum"
+          ],
+          "runs": [
+            {
+              "t": "text",
+              "v": "The table above is printed beside the statement on purpose. Nothing offline can check that the displayed formula says what the certificate certifies, so a reader is given both and can compare them."
+            }
+          ]
+        }
+      ],
+      "section_id": "sec.determined",
+      "title": "A determined optimum"
+    },
+    {
+      "blocks": [
+        {
+          "block_id": "blk.separated.iterate-claim",
+          "claim_id": "cl.scalar-iterate-separation",
+          "kind": "claim",
+          "record_refs": [
+            "cl.scalar-iterate-separation",
+            "cert.scalar-iterate-separation"
+          ]
+        },
+        {
+          "block_id": "blk.separated.iterate-certificate",
+          "certificate_id": "cert.scalar-iterate-separation",
+          "kind": "certificate_table",
+          "record_refs": [
+            "cert.scalar-iterate-separation"
+          ]
+        },
+        {
+          "block_id": "blk.separated.fixed-point-claim",
+          "claim_id": "cl.nonoptimal-fixed-point",
+          "kind": "claim",
+          "record_refs": [
+            "cl.nonoptimal-fixed-point",
+            "cert.boundary-fixed-point-separation"
+          ]
+        },
+        {
+          "block_id": "blk.separated.fixed-point-certificate",
+          "certificate_id": "cert.boundary-fixed-point-separation",
+          "kind": "certificate_table",
+          "record_refs": [
+            "cert.boundary-fixed-point-separation"
+          ]
+        },
+        {
+          "block_id": "blk.separated.reading",
+          "citations": [],
+          "kind": "prose",
+          "record_refs": [
+            "cert.scalar-iterate-separation",
+            "cert.boundary-fixed-point-separation"
+          ],
+          "runs": [
+            {
+              "t": "text",
+              "v": "A nonzero gap is evidence of a separation and never of an optimum. Here the two gaps are "
+            },
+            {
+              "t": "math",
+              "v": "\\tfrac{1}{196611}"
+            },
+            {
+              "t": "text",
+              "v": " and "
+            },
+            {
+              "t": "math",
+              "v": "\\tfrac{1}{3}"
+            },
+            {
+              "t": "text",
+              "v": ", and both are exact."
+            }
+          ]
+        }
+      ],
+      "section_id": "sec.separated",
+      "title": "Two separations"
+    },
+    {
+      "blocks": [
+        {
+          "block_id": "blk.unsupported.cubic-claim",
+          "claim_id": "cl.cubic-optimum-degree",
+          "kind": "claim",
+          "record_refs": [
+            "cl.cubic-optimum-degree"
+          ]
+        },
+        {
+          "block_id": "blk.unsupported.convergence-claim",
+          "claim_id": "cl.general-noncommuting-convergence",
+          "kind": "claim",
+          "record_refs": [
+            "cl.general-noncommuting-convergence"
+          ]
+        },
+        {
+          "block_id": "blk.unsupported.reading",
+          "citations": [],
+          "kind": "prose",
+          "record_refs": [
+            "obl.jrf-general-convergence",
+            "obl.latex-lean-representation-binding"
+          ],
+          "runs": [
+            {
+              "t": "text",
+              "v": "Both statements above are set as conjectures because no record backs them, and the environment was computed rather than chosen. The background one of them leans on has no acquisition record either, so it appears in the obligations appendix instead of the bibliography."
+            }
+          ]
+        }
+      ],
+      "section_id": "sec.unsupported",
+      "title": "What this document does not establish"
+    }
+  ],
+  "significance": {
+    "inferred_from_warrant": false,
+    "status": "not_assessed"
+  },
+  "sources": [
+    {
+      "authority": "human_final",
+      "bibliographic": {
+        "author": "AdaIvy repository owner",
+        "container": "AdaIvy architecture decision records",
+        "entry_type": "unpublished",
+        "identifier": "docs/adrs/0023-phase5-exact-commuting-quantum-slice.md",
+        "title": "ADR-0023: Exact commuting quantum slice",
+        "year": "2026"
+      },
+      "content_hash": "sha256:1eb03b31960b0e0136961cda65d0ee425c11ee0855f2b4580a6aea7a899d38db",
+      "passages": [
+        {
+          "anchor": "L9-L14",
+          "content_hash": "sha256:97a488b8daff164f1b973031c62045a018b57d16c048d925800ce956e85fe472",
+          "passage_id": "psg.adr-0023.diagonal-reduction",
+          "quotation_permitted": true
+        }
+      ],
+      "rights": {
+        "excerpting": "permitted",
+        "publication": "permitted"
+      },
+      "source_id": "src.adr-0023-exact-commuting"
+    },
+    {
+      "authority": "human_final",
+      "bibliographic": {
+        "author": "AdaIvy repository owner",
+        "container": "AdaIvy architecture decision records",
+        "entry_type": "unpublished",
+        "identifier": "docs/adrs/0033-phase5-noncommuting-exact-algebraic-certificates.md",
+        "title": "ADR-0033: Noncommuting exact algebraic certificates",
+        "year": "2026"
+      },
+      "content_hash": "sha256:22960f0d002c1ca576b1f1a7fa10a0d0c99f1ad8142c489ce15869ead0edc39b",
+      "passages": [
+        {
+          "anchor": "L91-L97",
+          "content_hash": "sha256:02bc1e57dbd5722ca630602c015903a7266e95416b9c93916495b4a9ff758e54",
+          "passage_id": "psg.adr-0033.cubic-boundary",
+          "quotation_permitted": true
+        }
+      ],
+      "rights": {
+        "excerpting": "permitted",
+        "publication": "permitted"
+      },
+      "source_id": "src.adr-0033-quadratic-extension"
+    },
+    {
+      "authority": "human_final",
+      "bibliographic": {
+        "author": "AdaIvy repository owner",
+        "container": "AdaIvy architecture decision records",
+        "entry_type": "unpublished",
+        "identifier": "docs/adrs/0035-phase5-noncommuting-verification-without-discovery.md",
+        "title": "ADR-0035: Noncommuting verification without discovery",
+        "year": "2026"
+      },
+      "content_hash": "sha256:0f0d118eb1f2ef5fece0bf9be4975b7fedcaf83f9265c94619c3b809383eaf5c",
+      "passages": [
+        {
+          "anchor": "L47-L49",
+          "content_hash": "sha256:3c97b1bbcea136c9939675f56f0a7671bc6e2eff8217e4d43d085d3b22864f4b",
+          "passage_id": "psg.adr-0035.verification-only",
+          "quotation_permitted": true
+        }
+      ],
+      "rights": {
+        "excerpting": "permitted",
+        "publication": "permitted"
+      },
+      "source_id": "src.adr-0035-verification-only"
+    }
+  ],
+  "title": "Exact certificates and their boundaries for the QD-FS-01 diagonal benchmark",
+  "toolchain": {
+    "elan_version": "v4.2.1",
+    "lean_commit": "f054605aea4b840552cca2e725580bffd1e1b704",
+    "lean_version": "v4.32.1",
+    "mathlib_commit": "520045ab14e26149ee970e2e617ca04b09bde5d6",
+    "mathlib_version": "v4.32.1"
+  }
+}

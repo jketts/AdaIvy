@@ -48,10 +48,14 @@ from .serialization import sha256_bytes
 PROVIDER = "anthropic"
 ANTHROPIC_ADAPTER_VERSION = "anthropic-messages-adapter/1.0.0"
 ANTHROPIC_SDK_PACKAGE = "anthropic"
-# UNCONFIRMED: no wheel digest has been recorded for this provider yet, so the
-# dependency is not pinned in requirements-phase2-provider.txt. Confirm the
-# published version and its SHA-256 before any live call.
-ANTHROPIC_SDK_PINNED_VERSION = "UNCONFIRMED"
+# Confirmed against the PyPI release metadata on 2026-08-21 and pinned by wheel
+# digest in requirements-phase2-provider.txt. v1.0.0 is a breaking release whose
+# migration notes do not reach this adapter: the client receives plain values
+# (`timeout`, `max_retries=0`) rather than httpx objects, the payload already
+# uses `output_config={"format": ...}` instead of the removed `output_format`,
+# and it passes none of the removed sampling parameters. Re-confirm the digest
+# before moving the pin.
+ANTHROPIC_SDK_PINNED_VERSION = "1.0.0"
 DEFAULT_ENDPOINT = "https://api.anthropic.com/v1/messages"
 
 # Model identifiers are exact and complete as written; a date suffix is never

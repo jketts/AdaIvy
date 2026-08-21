@@ -1,0 +1,1 @@
+Project-authored lemma. A continuous function on a compact interval attains its supremum, and the argument uses no compactness hypothesis beyond the interval itself.

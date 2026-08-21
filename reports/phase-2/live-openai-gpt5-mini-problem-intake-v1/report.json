@@ -1,0 +1,310 @@
+{
+  "accepted_dossier": {
+    "blockers": [
+      "open_obligation:obligation.sum-two-squares-mod-four.alignment_unapproved",
+      "open_obligation:obligation.sum-two-squares-mod-four.target_unwarranted",
+      "semantic_target_not_resolved"
+    ],
+    "content_hash": "sha256:f48fb59d395642f0dd73a9056fd2bee4ce5c5c806aa538cb9c4fe54f3e94b9d1",
+    "dossier_id": "dossier.sum-two-squares-mod-four.intake.sha256-61ce0bfad20f0645",
+    "evidence_ids": [],
+    "logical_status": "unknown",
+    "obligation_ids": [
+      "obligation.sum-two-squares-mod-four.alignment_unapproved",
+      "obligation.sum-two-squares-mod-four.target_unwarranted"
+    ],
+    "semantic_alignment_status": "not_approved_equivalent",
+    "target_claim_id": "claim.sum-two-squares-mod-four.three_mod_four_not_sum_of_two_squares",
+    "warrant_ids": []
+  },
+  "audit_replay_hash": "sha256:ea199c2e82f69ce4ff9200574ada5f8b08d66680d4d6895e5080435a7afb7b44",
+  "audit_timeline": [
+    {
+      "aggregate_id": "run.mod4.live.v1",
+      "created_at": "2026-08-21T06:56:40.685978Z",
+      "event_id": "event.run.mod4.live.v1.created",
+      "event_type": "run_created",
+      "idempotency_key": "run-created:run.mod4.live.v1",
+      "payload": {
+        "dossier_hash": "sha256:f48fb59d395642f0dd73a9056fd2bee4ce5c5c806aa538cb9c4fe54f3e94b9d1",
+        "dossier_id": "dossier.sum-two-squares-mod-four.intake.sha256-61ce0bfad20f0645"
+      },
+      "schema_version": "2.0.0",
+      "sequence": 1
+    },
+    {
+      "aggregate_id": "run.mod4.live.v1",
+      "created_at": "2026-08-21T06:56:40.685978Z",
+      "event_id": "event.run:run.mod4.live.v1:running",
+      "event_type": "run_running",
+      "idempotency_key": "run:run.mod4.live.v1:running",
+      "payload": {
+        "from": "queued",
+        "to": "running"
+      },
+      "schema_version": "2.0.0",
+      "sequence": 2
+    },
+    {
+      "aggregate_id": "run.mod4.live.v1",
+      "created_at": "2026-08-21T06:56:53.430481Z",
+      "event_id": "event.proposal:run.mod4.live.v1:proposer",
+      "event_type": "proposal_imported",
+      "idempotency_key": "proposal:run.mod4.live.v1:proposer",
+      "payload": {
+        "artifact_hash": "sha256:c827d7211e983713fe8f264ce277d89b8fe97484cb7ec15c608820063d23a613",
+        "disposition": "proposal",
+        "proposal_id": "proposal.run.mod4.live.v1.proposer"
+      },
+      "schema_version": "2.0.0",
+      "sequence": 3
+    },
+    {
+      "aggregate_id": "run.mod4.live.v1",
+      "created_at": "2026-08-21T06:56:53.430733Z",
+      "event_id": "event.job:run.mod4.live.v1:proposer:succeeded",
+      "event_type": "job_succeeded",
+      "idempotency_key": "job:run.mod4.live.v1:proposer:succeeded",
+      "payload": {
+        "job_id": "job.run.mod4.live.v1.proposer",
+        "result_hash": "sha256:c827d7211e983713fe8f264ce277d89b8fe97484cb7ec15c608820063d23a613"
+      },
+      "schema_version": "2.0.0",
+      "sequence": 4
+    },
+    {
+      "aggregate_id": "run.mod4.live.v1",
+      "created_at": "2026-08-21T06:57:11.984500Z",
+      "event_id": "event.proposal:run.mod4.live.v1:verifier",
+      "event_type": "proposal_imported",
+      "idempotency_key": "proposal:run.mod4.live.v1:verifier",
+      "payload": {
+        "artifact_hash": "sha256:11133961b52e553728523375f3bdf560aa6dd1853ea9480c9bfc2f325d2afb87",
+        "disposition": "proposal",
+        "proposal_id": "proposal.run.mod4.live.v1.verifier"
+      },
+      "schema_version": "2.0.0",
+      "sequence": 5
+    },
+    {
+      "aggregate_id": "run.mod4.live.v1",
+      "created_at": "2026-08-21T06:57:11.985031Z",
+      "event_id": "event.job:run.mod4.live.v1:verifier:succeeded",
+      "event_type": "job_succeeded",
+      "idempotency_key": "job:run.mod4.live.v1:verifier:succeeded",
+      "payload": {
+        "job_id": "job.run.mod4.live.v1.verifier",
+        "result_hash": "sha256:11133961b52e553728523375f3bdf560aa6dd1853ea9480c9bfc2f325d2afb87"
+      },
+      "schema_version": "2.0.0",
+      "sequence": 6
+    },
+    {
+      "aggregate_id": "run.mod4.live.v1",
+      "created_at": "2026-08-21T06:57:11.985697Z",
+      "event_id": "event.run:run.mod4.live.v1:awaiting_review",
+      "event_type": "run_awaiting_review",
+      "idempotency_key": "run:run.mod4.live.v1:awaiting_review",
+      "payload": {
+        "from": "running",
+        "to": "awaiting_review"
+      },
+      "schema_version": "2.0.0",
+      "sequence": 7
+    }
+  ],
+  "budget": {
+    "budget_id": "budget.run.mod4.live.v1",
+    "elapsed_milliseconds": 31299,
+    "exhausted_dimensions": [
+      "attempts"
+    ],
+    "limits": {
+      "max_attempts": 2,
+      "max_cost_microusd": 20000,
+      "max_input_tokens": 20000,
+      "max_output_tokens": 4096,
+      "max_wall_milliseconds": 300000,
+      "schema_version": "2.0.0"
+    },
+    "schema_version": "2.0.0",
+    "used_attempts": 2,
+    "used_cost_microusd": 5628,
+    "used_input_tokens": 2605,
+    "used_output_tokens": 2488
+  },
+  "cost_estimates": [
+    {
+      "call_id": "call.run.mod4.live.v1.proposer.attempt.1",
+      "created_at": "2026-08-21T06:56:40.691684Z",
+      "estimate_id": "estimate.call.run.mod4.live.v1.proposer.attempt.1",
+      "estimated_cost_microusd": 4365,
+      "input_token_estimate": 1075,
+      "output_token_estimate": 2048,
+      "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+      "run_id": "run.mod4.live.v1",
+      "schema_version": "2.0.0"
+    },
+    {
+      "call_id": "call.run.mod4.live.v1.verifier.attempt.1",
+      "created_at": "2026-08-21T06:56:53.437058Z",
+      "estimate_id": "estimate.call.run.mod4.live.v1.verifier.attempt.1",
+      "estimated_cost_microusd": 4360,
+      "input_token_estimate": 1054,
+      "output_token_estimate": 2048,
+      "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+      "run_id": "run.mod4.live.v1",
+      "schema_version": "2.0.0"
+    }
+  ],
+  "jobs": [
+    {
+      "attempts": 1,
+      "deadline_at": "2026-08-21T06:58:40.686773Z",
+      "idempotency_key": "job:run.mod4.live.v1:proposer",
+      "job_id": "job.run.mod4.live.v1.proposer",
+      "kind": "proposer",
+      "lease_owner": null,
+      "lease_until": null,
+      "max_attempts": 2,
+      "payload_hash": "sha256:f48fb59d395642f0dd73a9056fd2bee4ce5c5c806aa538cb9c4fe54f3e94b9d1",
+      "result_hash": "sha256:c827d7211e983713fe8f264ce277d89b8fe97484cb7ec15c608820063d23a613",
+      "run_id": "run.mod4.live.v1",
+      "schema_version": "2.0.0",
+      "status": "succeeded"
+    },
+    {
+      "attempts": 1,
+      "deadline_at": "2026-08-21T06:58:40.686773Z",
+      "idempotency_key": "job:run.mod4.live.v1:verifier",
+      "job_id": "job.run.mod4.live.v1.verifier",
+      "kind": "verifier",
+      "lease_owner": null,
+      "lease_until": null,
+      "max_attempts": 2,
+      "payload_hash": "sha256:c827d7211e983713fe8f264ce277d89b8fe97484cb7ec15c608820063d23a613",
+      "result_hash": "sha256:11133961b52e553728523375f3bdf560aa6dd1853ea9480c9bfc2f325d2afb87",
+      "run_id": "run.mod4.live.v1",
+      "schema_version": "2.0.0",
+      "status": "succeeded"
+    }
+  ],
+  "model_calls": [
+    {
+      "call_id": "call.run.mod4.live.v1.proposer.attempt.1",
+      "capabilities_json": "[\"responses_api\",\"structured_output\",\"refusal\"]",
+      "cost_microusd": 2302,
+      "created_at": "2026-08-21T06:56:53.429934Z",
+      "estimated_cost_microusd": 2302,
+      "idempotency_key": "call:run.mod4.live.v1:proposer:attempt:1",
+      "incomplete_reason": null,
+      "input_tokens": 1245,
+      "model_identifier": "gpt-5-mini-2025-08-07",
+      "output_tokens": 995,
+      "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+      "provider": "openai",
+      "provider_request_id": "resp_04048a0700ff1116016a87f6aaac0887d0af6f438a283cf53c",
+      "purpose": "proposer",
+      "request_hash": "sha256:fe07c1d2ede53ba220fc707a4e9fcb5558262fe8532dbd3f2996e14036e847a8",
+      "result_hash": "sha256:27bd9032ed0573787b774afcce5715999fa710af63041b93ca2820607fa8b467",
+      "retry_classification": "none",
+      "run_id": "run.mod4.live.v1",
+      "schema_version": "2.0.0",
+      "status": "succeeded",
+      "total_tokens": 2240,
+      "usage_source": "api_reported"
+    },
+    {
+      "call_id": "call.run.mod4.live.v1.verifier.attempt.1",
+      "capabilities_json": "[\"responses_api\",\"structured_output\",\"refusal\"]",
+      "cost_microusd": 3326,
+      "created_at": "2026-08-21T06:57:11.983248Z",
+      "estimated_cost_microusd": 3326,
+      "idempotency_key": "call:run.mod4.live.v1:verifier:attempt:1",
+      "incomplete_reason": null,
+      "input_tokens": 1360,
+      "model_identifier": "gpt-5-mini-2025-08-07",
+      "output_tokens": 1493,
+      "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+      "provider": "openai",
+      "provider_request_id": "resp_05b757522177a32b016a87f6b5f1f487d090fd5e8324863842",
+      "purpose": "verifier",
+      "request_hash": "sha256:fe8c9f07c4f83aa9e348b28265dc6a37f8e0e4e142d50b0161b4551edcc41209",
+      "result_hash": "sha256:3089c869aef329738de95fe00e13f5a713dff679d3dd5880cf9ea6a5de147373",
+      "retry_classification": "none",
+      "run_id": "run.mod4.live.v1",
+      "schema_version": "2.0.0",
+      "status": "succeeded",
+      "total_tokens": 2853,
+      "usage_source": "api_reported"
+    }
+  ],
+  "proposals": [
+    {
+      "artifact_hash": "sha256:c827d7211e983713fe8f264ce277d89b8fe97484cb7ec15c608820063d23a613",
+      "disposition": "proposal",
+      "proposal_id": "proposal.run.mod4.live.v1.proposer",
+      "proposal_kind": "proof_attempt",
+      "run_id": "run.mod4.live.v1",
+      "schema_version": "2.0.0",
+      "source_id": "call.run.mod4.live.v1.proposer.attempt.1",
+      "source_kind": "model",
+      "target_claim_id": "claim.sum-two-squares-mod-four.three_mod_four_not_sum_of_two_squares"
+    },
+    {
+      "artifact_hash": "sha256:11133961b52e553728523375f3bdf560aa6dd1853ea9480c9bfc2f325d2afb87",
+      "disposition": "proposal",
+      "proposal_id": "proposal.run.mod4.live.v1.verifier",
+      "proposal_kind": "verifier_finding",
+      "run_id": "run.mod4.live.v1",
+      "schema_version": "2.0.0",
+      "source_id": "call.run.mod4.live.v1.verifier.attempt.1",
+      "source_kind": "model",
+      "target_claim_id": "claim.sum-two-squares-mod-four.three_mod_four_not_sum_of_two_squares"
+    }
+  ],
+  "run": {
+    "budget_id": "budget.run.mod4.live.v1",
+    "created_at": "2026-08-21T06:56:40.685978Z",
+    "dossier_hash": "sha256:f48fb59d395642f0dd73a9056fd2bee4ce5c5c806aa538cb9c4fe54f3e94b9d1",
+    "dossier_id": "dossier.sum-two-squares-mod-four.intake.sha256-61ce0bfad20f0645",
+    "run_id": "run.mod4.live.v1",
+    "schema_version": "2.0.0",
+    "status": "awaiting_review",
+    "updated_at": "2026-08-21T06:57:11.985697Z"
+  },
+  "schema_version": "2.0.0",
+  "verifier_context_manifest": {
+    "context_artifact_hash": "sha256:6d2fcf43a69f2b2ee085376573e1a82d0cedc199b69c17bcbc806f5be5fda637",
+    "excluded_entity_ids": [
+      "call.run.mod4.live.v1.proposer.attempt.1",
+      "event.sum-two-squares-mod-four.problem_definition_recorded",
+      "obligation.sum-two-squares-mod-four.alignment_unapproved",
+      "obligation.sum-two-squares-mod-four.target_unwarranted",
+      "problem.sum-two-squares-mod-four",
+      "protocol.sum-two-squares-mod-four.v1"
+    ],
+    "included_entity_ids": [
+      "alignment.sum-two-squares-mod-four.v1",
+      "claim.sum-two-squares-mod-four.square_residues_mod_four",
+      "claim.sum-two-squares-mod-four.three_mod_four_not_sum_of_two_squares",
+      "formalization.sum-two-squares-mod-four.v1",
+      "proposal.run.mod4.live.v1.proposer"
+    ],
+    "independence": {
+      "context_isolated": true,
+      "deterministic_checker": false,
+      "different_model": false,
+      "different_provider": false,
+      "formal_kernel": false,
+      "independently_implemented_checker": false,
+      "schema_version": "2.0.0",
+      "separate_model_call": true
+    },
+    "manifest_id": "manifest.run.mod4.live.v1.verifier",
+    "policy_version": "phase1-trust-policy-v1",
+    "run_id": "run.mod4.live.v1",
+    "schema_version": "2.0.0",
+    "serialized_context_hash": "sha256:6d2fcf43a69f2b2ee085376573e1a82d0cedc199b69c17bcbc806f5be5fda637"
+  }
+}

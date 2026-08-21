@@ -26,7 +26,7 @@ from math_research.phase2.records import BudgetLimits, ModelRequest, ModelResult
 from math_research.phase2.prompt_templates import PromptCatalog
 from math_research.phase2.serialization import canonical_json
 from math_research.phase2.sqlite_workspace import SQLiteWorkspace
-from math_research.phase2_cli import main as phase2_main
+from math_research.phase2_cli import CREDENTIALS_UNRESOLVED, main as phase2_main
 
 
 class FakeAPIStatusError(Exception):
@@ -102,12 +102,25 @@ class PricingAndConfigurationTests(unittest.TestCase):
         self.assertNotIn("sk-preflight-example123", canonical_json(redacted))
 
     def test_incomplete_configuration_prints_names_and_command_only(self) -> None:
+        """Names and a command shape only -- never a value, never a guess.
+
+        ADR-0038 changed one name in this list. With no readable configuration
+        there is no provider, so no credential requirement can be derived, and
+        the report says exactly that instead of naming OPENAI_API_KEY -- which
+        would attribute a requirement to a provider the run never selected. The
+        boundary this test defends is unchanged: the output carries only
+        variable names and the command shape.
+        """
         output = io.StringIO()
-        with patch.dict(os.environ, {}, clear=True), patch("math_research.phase2_cli.load_repository_env"), redirect_stdout(output):
+        with patch.dict(os.environ, {}, clear=True), patch(
+            "math_research.phase2_cli.load_provider_environment"
+        ), redirect_stdout(output):
             status = phase2_main(["live-preflight"])
         value = json.loads(output.getvalue())
         self.assertEqual(status, 2)
-        self.assertIn("OPENAI_API_KEY", value["missing_variables"])
+        self.assertIn(CREDENTIALS_UNRESOLVED, value["missing_variables"])
+        self.assertNotIn("OPENAI_API_KEY", value["missing_variables"])
+        self.assertIn("config.provider", value["missing_variables"])
         self.assertIn("config.model_identifier", value["missing_variables"])
         self.assertIn("pricing.source", value["missing_variables"])
         self.assertEqual(value["command_shape"], LIVE_GATE_COMMAND_SHAPE)
