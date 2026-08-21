@@ -1,10 +1,12 @@
 # Technical Blueprint: Verification-First Mathematical Research System
 
-**Document status:** Architecture baseline 0.6 — bounded local Phase 5 and
-Phase 6 slices and the ADR-0027 exploratory-synthesis slice are accepted and
-implemented on 20 August 2026. Phases 0--4A remain preserved; noncommuting SDP,
-higher adaptive-search tiers, broader Phase 4 acquisition and hybrid retrieval,
-and external evaluation remain deferred. ADR-0029 refines the future adaptive
+**Document status:** Architecture baseline 0.7 — bounded Phase 4B acquisition
+and exact-source parsing, local Phase 5 and Phase 6 slices, and the ADR-0027
+exploratory-synthesis slice are accepted and implemented on 20 August 2026.
+The exact OCI parser gate passes; the separately acknowledged live HTTPS gate
+is the final Phase 4B activation step. Noncommuting SDP, higher adaptive-search
+tiers, hybrid retrieval, broader acquisition/media, and external evaluation
+remain deferred. ADR-0029 refines the future adaptive
 search architecture without activating those tiers. ADR-0012 preserves the
 superseded roadmap history.
 
@@ -1604,6 +1606,45 @@ must not be the only location of a claim or source span.
 An index entry contains the canonical entity ID, content/version hash, embedding
 or parser version, and visibility policy.
 
+#### 12.2.1 Provider binding for vector projections
+
+If more than one model provider is ever configured, a vector projection must
+bind the producing provider into its own identity. Vectors from different
+providers, or from different embedding models of one provider, do not share a
+geometry, so a similarity comparison across them is meaningless. Unlike a
+dimension mismatch, which fails loudly, two same-dimension models from different
+vendors produce a silently degraded index that no ordering or recall test detects.
+
+Therefore:
+
+- A vector index is partitioned by the tuple `(provider, model_identifier,
+  dimension, normalization)`. A query vector is only ever compared against
+  vectors in its own partition. There is no default or fallback partition.
+- Changing the embedding provider or model is a full rebuild of the affected
+  projection, never an incremental or mixed backfill. This follows from the
+  rebuildable-projection rule above and must not be weakened into a migration.
+- A remote embedding API is not bit-reproducible, and providers reversion models
+  behind stable aliases. To satisfy a deterministic-rebuild gate, produced
+  vectors are stored as immutable content-hashed artifacts whose bytes are bound
+  into canonical identity. A rebuild replays those artifacts and does not call
+  the provider again.
+- Rights bind the processor, not only the use. A current Phase 4A `embedding`
+  rights decision authorizes a named processor. Sending the same source text to
+  a second provider requires its own decision, because it is a distinct
+  disclosure.
+- Each provider carries its own pinned pricing snapshot. Embedding models are
+  input-token-only, which the general request/response cost shape does not
+  express.
+
+No embedding, vector index, or embedding-provider port exists in the
+implementation yet. This subsection is a forward constraint on the multi-provider
+and Phase 4C work, recorded before either exists so the binding is designed in
+rather than retrofitted over a mixed index.
+
+Multi-provider configuration also has one benefit to retain deliberately:
+`different_provider` is a component of verifier independence, and a
+single-provider deployment can never claim full independence.
+
 ### 12.3 Suggested initial persistence
 
 - PostgreSQL for domain state and append-only events
@@ -2072,6 +2113,23 @@ Exit criteria:
 - resource and network limits pass adversarial tests.
 
 ### Phase 4 — Broader acquisition and research automation
+
+Implemented bounded Phase 4B slice (ADR-0028):
+
+- exact-human-authorized HTTPS acquisition with terms, robots, rights,
+  DNS/peer, redirect, content, byte, and time gates;
+- source-specific deletable content objects with non-reconstructive audit and
+  replay metadata;
+- dependency-free strict HTML, non-expanding TeX, and narrow born-digital PDF
+  candidates with exact source-byte anchors;
+- an exact-image, no-pull OCI parser worker with no network or host mounts,
+  read-only root, non-root identity, noexec temporary storage, and kernel
+  memory/CPU/process/file limits;
+- two independent deterministic feasible-gate runs and twelve exact parser
+  disposition matches with zero false admissions.
+
+The separately acknowledged external live HTTPS observation remains the final
+activation condition. It is not part of deterministic offline acceptance.
 
 Build:
 
