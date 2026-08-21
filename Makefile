@@ -215,6 +215,11 @@ phase5:
 # move, so a silent drop from 13 executed controls to 12, an unflipped
 # falsifiability probe, a lost positive control, or a suite edited after freezing
 # must fail this target rather than pass quietly.
+#
+# `inspect` and `replay` only read an envelope back; `verify` is the clean-room
+# re-derivation added by ADR-0044. It reruns the held-out case, re-derives every
+# record and release identity, and refuses a bundle it cannot reproduce, so a
+# re-sealed tamper fails here rather than being ingested. It writes nothing.
 phase6:
 	@printf '\n== phase 6 confirmatory evaluation and release ==\n'
 	@d=$$(mktemp -d "$(TMPROOT)/adaivy-p6.XXXXXX") && \
@@ -224,9 +229,16 @@ phase6:
 	    $(PHASE5_INSTANT) $(PHASE6_INSTANT) --output-dir "$$d/out" >/dev/null && \
 	  $(PY) -m math_research.cli phase6 inspect "$$d/out/phase6-export.json" >/dev/null && \
 	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); p=json.load(open(sys.argv[2])); s=r["confirmatory_result"]["generality_controls"]; assert r["confirmatory_result"]["status"] == "passed", "phase 6 confirmatory status moved: %s" % r["confirmatory_result"]["status"]; assert (r["controls_total"], r["controls_passed"]) == (13, 13), "phase 6 generality control count moved: %s" % [r["controls_total"], r["controls_passed"]]; assert (r["probes_total"], r["probes_flipped"]) == (13, 13), "phase 6 falsifiability probe count moved: %s" % [r["probes_total"], r["probes_flipped"]]; assert r["positive_control_admitted"] is True, "phase 6 lost its positive control"; assert r["control_corpus_provenance"] == "project_authored", "phase 6 control corpus provenance moved"; assert r["baseline_comparison"]["is_generality_measure"] is False, "phase 6 baseline comparison must not claim to measure generality"; assert (r["heldout_accesses"], r["adaptations_after_access"]) == (1, 0), "phase 6 held-out access ledger moved: %s" % [r["heldout_accesses"], r["adaptations_after_access"]]; assert r["generality_suite_hash"] == p["generality_suite_hash"] == s["suite_hash"], "phase 6 executed a suite the protocol did not freeze"; assert set(s["categories_covered"]) >= {"cross_representation_problems","false_conjectures","inapplicable_citations","known_theorems","missing_assumption_traps","semantic_mistranslations"}, "phase 6 suite dropped a section 18.4 category: %s" % s["categories_covered"]' \
-	    "$$d/out/release.json" fixtures/phase6/confirmatory-protocol-v1.json && \
+	    "$$d/out/release.json" fixtures/phase6/confirmatory-protocol-v1.json && \ && \
+	  $(PY) -m math_research.cli phase5 export "$$d/workspace" \
+	    "$$d/out/phase5-export.json" >/dev/null && \
+	  $(PY) -m math_research.cli phase6 verify "$$d/out/phase6-export.json" \
+	    "$$d/out/phase5-export.json" fixtures/phase5/quantum-diagonal-v1.json \
+	    > "$$d/out/phase6-verified.json" && \
+	  $(PY) -c 'import json,sys; v=json.load(open(sys.argv[1])); assert v["verified"] is True, "phase 6 clean-room replay did not verify"; assert len(v["checks"]) == 15, "phase 6 replay check count moved: %d" % len(v["checks"]); assert [i["field"] for i in v["unverifiable"]] == ["semantic_fidelity", "negative_and_superseded_attempts_retained"], "phase 6 unverifiable set moved: %s" % v["unverifiable"]; assert [i["field"] for i in v["not_derived"]] == ["controls_passed", "controls_total", "baseline_comparison", "baseline_comparison.simplest_baseline_passed", "baseline_comparison.phase6_passed"], "phase 6 not_derived set moved: %s" % v["not_derived"]; assert not any(i["counted_as_evidence"] for i in v["unverifiable"] + v["not_derived"]), "a named gap was counted as evidence"' \
+	    "$$d/out/phase6-verified.json" && \ && \
 	  rm -rf "$$d" && \
-	  printf 'phase 6 ok (13 generality controls executed; 13 probes flipped)\n'
+	  printf 'phase 6 ok (13 generality controls executed; 13 probes flipped; clean-room replay verified, 2 unverifiable + 5 not-derived fields named)\n'
 
 synthesis:
 	@printf '\n== bounded exploratory synthesis ==\n'

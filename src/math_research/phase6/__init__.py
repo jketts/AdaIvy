@@ -9,11 +9,12 @@ MAX_EXPORT_BYTES = 67_108_864
 from .errors import GeneralitySuiteError, Phase6ValidationError
 from .generality import load_suite, run_suite, suite_hash, validate_suite
 from .heldout import HeldOutView
+from .replay import Phase6ReplayError, verify_release_bundle
 from .service import Phase6Service, render_report
 from .workspace import Phase6Workspace
 
 __all__ = [
-    "GeneralitySuiteError", "HeldOutView", "Phase6Service", "Phase6ValidationError",
-    "Phase6Workspace", "load_suite", "render_report", "run_suite", "suite_hash",
-    "validate_suite",
+    "GeneralitySuiteError", "HeldOutView", "Phase6ReplayError", "Phase6Service",
+    "Phase6ValidationError", "Phase6Workspace", "load_suite", "render_report",
+    "run_suite", "suite_hash", "validate_suite", "verify_release_bundle",
 ]
