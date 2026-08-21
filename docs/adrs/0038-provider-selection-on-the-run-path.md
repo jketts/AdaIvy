@@ -256,3 +256,84 @@ that the offline suite cannot see; if the exclusion-only pricing marker is found
 to have let a wrong rate through, which would argue for the schema field deferred
 above; or on the first live call by any provider, whose outcome must be recorded
 whether it passes or fails.
+
+## Addendum: first live call on the run path (21 August 2026)
+
+This section discharges the revisit trigger above -- "on the first live call by any
+provider, whose outcome must be recorded whether it passes or fails" -- for
+`openai` and for no other provider.
+
+One live run executed through `phase2 start --execute --problem`, the path this
+ADR opened. It is the first recorded live model call through `start`/`advance` by
+any provider; the pre-existing `reports/phase-2/live-provider-status.json` records
+a `live-gate` call, which is a different entry point. Evidence:
+`reports/phase-2/live-openai-gpt5-mini-problem-intake-v1/`, whose
+`live-run-status.json` is computed from the workspace and the CLI's own report
+rather than hand-authored.
+
+The subject was an ADR-0039 declarative problem definition, not the built-in
+fixture: `fixtures/problem-intake/sum-two-squares-mod-four-v1.json`, canonical
+hash `sha256:61ce0bfad20f0645...`, asserting that no integer congruent to three
+modulo four is a sum of two integer squares. So this run also measures the
+ADR-0039 intake and the ADR-0038 run path composed, which nothing had done.
+
+| Property | Measured |
+|---|---|
+| Entry path | `phase2 start --execute --problem` |
+| Provider / configuration | `openai` / `config.phase2.live.gpt5-mini.v3` |
+| Resolved model | `gpt-5-mini-2025-08-07` |
+| Calls | 2 (`proposer`, `verifier`), both `succeeded`, both `usage_source: api_reported` |
+| Cost | 5,628 micro-USD against a 20,000 ceiling; preflight estimated 13,192 for two calls |
+| Tokens | 5,093 API-reported |
+| Wall time | 31.3 s |
+| Budget exit | `exhausted_dimensions: ["attempts"]` -- the run stopped on its own attempt limit, not on cost or wall clock |
+| Credential leak matches | 0 across every workspace file and every SQLite text column, 2 configured credentials scanned |
+| Mathematical content | A correct proof: assume the contrary, apply the accepted lemma that a square is 0 or 1 mod 4, enumerate the four residue pairs to get sums 0, 1, 2, contradict 3. The verifier returned two `supports` findings citing the premise by its exact claim ID |
+| Measured `logical_status` | `unknown` |
+| Warrant IDs / evidence IDs | `[]` / `[]` |
+| Blockers | `target_unwarranted`, `alignment_unapproved`, `semantic_target_not_resolved` |
+| Proposal dispositions / source kinds | `["proposal"]` / `["model"]` |
+
+The load-bearing result is the last four rows. A correct proof, produced by a real
+model and confirmed by a real second call, moved the trust projection by exactly
+nothing. The report line "model/backend output did not mutate it" is now measured
+against live output rather than a fixture.
+
+**What this is not evidence of**, stated because six green offline providers
+already read like six working providers:
+
+- The other six providers remain exactly as untested as before. The Status line at
+  the head of this ADR does not move: `anthropic`, `azure_openai`, `bedrock`,
+  `deepseek`, `minimax`, and `qwen_dashscope` still have no live evidence of any
+  kind, and their absence is not a pass.
+- One run against one model on one problem is not a measurement of the adapter's
+  error taxonomy, refusal semantics, or retry classification. Every value in the
+  ADR's "honest risk" paragraph that a single successful call cannot exercise
+  stays unexercised, including the recorded `UNCONFIRMED` base URLs of the
+  OpenAI-compatible providers, which this run does not touch.
+- The verifier was not independent. Measured
+  `verifier_context_manifest.independence`: `context_isolated: true` and
+  `separate_model_call: true`, but `different_model: false`,
+  `different_provider: false`, `formal_kernel: false`,
+  `deterministic_checker: false`, `independently_implemented_checker: false`. One
+  gateway served both roles, so this is a model checking itself in a fresh
+  context. The cross-provider independence slice deferred above is now the
+  measured next gap rather than a theoretical one.
+- The proof was not formally checked. Nothing converts a Phase 2 proposal into a
+  Phase 3B Lean request -- `phase3b` is still reachable only from `cli.py`'s
+  dispatcher and from no other module -- so no `kernel_checked` attestation
+  exists and the publication projection would render this claim as `Conjecture`.
+  The concurrent ADR-0040 does not change this: it adds a repair loop and a
+  `ProofProposer` port above the sealed runtime, but that port is a model-shaped
+  hole with a scripted proposer only, and its own Consequences section records
+  that wiring a live proposer is a separate slice which must satisfy this ADR's
+  live-gate precedent. The natural-language-to-Lean step is unbuilt in both
+  directions.
+- The run reached `awaiting_review` and parks there. No command records a review
+  verdict, approves the semantic alignment, or discharges either obligation, so
+  the two obligations ADR-0039 opens remain open by construction rather than by
+  judgement.
+
+The correctness of the mathematics is a human reading of the proposal text in
+`proposals.json`, recorded here as such. It is not a warrant, not a verification
+record, and creates no applicability record or graph admission.

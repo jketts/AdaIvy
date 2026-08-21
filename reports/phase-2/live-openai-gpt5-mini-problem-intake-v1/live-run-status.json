@@ -1,0 +1,145 @@
+{
+  "api_reported_total_tokens": 5093,
+  "audit_replay_hash": "sha256:ea199c2e82f69ce4ff9200574ada5f8b08d66680d4d6895e5080435a7afb7b44",
+  "bound_live_run_configuration": {
+    "configuration_id": "config.phase2.live.gpt5-mini.v3",
+    "content_hash": "sha256:03fcff9d4007985799bbf6b1e670a1b9c5900660ee444904c1bc681b04802da3",
+    "created_at": "2026-08-21T06:56:40.687393Z",
+    "model_identifier": "gpt-5-mini",
+    "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+    "provider": "openai",
+    "run_id": "run.mod4.live.v1"
+  },
+  "budget": {
+    "budget_id": "budget.run.mod4.live.v1",
+    "elapsed_milliseconds": 31299,
+    "exhausted_dimensions": [
+      "attempts"
+    ],
+    "limits": {
+      "max_attempts": 2,
+      "max_cost_microusd": 20000,
+      "max_input_tokens": 20000,
+      "max_output_tokens": 4096,
+      "max_wall_milliseconds": 300000,
+      "schema_version": "2.0.0"
+    },
+    "schema_version": "2.0.0",
+    "used_attempts": 2,
+    "used_cost_microusd": 5628,
+    "used_input_tokens": 2605,
+    "used_output_tokens": 2488
+  },
+  "call_statuses": [
+    "succeeded",
+    "succeeded"
+  ],
+  "calls": [
+    {
+      "call_id": "call.run.mod4.live.v1.proposer.attempt.1",
+      "capabilities_json": "[\"responses_api\",\"structured_output\",\"refusal\"]",
+      "cost_microusd": 2302,
+      "created_at": "2026-08-21T06:56:53.429934Z",
+      "estimated_cost_microusd": 2302,
+      "idempotency_key": "call:run.mod4.live.v1:proposer:attempt:1",
+      "incomplete_reason": null,
+      "input_tokens": 1245,
+      "model_identifier": "gpt-5-mini-2025-08-07",
+      "output_tokens": 995,
+      "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+      "provider": "openai",
+      "provider_request_id": "resp_04048a0700ff1116016a87f6aaac0887d0af6f438a283cf53c",
+      "purpose": "proposer",
+      "request_hash": "sha256:fe07c1d2ede53ba220fc707a4e9fcb5558262fe8532dbd3f2996e14036e847a8",
+      "result_hash": "sha256:27bd9032ed0573787b774afcce5715999fa710af63041b93ca2820607fa8b467",
+      "retry_classification": "none",
+      "run_id": "run.mod4.live.v1",
+      "schema_version": "2.0.0",
+      "status": "succeeded",
+      "total_tokens": 2240,
+      "usage_source": "api_reported"
+    },
+    {
+      "call_id": "call.run.mod4.live.v1.verifier.attempt.1",
+      "capabilities_json": "[\"responses_api\",\"structured_output\",\"refusal\"]",
+      "cost_microusd": 3326,
+      "created_at": "2026-08-21T06:57:11.983248Z",
+      "estimated_cost_microusd": 3326,
+      "idempotency_key": "call:run.mod4.live.v1:verifier:attempt:1",
+      "incomplete_reason": null,
+      "input_tokens": 1360,
+      "model_identifier": "gpt-5-mini-2025-08-07",
+      "output_tokens": 1493,
+      "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+      "provider": "openai",
+      "provider_request_id": "resp_05b757522177a32b016a87f6b5f1f487d090fd5e8324863842",
+      "purpose": "verifier",
+      "request_hash": "sha256:fe8c9f07c4f83aa9e348b28265dc6a37f8e0e4e142d50b0161b4551edcc41209",
+      "result_hash": "sha256:3089c869aef329738de95fe00e13f5a713dff679d3dd5880cf9ea6a5de147373",
+      "retry_classification": "none",
+      "run_id": "run.mod4.live.v1",
+      "schema_version": "2.0.0",
+      "status": "succeeded",
+      "total_tokens": 2853,
+      "usage_source": "api_reported"
+    }
+  ],
+  "calls_recorded": 2,
+  "cost_microusd": 5628,
+  "credential_leak_matches": 0,
+  "credentials_scanned": 2,
+  "dossier_hash": "sha256:f48fb59d395642f0dd73a9056fd2bee4ce5c5c806aa538cb9c4fe54f3e94b9d1",
+  "dossier_id": "dossier.sum-two-squares-mod-four.intake.sha256-61ce0bfad20f0645",
+  "entry_path": "phase2 start --execute --problem",
+  "measured_trust": {
+    "blockers": [
+      "open_obligation:obligation.sum-two-squares-mod-four.alignment_unapproved",
+      "open_obligation:obligation.sum-two-squares-mod-four.target_unwarranted",
+      "semantic_target_not_resolved"
+    ],
+    "evidence_ids": [],
+    "logical_status": "unknown",
+    "semantic_alignment_status": "not_approved_equivalent",
+    "warrant_ids": []
+  },
+  "note": "First recorded live model call through the ADR-0038 run path. This is NOT a live-gate artifact: it was produced by `phase2 start --execute` on a declarative ADR-0039 problem definition, so it carries no live-gate history chain. A live acquisition of model output yields proposals only and no mathematical warrant.",
+  "pricing_snapshot_id": "pricing.openai.gpt5-mini.2026-08-19.v1",
+  "problem_definition_canonical_hash": "sha256:61ce0bfad20f06450c4c8da788745373c428576a1ac0999ac4b49574dea31804",
+  "problem_definition_id": "sum-two-squares-mod-four",
+  "proposal_dispositions": [
+    "proposal"
+  ],
+  "proposal_source_kinds": [
+    "model"
+  ],
+  "resolved_model_identifiers": [
+    "gpt-5-mini-2025-08-07"
+  ],
+  "response_ids": [
+    "resp_04048a0700ff1116016a87f6aaac0887d0af6f438a283cf53c",
+    "resp_05b757522177a32b016a87f6b5f1f487d090fd5e8324863842"
+  ],
+  "run_id": "run.mod4.live.v1",
+  "schema_version": "2.0.0",
+  "status": "passed",
+  "verifier_independence": {
+    "context_isolated": true,
+    "deterministic_checker": false,
+    "different_model": false,
+    "different_provider": false,
+    "formal_kernel": false,
+    "independently_implemented_checker": false,
+    "schema_version": "2.0.0",
+    "separate_model_call": true
+  },
+  "verifier_manifests": [
+    {
+      "canonical_json": "{\"context_artifact_hash\":\"sha256:6d2fcf43a69f2b2ee085376573e1a82d0cedc199b69c17bcbc806f5be5fda637\",\"excluded_entity_ids\":[\"call.run.mod4.live.v1.proposer.attempt.1\",\"event.sum-two-squares-mod-four.problem_definition_recorded\",\"obligation.sum-two-squares-mod-four.alignment_unapproved\",\"obligation.sum-two-squares-mod-four.target_unwarranted\",\"problem.sum-two-squares-mod-four\",\"protocol.sum-two-squares-mod-four.v1\"],\"included_entity_ids\":[\"alignment.sum-two-squares-mod-four.v1\",\"claim.sum-two-squares-mod-four.square_residues_mod_four\",\"claim.sum-two-squares-mod-four.three_mod_four_not_sum_of_two_squares\",\"formalization.sum-two-squares-mod-four.v1\",\"proposal.run.mod4.live.v1.proposer\"],\"independence\":{\"context_isolated\":true,\"deterministic_checker\":false,\"different_model\":false,\"different_provider\":false,\"formal_kernel\":false,\"independently_implemented_checker\":false,\"schema_version\":\"2.0.0\",\"separate_model_call\":true},\"manifest_id\":\"manifest.run.mod4.live.v1.verifier\",\"policy_version\":\"phase1-trust-policy-v1\",\"run_id\":\"run.mod4.live.v1\",\"schema_version\":\"2.0.0\",\"serialized_context_hash\":\"sha256:6d2fcf43a69f2b2ee085376573e1a82d0cedc199b69c17bcbc806f5be5fda637\"}",
+      "created_at": "2026-08-21T06:56:53.435499Z",
+      "manifest_id": "manifest.run.mod4.live.v1.verifier",
+      "run_id": "run.mod4.live.v1",
+      "schema_version": "2.0.0",
+      "serialized_context_hash": "sha256:6d2fcf43a69f2b2ee085376573e1a82d0cedc199b69c17bcbc806f5be5fda637"
+    }
+  ]
+}

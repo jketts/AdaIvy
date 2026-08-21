@@ -78,6 +78,19 @@ MEASURED_TRUST: dict[str, dict[str, object]] = {
             "semantic_target_not_resolved",
         ),
     },
+    "sum-two-squares-mod-four-v1.json": {
+        "logical_status": "unknown",
+        "semantic_alignment_status": "not_approved_equivalent",
+        "warrant_kinds": (),
+        "novelty_status": "not_assessed",
+        "significance_status": "not_assessed",
+        "contribution_status": "unattributed",
+        "blockers": (
+            "open_obligation:obligation.sum-two-squares-mod-four.alignment_unapproved",
+            "open_obligation:obligation.sum-two-squares-mod-four.target_unwarranted",
+            "semantic_target_not_resolved",
+        ),
+    },
     "odd-perfect-number-search-v1.json": {
         "logical_status": "unknown",
         "semantic_alignment_status": "not_approved_equivalent",
@@ -313,8 +326,8 @@ class ExhaustiveEnumSpaceTests(unittest.TestCase):
             dossier = load_problem_definition_file(FIXTURES / name, instant=INSTANT).dossier
             stored = store.append_dossier(dossier)
             self.assertEqual(dossier, stored)
-        self.assertEqual(3, len(store.dossiers))
-        self.assertEqual(3, len(store.events.all()))
+        self.assertEqual(len(MEASURED_TRUST), len(store.dossiers))
+        self.assertEqual(len(MEASURED_TRUST), len(store.events.all()))
         for event in store.events.all():
             self.assertEqual("problem_definition_recorded", event.event_type)
 
