@@ -27,6 +27,7 @@ from .noncommuting import (
     verify_fixture,
 )
 from .quantum import DiagonalCase, QuantumInputError, run_case
+from .solver import solve_case as solve_noncommuting_case, solve_fixture as solve_noncommuting_fixture
 from .service import Phase5Service
 from .workspace import Phase5ValidationError, Phase5Workspace
 
@@ -34,5 +35,5 @@ __all__ = [
     "AlgebraicFieldError", "DiagonalCase", "NoncommutingCase", "Phase5Service",
     "Phase5ValidationError", "Phase5Workspace", "QuantumInputError",
     "SuppliedCertificate", "render_noncommuting_report", "run_case", "verify_case",
-    "verify_fixture",
+    "verify_fixture", "solve_noncommuting_case", "solve_noncommuting_fixture",
 ]

@@ -176,7 +176,7 @@ phase4c:
 	  rm -rf "$$d" && \
 	  printf 'phase 4C ok (7 gates hold; applicability precision 1.0 by exclusion)\n'
 
-# Phase 5 has two scopes and the target states both honestly.
+# Phase 5 has three scopes and the target states all of them honestly.
 #
 # The sealed scope is exact scalar/diagonal QD-FS-01: commuting cases, computed
 # results, deterministic tier-0 branches (ADR-0023).
@@ -190,6 +190,11 @@ phase4c:
 # `real-noncommuting-irreducible-cubic-boundary` case is a genuine noncommuting
 # ensemble this design provably cannot close, and it must stay visible in every
 # run. Search tiers 2--4 stay disabled.
+#
+# ADR-0049 adds a bounded exact solver for exactly two outcomes in dimension
+# two. It constructs a candidate over one measured quadratic extension and the
+# ADR-0035 exact checker remains the final authority. It does not cover the
+# retained dimension-three cubic boundary or general noncommuting convergence.
 #
 # The recorded outcome is asserted, not the exit status, so this fails if the
 # result moves in EITHER direction: a coverage status that changes, a boundary
@@ -208,8 +213,12 @@ phase5:
 	    --report "$$d/noncommuting-report.md" >/dev/null && \
 	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); c=r["coverage_status_counts"]; t=open(sys.argv[2],encoding="utf-8").read(); assert r["schema_version"] == "adaivy.phase5-noncommuting-run-result.v1", "phase 5 noncommuting run schema moved: %s" % r["schema_version"]; assert c == {"certificate_supplied_and_verified": 4, "certificate_supplied_gap_not_closed": 2, "certificate_supplied_outside_represented_field": 1, "certificate_supplied_and_refuted": 0, "unresolved_no_certificate_supplied": 1}, "phase 5 noncommuting coverage moved: %s" % c; assert r["field_boundary_case_ids"] == ["real-noncommuting-irreducible-cubic-boundary"], "phase 5 lost its measured cubic field boundary: %s" % r["field_boundary_case_ids"]; assert r["unresolved_case_ids"] == ["real-noncommuting-certificate-withheld"], "phase 5 noncommuting unresolved set moved: %s" % r["unresolved_case_ids"]; assert r["discovery_performed"] is False and r["general_noncommuting_convergence_answered"] is False, "phase 5 noncommuting claimed discovery or general coverage"; assert r["unproducible_coverage_status"] == "optimum_discovered" and "optimum_discovered" not in r["coverage_status_vocabulary"], "phase 5 made a discovered optimum producible"; assert r["tolerance"] is None and r["radicands_used"] == [1, 2, 5], "phase 5 noncommuting field or tolerance moved: %s %s" % (r["tolerance"], r["radicands_used"]); assert all(r["search_tiers"][k] == "disabled_no_measured_cost_adjusted_gain" for k in ("tier_2","tier_3","tier_4")), "phase 5 enabled a higher search tier"; assert set(r["case_coverage_status"].values()) <= set(r["coverage_status_vocabulary"]), "phase 5 reported a coverage status outside the frozen vocabulary"; assert "## Coverage (read this before any gap)" in t and t.index("## Coverage") < t.index("gap:"), "phase 5 report must present coverage before the gap"; assert "NOT answered by this slice" in t, "phase 5 report dropped its coverage disclaimer"' \
 	    "$$d/noncommuting-run.json" "$$d/noncommuting-report.md" && \
+	  $(PY) -m math_research.cli phase5 solve-noncommuting \
+	    fixtures/phase5/noncommuting-certificates-v1.json \
+	    --output "$$d/noncommuting-solver.json" >/dev/null && \
+	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); c=r["status_counts"]; assert r["schema_version"] == "adaivy.phase5-noncommuting-exact-solver-report.v1"; assert c["discovered_and_exactly_verified"] == 7 and c["unresolved_unsupported_shape"] == 1, c; assert r["exact_verifier_is_final_authority"] is True; assert r["general_noncommuting_convergence_answered"] is False; assert r["tolerance"] is None and r["uses_floating_point"] is False and r["uses_model"] is False and r["uses_network"] is False' "$$d/noncommuting-solver.json" && \
 	  rm -rf "$$d" && \
-	  printf 'phase 5 ok (diagonal QD-FS-01 computed; 4 noncommuting certificates VERIFIED not discovered, 1 measured cubic boundary, 1 unresolved without a certificate)\n'
+	  printf 'phase 5 ok (diagonal QD-FS-01 computed; supplied certificates verified; bounded exact solver discovered 7 certificates; cubic boundary unresolved)\n'
 
 # Separate, spike-only numerical comparison. The forced fail-closed leg is the
 # offline assertion: absent engines are recorded and never counted as a pass.
@@ -353,6 +362,9 @@ report:
 	    fixtures/phase5/noncommuting-certificates-v1.json $(PHASE5_INSTANT) \
 	    --output "$$out/phase5/noncommuting-run.json" \
 	    --report "$$out/phase5/report.md" >/dev/null && \
+	  $(PY) -m math_research.cli phase5 solve-noncommuting \
+	    fixtures/phase5/noncommuting-certificates-v1.json \
+	    --output "$$out/phase5/noncommuting-solver.json" >/dev/null && \
 	  $(PY) -m math_research.cli phase6 demo "$$work/p6" \
 	    fixtures/phase6/confirmatory-protocol-v1.json \
 	    fixtures/phase5/quantum-diagonal-v1.json \

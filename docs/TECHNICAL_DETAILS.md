@@ -353,9 +353,34 @@ without discarding or leaving operational metadata unaudited. Completed-checker
 exit codes and full stream hashes remain semantic inputs. Legacy full-record
 Phase 3B exports remain importable under their implicit original hash profile.
 
-This slice adds no model/API call, network acquisition, proof search or repair,
-premise retrieval, Why3/SMT/CAS/numerical adapter, web surface, broader Phase 3B
-workflow, Phase 4 feature, or quantum implementation.
+ADR-0040 adds bounded proof-fragment repair above that unchanged checker, and
+ADR-0048 supplies an opt-in Azure OpenAI implementation of its narrow proposer
+port. Only `elaboration_failure` is fed back; the model can return only a proof
+fragment and cannot change the declaration, target, imports, assumptions,
+claim identity, or meaning tests. Every repaired attempt remains a proposal and
+creates no warrant.
+
+The preflight is offline and reports missing variable names, never values:
+
+```bash
+PYTHONPATH=src python3 -m math_research.cli phase3b repair-live-preflight \
+  --config config/phase3b-live-azure-openai-v1.json \
+  --pricing-snapshot config/azure-openai-gpt5-6-sol-pricing-2026-08-21.json
+```
+
+Execution additionally requires the ADR-0016 v5 image and the explicit
+`--execute` acknowledgement:
+
+```bash
+PYTHONPATH=src python3 -m math_research.cli phase3b repair-live REQUEST.json \
+  --workspace WORKSPACE --created-at 2026-08-21T00:00:00Z --execute \
+  --config config/phase3b-live-azure-openai-v1.json \
+  --pricing-snapshot config/azure-openai-gpt5-6-sol-pricing-2026-08-21.json
+```
+
+The offline `make check` path never runs that command and never opens a socket.
+Premise retrieval, Why3/SMT/CAS/numerical adapters, a web surface, and broader
+Phase 3B workflow remain outside this slice.
 
 ## Phase 4B authorized acquisition and exact parsing
 
@@ -411,6 +436,23 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase5 lis
 The timestamp is an explicit input rather than `date` output because the
 acceptance paths are byte-reproducible; the `Makefile` pins the same instants as
 `PHASE5_INSTANT` and `PHASE6_INSTANT`.
+
+ADR-0049 additionally provides a genuine but deliberately narrow exact solver
+for two-outcome, two-dimensional ensembles. It constructs the Helstrom spectral
+projector and matching dual operator over one measured quadratic extension,
+then submits both to the same exact feasibility, weak-duality, zero-gap, and
+two-sided-complementarity checker used for supplied certificates. Construction
+does not confer warrant; only that independent exact check can accept the
+candidate. Dimension three, three or more outcomes, mixed quadratic fields, and
+higher-degree optima remain explicit unresolved outcomes. The solver uses no
+float, tolerance, model, network, or numerical engine and does not enable search
+tiers 2--4.
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase5 \
+  solve-noncommuting fixtures/phase5/noncommuting-certificates-v1.json \
+  --output /tmp/adaivy-phase5-solver.json
+```
 
 ## Phase 6 confirmatory evaluation and release
 

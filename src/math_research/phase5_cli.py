@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from .phase5.noncommuting import render_noncommuting_report, verify_fixture
+from .phase5.solver import solve_fixture
 from .phase5.service import Phase5Service
 from .phase5.workspace import Phase5Workspace, decode_json
 
@@ -33,6 +34,12 @@ def main(argv: list[str] | None = None) -> int:
     noncommuting.add_argument("--output", type=Path)
     noncommuting.add_argument("--report", type=Path)
     noncommuting.add_argument("--run-id")
+    solve_noncommuting = commands.add_parser(
+        "solve-noncommuting",
+        help="construct and exactly verify bounded 2-outcome 2x2 certificates (ADR-0049)",
+    )
+    solve_noncommuting.add_argument("fixture", type=Path)
+    solve_noncommuting.add_argument("--output", type=Path)
     export = commands.add_parser("export", help="export the canonical Phase 5 workspace")
     export.add_argument("workspace", type=Path)
     export.add_argument("output", type=Path)
@@ -51,6 +58,17 @@ def main(argv: list[str] | None = None) -> int:
     steer.add_argument("--target-objective-id")
     steer.add_argument("--target-branch-id")
     args = parser.parse_args(argv)
+
+    if args.command == "solve-noncommuting":
+        fixture = decode_json(args.fixture.read_bytes())
+        result = solve_fixture(fixture)
+        if args.output is not None:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(
+                json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+            )
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return 0
 
     if args.command == "inspect" and args.record_id is None:
         value = decode_json(args.path.read_bytes(), max_bytes=67_108_864)

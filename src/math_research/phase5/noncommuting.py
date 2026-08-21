@@ -38,7 +38,7 @@ and any float or tolerance are typed rejections.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, Protocol, Sequence
 
 from . import (
     NONCOMMUTING_CASE_VERSION,
@@ -159,6 +159,20 @@ class DiscoveryProhibitedError(CertificateInputError):
     """A certificate declared a solver, search, or discovery origin."""
 
     reason_code = "discovery_or_solver_origin_prohibited"
+
+
+class ExactCertificateCandidate(Protocol):
+    """Structural input accepted by the exact certificate checker.
+
+    ADR-0035's fixture path still admits only :class:`SuppliedCertificate`.
+    ADR-0049's solver uses this narrower protocol so a generated candidate can
+    reach the same exact checker without being falsely labelled human input.
+    """
+
+    primal_povm: tuple[Matrix, ...]
+    dual_gamma: Matrix
+
+    def provenance(self) -> dict[str, Any]: ...
 
 
 def _bool_field(value: Any, label: str) -> bool:
@@ -457,7 +471,7 @@ def _unresolved_result(
 
 def _certificate_result(
     case: NoncommutingCase,
-    certificate: SuppliedCertificate,
+    certificate: ExactCertificateCandidate,
     *,
     traces: tuple[Quadratic, ...],
     ensemble_radicand: int,
@@ -581,6 +595,60 @@ def _certificate_result(
                 None if independent is None or dual_value is None else dual_value == independent
             ),
         },
+    }
+
+
+def verify_exact_certificate_candidate(
+    case: NoncommutingCase, certificate: ExactCertificateCandidate
+) -> dict[str, Any]:
+    """Run the authoritative exact checker on a provenance-bearing candidate.
+
+    This does not apply fixture expectations and does not claim that the
+    candidate came through the human steering boundary. It is the shared
+    verification seam used by ADR-0049 after bounded construction.
+    """
+
+    traces = validate_ensemble(case.weighted_states)
+    ensemble_radicand = _measure(all_values(case.weighted_states), "ensemble")
+    noncommuting = any(
+        not is_zero_matrix(commutator(case.weighted_states[i], case.weighted_states[j]))
+        for i in range(len(case.weighted_states))
+        for j in range(i + 1, len(case.weighted_states))
+    )
+    probe = _field_probe(case.weighted_states)
+    crosscheck = closed_form_crosscheck(case.weighted_states)
+    checked = _certificate_result(
+        case,
+        certificate,
+        traces=traces,
+        ensemble_radicand=ensemble_radicand,
+        noncommuting=noncommuting,
+        probe=probe,
+        crosscheck=crosscheck,
+    )
+    # Do not expose ADR-0035's human-input coverage vocabulary for a generated
+    # candidate. The mathematical checks are shared; provenance and discovery
+    # semantics are deliberately not.
+    return {
+        "accepted": checked["coverage_status"] == COVERAGE_CERTIFICATE_VERIFIED,
+        "certificate_provenance": certificate.provenance(),
+        "complementarity_exact": checked["complementarity_exact"],
+        "dual_feasible": checked["dual_feasible"],
+        "dual_matches_independent_crosscheck": checked["_shared"][
+            "dual_matches_crosscheck"
+        ],
+        "dual_value": checked["dual_value"],
+        "left_complementarity_residuals": checked["left_complementarity_residuals"],
+        "primal_dual_gap": checked["primal_dual_gap"],
+        "primal_feasible": checked["primal_feasible"],
+        "primal_matches_independent_crosscheck": checked["_shared"][
+            "primal_matches_crosscheck"
+        ],
+        "primal_value": checked["primal_value"],
+        "refutation_reasons": checked["refutation_reasons"],
+        "right_complementarity_residuals": checked["right_complementarity_residuals"],
+        "tolerance": None,
+        "verification_basis": "exact_primal_dual_feasibility_zero_gap_and_complementarity",
     }
 
 
@@ -903,10 +971,12 @@ __all__ = [
     "DiscoveryProhibitedError",
     "NoncommutingCase",
     "SuppliedCertificate",
+    "ExactCertificateCandidate",
     "assert_no_capability_claim",
     "parse_fixture",
     "render_noncommuting_report",
     "validate_ensemble",
     "verify_case",
     "verify_fixture",
+    "verify_exact_certificate_candidate",
 ]
