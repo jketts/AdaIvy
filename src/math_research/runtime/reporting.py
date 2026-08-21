@@ -74,7 +74,15 @@ def session_facts(session: LeadSession, workspace: SQLiteWorkspace) -> dict[str,
         "epistemic_warrant_created": session.epistemic_warrant_created,
         "obligations_discharged": session.obligations_discharged,
         "novelty_assessment": session.novelty_assessment,
+        "novelty_recheck_id": session.novelty_recheck_id,
+        "novelty_recheck_hash": session.novelty_recheck_hash,
+        "prior_art_outcome": session.prior_art_outcome,
+        "prior_art_relationship": session.prior_art_relationship,
+        "prior_resolution": session.prior_resolution,
+        "prior_resolution_verification": session.prior_resolution_verification,
+        "report_classification": session.report_classification,
         "significance_assessment": session.significance_assessment,
+        "target_resolution_status": session.target_resolution_status,
         "retention_gain_measured": session.retention_gain_measured,
         "iteration_hashes": [item.content_hash for item in session.iterations],
         "timeline_replay_hash": canonical_hash([
@@ -92,6 +100,18 @@ def render_session_report(session: LeadSession, workspace: SQLiteWorkspace) -> s
     lines.append(f"- Frozen target hash: `{facts['target_frozen_hash']}`")
     lines.append(f"- Session bounds: `{facts['session_configuration_id']}` (`{facts['session_configuration_hash']}`)")
     lines.append(f"- Session record hash: `{facts['content_hash']}`")
+    lines.append(
+        f"- Pre-research novelty re-check: `{facts['novelty_recheck_id']}` "
+        f"(`{facts['novelty_recheck_hash']}`)"
+    )
+    lines.append(f"- Prior-art outcome: `{facts['prior_art_outcome']}`")
+    lines.append(f"- Prior-art relationship: `{facts['prior_art_relationship']}`")
+    lines.append(f"- Prior resolution: `{facts['prior_resolution']}`")
+    lines.append(
+        f"- Prior-resolution verification: `{facts['prior_resolution_verification']}`"
+    )
+    lines.append(f"- Report classification: `{facts['report_classification']}`")
+    lines.append(f"- Target resolution status: `{facts['target_resolution_status']}`")
     live = facts["live_model_calls"]
     lines.append(
         "- Model calls: "
@@ -148,7 +168,8 @@ def render_session_report(session: LeadSession, workspace: SQLiteWorkspace) -> s
     lines.append(
         f"- Novelty is `{facts['novelty_assessment']}` and significance is "
         f"`{facts['significance_assessment']}`. Neither was assessed, and the iteration "
-        "count is not evidence about either."
+        "count is not evidence about either. The prior-result classification above is "
+        "a relationship to identified evidence, not a general novelty assessment."
     )
     lines.append(
         "- It did **not** measure whether iterating helped. "
@@ -161,8 +182,9 @@ def render_session_report(session: LeadSession, workspace: SQLiteWorkspace) -> s
     )
     lines.append("")
     lines.append(
-        "The verifier context for every iteration excluded the proposer's narrative and "
-        "the session history; that isolation is enforced in code and its manifest hashes "
+        "The verifier context for every iteration excluded the proposer's narrative, "
+        "session history, and prior-art reporting instructions; that isolation is enforced "
+        "in code and its manifest hashes "
         f"are recorded ({len(facts['verifier_manifest_hashes'])} manifests)."
     )
     lines.append("")

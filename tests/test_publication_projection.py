@@ -21,6 +21,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SRC_ROOT = REPO_ROOT / "src"
@@ -78,7 +79,7 @@ SYNTHETIC_LEAN = "theorem ada_synthetic : 1 + 1 = 2 := by norm_num"
 def _synthetic_manuscript(outcome: str, *, unapproved: list[str], representation: str) -> dict:
     lean_hash = _sha(SYNTHETIC_LEAN.encode("utf-8"))
     return {
-        "schema_version": "1.0.0",
+        "schema_version": "1.3.0",
         "manuscript_id": "ms.synthetic-attestation-ladder.v1",
         "title": "Synthetic attestation ladder",
         "authors": [{"name": "Acceptance suite", "role": "synthetic"}],
@@ -87,6 +88,22 @@ def _synthetic_manuscript(outcome: str, *, unapproved: list[str], representation
         "novelty": {"status": "not_assessed", "inferred_from_warrant": False},
         "significance": {"status": "not_assessed", "inferred_from_warrant": False},
         "publication_approval": None,
+        "run_disclosure": {
+            "run_id": "run.synthetic-publication.v1",
+            "usage_scope": "synthetic acceptance fixture",
+            "measurement_status": "complete",
+            "models": [{
+                "provider": "none", "model": "none", "calls": 0,
+                "outcome": "no model invoked",
+            }],
+            "model_calls": 0,
+            "cost_usd": "0",
+            "budget_cap_usd": "0",
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "total_tokens": 0,
+            "note": "Synthetic acceptance record; no external run usage.",
+        },
         "toolchain": {
             "elan_version": "v4.2.1",
             "lean_version": "v4.32.1",
@@ -94,8 +111,40 @@ def _synthetic_manuscript(outcome: str, *, unapproved: list[str], representation
             "mathlib_version": "v4.32.1",
             "mathlib_commit": "520045ab14e26149ee970e2e617ca04b09bde5d6",
         },
-        "sources": [],
-        "citations": [],
+        "sources": [
+            {
+                "source_id": "src.synthetic-original-problem",
+                "content_hash": _sha(b"synthetic original problem"),
+                "authority": "human_final",
+                "rights": {"publication": "permitted", "excerpting": "permitted"},
+                "bibliographic": {
+                    "entry_type": "unpublished",
+                    "author": "Acceptance suite",
+                    "title": "Synthetic original problem",
+                    "container": "AdaIvy acceptance fixtures",
+                    "year": "2026",
+                    "identifier": "tests/test_publication_projection.py",
+                },
+                "passages": [
+                    {
+                        "passage_id": "psg.synthetic-original-problem",
+                        "anchor": "synthetic fixture",
+                        "content_hash": _sha(b"one plus one problem"),
+                        "quotation_permitted": True,
+                    }
+                ],
+            }
+        ],
+        "citations": [
+            {
+                "citation_id": "cite.synthetic-original-problem",
+                "citation_class": "source_record",
+                "source_id": "src.synthetic-original-problem",
+                "passage_id": "psg.synthetic-original-problem",
+                "cited_object": "problem",
+                "intended_use": "publication",
+            }
+        ],
         "attestations": [
             {
                 "attestation_id": "att.synthetic",
@@ -114,15 +163,35 @@ def _synthetic_manuscript(outcome: str, *, unapproved: list[str], representation
         "claims": [
             {
                 "claim_id": "cl.synthetic",
+                "authorship": {
+                    "ai_generated": True,
+                    "generator": "AdaIvy project",
+                },
                 "prose_statement": "One and one are two.",
                 "latex_statement": r"1 + 1 = 2",
                 "lean_statement": SYNTHETIC_LEAN,
+                "lean_artifact": {
+                    "artifact_id": "lean.synthetic",
+                    "declaration_name": "Ada.Synthetic.one_add_one",
+                    "source": SYNTHETIC_LEAN,
+                    "source_hash": lean_hash,
+                    "verification_status": (
+                        "kernel_checked" if outcome.startswith("kernel_checked") else "failed"
+                    ),
+                    "finding_id": "finding.synthetic",
+                },
                 "representation_id": "rep.synthetic",
                 "representation_status": representation,
                 "attestation_id": "att.synthetic",
                 "certificate_id": None,
                 "certificate_role": None,
                 "citations": [],
+                "original_problem_citation_id": "cite.synthetic-original-problem",
+                "derivation": {
+                    "status": "included",
+                    "summary": "Normalize the closed arithmetic expression and compare both sides.",
+                    "citations": ["cite.synthetic-original-problem"],
+                },
             }
         ],
         "obligations": [],
@@ -163,7 +232,9 @@ class FixtureProjectionTests(unittest.TestCase):
         self.assertEqual(status[0].origin, "derived")
         self.assertNotIn("derived.status", {str(block_id) for block_id in self.manuscript.blocks})
         for field in (
-            r"not\_assessed", r"project\_authored", "No publication approval record exists",
+            r"not\_assessed", r"project\_authored",
+            "No human publication approval record exists",
+            "Automated checks alone do not make this an endorsed AdaIvy result",
         ):
             self.assertIn(field, status[0].tex)
 
@@ -370,6 +441,20 @@ class AttestationLadderTests(unittest.TestCase):
         self.assertIn(r"\begin{adatheorem}", document.tex)
         self.assertIn("1 kernel-checked theorem(s)", document.tex)
         self.assertIn(SYNTHETIC_LEAN, document.tex)
+        self.assertIn("AI-generated by AdaIvy project", document.tex)
+        self.assertIn("Auditable derivation", document.tex)
+        self.assertIn("Original problem:", document.tex)
+        self.assertIn(r"\cite[synthetic fixture]{src:synthetic-original-problem}", document.tex)
+        self.assertIn("https://github.com/jketts/AdaIvy", document.tex)
+        self.assertIn("Run disclosure", document.tex)
+        self.assertIn("0 completed call(s)", document.tex)
+        self.assertNotIn("no model invoked", document.tex)
+        self.assertIn("Recorded tokens: 0 input, 0 output, 0 total", document.tex)
+        self.assertIn(
+            r"\adaformalartifact{status \texttt{kernel\_checked}}"
+            r"{lean/Ada_Synthetic_one_add_one.lean}",
+            document.tex,
+        )
 
     def test_an_unverified_representation_demotes_a_kernel_checked_claim(self) -> None:
         for status in ("proposed", "partially_verified", "refuted"):
@@ -629,11 +714,19 @@ class BundleTests(unittest.TestCase):
     def test_the_bundle_carries_the_records_the_projection_read(self) -> None:
         for path in (
             "paper.tex", "refs.bib", "records/manuscript.json", "records/ledger.json",
-            "records/evidence.json", "records/probes.json", "build.json", "README.md",
+            "records/evidence.json", "records/prior-art.json", "records/probes.json",
+            "build.json", "README.md",
         ):
             self.assertIn(path, self.bundle.files, path)
         recorded = json.loads(self.bundle.files["records/manuscript.json"])
         self.assertEqual(recorded, self.manuscript.value)
+
+    def test_unapproved_bundle_cannot_imply_that_prior_resolution_was_assessed(self) -> None:
+        prior_art = json.loads(self.bundle.files["records/prior-art.json"])
+        self.assertEqual("not_assessed", prior_art["report_classification"])
+        self.assertEqual("not_assessed", prior_art["target_resolution_status"])
+        self.assertFalse(prior_art["creates_mathematical_warrant"])
+        self.assertIn("Prior-result classification", self.bundle.document.tex)
 
     def test_the_manifest_hashes_every_file_and_itself(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -672,17 +765,88 @@ class BundleTests(unittest.TestCase):
         self.assertIsNone(self.bundle.manifest["pdf_sha256"])
         self.assertIn("never a pass", build["note"])
 
-    def test_no_lean_file_is_written_without_an_attestation(self) -> None:
-        self.assertEqual([path for path in self.bundle.files if path.startswith("lean/")], [])
-        self.assertIn("No formal attestation is bound to this document", self.bundle.files["paper.tex"].decode("utf-8"))
+    def test_every_solved_claim_automatically_writes_a_linked_lean_file(self) -> None:
+        solved = [
+            item for item in self.bundle.document.classifications
+            if item.evidence_class != "proposal"
+        ]
+        lean_paths = sorted(path for path in self.bundle.files if path.startswith("lean/"))
+        self.assertEqual(len(lean_paths), len(solved))
+        tex = self.bundle.files["paper.tex"].decode("utf-8")
+        for path in lean_paths:
+            self.assertIn("{" + path + "}", tex)
+        self.assertIn("pending status", tex)
+
+    def test_removing_a_solved_claim_artifact_is_refused(self) -> None:
+        value = _fixture_value()
+        value["claims"][0]["lean_artifact"] = None
+        manuscript = load_manuscript(value)
+        with self.assertRaises(PublicationValidationError) as caught:
+            render_manuscript(manuscript)
+        self.assertEqual(caught.exception.code, "solved_claim_without_lean_artifact")
+
+    def test_removing_a_solved_claim_original_problem_citation_is_refused(self) -> None:
+        value = _fixture_value()
+        value["claims"][0]["original_problem_citation_id"] = None
+        manuscript = load_manuscript(value)
+        with self.assertRaises(PublicationValidationError) as caught:
+            render_manuscript(manuscript)
+        self.assertEqual(caught.exception.code, "solved_claim_without_original_problem_citation")
+
+    def test_removing_a_solved_claim_derivation_is_refused(self) -> None:
+        value = _fixture_value()
+        value["claims"][0]["derivation"]["status"] = "unavailable"
+        manuscript = load_manuscript(value)
+        with self.assertRaises(PublicationValidationError) as caught:
+            render_manuscript(manuscript)
+        self.assertEqual(caught.exception.code, "solved_claim_without_derivation")
+
+    def test_run_token_totals_must_close(self) -> None:
+        value = _fixture_value()
+        value["run_disclosure"]["total_tokens"] = 1
+        with self.assertRaises(PublicationValidationError) as caught:
+            load_manuscript(value)
+        self.assertEqual(caught.exception.code, "token_total_mismatch")
+
+    def test_complete_run_usage_cannot_hide_a_missing_value(self) -> None:
+        value = _fixture_value()
+        value["run_disclosure"]["cost_usd"] = None
+        with self.assertRaises(PublicationValidationError) as caught:
+            load_manuscript(value)
+        self.assertEqual(caught.exception.code, "complete_usage_has_missing_value")
+
+    def test_project_explanation_is_the_final_ledger_block(self) -> None:
+        document = render_manuscript(load_manuscript(MANUSCRIPT_PATH.read_bytes()))
+        self.assertEqual(document.ledger[-1].block_id, "derived.project-footnote")
+        self.assertIn("https://github.com/jketts/AdaIvy", document.ledger[-1].tex)
+
+    def test_tampering_with_lean_source_without_updating_its_hash_is_refused(self) -> None:
+        value = _fixture_value()
+        value["claims"][0]["lean_artifact"]["source"] += "\n-- changed"
+        with self.assertRaises(PublicationValidationError) as caught:
+            load_manuscript(value)
+        self.assertEqual(caught.exception.code, "lean_artifact_hash_mismatch")
+
+    def test_ai_generator_is_fixed_when_ai_generated_is_true(self) -> None:
+        value = _synthetic_manuscript("kernel_checked", unapproved=[], representation="verified")
+        value["claims"][0]["authorship"]["generator"] = "anonymous system"
+        with self.assertRaises(PublicationValidationError) as caught:
+            load_manuscript(value)
+        self.assertEqual(caught.exception.code, "ai_generator_mismatch")
 
     def test_a_synthetic_attestation_writes_its_verbatim_lean_source(self) -> None:
         value = _synthetic_manuscript("kernel_checked", unapproved=[], representation="verified")
         bundle = build_bundle(load_manuscript(value))
         self.assertIn("lean/Ada_Synthetic_one_add_one.lean", bundle.files)
         source = bundle.files["lean/Ada_Synthetic_one_add_one.lean"].decode("utf-8")
-        self.assertIn(SYNTHETIC_LEAN, source)
-        self.assertIn("att.synthetic", source)
+        self.assertEqual(SYNTHETIC_LEAN, source)
+
+    def test_theorem_artifact_must_bind_the_same_finding_as_its_attestation(self) -> None:
+        value = _synthetic_manuscript("kernel_checked", unapproved=[], representation="verified")
+        value["claims"][0]["lean_artifact"]["finding_id"] = "finding.someone-else"
+        with self.assertRaises(PublicationValidationError) as caught:
+            load_manuscript(value)
+        self.assertEqual(caught.exception.code, "lean_artifact_finding_mismatch")
 
 
 class TypesetGateTests(unittest.TestCase):
@@ -715,6 +879,18 @@ class TypesetGateTests(unittest.TestCase):
             self.assertNotIn(";", element)
             self.assertNotIn("|", element)
             self.assertNotIn("&", element)
+
+    def test_an_engine_with_the_wrong_version_is_not_available(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            engine = Path(directory) / "pdflatex"
+            engine.write_text("#!/bin/sh\necho 'pdfTeX wrong version'\n", encoding="utf-8")
+            engine.chmod(0o755)
+            with mock.patch(
+                "math_research.publication.typeset.shutil.which", return_value=str(engine)
+            ):
+                status = toolchain_status(self.toolchain)
+        self.assertFalse(status.available)
+        self.assertIn("version mismatch", status.reason)
 
     def test_the_environment_is_an_allowlist_carrying_a_frozen_epoch(self) -> None:
         environment = build_environment(self.toolchain, 1_577_836_800)

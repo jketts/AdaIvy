@@ -4,9 +4,9 @@
   "pin_kind": "distribution_version_and_invocation",
   "pin_note": "Weaker than the ADR-0016 Lean commit pin and the ADR-0028 image digest pin. A digest-pinned TeX Live image needs network acquisition, which this slice does not have, so the pin is distribution plus version plus the exact invocation and the manifest records which pin kind it carries.",
   "engine": "pdflatex",
-  "distribution": "TeX Live 2024",
-  "engine_version_expected": "pdfTeX 3.141592653-2.6-1.40.26",
-  "packages_required": ["amsmath", "amssymb", "amsthm"],
+  "distribution": "BasicTeX 2026.0301 (TeX Live 2026)",
+  "engine_version_expected": "pdfTeX 3.141592653-2.6-1.40.29 (TeX Live 2026)",
+  "packages_required": ["amsmath", "amssymb", "amsthm", "hyperref"],
   "passes": 2,
   "flags": [
     "-no-shell-escape",

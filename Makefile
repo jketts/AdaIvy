@@ -6,7 +6,8 @@
 # Targets that need more than that are separate and named for what they need:
 #   check-sealed  requires the ADR-0016 v5 container image
 #   check-gate    requires the disposable Draft 2020-12 validator environment
-#   check-typeset requires the pinned TeX Live engine (ADR-0036)
+#   setup-typeset installs the pinned BasicTeX toolchain under work/ (ADR-0053)
+#   check-typeset requires that pinned TeX Live engine (ADR-0036, ADR-0053)
 #   check-all     runs everything available
 
 PY ?= python3
@@ -20,6 +21,7 @@ PHASE6_INSTANT ?= 2026-08-20T14:00:00Z
 INTAKE_INSTANT ?= 2026-08-21T00:00:00Z
 
 TMPROOT ?= $(shell printf '%s' "$${TMPDIR:-/tmp}")
+TYPESET_BIN ?= $(CURDIR)/work/toolchains/basictex-2026.0301/bin/universal-darwin
 
 # `make report` filing. The two stamps below name a directory and stamp an index;
 # they are the ONLY clock reads in this file. Every command in the target runs on
@@ -40,15 +42,16 @@ REPORT_INSTANT ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 OUT ?= reports/local/run-$(REPORT_STAMP)
 WORK ?= work/$(REPORT_STAMP)
 
-.PHONY: check check-all check-sealed check-gate check-typeset check-phase4b-oci \
+.PHONY: check check-all check-sealed check-gate setup-typeset check-typeset check-phase4b-oci \
         spike-phase5-sdp test phase0 phase1 problem-intake phase2 phase3a phase3b phase4a phase4b \
-        phase4c phase5 phase6 synthesis publication report clean help
+        phase4c phase4d phase5 phase6 synthesis publication report clean help
 
 help:
 	@printf 'Targets:\n'
-	@printf '  check         offline suite: tests + phases 0,1,2,3A,4A,4B,4C,5,6, problem intake, synthesis, publication\n'
+	@printf '  check         offline suite: tests + phases 0,1,2,3A,4A,4B,4C,4D,5,6, problem intake, synthesis, publication\n'
 	@printf '  check-sealed  phase 3B Lean formal checking (requires the ADR-0016 v5 image)\n'
 	@printf '  check-gate    phase 4 gate tests (requires the disposable jsonschema env)\n'
+	@printf '  setup-typeset acquire and hash-check BasicTeX under work/toolchains\n'
 	@printf '  check-typeset publication PDF build (requires the pinned TeX Live engine)\n'
 	@printf '  check-phase4b-oci strict Phase 4B parser gate (requires exact pinned image)\n'
 	@printf '  spike-phase5-sdp  ADR-0045 noncommuting-SDP comparison (engines optional)\n'
@@ -57,7 +60,7 @@ help:
 	@printf '                default OUT=reports/local/run-<stamp> (gitignored)\n'
 	@printf '  clean         remove __pycache__ and stray sqlite journals\n'
 
-check: test phase0 phase1 problem-intake phase2 phase3a phase4a phase4b phase4c phase5 phase6 synthesis publication
+check: test phase0 phase1 problem-intake phase2 phase3a phase4a phase4b phase4c phase4d phase5 phase6 synthesis publication
 	@printf '\n== offline check complete ==\n'
 
 check-all: check check-sealed
@@ -182,6 +185,21 @@ phase4c:
 	    "$$d/phase4c-verified.json" && \
 	  rm -rf "$$d" && \
 	  printf 'phase 4C ok (7 gates hold; applicability precision 1.0 by exclusion)\n'
+
+# ADR-0051 keeps the offline entrypoint inert: it validates the pinned public
+# provider and grounded query, emits a not-executed report, and performs zero
+# DNS or HTTPS calls. Live execution always needs two explicit confirmations.
+phase4d:
+	@printf '\n== phase 4D grounded public scholarly discovery (dry run) ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-p4d.XXXXXX") && \
+	  $(PY) -m math_research.cli phase4d search \
+	    fixtures/phase4d/grounded-terminology-v1.txt \
+	    --term 'quantum state discrimination' --term 'spectral projector' \
+	    --config config/phase4d-crossref-public-discovery-v1.json \
+	    --observed-at-epoch 0 --output "$$d/discovery.json" >/dev/null && \
+	  $(PY) -m math_research.cli phase4d inspect "$$d/discovery.json" >/dev/null && \
+	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["status"] == "not_executed" and r["network_requests"] == 0 and r["candidate_count"] == 0 and r["inspiration_only"] is True' "$$d/discovery.json" && \
+	  rm -rf "$$d" && printf 'phase 4D ok (network not executed)\n'
 
 # Phase 5 has three scopes and the target states all of them honestly.
 #
@@ -308,10 +326,17 @@ publication:
 	  $(PY) -m math_research.cli publication inspect "$$d/bundle" \
 	    > "$$d/inspect.json" && \
 	  diff -r "$$d/bundle" "$$d/replay" >/dev/null && \
-	  $(PY) -c 'import json,sys; m=json.load(open(sys.argv[1])); c=m["evidence_class_counts"]; t=open(sys.argv[2],encoding="utf-8").read(); assert m["verified"] is True, "publication bundle did not verify"; assert c["kernel_checked_theorem"] == 0, "publication rendered a theorem with no attestation: %s" % c; assert (c["exact_certificate_proposition"], c["proposal"]) == (3, 2), "publication evidence class counts moved: %s" % c; assert m["probes_flipped"] == m["probes_total"] and m["probes_total"] >= 17, "publication probes moved: %s of %s" % (m["probes_flipped"], m["probes_total"]); assert m["typeset_status"] == "not_typeset" and m["pdf_sha256"] is None, "publication reported a typeset PDF without a compile"; assert "contains no kernel-checked theorem" in t, "publication status block stopped naming the absent theorems"; assert "\\begin{adatheorem}" not in t, "publication emitted a theorem environment"' \
+	  $(PY) -c 'import json,sys; m=json.load(open(sys.argv[1])); c=m["evidence_class_counts"]; t=open(sys.argv[2],encoding="utf-8").read(); assert m["verified"] is True, "publication bundle did not verify"; assert c["kernel_checked_theorem"] == 0, "publication rendered a theorem with no attestation: %s" % c; assert (c["exact_certificate_proposition"], c["proposal"]) == (3, 2), "publication evidence class counts moved: %s" % c; assert m["probes_flipped"] == m["probes_total"] and m["probes_total"] >= 21, "publication probes moved: %s of %s" % (m["probes_flipped"], m["probes_total"]); assert m["typeset_status"] == "not_typeset" and m["pdf_sha256"] is None, "publication reported a typeset PDF without a compile"; assert "contains no kernel-checked theorem" in t, "publication status block stopped naming the absent theorems"; assert "\\begin{adatheorem}" not in t, "publication emitted a theorem environment"' \
 	    "$$d/inspect.json" "$$d/bundle/paper.tex" && \
 	  rm -rf "$$d" && \
-	  printf 'publication ok (0 theorems, 3 exact propositions, 2 proposals; 17 probes flipped; not typeset)\n'
+	  printf 'publication ok (0 theorems, 3 exact propositions, 2 proposals; 21 probes flipped; not typeset)\n'
+
+# Explicit networked setup for the separate publication toolchain. The normal
+# offline gate never calls this target. Installation stays under gitignored
+# `work/`; no system package or application dependency is created.
+setup-typeset:
+	@printf '\n== install pinned publication typesetter ==\n'
+	$(PY) tools/install_publication_typesetter.py
 
 # Separate from `check`: needs the pinned TeX Live engine named in
 # config/publication-typeset-toolchain-v1.json. Absent the engine this target
@@ -320,7 +345,8 @@ publication:
 # twice from clean; unless both runs hash identically the PDF is refused.
 check-typeset:
 	@printf '\n== publication typesetting (requires the pinned TeX Live engine) ==\n'
-	@d=$$(mktemp -d "$(TMPROOT)/adaivy-typeset.XXXXXX") && \
+	@export PATH="$(TYPESET_BIN):$$PATH"; \
+	  d=$$(mktemp -d "$(TMPROOT)/adaivy-typeset.XXXXXX") && \
 	  $(PY) -m math_research.cli publication render \
 	    fixtures/publication/manuscript-v1.json --output-dir "$$d/bundle" >/dev/null && \
 	  $(PY) -m math_research.cli publication typeset "$$d/bundle" > "$$d/typeset.json"; \
@@ -354,7 +380,7 @@ check-typeset:
 report:
 	@printf '\n== local report -> $(OUT) ==\n'
 	@out="$(OUT)"; work="$(WORK)"; \
-	  mkdir -p "$$out/phase2" "$$out/phase4c" "$$out/phase5" "$$out/synthesis" "$$work" && \
+	  mkdir -p "$$out/phase2" "$$out/phase4c" "$$out/phase4d" "$$out/phase5" "$$out/synthesis" "$$work" && \
 	  $(PY) -m math_research.cli demo --output-dir "$$out/phase1" >/dev/null && \
 	  $(PY) -m math_research.cli phase2 report reports/phase-2 run.phase2.demo.fake.v1 \
 	    --output "$$out/phase2/traceable-report.md" >/dev/null && \
@@ -362,6 +388,12 @@ report:
 	    --output-dir "$$out/phase3a" >/dev/null && \
 	  $(PY) -m math_research.cli phase4c benchmark --fixtures fixtures/phase4c \
 	    --output "$$out/phase4c/hybrid-retrieval-report.json" >/dev/null && \
+	  $(PY) -m math_research.cli phase4d search \
+	    fixtures/phase4d/grounded-terminology-v1.txt \
+	    --term 'quantum state discrimination' --term 'spectral projector' \
+	    --config config/phase4d-crossref-public-discovery-v1.json \
+	    --observed-at-epoch 0 \
+	    --output "$$out/phase4d/public-discovery-dry-run.json" >/dev/null && \
 	  $(PY) -m math_research.cli phase5 run "$$work/p5" \
 	    fixtures/phase5/quantum-diagonal-v1.json $(PHASE5_INSTANT) \
 	    --output "$$out/phase5/diagonal-run.json" >/dev/null && \

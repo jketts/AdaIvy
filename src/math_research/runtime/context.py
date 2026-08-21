@@ -234,9 +234,13 @@ class IterativeProposerLoop(BaselineResearchLoop):
     model-call recording are the sealed implementations rather than copies.
     """
 
-    def __init__(self, *args: Any, ledger: IterationLedger, **kwargs: Any) -> None:
+    def __init__(
+        self, *args: Any, ledger: IterationLedger,
+        prior_art_context: dict[str, object], **kwargs: Any,
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.ledger = ledger
+        self.prior_art_context = dict(prior_art_context)
 
     def _proposer_context(  # type: ignore[override]
         self, dossier: ResearchDossier, *,
@@ -254,6 +258,7 @@ class IterativeProposerLoop(BaselineResearchLoop):
         # exactly as it was, so a first iteration with an empty ledger differs
         # from the single-shot context only by this block.
         context["session_history"] = self.ledger.payload()
+        context["prior_art_context"] = dict(self.prior_art_context)
         context["iteration_policy"] = {
             "policy_version": POLICY_VERSION,
             "target_is_frozen": True,
@@ -275,7 +280,10 @@ class IterativeProposerLoop(BaselineResearchLoop):
             dossier, proposal, candidate, prior=prior,
         )
         serialized = canonical_bytes(context)
-        if b"session_history" in serialized or b"iteration_policy" in serialized:
+        if (
+            b"session_history" in serialized or b"iteration_policy" in serialized
+            or b"prior_art_context" in serialized
+        ):
             raise LedgerLeakedIntoVerifierContext("proposer-only iteration blocks reached the verifier")
         for digest in self.ledger.digests:
             if digest.encode("utf-8") in serialized:

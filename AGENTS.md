@@ -15,7 +15,12 @@ network-none, read-only-root, noexec-temp, and ambient-secret controls. The
 separately acknowledged live HTTPS gate has executed, and ADR-0050 activates
 only public unauthenticated, human-planned exact-URL acquisition. Network
 remains off by default. Credentials, caller-supplied request headers, retries,
-crawling, scheduling, and autonomous origin selection remain disabled.
+crawling, scheduling, and autonomous origin selection remain disabled. ADR-0051
+separately activates one operator-initiated Crossref metadata query for grounded
+public scholarly discovery. Every term must occur in a supplied local problem
+or context file; the result is inspiration-only, never fetched automatically,
+and creates no relevance, applicability, acquisition, novelty, significance,
+graph-admission, or warrant effect.
 
 Phases 0 through 6 remain implemented and authoritative. Phase 5 now has three
 scopes and all must be stated exactly. The sealed scope is exact
@@ -90,6 +95,36 @@ stays in the report. Document scope is declared valid only where the retrieval
 unit is a single-claim unit, so it must be re-derived before any multi-section
 parsed unit reuses it. This slice still reads only the frozen Phase 4C fixtures
 and adds no embedding, vector, or network surface.
+
+Bounded Phase 4D public scholarly discovery (ADR-0051) is implemented over one
+pinned, public unauthenticated Crossref endpoint. One human-started invocation
+makes at most one request and returns at most ten DOI metadata candidates. All
+query terms are operator supplied and exact-normalized substrings of a supplied
+local context; live execution requires the exact acknowledgement and query
+hash. Provider terms must have been reviewed within thirty days. Every result
+is an `untrusted_inspiration_candidate`: relevance, applicability, novelty, and
+significance are `not_assessed`, acquisition is unauthorized, graph admission
+is absent, and mathematical warrant is `none`. It does not follow results,
+crawl, traverse citations, generate queries, use credentials, schedule work, or
+call a model. `make check` runs only its zero-network dry path.
+
+ADR-0055 adds a cross-phase lifecycle rule: every operator-chosen problem needs
+a human, evidence-linked novelty re-check immediately before research starts,
+and every non-null human publication approval needs a second distinct re-check
+over the exact result immediately before announcement. Both records are bound
+to one subject hash and one next-action identifier, strictly precede that action,
+and expire after twenty-four hours; the second links to the first. Their search
+protocol includes terminology and equivalent-formulation checks, sources,
+evidence hashes, and limitations. Outcomes are only `prior_art_found`,
+`not_found_under_protocol`, or `inconclusive`: none creates novelty status,
+significance, applicability, graph admission, or mathematical warrant, and an
+empty search never means novel. A found source also carries a human-supplied
+same/equivalent/stronger/weaker/overlapping relationship, resolution kind, and
+verification state. Runtime and publication reports must expose the derived
+report class and target status. In particular, the Graffiti 197 regression is
+`independent_verification` / `already_refuted`; it must never be presented as a
+new refutation. Phase 4D candidates may be evidence inputs but do not themselves
+perform or satisfy the re-check.
 
 ADR-0033 records the WP4 entry gate for the noncommuting Phase 5 expansion,
 measured as a spike. `spikes/phase5_noncommuting_sdp/` now checks supplied
@@ -187,9 +222,10 @@ parallel, evolutionary, or higher search tier.
 
 The Phase 1 domain/trust semantics, sealed Phase 2 evidence, Phase 3A memory,
 sealed Phase 3B runtime, and Phase 4A rights/applicability boundaries remain
-authoritative. ADR-0048's bounded Azure proposer and ADR-0049's bounded exact
-noncommuting solver are the only newly authorized model/solver paths. Do not add
-a web UI or HTTP API, crawler, broader network acquisition, embeddings, PDF
+authoritative. ADR-0048's bounded Azure proposer, ADR-0049's bounded exact
+noncommuting solver, and ADR-0051's bounded Crossref discovery query are the
+only newly authorized model/solver/network-discovery paths. Do not add a web UI
+or HTTP API, crawler, result following, broader network acquisition or discovery, embeddings, PDF
 parsing, another model/external API path, a broader noncommuting SDP solver,
 multi-agent or evolutionary search, automated novelty/significance assessment,
 or enable higher search tiers without a later explicit implementation request,

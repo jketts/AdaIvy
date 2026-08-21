@@ -52,6 +52,10 @@ def cited_ids(manuscript: Manuscript) -> tuple[str, ...]:
     for claim in manuscript.claims.values():
         for citation_id in claim["citations"]:
             used.append(str(citation_id))
+        for citation_id in claim["derivation"]["citations"]:
+            used.append(str(citation_id))
+        if claim["original_problem_citation_id"] is not None:
+            used.append(str(claim["original_problem_citation_id"]))
     return tuple(sorted(set(used)))
 
 

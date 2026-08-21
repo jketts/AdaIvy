@@ -70,7 +70,26 @@ def toolchain_status(toolchain: Mapping[str, Any]) -> ToolchainStatus:
             available=False, engine=engine, engine_path=None,
             reason=f"{engine} is not on PATH, so no compile has run and none may be reported",
         )
-    return ToolchainStatus(available=True, engine=engine, engine_path=located, reason="located")
+    try:
+        completed = subprocess.run(  # noqa: S603 - located fixed executable, fixed argument
+            [located, "--version"], capture_output=True, timeout=10, check=False, text=True,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return ToolchainStatus(
+            available=False, engine=engine, engine_path=located,
+            reason=f"could not inspect {engine} version: {error}",
+        )
+    observed = completed.stdout.splitlines()[0].strip() if completed.stdout else ""
+    expected = str(toolchain["engine_version_expected"])
+    if completed.returncode != 0 or observed != expected:
+        return ToolchainStatus(
+            available=False, engine=engine, engine_path=located,
+            reason=f"{engine} version mismatch: expected {expected!r}, observed {observed!r}",
+        )
+    return ToolchainStatus(
+        available=True, engine=engine, engine_path=located,
+        reason=f"located exact engine version {observed}",
+    )
 
 
 def build_command(toolchain: Mapping[str, Any], engine_path: str, entrypoint: str) -> tuple[str, ...]:

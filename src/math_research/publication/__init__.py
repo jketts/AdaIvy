@@ -9,9 +9,9 @@ document's status block cannot be suppressed by any manuscript field.
 
 from __future__ import annotations
 
-SCHEMA_VERSION = "1.0.0"
+SCHEMA_VERSION = "1.3.0"
 POLICY_ID = "publication.projection"
-POLICY_VERSION = "1.0.0"
+POLICY_VERSION = "1.3.0"
 CANONICALIZATION_VERSION = "1.0.0"
 
 #: Frozen instant used for ``SOURCE_DATE_EPOCH``. An input, never a clock read:

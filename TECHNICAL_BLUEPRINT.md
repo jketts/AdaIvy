@@ -232,6 +232,28 @@ rights applicability, or a superseding `ApplicabilityReview` must append
 closure/invalidation records through affected derived projections without
 erasing audit history. The authoritative proposed contract is
 `docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md`.
+
+### C18. Fresh novelty checks bracket chosen research
+
+Every operator-chosen problem requires a human, evidence-linked novelty
+re-check immediately before its first research action, and every result requires
+a distinct fresh re-check immediately before human publication approval. Each
+check is content-bound to the exact subject and bound to one next-action
+identifier, strictly precedes that action, and is at most 24 hours old. The
+announcement check links to the research-start check, and any change to a result
+statement invalidates it.
+
+These records are search observations, not novelty judgements. They record
+searched sources, query terms, equivalent-formulation checks, evidence hashes,
+coverage limitations, and any prior-art relationship/resolution separately;
+`not_found_under_protocol` never implies novelty or mathematical warrant.
+When prior art is found, the report role and target-resolution status are
+derived and displayed rather than left to narrative discretion. A source report
+can yield only `reported_proved` or `reported_refuted`; `already_proved` and
+`already_refuted` additionally require a recorded independent verification of
+the same, equivalent, or stronger result. Graffiti 197 is the frozen regression:
+`independent_verification` / `already_refuted`.
+ADR-0055 defines the executable lifecycle gates.
 ---
 
 ## 3. System context
@@ -980,6 +1002,11 @@ search never becomes a novelty warrant. Lean is used incrementally where claims
 and interfaces are mature enough to encode; unstable conceptual exploration is
 not forced into Lean, and formal checking is not postponed until the end of the
 entire research run.
+
+Before this planner may act on an operator-chosen problem, ADR-0055 requires a
+fresh `before_research` novelty re-check as the immediately preceding durable
+event. The check is tied to the exact dossier hash and run/session identifier;
+it does not alter the planner's authority or the problem's epistemic state.
 
 ### 6.4 Branch policy
 
@@ -2138,9 +2165,42 @@ or autonomous origin selection. It remains outside deterministic offline
 acceptance, and a fetched candidate creates no mathematical warrant or
 applicability decision.
 
+Implemented bounded Phase 4D discovery slice (ADR-0051):
+
+- one public unauthenticated Crossref metadata query per explicit live
+  invocation, returning at most ten candidates;
+- every operator-supplied query term is an exact normalized substring of one
+  content-hashed local problem or context file;
+- exact live acknowledgement and grounded-query-hash confirmation, current
+  reviewed provider terms, public DNS/peer binding, and fixed query, response,
+  result, and time bounds;
+- output is `untrusted_inspiration_candidate` only: relevance, applicability,
+  novelty, and significance are `not_assessed`, acquisition is unauthorized,
+  and mathematical warrant is `none`;
+- no result fetching, crawling, citation traversal, generated query expansion,
+  credentials, model call, or scheduled/autonomous discovery.
+
+Implemented cross-phase novelty checkpoint rule (ADR-0055):
+
+- a supplied problem cannot enter Phase 2 or the bounded central-lead runtime
+  without a human `before_research` re-check bound to its exact dossier and
+  run/session;
+- a non-null publication approval cannot be recorded without a distinct
+  `before_announcement` re-check bound to every exact result statement and the
+  approval action, linked to the first check;
+- both checks strictly precede their actions and expire after 24 hours;
+- search protocol, equivalence checks, evidence references, outcomes, and
+  limitations are durable and content-hashed;
+- report role and target-resolution status are derived from the recorded
+  relationship, resolution, and verification state and are visible in reports;
+  and
+- no outcome creates novelty status, significance, applicability, graph
+  admission, or mathematical warrant.
+
 Build:
 
-- licensed source acquisition, crawling, and immutable archives;
+- licensed source acquisition, result crawling/citation traversal, additional
+  discovery providers, and immutable archives;
 - richer math-aware/PDF parsing, embeddings, and hybrid retrieval;
 - evidence cards and source-applicability review;
 - durable material partial-result surfacing, append-only steering, and
@@ -2336,7 +2396,11 @@ capability boundary blocks access and records the policy violation.
 
 A valid result appears under different notation in an older paper. Expanded
 novelty search links the prior result and prevents an unsupported novelty claim
-without changing the proof warrant.
+without changing the proof warrant. If the earlier work resolves the same,
+equivalent, or stronger target, the report is explicitly classified as a
+reported prior resolution or independent verification and says whether the
+target was already proved or refuted. The Graffiti 197 fixture fixes the latter
+case as `independent_verification` / `already_refuted`.
 
 ### N. External backend import
 

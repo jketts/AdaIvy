@@ -18,6 +18,7 @@ from typing import Any, Mapping
 from .errors import PublicationValidationError
 from .latexsafe import escape_prose, validate_math, validate_verbatim
 from .serialization import canonical_hash, text_hash
+from ..novelty import NoveltyRecheckError, load_recheck, require_announcement_chain
 
 _HASH = re.compile(r"^sha256:[0-9a-f]{64}$")
 _ID = re.compile(r"^[a-z0-9][a-z0-9._-]{2,63}$")
@@ -28,7 +29,7 @@ TOP_LEVEL_FIELDS = frozenset(
     {
         "schema_version", "manuscript_id", "title", "authors", "abstract",
         "corpus_provenance", "novelty", "significance", "publication_approval",
-        "toolchain", "sources", "citations", "attestations", "certificates",
+        "toolchain", "run_disclosure", "sources", "citations", "attestations", "certificates",
         "claims", "obligations", "sections", "render_probes",
     }
 )
@@ -58,11 +59,13 @@ EXACT_ARITHMETIC = frozenset({"fractions-exact", "integer-exact", "algebraic-exa
 #: forecloses, and both directions demote.
 CERTIFICATE_ROLES = frozenset({"determines_optimum", "separates_values"})
 CITATION_CLASSES = frozenset({"mathlib_declaration", "source_record", "unresolved_folklore"})
-CITED_OBJECTS = frozenset({"work", "definition", "hypothesis", "lemma", "theorem"})
-PASSAGE_REQUIRED_FOR = frozenset({"definition", "hypothesis", "lemma", "theorem"})
+CITED_OBJECTS = frozenset({"work", "problem", "definition", "hypothesis", "lemma", "theorem"})
+PASSAGE_REQUIRED_FOR = frozenset({"problem", "definition", "hypothesis", "lemma", "theorem"})
 BLOCK_KINDS = frozenset({"prose", "claim", "display_math", "certificate_table"})
 RIGHTS_PERMITTED = "permitted"
 PROBE_OUTCOMES = frozenset({"refusal", "demotion"})
+LEAN_VERIFICATION_STATUSES = frozenset({"pending", "kernel_checked", "failed"})
+AI_GENERATOR = "AdaIvy project"
 
 
 def _mapping(value: Any, field: str) -> Mapping[str, Any]:
@@ -275,7 +278,8 @@ def _validate_claim(value: Mapping[str, Any], field: str) -> None:
         frozenset({
             "claim_id", "prose_statement", "latex_statement", "lean_statement",
             "representation_id", "representation_status", "attestation_id", "certificate_id",
-            "certificate_role", "citations",
+            "certificate_role", "citations", "authorship", "lean_artifact",
+            "original_problem_citation_id", "derivation",
         }),
         field,
     )
@@ -293,6 +297,26 @@ def _validate_claim(value: Mapping[str, Any], field: str) -> None:
     for key in ("attestation_id", "certificate_id"):
         if value[key] is not None:
             _identifier(value[key], f"{field}.{key}")
+    original_problem = value["original_problem_citation_id"]
+    if original_problem is not None:
+        _identifier(original_problem, f"{field}.original_problem_citation_id")
+    derivation = _mapping(value["derivation"], f"{field}.derivation")
+    _exact_fields(
+        derivation, frozenset({"status", "summary", "citations"}), f"{field}.derivation"
+    )
+    _enum(
+        derivation["status"], {"included", "unavailable"},
+        "derivation_status_unknown", f"{field}.derivation.status",
+    )
+    summary = escape_prose(str(derivation["summary"]), f"{field}.derivation.summary")
+    if not summary.strip():
+        raise PublicationValidationError(
+            "derivation_summary_empty", f"{field}.derivation.summary"
+        )
+    if not isinstance(derivation["citations"], list):
+        raise PublicationValidationError("field_not_array", f"{field}.derivation.citations")
+    for citation_id in derivation["citations"]:
+        _identifier(citation_id, f"{field}.derivation.citations")
     role = value["certificate_role"]
     if role is not None:
         _enum(role, CERTIFICATE_ROLES, "certificate_role_unknown", f"{field}.certificate_role")
@@ -302,6 +326,60 @@ def _validate_claim(value: Mapping[str, Any], field: str) -> None:
             f"{field} must name a certificate and a role together or neither; a certificate "
             "whose role is unstated cannot be read as supporting anything",
         )
+    authorship = _mapping(value["authorship"], f"{field}.authorship")
+    _exact_fields(
+        authorship, frozenset({"ai_generated", "generator"}), f"{field}.authorship"
+    )
+    ai_generated = _bool(authorship["ai_generated"], f"{field}.authorship.ai_generated")
+    escape_prose(str(authorship["generator"]), f"{field}.authorship.generator")
+    if ai_generated and authorship["generator"] != AI_GENERATOR:
+        raise PublicationValidationError(
+            "ai_generator_mismatch",
+            f"{field}.authorship.generator must be {AI_GENERATOR!r} when ai_generated is true",
+        )
+    artifact = value["lean_artifact"]
+    if artifact is not None:
+        artifact_field = f"{field}.lean_artifact"
+        artifact = _mapping(artifact, artifact_field)
+        _exact_fields(
+            artifact,
+            frozenset({
+                "artifact_id", "declaration_name", "source", "source_hash",
+                "verification_status", "finding_id",
+            }),
+            artifact_field,
+        )
+        _identifier(artifact["artifact_id"], f"{artifact_field}.artifact_id")
+        if not re.match(r"^[A-Za-z_][A-Za-z0-9_.']*$", str(artifact["declaration_name"])):
+            raise PublicationValidationError(
+                "declaration_name_malformed", f"{artifact_field}.declaration_name"
+            )
+        source = validate_verbatim(str(artifact["source"]), f"{artifact_field}.source")
+        if not source.strip():
+            raise PublicationValidationError("lean_artifact_empty", artifact_field)
+        _hash(artifact["source_hash"], f"{artifact_field}.source_hash")
+        if text_hash(source) != artifact["source_hash"]:
+            raise PublicationValidationError(
+                "lean_artifact_hash_mismatch",
+                f"{artifact_field}.source_hash does not cover the exact source bytes",
+            )
+        status = _enum(
+            artifact["verification_status"], LEAN_VERIFICATION_STATUSES,
+            "lean_verification_status_unknown", f"{artifact_field}.verification_status",
+        )
+        finding_id = artifact["finding_id"]
+        if finding_id is not None:
+            _identifier(finding_id, f"{artifact_field}.finding_id")
+        if status == "pending" and finding_id is not None:
+            raise PublicationValidationError(
+                "pending_lean_artifact_has_finding",
+                f"{artifact_field} is pending but names a formal finding",
+            )
+        if status != "pending" and finding_id is None:
+            raise PublicationValidationError(
+                "lean_artifact_finding_required",
+                f"{artifact_field} status {status!r} requires a formal finding id",
+            )
 
 
 def _validate_obligation(value: Mapping[str, Any], field: str) -> None:
@@ -381,6 +459,65 @@ def _validate_probe(value: Mapping[str, Any], field: str) -> None:
     escape_prose(str(value["rationale"]), f"{field}.rationale")
 
 
+def _validate_run_disclosure(value: Mapping[str, Any], field: str) -> None:
+    _exact_fields(
+        value,
+        frozenset({
+            "run_id", "usage_scope", "measurement_status", "models", "model_calls",
+            "cost_usd", "budget_cap_usd", "input_tokens", "output_tokens", "total_tokens",
+            "note",
+        }),
+        field,
+    )
+    _identifier(value["run_id"], f"{field}.run_id")
+    escape_prose(str(value["usage_scope"]), f"{field}.usage_scope")
+    _enum(
+        value["measurement_status"], {"complete", "partial", "unavailable"},
+        "usage_measurement_status_unknown", f"{field}.measurement_status",
+    )
+    models = value["models"]
+    if not isinstance(models, list) or not models:
+        raise PublicationValidationError("model_disclosure_empty", f"{field}.models")
+    for index, model in enumerate(models):
+        model_field = f"{field}.models[{index}]"
+        _mapping(model, model_field)
+        _exact_fields(
+            model, frozenset({"provider", "model", "calls", "outcome"}), model_field
+        )
+        for key in ("provider", "model", "outcome"):
+            escape_prose(str(model[key]), f"{model_field}.{key}")
+        if not isinstance(model["calls"], int) or isinstance(model["calls"], bool) or model["calls"] < 0:
+            raise PublicationValidationError("usage_count_invalid", f"{model_field}.calls")
+    for key in ("model_calls", "input_tokens", "output_tokens", "total_tokens"):
+        item = value[key]
+        if item is not None and (
+            not isinstance(item, int) or isinstance(item, bool) or item < 0
+        ):
+            raise PublicationValidationError("usage_count_invalid", f"{field}.{key}")
+    if value["model_calls"] is not None and value["model_calls"] != sum(
+        int(model["calls"]) for model in models
+    ):
+        raise PublicationValidationError("model_call_total_mismatch", field)
+    if all(value[key] is not None for key in ("input_tokens", "output_tokens", "total_tokens")):
+        if value["total_tokens"] != value["input_tokens"] + value["output_tokens"]:
+            raise PublicationValidationError("token_total_mismatch", field)
+    for key in ("cost_usd", "budget_cap_usd"):
+        item = value[key]
+        if item is not None and not re.match(r"^\d+(\.\d{1,6})?$", str(item)):
+            raise PublicationValidationError("usd_amount_invalid", f"{field}.{key}")
+    if value["measurement_status"] == "complete":
+        required_usage = (
+            "model_calls", "cost_usd", "budget_cap_usd", "input_tokens",
+            "output_tokens", "total_tokens",
+        )
+        if any(value[key] is None for key in required_usage):
+            raise PublicationValidationError(
+                "complete_usage_has_missing_value",
+                f"{field} is complete but omits one of {required_usage}",
+            )
+    escape_prose(str(value["note"]), f"{field}.note")
+
+
 def _collection(
     value: Mapping[str, Any], key: str, id_field: str, validator: Any, seen: set[str]
 ) -> dict[str, Mapping[str, Any]]:
@@ -417,9 +554,14 @@ def load_manuscript(payload: bytes | str | Mapping[str, Any]) -> Manuscript:
         value = json.loads(json.dumps(payload))
     _mapping(value, "manuscript")
     _exact_fields(value, TOP_LEVEL_FIELDS, "manuscript")
+    if value["schema_version"] != "1.3.0":
+        raise PublicationValidationError(
+            "manuscript_schema_unsupported", f"schema_version={value['schema_version']!r}"
+        )
     _identifier(value["manuscript_id"], "manuscript.manuscript_id")
     escape_prose(str(value["title"]), "manuscript.title")
     escape_prose(str(value["abstract"]), "manuscript.abstract")
+    _validate_run_disclosure(_mapping(value["run_disclosure"], "manuscript.run_disclosure"), "manuscript.run_disclosure")
     if value["corpus_provenance"] != "project_authored":
         raise PublicationValidationError(
             "corpus_provenance_unsupported",
@@ -436,9 +578,15 @@ def load_manuscript(payload: bytes | str | Mapping[str, Any]) -> Manuscript:
     if value["publication_approval"] is not None:
         approval = _mapping(value["publication_approval"], "manuscript.publication_approval")
         _exact_fields(
-            approval, frozenset({"approval_id", "approver", "authority", "recorded_at"}),
+            approval,
+            frozenset({
+                "approval_id", "approver", "authority", "recorded_at",
+                "novelty_rechecks",
+            }),
             "manuscript.publication_approval",
         )
+        _identifier(approval["approval_id"], "manuscript.publication_approval.approval_id")
+        _identifier(approval["approver"], "manuscript.publication_approval.approver")
         if approval["authority"] != "human_final":
             raise PublicationValidationError(
                 "publication_approval_authority_insufficient",
@@ -477,6 +625,16 @@ def load_manuscript(payload: bytes | str | Mapping[str, Any]) -> Manuscript:
     attestations = _collection(value, "attestations", "attestation_id", _validate_attestation, seen)
     certificates = _collection(value, "certificates", "certificate_id", _validate_certificate, seen)
     claims = _collection(value, "claims", "claim_id", _validate_claim, seen)
+    for claim in claims.values():
+        artifact = claim["lean_artifact"]
+        if artifact is None:
+            continue
+        artifact_id = str(artifact["artifact_id"])
+        if artifact_id in seen:
+            raise PublicationValidationError(
+                "identifier_not_unique", f"{artifact_id} appears in more than one collection"
+            )
+        seen.add(artifact_id)
     obligations = _collection(value, "obligations", "obligation_id", _validate_obligation, seen)
 
     sections = value["sections"]
@@ -523,7 +681,47 @@ def load_manuscript(payload: bytes | str | Mapping[str, Any]) -> Manuscript:
         record_ids=record_ids,
     )
     _validate_references(manuscript)
+    _validate_announcement_novelty_gate(manuscript)
     return manuscript
+
+
+def _announcement_subject_hash(manuscript: Manuscript) -> str:
+    """Bind the final re-check to every exact result statement in the bundle."""
+
+    return canonical_hash({
+        "manuscript_id": manuscript.manuscript_id,
+        "claims": [
+            {
+                "claim_id": claim_id,
+                "prose_statement": claim["prose_statement"],
+                "latex_statement": claim["latex_statement"],
+                "lean_statement": claim["lean_statement"],
+                "original_problem_citation_id": claim["original_problem_citation_id"],
+            }
+            for claim_id, claim in sorted(manuscript.claims.items())
+        ],
+    })
+
+
+def _validate_announcement_novelty_gate(manuscript: Manuscript) -> None:
+    approval = manuscript.value["publication_approval"]
+    if approval is None:
+        return
+    records = approval["novelty_rechecks"]
+    if not isinstance(records, list) or len(records) != 2:
+        raise PublicationValidationError(
+            "announcement_novelty_rechecks_required",
+            "publication approval requires the pre-research and fresh pre-announcement re-checks",
+        )
+    try:
+        start, announcement = (load_recheck(item) for item in records)
+        require_announcement_chain(
+            start, announcement, subject_id=manuscript.manuscript_id,
+            subject_hash=_announcement_subject_hash(manuscript),
+            approval_id=approval["approval_id"], approval_at=approval["recorded_at"],
+        )
+    except NoveltyRecheckError as error:
+        raise PublicationValidationError("announcement_novelty_recheck_invalid", str(error)) from error
 
 
 def _validate_references(manuscript: Manuscript) -> None:
@@ -558,7 +756,12 @@ def _validate_references(manuscript: Manuscript) -> None:
                 )
 
     for claim_id, claim in manuscript.claims.items():
-        for citation_id in claim["citations"]:
+        citation_fields = [
+            *claim["citations"], *claim["derivation"]["citations"],
+            *([claim["original_problem_citation_id"]]
+              if claim["original_problem_citation_id"] is not None else []),
+        ]
+        for citation_id in citation_fields:
             if citation_id not in manuscript.citations:
                 raise PublicationValidationError(
                     "citation_not_declared", f"claim {claim_id} cites {citation_id!r}"
@@ -568,6 +771,17 @@ def _validate_references(manuscript: Manuscript) -> None:
                     "folklore_citation_in_prose",
                     f"claim {claim_id} cites unrecorded background {citation_id!r}; it belongs "
                     "in the obligations table, not beside a claim",
+                )
+        original_problem = claim["original_problem_citation_id"]
+        if original_problem is not None:
+            citation = manuscript.citations[original_problem]
+            if (
+                citation["citation_class"] != "source_record"
+                or citation["cited_object"] != "problem"
+            ):
+                raise PublicationValidationError(
+                    "original_problem_citation_invalid",
+                    f"claim {claim_id} must cite a located source_record problem",
                 )
         attestation_id = claim["attestation_id"]
         if attestation_id is not None:
@@ -593,6 +807,26 @@ def _validate_references(manuscript: Manuscript) -> None:
             raise PublicationValidationError(
                 "record_ref_unresolved", f"claim {claim_id} names certificate {certificate_id!r}"
             )
+        artifact = claim["lean_artifact"]
+        if artifact is not None:
+            attestation_id = claim["attestation_id"]
+            if artifact["verification_status"] == "kernel_checked":
+                if attestation_id is None:
+                    raise PublicationValidationError(
+                        "kernel_checked_artifact_without_attestation",
+                        f"claim {claim_id} has no attestation backing its artifact status",
+                    )
+                attestation = manuscript.attestations[str(attestation_id)]
+                if artifact["finding_id"] != attestation["finding_id"]:
+                    raise PublicationValidationError(
+                        "lean_artifact_finding_mismatch",
+                        f"claim {claim_id} artifact finding differs from attestation {attestation_id}",
+                    )
+                if artifact["source"] != attestation["lean_source"]:
+                    raise PublicationValidationError(
+                        "lean_artifact_attestation_source_mismatch",
+                        f"claim {claim_id} artifact bytes differ from the attested source",
+                    )
 
     passages = {
         str(passage["passage_id"]): (source_id, passage)

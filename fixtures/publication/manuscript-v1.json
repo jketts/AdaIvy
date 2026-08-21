@@ -59,6 +59,14 @@
     },
     {
       "citation_class": "source_record",
+      "citation_id": "cite.adr-0023.original-problem",
+      "cited_object": "problem",
+      "intended_use": "publication",
+      "passage_id": "psg.adr-0023.diagonal-reduction",
+      "source_id": "src.adr-0023-exact-commuting"
+    },
+    {
+      "citation_class": "source_record",
       "citation_id": "cite.adr-0033.cubic-boundary",
       "cited_object": "lemma",
       "intended_use": "publication",
@@ -91,13 +99,34 @@
       "attestation_id": null,
       "certificate_id": "cert.orthogonal-2d-optimum",
       "certificate_role": "determines_optimum",
+      "authorship": {
+        "ai_generated": false,
+        "generator": "AdaIvy repository owner"
+      },
       "citations": [
         "cite.adr-0023.diagonal-reduction",
         "cite.mathlib.rat-num-div-den"
       ],
+      "derivation": {
+        "citations": [
+          "cite.adr-0023.diagonal-reduction",
+          "cite.mathlib.rat-num-div-den"
+        ],
+        "status": "included",
+        "summary": "Evaluate the frozen diagonal primal exactly, construct the independent diagonal dual value exactly, and compare the two rational values. Both equal one, so the exact duality gap is zero and the optimum is determined."
+      },
       "claim_id": "cl.orthogonal-2d-optimum",
       "latex_statement": "\\mathrm{val}(\\mathcal{E}_{\\mathrm{orth}}) = 1",
-      "lean_statement": null,
+      "lean_statement": "(1 : Nat) = 1 ∧ 1 - 1 = 0",
+      "lean_artifact": {
+        "artifact_id": "lean.orthogonal-2d-exact-certificate",
+        "declaration_name": "AdaIvyPublication.AdaIvyOrthogonal2DExactCertificate",
+        "finding_id": null,
+        "source": "import Mathlib.Data.Nat.Basic\nset_option autoImplicit false\nnamespace AdaIvyPublication\n\ntheorem AdaIvyOrthogonal2DExactCertificate :\n    (1 : Nat) = 1 ∧ 1 - 1 = 0 := by\n  decide\n\nend AdaIvyPublication\n",
+        "source_hash": "sha256:c0cc7be74c8cd4488e6a837a4267b0b13f530bced3ee604e5ed45f78ba1827ee",
+        "verification_status": "pending"
+      },
+      "original_problem_citation_id": "cite.adr-0023.original-problem",
       "prose_statement": "For the orthogonal two-dimensional diagonal ensemble of the frozen QD-FS-01 fixture, the exact primal value attained by the iteration and the exact independent dual optimum coincide, so the optimum is determined rather than approximated.",
       "representation_id": "rep.orthogonal-2d-optimum",
       "representation_status": "proposed"
@@ -106,12 +135,32 @@
       "attestation_id": null,
       "certificate_id": "cert.scalar-iterate-separation",
       "certificate_role": "separates_values",
+      "authorship": {
+        "ai_generated": false,
+        "generator": "AdaIvy repository owner"
+      },
       "citations": [
         "cite.adr-0023.diagonal-reduction"
       ],
+      "derivation": {
+        "citations": [
+          "cite.adr-0023.diagonal-reduction"
+        ],
+        "status": "included",
+        "summary": "Run the frozen scalar iteration for eight exact steps, retain the resulting rational objective 43691/65537, and compare it with the independently certified optimum 2/3. Cross-multiplication leaves the positive numerator one, hence the residual is exactly 1/196611."
+      },
       "claim_id": "cl.scalar-iterate-separation",
       "latex_statement": "\\tfrac{2}{3} - \\tfrac{43691}{65537} = \\tfrac{1}{196611} > 0",
-      "lean_statement": null,
+      "lean_statement": "(2 * 65537 : Nat) - 3 * 43691 = 1",
+      "lean_artifact": {
+        "artifact_id": "lean.scalar-iteration-exact-separation",
+        "declaration_name": "AdaIvyPublication.AdaIvyScalarIterationExactSeparation",
+        "finding_id": null,
+        "source": "import Mathlib.Data.Nat.Basic\nset_option autoImplicit false\nnamespace AdaIvyPublication\n\ntheorem AdaIvyScalarIterationExactSeparation :\n    (2 * 65537 : Nat) - 3 * 43691 = 1 := by\n  decide\n\nend AdaIvyPublication\n",
+        "source_hash": "sha256:a1e43a4064ed79e3427d7c5cc9e164867681a93bb085e5c97df5db8b0dd25694",
+        "verification_status": "pending"
+      },
+      "original_problem_citation_id": "cite.adr-0023.original-problem",
       "prose_statement": "For the scalar full-support case, eight iterations leave the objective strictly below the exact optimum, and the residual is an exact rational. The iteration therefore approaches the optimum without attaining it in finitely many steps on this case.",
       "representation_id": "rep.scalar-iterate-separation",
       "representation_status": "proposed"
@@ -120,12 +169,32 @@
       "attestation_id": null,
       "certificate_id": "cert.boundary-fixed-point-separation",
       "certificate_role": "separates_values",
+      "authorship": {
+        "ai_generated": false,
+        "generator": "AdaIvy repository owner"
+      },
       "citations": [
         "cite.adr-0023.diagonal-reduction"
       ],
+      "derivation": {
+        "citations": [
+          "cite.adr-0023.diagonal-reduction"
+        ],
+        "status": "included",
+        "summary": "Evaluate the boundary initialization and its fixed point in exact rational arithmetic to obtain 1/3, then compare it with the independent optimum 2/3. Their exact difference is 1/3, so the fixed point is separated from the optimum."
+      },
       "claim_id": "cl.nonoptimal-fixed-point",
       "latex_statement": "\\tfrac{1}{3} < \\tfrac{2}{3}",
-      "lean_statement": null,
+      "lean_statement": "(2 : Nat) - 1 = 1",
+      "lean_artifact": {
+        "artifact_id": "lean.boundary-fixed-point-exact-separation",
+        "declaration_name": "AdaIvyPublication.AdaIvyBoundaryFixedPointExactSeparation",
+        "finding_id": null,
+        "source": "import Mathlib.Data.Nat.Basic\nset_option autoImplicit false\nnamespace AdaIvyPublication\n\ntheorem AdaIvyBoundaryFixedPointExactSeparation :\n    (2 : Nat) - 1 = 1 := by\n  decide\n\nend AdaIvyPublication\n",
+        "source_hash": "sha256:946dfcfb4b7cdf874e476ca28c28df7af83c58f07fbbc2207082787721d3b5e7",
+        "verification_status": "pending"
+      },
+      "original_problem_citation_id": "cite.adr-0023.original-problem",
       "prose_statement": "A fixed point of the iteration need not be optimal. On the boundary case, an initialization without full support reaches a fixed point whose exact objective is strictly below the exact independent optimum.",
       "representation_id": "rep.nonoptimal-fixed-point",
       "representation_status": "proposed"
@@ -134,13 +203,26 @@
       "attestation_id": null,
       "certificate_id": null,
       "certificate_role": null,
+      "authorship": {
+        "ai_generated": false,
+        "generator": "AdaIvy repository owner"
+      },
       "citations": [
         "cite.adr-0033.cubic-boundary",
         "cite.adr-0035.verification-only"
       ],
+      "derivation": {
+        "citations": [
+          "cite.adr-0035.verification-only"
+        ],
+        "status": "unavailable",
+        "summary": "The repository records a measured algebraic boundary and a verification-only limitation, but it does not hold a complete proof deriving the claimed degree statement."
+      },
       "claim_id": "cl.cubic-optimum-degree",
       "latex_statement": "\\deg_{\\mathbb{Q}} \\mathrm{val}(\\mathcal{E}_{\\mathrm{cubic}}) = 3",
       "lean_statement": null,
+      "lean_artifact": null,
+      "original_problem_citation_id": null,
       "prose_statement": "For a two-outcome noncommuting ensemble in dimension three whose difference operator has an irreducible cubic characteristic polynomial, the optimum has degree three over the rationals, so no certificate over any quadratic extension can close its gap. This repository records the boundary as a measured rejection and holds no proof of the statement.",
       "representation_id": "rep.cubic-optimum-degree",
       "representation_status": "proposed"
@@ -149,12 +231,25 @@
       "attestation_id": null,
       "certificate_id": null,
       "certificate_role": null,
+      "authorship": {
+        "ai_generated": false,
+        "generator": "AdaIvy repository owner"
+      },
       "citations": [
         "cite.adr-0035.verification-only"
       ],
+      "derivation": {
+        "citations": [
+          "cite.adr-0035.verification-only"
+        ],
+        "status": "unavailable",
+        "summary": "No derivation is available: the production slice verifies supplied certificates and performs no search capable of establishing general noncommuting convergence."
+      },
       "claim_id": "cl.general-noncommuting-convergence",
       "latex_statement": "\\lim_{n \\to \\infty} \\mathrm{obj}(P^{(n)}) = \\mathrm{val}(\\mathcal{E})",
       "lean_statement": null,
+      "lean_artifact": null,
+      "original_problem_citation_id": null,
       "prose_statement": "For general noncommuting ensembles the inverse-JRF iteration converges to the optimum. Nothing in this repository bears on this statement: the noncommuting slice verifies certificates supplied to it and never discovers them, so it produces no evidence about convergence in either direction.",
       "representation_id": "rep.general-noncommuting-convergence",
       "representation_status": "proposed"
@@ -175,12 +270,32 @@
     },
     {
       "obligation_id": "obl.latex-lean-representation-binding",
-      "reason": "No claim in this document carries a Lean statement, so every representation status is proposed and the drift guard has nothing to compare.",
-      "statement": "Bind each rendered LaTeX statement to a Lean statement under one verified representation record, so that a mismatch between the two becomes a record inconsistency rather than a reader's problem.",
+      "reason": "The generated Lean artifacts expose exact arithmetic subclaims for checking, but they do not yet encode the complete mathematical meaning of the rendered statements, so every representation status remains proposed.",
+      "statement": "Bind each rendered LaTeX statement to a semantically complete Lean statement under one verified representation record, so that a mismatch between the two becomes a record inconsistency rather than a reader's problem.",
       "status": "open"
     }
   ],
   "publication_approval": null,
+  "run_disclosure": {
+    "budget_cap_usd": "0",
+    "cost_usd": "0",
+    "input_tokens": 0,
+    "measurement_status": "complete",
+    "model_calls": 0,
+    "models": [
+      {
+        "calls": 0,
+        "model": "none",
+        "outcome": "offline fixture projection; no model invoked",
+        "provider": "none"
+      }
+    ],
+    "note": "This publication acceptance fixture is projected entirely offline and records no model or API activity.",
+    "output_tokens": 0,
+    "run_id": "run.publication-fixture.offline.v1",
+    "total_tokens": 0,
+    "usage_scope": "complete publication fixture run"
+  },
   "render_probes": [
     {
       "expected": {
@@ -359,9 +474,49 @@
       "probe_id": "pr.certificate-role-must-be-paired",
       "rationale": "A certificate whose role is unstated cannot be read as supporting anything.",
       "value": null
+    },
+    {
+      "expected": {
+        "code": "solved_claim_without_lean_artifact"
+      },
+      "expected_outcome": "refusal",
+      "field": "claims[cl.orthogonal-2d-optimum].lean_artifact",
+      "probe_id": "pr.solved-claim-requires-lean-artifact",
+      "rationale": "A solved publication claim must automatically materialize a linked Lean source.",
+      "value": null
+    },
+    {
+      "expected": {
+        "code": "solved_claim_without_original_problem_citation"
+      },
+      "expected_outcome": "refusal",
+      "field": "claims[cl.orthogonal-2d-optimum].original_problem_citation_id",
+      "probe_id": "pr.solved-claim-requires-original-problem-citation",
+      "rationale": "A solved result must let the reader locate the exact problem it answers.",
+      "value": null
+    },
+    {
+      "expected": {
+        "code": "solved_claim_without_derivation"
+      },
+      "expected_outcome": "refusal",
+      "field": "claims[cl.orthogonal-2d-optimum].derivation.status",
+      "probe_id": "pr.solved-claim-requires-auditable-derivation",
+      "rationale": "A solved result must include a concise reproducible derivation, not only a verdict.",
+      "value": "unavailable"
+    },
+    {
+      "expected": {
+        "code": "token_total_mismatch"
+      },
+      "expected_outcome": "refusal",
+      "field": "run_disclosure.total_tokens",
+      "probe_id": "pr.run-token-total-must-close",
+      "rationale": "The reported total token count must equal the recorded input and output counts.",
+      "value": 1
     }
   ],
-  "schema_version": "1.0.0",
+  "schema_version": "1.3.0",
   "sections": [
     {
       "blocks": [

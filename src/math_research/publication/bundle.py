@@ -18,8 +18,9 @@ from .bibliography import render_bibliography
 from .errors import PublicationValidationError
 from .manuscript import Manuscript
 from .probes import run_probes
-from .render import RenderedDocument, ledger_payload, render_manuscript
+from .render import RenderedDocument, lean_artifact_filename, ledger_payload, render_manuscript
 from .serialization import canonical_bytes, canonical_hash, sha256_bytes
+from ..novelty import load_recheck
 
 BUNDLE_SCHEMA_VERSION = "1.0.0"
 
@@ -34,11 +35,15 @@ flows back.
   backing it. `paper.tex` is exactly the frozen template plus these blocks.
 - `records/evidence.json` records the computed evidence class of every claim and
   why. No input field selects an environment.
+- `records/prior-art.json` records the derived prior-result/report
+  classification. An identified matching proof or refutation cannot be hidden
+  behind the broader `novelty: not_assessed` status.
 - `records/probes.json` records the falsifiability probes: single-field
   mutations of the manuscript, each of which must produce a named refusal or a
   named demotion.
-- `lean/` holds the verbatim Lean sources any attestation covers. Absent
-  attestations, it is empty, and Appendix A of the document says so.
+- `lean/` holds the content-hashed Lean source for every solved claim. Each
+  paper claim links to its file and states whether checking is pending, failed,
+  or kernel-checked.
 - `build.json` pins the typesetting invocation. `typeset_status` is
   `not_typeset` until a compile has actually run; its absence is never a pass.
 - `MANIFEST.json` hashes every file above, plus the manuscript, template and
@@ -62,10 +67,6 @@ class PublicationBundle:
     @property
     def bundle_hash(self) -> str:
         return str(self.manifest["bundle_hash"])
-
-
-def _lean_filename(declaration: str) -> str:
-    return declaration.replace(".", "_") + ".lean"
 
 
 def build_bundle(manuscript: Manuscript, *, toolchain: Mapping[str, Any] | None = None) -> PublicationBundle:
@@ -97,6 +98,34 @@ def build_bundle(manuscript: Manuscript, *, toolchain: Mapping[str, Any] | None 
         "evidence_class_counts": dict(document.statistics["evidence_class_counts"]),
     }
 
+    approval = manuscript.value["publication_approval"]
+    if approval is None:
+        prior_art = {
+            "status": "not_assessed",
+            "outcome": "not_assessed",
+            "relationship": "not_assessed",
+            "resolution": "not_assessed",
+            "verification_status": "not_assessed",
+            "report_classification": "not_assessed",
+            "target_resolution_status": "not_assessed",
+            "novelty_status": "not_assessed",
+            "creates_mathematical_warrant": False,
+            "recheck_id": None,
+            "recheck_hash": None,
+        }
+    else:
+        announcement = load_recheck(approval["novelty_rechecks"][1])
+        prior_art = {
+            "status": "recorded",
+            "outcome": announcement.outcome,
+            "relationship": announcement.prior_art_relationship,
+            "resolution": announcement.prior_resolution,
+            "verification_status": announcement.prior_resolution_verification,
+            **announcement.classification().payload(),
+            "recheck_id": announcement.recheck_id,
+            "recheck_hash": announcement.content_hash,
+        }
+
     build = {
         "schema_version": BUNDLE_SCHEMA_VERSION,
         "source_date_epoch": SOURCE_DATE_EPOCH,
@@ -126,20 +155,22 @@ def build_bundle(manuscript: Manuscript, *, toolchain: Mapping[str, Any] | None 
         "records/manuscript.json": canonical_bytes(manuscript.value) + b"\n",
         "records/ledger.json": canonical_bytes(ledger_payload(document)) + b"\n",
         "records/evidence.json": canonical_bytes(evidence) + b"\n",
+        "records/prior-art.json": canonical_bytes(prior_art) + b"\n",
         "records/probes.json": canonical_bytes(probes) + b"\n",
         "build.json": canonical_bytes(build) + b"\n",
         "README.md": README.encode("utf-8"),
     }
-    for attestation_id in sorted(manuscript.attestations):
-        attestation = manuscript.attestations[attestation_id]
-        name = _lean_filename(str(attestation["declaration_name"]))
-        header = (
-            f"-- Attestation {attestation_id}, finding {attestation['finding_id']}\n"
-            f"-- Outcome {attestation['outcome']}\n"
-            f"-- Wrapper {attestation['wrapper_hash']}\n"
-            f"-- Runtime {attestation['runtime_hash']}\n"
-        )
-        files[f"lean/{name}"] = (header + str(attestation["lean_source"]) + "\n").encode("utf-8")
+    for claim_id in sorted(manuscript.claims):
+        claim = manuscript.claims[claim_id]
+        artifact = claim["lean_artifact"]
+        if artifact is None:
+            continue
+        path = f"lean/{lean_artifact_filename(claim)}"
+        if path in files:
+            raise PublicationValidationError(
+                "lean_artifact_path_collision", f"more than one claim resolves to {path}"
+            )
+        files[path] = str(artifact["source"]).encode("utf-8")
 
     manifest: dict[str, Any] = {
         "schema_version": BUNDLE_SCHEMA_VERSION,
@@ -151,9 +182,11 @@ def build_bundle(manuscript: Manuscript, *, toolchain: Mapping[str, Any] | None 
         "template_hash": document.template_hash,
         "document_hash": document.document_hash,
         "publication_approval": manuscript.value["publication_approval"],
+        "run_disclosure": dict(manuscript.value["run_disclosure"]),
         "corpus_provenance": manuscript.value["corpus_provenance"],
         "novelty": dict(manuscript.value["novelty"]),
         "significance": dict(manuscript.value["significance"]),
+        "prior_art": prior_art,
         "toolchain": dict(manuscript.value["toolchain"]),
         "statistics": dict(document.statistics),
         "evidence_class_counts": dict(document.statistics["evidence_class_counts"]),

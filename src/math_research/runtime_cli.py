@@ -18,6 +18,8 @@ from typing import Any
 
 from .application.problem_intake import load_problem_definition_file
 from .domain.entities import OpaqueId, ResearchDossier
+from .interchange import export_dossier_dict
+from .novelty import NoveltyRecheckError, read_recheck, require_checkpoint
 from .phase2.live_config import load_live_run_configuration
 from .phase2.live_gate import preflight_live_gate
 from .phase2.pricing import load_pricing_snapshot
@@ -83,6 +85,20 @@ def _run(args: argparse.Namespace) -> int:
     configuration = load_session_configuration(args.config)
     dossier = _dossier(args)
     target = freeze_target(dossier)
+    if args.novelty_recheck is None:
+        _print({"status": "refused", "reason": "fresh_novelty_recheck_required_before_research"})
+        return 2
+    try:
+        recheck = read_recheck(args.novelty_recheck)
+        require_checkpoint(
+            recheck, checkpoint="before_research",
+            subject_id=dossier.problem.id.value,
+            subject_hash=str(export_dossier_dict(dossier)["content_hash"]),
+            next_action_id=args.session_id,
+        )
+    except (NoveltyRecheckError, OSError) as error:
+        _print({"status": "refused", "reason": str(error)})
+        return 2
     pricing = load_pricing_snapshot(args.pricing_snapshot) if args.pricing_snapshot else None
 
     if args.provider == "fixture":
@@ -141,7 +157,9 @@ def _run(args: argparse.Namespace) -> int:
         verifier=gateway,
         pricing_snapshot=pricing,
     )
-    session = runtime.run(session_id=OpaqueId(args.session_id), dossier=dossier)
+    session = runtime.run(
+        session_id=OpaqueId(args.session_id), dossier=dossier, novelty_recheck=recheck,
+    )
     with SQLiteWorkspace(args.root / "workspace.sqlite3") as workspace:
         facts = session_facts(session, workspace)
         report = render_session_report(session, workspace)
@@ -234,9 +252,26 @@ def _load_session(path: Path) -> LeadSession:
         distinct_hypotheses=payload["distinct_hypotheses"],
         started_at=payload["started_at"],
         ended_at=payload["ended_at"],
+        novelty_recheck_id=payload["novelty_recheck_id"],
+        novelty_recheck_hash=payload["novelty_recheck_hash"],
+        prior_art_outcome=payload["prior_art_outcome"],
+        prior_art_relationship=payload["prior_art_relationship"],
+        prior_resolution=payload["prior_resolution"],
+        prior_resolution_verification=payload["prior_resolution_verification"],
+        report_classification=payload["report_classification"],
+        target_resolution_status=payload["target_resolution_status"],
     ).with_content_hash()
     if session.content_hash != payload["content_hash"]:
         raise ValueError("session content_hash mismatch")
+    try:
+        recheck = read_recheck(path.parent / "novelty-recheck.json")
+    except (NoveltyRecheckError, OSError) as error:
+        raise ValueError(f"session novelty re-check unavailable: {error}") from error
+    if (
+        recheck.recheck_id != session.novelty_recheck_id
+        or recheck.content_hash != session.novelty_recheck_hash
+    ):
+        raise ValueError("session novelty re-check identity mismatch")
     return session
 
 
@@ -266,6 +301,7 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--config", type=Path, required=True)
     run.add_argument("--problem", type=Path)
     run.add_argument("--instant")
+    run.add_argument("--novelty-recheck", type=Path)
     run.add_argument("--provider", default="fixture")
     run.add_argument("--live-config", type=Path)
     run.add_argument("--pricing-snapshot", type=Path)
