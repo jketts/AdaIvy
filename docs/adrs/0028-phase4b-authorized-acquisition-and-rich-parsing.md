@@ -114,7 +114,10 @@ filesystem writes, process forks, unapproved reads, and inherited secrets. It
 is now accompanied by a protocol-connected fixture worker with parent-enforced
 wall/output controls, POSIX CPU/open-file/process/file-size limits, and
 per-process CPU plus sampled RSS measurements. Short-lived RSS spikes can evade
-the sampler. The strict HTML, TeX, and PDF candidates are now connected workers.
+the sampler. The sampled-RSS rejection is emitted only for an observed overage:
+a task that the kernel has already terminated is unmeasurable rather than
+unmeasured, so its exit status classifies it, and measurement lost for a task
+that still exists fails closed under its own distinct code. The strict HTML, TeX, and PDF candidates are now connected workers.
 An executable authorization measurement runs all twelve actual parser fixtures
 through those source-bound workers with exact media/profile binding,
 conservative content checks, fixture hashes, and result hashes. The two positive
