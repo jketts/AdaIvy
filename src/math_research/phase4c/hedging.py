@@ -1,13 +1,13 @@
-"""Signal 2: hedging-scope discrimination. Demotion only.
+"""Signal 2: hedging-scope discrimination. Suppression only.
 
 ADR-0031 partitions cues by a stated principle rather than by which documents
 they happen to separate:
 
 * a **self-disclaiming** cue is about the document's own evidentiary status --
   what this document does not supply, does not cover, or does not establish.
-  Only these demote.
+  Only these suppress.
 * an **object-level** cue is about the mathematics -- something fails, violates
-  a hypothesis, or is refuted by a counterexample. These never demote. Negation
+  a hypothesis, or is refuted by a counterexample. These never suppress. Negation
   is legitimate content in a contradiction document: a counterexample *is* an
   assertion that something fails, and `boundary-contradiction` carries all three
   object-level cues in a sentence containing matched query terms while being an
@@ -24,16 +24,29 @@ slice's weakest point:
   single"), which is an applicable renamed gold. The self-disclaiming reading is
   carried by the longer phrase `states no`, which is in the table.
 
-Scope rule: a document is demoted when a matched query term occurs in the same
-sentence as a self-disclaiming cue. Sentences come from `text.SENTENCE_RULE`.
-A matched query term is a query token, under the shared tokenizer, that occurs
-as a token in that sentence. Alias content phrases are not query terms for this
-purpose, which keeps the rule conservative -- it can only demote a document the
-query itself reached into.
+Scope rule (ADR-0046): a document is suppressed when a matched query term occurs
+in the same **scope block** as a self-disclaiming cue. Scope blocks come from
+`text.SCOPE_BLOCK_RULE`, which unions a sentence with its immediate predecessor
+exactly when the sentence opens with a sentence-initial anaphor; the sentence
+partition of `text.SENTENCE_RULE` is still declared and still reported, because
+the block rule is defined on top of it. A matched query term is a query token,
+under the shared tokenizer, that occurs as a token in that block. Alias content
+phrases are not query terms for this purpose, which keeps the rule conservative
+-- it can only suppress a document the query itself reached into.
 
-There is **no cue-count threshold**. Presence is boolean. Choosing a count
-after observing the corpus is the forbidden outcome "selecting thresholds after
-observing a hybrid candidate".
+ADR-0031 froze the sentence as the scope unit. That unit required a disclaiming
+sentence to restate its own subject, which is a linguistic error independent of
+any measurement; see the `text` module docstring for the statement of the error
+and for the standing limitation of sentence-initial token matching. Suppression
+is removal from the returned list, not a rank penalty, because retrieval returns
+a list and precision is measured over what is returned. Suppression is a
+retrieval decision and never an applicability judgement: a suppressed document
+is not thereby found inapplicable.
+
+There is **no cue-count threshold** and no numeric scope parameter of any kind.
+Presence is boolean and antecedent depth is exactly one. Choosing a count or a
+window length after observing the corpus is the forbidden outcome "selecting
+thresholds after observing a hybrid candidate".
 
 Cue matching is `\\b`-anchored. Without the anchors a cue such as `is not`
 matches across the word boundary in `this note`, which is how an earlier draft
@@ -48,10 +61,12 @@ from .bounds import Phase4CValidationError
 from .fixtures import Document
 from .ports import HedgeVerdict
 from .text import (
+    ANAPHOR_PRONOUNS,
+    SCOPE_BLOCK_RULE,
     SENTENCE_RULE,
     SENTENCE_SPLIT_PATTERN,
     cue_pattern,
-    sentences,
+    scope_blocks,
     tokens,
 )
 
@@ -66,7 +81,7 @@ SELF_DISCLAIMING_CUES = (
 )
 OBJECT_LEVEL_CUES = ("fails", "violates", "counterexample")
 
-SCOPE_RULE = "matched-query-term-in-same-sentence-as-self-disclaiming-cue"
+SCOPE_RULE = "matched-query-term-in-same-scope-block-as-self-disclaiming-cue"
 CUE_COUNT_THRESHOLD = None  # Presence is boolean. There is no threshold.
 
 
@@ -75,9 +90,12 @@ def declared_method(
     object_level_cues: Sequence[str] = OBJECT_LEVEL_CUES,
 ) -> dict[str, object]:
     return {
-        "method": "hedging-scope-demotion",
-        "direction": "demotion_only",
+        "method": "hedging-scope-suppression",
+        "direction": "suppression_only",
         "scope_rule": SCOPE_RULE,
+        "scope_block_rule": SCOPE_BLOCK_RULE,
+        "anaphor_pronouns": list(ANAPHOR_PRONOUNS),
+        "anaphor_antecedent_depth": 1,
         "sentence_rule": SENTENCE_RULE,
         "sentence_split_pattern": SENTENCE_SPLIT_PATTERN,
         "cue_match": "word-boundary-anchored-phrase",
@@ -91,13 +109,14 @@ class HedgingScopeSignal:
     """A `HedgeSignal` over the frozen corpus bytes.
 
     `self_disclaiming_cues` and `object_level_cues` are constructor arguments
-    only so the acceptance suite can assert the two properties ADR-0031
-    requires: that an empty demoting table leaves the fused ordering equal to
-    the pure lexical ordering, and that no object-level cue can demote. The
-    benchmark path always passes the frozen tables.
+    only so the acceptance suite can assert the two properties ADR-0031 and
+    ADR-0046 require: that an empty suppressing table leaves the fused ordering
+    equal to the pure lexical ordering and suppresses nothing, and that no
+    object-level cue can suppress. The benchmark path always passes the frozen
+    tables, which this slice does not touch.
     """
 
-    signal_id = "hedging-scope-demotion"
+    signal_id = "hedging-scope-suppression"
 
     def __init__(
         self,
@@ -117,10 +136,10 @@ class HedgingScopeSignal:
         self.object_level_cues = object_set
         self._self_patterns = tuple((cue, cue_pattern(cue)) for cue in self_set)
         self._object_patterns = tuple((cue, cue_pattern(cue)) for cue in object_set)
-        self._sentences = {
+        self._scope_blocks = {
             document.identifier: tuple(
-                (sentence.casefold(), frozenset(tokens(sentence)))
-                for sentence in sentences(document.text)
+                (block.casefold(), frozenset(tokens(block)))
+                for block in scope_blocks(document.text)
             )
             for document in documents
         }
@@ -131,15 +150,15 @@ class HedgingScopeSignal:
         query_terms = set(tokens(query))
         results: list[HedgeVerdict] = []
         for document_id in document_ids:
-            if document_id not in self._sentences:
+            if document_id not in self._scope_blocks:
                 raise Phase4CValidationError(
                     f"hedge asked about an unknown document {document_id!r}"
                 )
-            demoting: set[str] = set()
+            suppressing: set[str] = set()
             object_level: set[str] = set()
             scoped: set[str] = set()
-            for folded, sentence_tokens in self._sentences[document_id]:
-                matched = query_terms & sentence_tokens
+            for folded, block_tokens in self._scope_blocks[document_id]:
+                matched = query_terms & block_tokens
                 for cue, pattern in self._object_patterns:
                     if pattern.search(folded):
                         object_level.add(cue)
@@ -147,13 +166,13 @@ class HedgingScopeSignal:
                     continue
                 for cue, pattern in self._self_patterns:
                     if pattern.search(folded):
-                        demoting.add(cue)
+                        suppressing.add(cue)
                         scoped |= matched
             results.append(
                 HedgeVerdict(
                     document_id=document_id,
-                    demoted=bool(demoting),
-                    self_disclaiming_cues=tuple(sorted(demoting)),
+                    suppressed=bool(suppressing),
+                    self_disclaiming_cues=tuple(sorted(suppressing)),
                     object_level_cues=tuple(sorted(object_level)),
                     scoped_query_terms=tuple(sorted(scoped)),
                 )

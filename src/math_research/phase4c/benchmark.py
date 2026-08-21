@@ -9,7 +9,15 @@ Honesty rules carried over from the frozen lexical baseline:
   `None` alongside its numerator and denominator, and its gate status is
   `undetermined` -- never `pass`, never `0`.
 * Every query appears in the report, including zero-hit queries, duplicate
-  hits, inapplicable hits, missed golds, and demotions. Nothing is filtered.
+  hits, inapplicable hits, missed golds, and suppressions. Nothing is filtered.
+* Suppression removes a candidate from the returned list and from nothing else.
+  Every suppressed candidate keeps a full hit record with its cue evidence, its
+  scoped query terms, and its pre-suppression rank; every query reports
+  `suppressed_ids`, `suppressed_inapplicable_ids`, and
+  `pre_suppression_ordered_ids` beside `ordered_ids`; and the non-gated
+  disclosure metric `applicability_precision_at_5_pre_suppression` keeps the
+  pre-suppression value computable from the emitted report forever. Removal
+  without those three is the forbidden outcome "hiding ... an inapplicable hit".
 * Declared provenance is assembled from the same constants that build the
   executed SQL, and the executed SQL text is reported verbatim.
 * Timestamps, elapsed milliseconds, byte counts, and raw float scores are
@@ -53,14 +61,27 @@ from .fixtures import (
     load_corpus,
     load_gold,
 )
-from .fusion import HEDGE_PENALTY_RULE, fuse
+from .fusion import (
+    HEDGE_PENALTY_RULE,
+    SUPPRESSION_RULE,
+    enforce_subsequence,
+    fuse,
+    retained,
+    suppressed,
+)
 from .hedging import HedgingScopeSignal, OBJECT_LEVEL_CUES, SELF_DISCLAIMING_CUES
 from .lexical import LexicalIndex, corpus_rows, derived_db_bytes, open_index
 from .ports import AliasSignal, HedgeSignal, LexicalSignal
 from .serialization import canonical_bytes, content_hash, operational_hash, sha256_bytes
 
 METHOD = "phase4c-hybrid-score-space-fusion"
-FUSION_METHOD = "score-space-additive-fusion-with-demotion"
+FUSION_METHOD = "score-space-additive-fusion-with-suppression"
+# A disclosure metric, never a gate. It records what applicability precision
+# would have measured over the pre-suppression ordering, so the pre-improvement
+# number stays computable from any emitted report. It is deliberately absent
+# from THRESHOLD_KEYS, GATE_COMPARISONS, and gate_evaluation: it can neither
+# pass nor fail.
+DISCLOSURE_METRIC = "applicability_precision_at_5_pre_suppression"
 
 
 @dataclass(frozen=True)
@@ -108,23 +129,37 @@ def gate_status(threshold_key: str, threshold: Any, measured: Any) -> str:
     return "pass" if measured == threshold else "fail"
 
 
+def applicability_precision(
+    results: Sequence[dict[str, Any]], ordering_key: str = "ordered_ids"
+) -> Measurement:
+    """Applicable over topically relevant retrieved, for applicability queries.
+
+    `ordering_key` selects the returned list the metric is measured over, so the
+    same code computes the gated metric on `ordered_ids` and the disclosure
+    metric on `pre_suppression_ordered_ids`. One definition, two orderings.
+    """
+
+    relevant_applicable = relevant_retrieved = 0
+    for item in results:
+        if item["category"] != "applicability":
+            continue
+        retrieved = set(item["relevant_ids"]) & set(item[ordering_key])
+        relevant_retrieved += len(retrieved)
+        relevant_applicable += len(retrieved & set(item["applicable_ids"]))
+    return Measurement(relevant_applicable, relevant_retrieved)
+
+
 def compute_measurements(
     results: Sequence[dict[str, Any]],
     *,
     duplicate_numerator: int,
     duplicate_denominator: int,
 ) -> dict[str, Measurement]:
-    relevant_applicable = relevant_retrieved = 0
-    for item in results:
-        if item["category"] != "applicability":
-            continue
-        retrieved = set(item["relevant_ids"]) & set(item["ordered_ids"])
-        relevant_retrieved += len(retrieved)
-        relevant_applicable += len(retrieved & set(item["applicable_ids"]))
     return {
         "necessary_lemma_recall_at_5": micro_recall(results, "necessary_lemma"),
-        "applicability_precision_at_5": Measurement(
-            relevant_applicable, relevant_retrieved
+        "applicability_precision_at_5": applicability_precision(results),
+        DISCLOSURE_METRIC: applicability_precision(
+            results, "pre_suppression_ordered_ids"
         ),
         "contradiction_recall_at_5": micro_recall(results, "contradiction"),
         "notation_variant_recall_at_5": micro_recall(results, "notation_variant"),
@@ -151,7 +186,12 @@ def declared_method(
             "lexical_orientation": "relevance = -bm25 (monotone, margins preserved)",
             "composition": "fused_score = (-bm25) + alias_points - hedge_penalty",
             "hedge_penalty_rule": HEDGE_PENALTY_RULE,
+            "suppression_rule": SUPPRESSION_RULE,
             "ordering": "fused_score DESC, document_id ASC",
+            "retained_ordering": (
+                "the pre-suppression ordering with every suppressed candidate "
+                "removed; an order-preserving subsequence, never a promotion"
+            ),
         },
         "lexical_signal": lexical_module.declared_method(),
         "hedging_signal": hedging_module.declared_method(
@@ -213,7 +253,7 @@ def evaluate_hybrid(
     queries, thresholds = load_gold(fixtures, documents)
     table = tuple(alias_entries) if alias_entries is not None else load_aliases(fixtures)
 
-    demoting_cues = (
+    suppressing_cues = (
         tuple(self_disclaiming_cues)
         if self_disclaiming_cues is not None
         else SELF_DISCLAIMING_CUES
@@ -246,7 +286,7 @@ def evaluate_hybrid(
         lexical: LexicalSignal = lexical_signal or LexicalIndex(connection)
         hedge: HedgeSignal = hedge_signal or HedgingScopeSignal(
             documents,
-            self_disclaiming_cues=demoting_cues,
+            self_disclaiming_cues=suppressing_cues,
             object_level_cues=neutral_cues,
         )
         expander: AliasSignal = alias_signal or AliasExpansionSignal(documents, table)
@@ -282,11 +322,25 @@ def evaluate_hybrid(
             verdicts = hedge.verdicts(query.query, pre_ids)
             hits = fuse(candidates, expansions, verdicts, alias_phrase_points=points)
 
-            demoted_ids = sorted(hit.document_id for hit in hits if hit.demoted)
-            if set(demoted_ids) - set(pre_ids):
+            suppressed_ids = sorted(hit.document_id for hit in suppressed(hits))
+            if set(suppressed_ids) - set(pre_ids):
                 raise Phase4CValidationError("the hedge introduced a document")
 
-            ordered_ids = [hit.document_id for hit in hits[: query.top_k]]
+            # `pre_suppression_ordered_ids` is the counterfactual result list:
+            # what this query would have returned had no candidate been removed.
+            # The retained ordering removes the suppressed candidates from that
+            # ordering and reorders nothing. `enforce_subsequence` checks the
+            # property at runtime against the untruncated ordering as well as
+            # the truncated one, because truncation is not a reordering and the
+            # truncated check alone would be the weaker of the two.
+            pre_suppression_ordered_ids = [
+                hit.document_id for hit in hits[: query.top_k]
+            ]
+            ordered_ids = [
+                hit.document_id for hit in retained(hits)[: query.top_k]
+            ]
+            enforce_subsequence(ordered_ids, [hit.document_id for hit in hits])
+            enforce_subsequence(ordered_ids, pre_suppression_ordered_ids)
             if not ordered_ids:
                 zero_hit_query_ids.append(query.identifier)
 
@@ -313,6 +367,7 @@ def evaluate_hybrid(
                 "relevant_ids": list(query.relevant_ids),
                 "lexical_candidate_ids": lexical_ids,
                 "fused_candidate_ids": [hit.document_id for hit in hits],
+                "pre_suppression_ordered_ids": pre_suppression_ordered_ids,
                 "ordered_ids": ordered_ids,
                 "missed_relevant_ids": sorted(
                     set(query.relevant_ids) - set(ordered_ids)
@@ -324,7 +379,12 @@ def evaluate_hybrid(
                     if metadata[identifier].applicability != "applicable"
                 ),
                 "zero_hit": not ordered_ids,
-                "demoted_ids": demoted_ids,
+                "suppressed_ids": suppressed_ids,
+                "suppressed_inapplicable_ids": sorted(
+                    identifier
+                    for identifier in suppressed_ids
+                    if metadata[identifier].applicability != "applicable"
+                ),
                 "alias_introduced_ids": sorted(
                     hit.document_id
                     for hit in hits
@@ -394,7 +454,7 @@ def evaluate_hybrid(
             "schema_version": SCHEMA_VERSION,
             "method": METHOD,
             "declared_method": declared_method(
-                self_disclaiming_cues=demoting_cues,
+                self_disclaiming_cues=suppressing_cues,
                 object_level_cues=neutral_cues,
                 alias_phrase_points=points,
             ),
@@ -494,9 +554,11 @@ def verify_report(report: dict[str, Any]) -> dict[str, Any]:
 
 
 __all__ = [
+    "DISCLOSURE_METRIC",
     "FUSION_METHOD",
     "METHOD",
     "Measurement",
+    "applicability_precision",
     "compute_measurements",
     "declared_method",
     "evaluate_hybrid",

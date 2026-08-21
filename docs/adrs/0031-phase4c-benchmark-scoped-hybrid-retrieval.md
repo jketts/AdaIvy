@@ -2,7 +2,13 @@
 
 - **Status:** accepted for bounded Phase 4C hybrid retrieval implementation;
   implemented 21 August 2026 with one gate unmet and the revisit trigger
-  fired -- see "Measured outcome"
+  fired -- see "Measured outcome"; **partially superseded by ADR-0046**, which
+  fires on the first revisit clause and replaces the demotion-only constraint
+  with a suppression capability and the sentence scope unit with an
+  anaphor-resolved scope block. The "Measured outcome" table below is NOT
+  edited: it is the historical record of the partial, and the `0.6` it records
+  survives in the current report as the non-gated disclosure metric
+  `applicability_precision_at_5_pre_suppression`
 - **Date:** 2026-08-21
 - **Blueprint requirement:** Section 12.2 rebuildable index projections,
   Section 12.2.1 provider binding for vector projections, Section 19 separately

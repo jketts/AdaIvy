@@ -24,6 +24,19 @@ ADR-0026 records the accepted delivery order for the remaining work after
 Phase 4B: Phase 4C hybrid retrieval, then the noncommuting Phase 5 expansion,
 then Phase 6 external evaluation.
 
+Benchmark-scoped Phase 4C hybrid retrieval is implemented and now meets all
+seven of its gates. ADR-0031 shipped it with `applicability_precision_at_5` at
+`0.6` against a gate of `1.0`; ADR-0046 replaced that ADR's demotion-only
+constraint with a suppression capability and its sentence scope unit with an
+anaphor-resolved scope block, and the gate is met by removing a candidate from
+the returned list rather than by promoting one. The pre-improvement `0.6`
+remains in every emitted report as the non-gated disclosure metric
+`applicability_precision_at_5_pre_suppression`, and the negative controls that
+would test whether the suppression rule over-fires are deferred and recorded in
+ADR-0046. The scope stays the frozen `fixtures/phase4c/` benchmark: still no
+embeddings, no vectors, no network, no model call, no Phase 4B parse projection,
+and no Phase 4A rights read.
+
 ADR-0029 refines the target orchestration architecture without enabling a new
 runtime. The baseline is one coherent long-horizon research lead plus a
 centralized verifier, with literature, experiments, multiple branches, and

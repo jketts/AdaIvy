@@ -14,7 +14,12 @@ from dataclasses import dataclass
 from .serialization import canonical_bytes, sha256_bytes
 
 
-SCHEMA_VERSION = "adaivy.phase4c-hybrid-retrieval.v1"
+# v2 (ADR-0046): the suppression capability and the anaphor-resolved scope block
+# changed the semantic content of a report -- `demoted` became `suppressed`,
+# `ordered_ids` now means "retained", and three per-query keys plus one
+# disclosure metric appeared. Every canonical hash therefore changes, and a v1
+# report is rejected by `verify_report` rather than migrated.
+SCHEMA_VERSION = "adaivy.phase4c-hybrid-retrieval.v2"
 CORPUS_SCHEMA_VERSION = "adaivy.phase4c-corpus.v1"
 GOLD_SCHEMA_VERSION = "adaivy.phase4c-gold-queries.v1"
 ALIAS_SCHEMA_VERSION = "adaivy.phase4c-name-aliases.v1"

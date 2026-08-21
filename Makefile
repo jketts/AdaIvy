@@ -99,27 +99,31 @@ phase4b:
 	    --output "$$d/phase4b-feasible-gate.json" >/dev/null && \
 	  rm -rf "$$d" && printf 'phase 4B ok\n'
 
-# Phase 4C is a measured PARTIAL, not a pass: six gates hold and
-# applicability_precision_at_5 fails at 0.6 against a gate of 1.0. ADR-0031
-# records why a demotion-only signal cannot reach it -- every applicability
-# query's candidate set is at or below the top-k cutoff, so no reordering can
-# move the metric at all. Both commands exit 1 by design while a gate fails, so
-# their status is tolerated and the recorded outcome is asserted instead: this
-# target fails if the result moves in EITHER direction, because a silent
-# improvement is an unreviewed change to a frozen benchmark and a silent
-# regression is a regression. `verified` covers the canonical report hash, so a
-# failing gate is never counted as a pass and a broken hash is never ignored.
+# Phase 4C meets all seven gates under ADR-0046. ADR-0031 shipped it as a
+# measured partial with applicability_precision_at_5 at 0.6 against a gate of
+# 1.0, for two recorded causes: a demotion-only signal cannot move a metric
+# whose candidate sets already sit inside the top-k cutoff, and the frozen
+# same-sentence scope unit never fired on applicability-selfadjoint. ADR-0046
+# replaces demotion with removal and the sentence with the anaphor-resolved
+# scope block; the 0.6 survives as the non-gated disclosure metric
+# applicability_precision_at_5_pre_suppression, so this target's report still
+# contains the pre-improvement number. Both commands now exit 0, so no status is
+# tolerated: a nonzero exit fails this target. The recorded outcome is asserted
+# in BOTH directions, because a silent improvement is an unreviewed change to a
+# frozen benchmark and a silent regression is a regression. `verified` covers
+# the canonical report hash, so a failing gate is never counted as a pass and a
+# broken hash is never ignored.
 phase4c:
 	@printf '\n== phase 4C benchmark-scoped hybrid retrieval ==\n'
 	@d=$$(mktemp -d "$(TMPROOT)/adaivy-p4c.XXXXXX") && \
-	  { $(PY) -m math_research.cli phase4c benchmark --fixtures fixtures/phase4c \
-	      --output "$$d/phase4c-report.json" >/dev/null || true; } && \
-	  { $(PY) -m math_research.cli phase4c inspect "$$d/phase4c-report.json" \
-	      > "$$d/phase4c-verified.json" || true; } && \
-	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); s=r["gate_summary"]; f=r["failing_gates"]; assert r.get("verified") is True, "phase 4C canonical report hash did not verify"; assert (s["pass"], s["fail"], s["undetermined"]) == (6, 1, 0), "phase 4C gate summary moved: %s" % s; assert f == ["applicability_precision_at_5"], "phase 4C failing gates moved: %s" % f' \
+	  $(PY) -m math_research.cli phase4c benchmark --fixtures fixtures/phase4c \
+	    --output "$$d/phase4c-report.json" >/dev/null && \
+	  $(PY) -m math_research.cli phase4c inspect "$$d/phase4c-report.json" \
+	    > "$$d/phase4c-verified.json" && \
+	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); s=r["gate_summary"]; f=r["failing_gates"]; m=r["metrics"]; assert r.get("verified") is True, "phase 4C canonical report hash did not verify"; assert (s["pass"], s["fail"], s["undetermined"]) == (7, 0, 0), "phase 4C gate summary moved: %s" % s; assert s["overall"] == "pass", "phase 4C overall gate status moved: %s" % s; assert f == [], "phase 4C failing gates moved: %s" % f; assert m["applicability_precision_at_5"] == 1.0, "phase 4C applicability precision moved: %s" % m; assert m["applicability_precision_at_5_pre_suppression"] == 0.6, "phase 4C pre-suppression disclosure moved: %s" % m' \
 	    "$$d/phase4c-verified.json" && \
 	  rm -rf "$$d" && \
-	  printf 'phase 4C ok (6 gates hold; applicability_precision_at_5 fails as recorded)\n'
+	  printf 'phase 4C ok (7 gates hold; pre-suppression applicability precision disclosed at 0.6)\n'
 
 phase5:
 	@printf '\n== phase 5 exact adaptive quantum benchmark ==\n'

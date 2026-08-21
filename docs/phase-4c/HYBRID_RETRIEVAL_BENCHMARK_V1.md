@@ -86,6 +86,41 @@ source applicability, retrieve no quarantined or rights-blocked content, and
 show a gain on at least one metric on which the lexical baseline is below the
 gate. It may not worsen any metric already met by the baseline.
 
+### Dated note, 21 August 2026 -- owner ruling on the non-worsening clause
+
+The clause above ("It may not worsen any metric already met by the baseline") is
+NOT reworded. This note records how the owner ruled it applies, and to which
+metric.
+
+Ruled: for a ratio metric whose denominator is a retrieval volume, the clause
+means **"must still meet its gate"**, not "must never move off the baseline
+value". The metric this bears on is `duplicate rate@5`.
+
+Rationale. Such a ratio is not monotone in retrieval quality. Its denominator is
+the number of retrieved hits, so removing a non-duplicate bad result raises the
+rate while removing zero duplicates. Read against the baseline value, the clause
+would penalise a signal precisely for improving precision. On this corpus the
+two readings are jointly unsatisfiable for any label-blind signal: reaching the
+applicability precision gate of `1.0` removes all four inapplicable relevant
+observations, so the denominator falls to at most 50, while the numerator cannot
+fall below 1 without removing an applicable duplicate certificate gold -- which
+would itself be the forbidden outcome "hiding ... a duplicate". So the rate is at
+least `1/50`, which is the baseline value, and it equals the baseline value only
+if the signal removes exactly those four label-identified documents and nothing
+else -- a signal keyed on the applicability label, which is the first forbidden
+outcome. Every admissible signal therefore lands strictly above the baseline
+value.
+
+Effect under ADR-0046: measured `duplicate rate@5` is `1/42`, above the baseline
+`1/50` and inside the gate of `0.05`. The acceptance suite compares it against
+`proposed_thresholds["duplicate_rate_at_5_maximum"]` and additionally asserts
+that it rose off the baseline value, so the movement is disclosed rather than
+hidden.
+
+Revisit trigger: if the corpus ever grows enough that a label-blind signal keeps
+the rate at or below the baseline value, the literal reading becomes satisfiable
+again and this ruling must be withdrawn.
+
 Any new signal must be a rebuildable projection. Index deletion or rebuild may
 not change canonical source, rights, applicability, evidence, or synthesis
 records. Embedding source use requires an independent current Phase 4A

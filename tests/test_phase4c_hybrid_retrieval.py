@@ -1,34 +1,49 @@
 """Acceptance suite for the bounded Phase 4C hybrid-retrieval slice.
 
-Per ADR-0026 and the "Consequences" section of ADR-0031, this suite is the only
-executable record of this slice's thresholds, and each forbidden outcome must be
-demonstrated impossible rather than left untested. So the tests are written as
-properties over the whole frozen query set, not as a happy path:
+Per ADR-0026 and the "Consequences" sections of ADR-0031 and ADR-0046, this
+suite is the only executable record of this slice's thresholds, and each
+forbidden outcome must be demonstrated impossible rather than left untested. So
+the tests are written as properties over the whole frozen query set, not as a
+happy path:
 
 * label separation -- a token that exists only in an id or a classification
-  label retrieves nothing;
-* demotion-only -- over all fifteen queries the hedge never raises a fused
-  score and never introduces a document;
-* cue-class partition -- the two classes are disjoint, object-level cues cannot
-  demote, and neither contradiction gold is demoted;
-* cue neutrality -- with the demoting table emptied the fused ordering is
-  exactly the pure lexical ordering;
+  label retrieves nothing, and mutating every applicability, source-class and
+  duplicate-group value leaves the suppression set unchanged;
+* suppression is removal, not promotion -- over all fifteen queries the hedge
+  never raises a fused score, never introduces a document, and the retained
+  ordering is an order-preserving subsequence of the pre-suppression ordering;
+* suppression is not hiding -- every suppressed candidate keeps a full hit
+  record with its cue evidence and its pre-suppression rank, every query reports
+  `suppressed_ids` and `suppressed_inapplicable_ids`, and the non-gated
+  disclosure metric keeps the pre-suppression value recomputable;
+* the scope unit -- scope blocks union a sentence with exactly its immediate
+  predecessor when the sentence opens with an anaphor, the relation is not
+  transitive, and the anaphor tuple is frozen and closed;
+* cue-class partition -- the two classes are disjoint and byte-frozen,
+  object-level cues cannot suppress, and neither contradiction gold is
+  suppressed;
+* cue neutrality -- with the suppressing table emptied the fused ordering is
+  exactly the pure lexical ordering and nothing is suppressed;
 * alias hygiene -- no document identifier anywhere in the alias fixture, at
   least five entries exercised by no query and matching no document, and
   removing one exercised entry fails exactly its own query;
 * honest metrics -- zero-denominator ratios are `None`/`undetermined`, never a
-  passing zero, including under total retrieval collapse;
+  passing zero, including under total retrieval collapse, and the CLI still
+  exits 1 and still emits a report when a gate fails;
 * determinism, bounds, zero external cost, and pinned measured values kept
   separate from the proposed thresholds.
 
-Measured values below are OBSERVATIONS, not targets. One of them records a gate
-failure. They are pinned so that any retrieval, cue, weighting, fusion, or
-metric change has to be a deliberate edit to this file.
+Measured values below are OBSERVATIONS, not targets. They are pinned so that any
+retrieval, cue, weighting, fusion, or metric change has to be a deliberate edit
+to this file. ADR-0031 measured `applicability_precision_at_5` at `0.6` with the
+gate unmet; that number is not deleted here, it is retained as the pinned value
+of the non-gated disclosure metric.
 """
 
 from __future__ import annotations
 
 import ast
+import dataclasses
 import json
 import os
 from pathlib import Path
@@ -42,6 +57,7 @@ from unittest.mock import patch
 
 from math_research.phase4c import aliases as alias_module
 from math_research.phase4c import benchmark as benchmark_module
+from math_research.phase4c import bounds as bounds_module
 from math_research.phase4c import fusion as fusion_module
 from math_research.phase4c import hedging as hedging_module
 from math_research.phase4c import lexical as lexical_module
@@ -91,17 +107,19 @@ CLI_SOURCE = REPO_ROOT / "src" / "math_research" / "phase4c_cli.py"
 
 MEASURED_METRICS = {
     "necessary_lemma_recall_at_5": 1.0,
-    # MEASURED FAILURE, recorded rather than tuned away. The hedge fires
-    # correctly on three of four applicability queries but cannot move this
-    # number: every applicability query's fused candidate set has at most five
-    # members against a top-k of five, so a demotion-only reordering cannot
-    # remove a demoted document from the retrieved set. On the fourth query,
-    # `applicability-selfadjoint`, the same-sentence scope rule does not fire.
-    "applicability_precision_at_5": 0.6,
+    # MEASURED under ADR-0046. ADR-0031 measured 0.6 here with the gate unmet,
+    # for two causes it recorded: a demotion-only signal cannot move a metric
+    # whose candidate sets are already inside the top-k cutoff, and the frozen
+    # same-sentence scope unit never fired on `applicability-selfadjoint`.
+    # ADR-0046 replaces demotion with removal and the sentence with the
+    # anaphor-resolved scope block. The 0.6 is not deleted: it is the pinned
+    # value of the non-gated disclosure metric two lines below.
+    "applicability_precision_at_5": 1.0,
+    "applicability_precision_at_5_pre_suppression": 0.6,
     "contradiction_recall_at_5": 1.0,
     "notation_variant_recall_at_5": 1.0,
     "renamed_known_result_recall_at_10": 1.0,
-    "duplicate_rate_at_5": 1 / 54,
+    "duplicate_rate_at_5": 1 / 42,
     "external_spend_usd": 0,
     "network_calls": 0,
     "model_or_api_calls": 0,
@@ -109,25 +127,28 @@ MEASURED_METRICS = {
 }
 MEASURED_SUPPORT = {
     "necessary_lemma_recall_at_5": (3, 3),
-    "applicability_precision_at_5": (6, 10),
+    "applicability_precision_at_5": (6, 6),
+    "applicability_precision_at_5_pre_suppression": (6, 10),
     "contradiction_recall_at_5": (2, 2),
     "notation_variant_recall_at_5": (2, 2),
     "renamed_known_result_recall_at_10": (4, 4),
-    "duplicate_rate_at_5": (1, 54),
+    "duplicate_rate_at_5": (1, 42),
 }
 MEASURED_GATE_STATUS = {
     "necessary_lemma_recall_at_5": "pass",
-    "applicability_precision_at_5": "fail",
+    "applicability_precision_at_5": "pass",
     "contradiction_recall_at_5": "pass",
     "notation_variant_recall_at_5": "pass",
     "renamed_known_result_recall_at_10": "pass",
     "duplicate_rate_at_5_maximum": "pass",
     "external_spend_usd": "pass",
 }
-MEASURED_GATE_SUMMARY = {"pass": 6, "fail": 1, "undetermined": 0, "overall": "not_pass"}
+MEASURED_GATE_SUMMARY = {"pass": 7, "fail": 0, "undetermined": 0, "overall": "pass"}
+DISCLOSURE_METRIC = "applicability_precision_at_5_pre_suppression"
 
 # Measured lexical-baseline values on the same extended fixtures, for the
-# "may not worsen a metric the baseline already met" comparison.
+# "may not worsen a metric the baseline already met" comparison. Untouched by
+# ADR-0046: these are the lexical baseline's own numbers, not this slice's.
 BASELINE_METRICS = {
     "necessary_lemma_recall_at_5": 1.0,
     "applicability_precision_at_5": 0.6,
@@ -137,7 +158,61 @@ BASELINE_METRICS = {
     "duplicate_rate_at_5": 1 / 50,
 }
 
-MEASURED_ORDERED_IDS = {
+# The gate values, as a frozen literal. `proposed_thresholds` is asserted
+# byte-equal to this, so a gate cannot have been lowered to meet a measurement.
+FROZEN_PROPOSED_THRESHOLDS = {
+    "applicability_precision_at_5": 1.0,
+    "contradiction_recall_at_5": 1.0,
+    "duplicate_rate_at_5_maximum": 0.05,
+    "external_spend_usd": 0,
+    "necessary_lemma_recall_at_5": 1.0,
+    "notation_variant_recall_at_5": 1.0,
+    "renamed_known_result_recall_at_10": 1.0,
+}
+
+# The cue tables, as frozen literals. ADR-0046 changed the scope unit and did
+# not touch either table; pinning them as literals is what makes a later cue
+# addition a visible edit to this file rather than a silent lexicon fit.
+FROZEN_SELF_DISCLAIMING_CUES = (
+    "does not provide",
+    "inapplicable",
+    "insufficient",
+    "may look",
+    "states no",
+    "as stated",
+)
+FROZEN_OBJECT_LEVEL_CUES = ("fails", "violates", "counterexample")
+# The anaphor list, as a frozen literal. Six entries, closed, lowercase, single
+# tokens, sentence-initial position only.
+FROZEN_ANAPHOR_PRONOUNS = ("it", "this", "that", "these", "those", "they")
+# The only two corpus documents whose scope-block partition differs from their
+# sentence partition, i.e. the only two that open a sentence with an anaphor.
+# `renamed-cover-result` carries no self-disclaiming cue anywhere, so it is not
+# suppressible under any scope unit; it is listed to show the block rule is a
+# property of the prose and not of the applicability label.
+FROZEN_SCOPE_BLOCK_UNION_DOCUMENT_IDS = (
+    "renamed-cover-result",
+    "unbounded-spectral-mismatch",
+)
+# The corpus-wide suppressed set, as a frozen LITERAL. It is deliberately NOT
+# read from the manifest's `applicability` field. It does coincide exactly with
+# the corpus's three non-applicable documents; that coincidence is a property of
+# how the fixture was authored -- the author wrote the disclaimers into those
+# three documents -- and not evidence that the rule reads the label.
+# `test_suppression_is_invariant_under_every_mutated_label` is what shows the
+# rule does not read the label, and ADR-0046 defers the negative control that
+# would show it does not over-fire.
+FROZEN_SUPPRESSED_DOCUMENT_IDS = (
+    "optimization-distractor",
+    "topology-distractor",
+    "unbounded-spectral-mismatch",
+)
+
+# The three orderings, pinned side by side so a removal is visible as a removal:
+# the pre-suppression ordering, the retained ordering the query returns, and the
+# suppressed ids. `ordered_ids` must be an order-preserving subsequence of
+# `pre_suppression_ordered_ids` for every query.
+MEASURED_PRE_SUPPRESSION_ORDERED_IDS = {
     "lemma-compactness": (
         "compactness-lemma", "spectral-lemma", "banach-notation",
         "separation-lemma", "finite-dimensional-spectral",
@@ -160,8 +235,8 @@ MEASURED_ORDERED_IDS = {
         "topology-distractor", "unbounded-spectral-mismatch",
     ),
     "applicability-selfadjoint": (
-        "spectral-lemma", "unbounded-spectral-mismatch",
-        "finite-dimensional-spectral", "renamed-uniform-bound-result",
+        "spectral-lemma", "finite-dimensional-spectral",
+        "renamed-uniform-bound-result", "unbounded-spectral-mismatch",
     ),
     "contradiction-boundary": (
         "boundary-contradiction", "monotonicity-contradiction", "renamed-cover-result",
@@ -173,8 +248,8 @@ MEASURED_ORDERED_IDS = {
     ),
     "renamed-uniform-bound": (
         "renamed-uniform-bound-result", "banach-notation",
-        "finite-dimensional-spectral", "unbounded-spectral-mismatch",
-        "topology-distractor",
+        "finite-dimensional-spectral", "topology-distractor",
+        "unbounded-spectral-mismatch",
     ),
     "renamed-maximal-chain": (
         "renamed-maximal-chain-result", "separation-lemma", "spectral-lemma",
@@ -183,26 +258,66 @@ MEASURED_ORDERED_IDS = {
     "renamed-container-count": ("renamed-container-count-result", "renamed-cover-result"),
     "renamed-known": (
         "renamed-cover-result", "finite-dimensional-spectral",
-        "unbounded-spectral-mismatch", "topology-distractor",
+        "topology-distractor", "unbounded-spectral-mismatch",
     ),
 }
-MEASURED_DEMOTED_IDS = {
+MEASURED_ORDERED_IDS = {
+    "lemma-compactness": (
+        "compactness-lemma", "spectral-lemma", "banach-notation",
+        "separation-lemma", "finite-dimensional-spectral",
+    ),
+    "lemma-spectral": ("spectral-lemma", "finite-dimensional-spectral"),
+    "lemma-separation": ("separation-lemma", "compactness-lemma", "renamed-cover-result"),
+    "applicability-spectral": ("finite-dimensional-spectral", "spectral-lemma"),
+    "applicability-certificate": (
+        "duplicate-certificate-a", "duplicate-certificate-b",
+        "renamed-maximal-chain-result", "renamed-uniform-bound-result",
+    ),
+    "applicability-compactness": (
+        "compactness-lemma", "finite-dimensional-spectral", "separation-lemma",
+    ),
+    "applicability-selfadjoint": (
+        "spectral-lemma", "finite-dimensional-spectral", "renamed-uniform-bound-result",
+    ),
+    "contradiction-boundary": (
+        "boundary-contradiction", "monotonicity-contradiction", "renamed-cover-result",
+    ),
+    "contradiction-monotonicity": ("monotonicity-contradiction", "boundary-contradiction"),
+    "notation-banach": ("banach-notation", "boundary-contradiction"),
+    "notation-psd": ("psd-notation", "finite-dimensional-spectral"),
+    "renamed-uniform-bound": (
+        "renamed-uniform-bound-result", "banach-notation", "finite-dimensional-spectral",
+    ),
+    "renamed-maximal-chain": (
+        "renamed-maximal-chain-result", "separation-lemma", "spectral-lemma",
+        "compactness-lemma",
+    ),
+    "renamed-container-count": ("renamed-container-count-result", "renamed-cover-result"),
+    "renamed-known": ("renamed-cover-result", "finite-dimensional-spectral"),
+}
+MEASURED_SUPPRESSED_IDS = {
     "lemma-compactness": ("topology-distractor", "unbounded-spectral-mismatch"),
-    "lemma-spectral": (),
+    "lemma-spectral": ("unbounded-spectral-mismatch",),
     "lemma-separation": (),
     "applicability-spectral": ("topology-distractor", "unbounded-spectral-mismatch"),
     "applicability-certificate": ("optimization-distractor",),
     "applicability-compactness": ("topology-distractor", "unbounded-spectral-mismatch"),
-    "applicability-selfadjoint": (),
+    "applicability-selfadjoint": ("unbounded-spectral-mismatch",),
     "contradiction-boundary": (),
     "contradiction-monotonicity": (),
     "notation-banach": (),
     "notation-psd": ("unbounded-spectral-mismatch",),
-    "renamed-uniform-bound": ("topology-distractor",),
+    "renamed-uniform-bound": ("topology-distractor", "unbounded-spectral-mismatch"),
     "renamed-maximal-chain": (),
     "renamed-container-count": (),
-    "renamed-known": ("topology-distractor",),
+    "renamed-known": ("topology-distractor", "unbounded-spectral-mismatch"),
 }
+# Total retrieved hits at the duplicate cutoff, after and before suppression.
+# The duplicate numerator stays 1: no suppression promotes a document into the
+# cutoff, and no applicable duplicate is ever removed.
+MEASURED_RETRIEVED_HITS_AT_5 = 42
+MEASURED_PRE_SUPPRESSION_HITS_AT_5 = 54
+
 # Alias entries the frozen query set exercises, and the query each one serves.
 MEASURED_EXERCISED_ALIASES = {
     "banach-steinhaus-theorem": "renamed-uniform-bound",
@@ -241,6 +356,28 @@ def _corpus_body_tokens() -> set[str]:
         for document in load_corpus(FIXTURES)
         for token in text_module.tokens(document.text)
     }
+
+
+def _sentence_scope_verdict(documents, query: str, document_id: str) -> bool:
+    """The ADR-0031 SENTENCE scope rule, reimplemented here independently.
+
+    The production signal no longer offers the sentence unit, so the older rule
+    is spelled out here rather than reached through a flag. It is used to show
+    that the improvement is attributable to the scope unit: under the sentence
+    unit `applicability-selfadjoint` suppresses nothing, which is exactly the
+    `6/7 = 0.857` ADR-0031 measured for an exclusion variant.
+    """
+
+    terms = set(text_module.tokens(query))
+    document = next(item for item in documents if item.identifier == document_id)
+    patterns = [text_module.cue_pattern(cue) for cue in SELF_DISCLAIMING_CUES]
+    for sentence in text_module.sentences(document.text):
+        if not terms & set(text_module.tokens(sentence)):
+            continue
+        folded = sentence.casefold()
+        if any(pattern.search(folded) for pattern in patterns):
+            return True
+    return False
 
 
 def _label_tokens() -> set[str]:
@@ -329,7 +466,15 @@ class Phase4CLabelSeparationTests(unittest.TestCase):
 # --------------------------------------------------------------------------
 
 
-class Phase4CHedgeIsDemotionOnlyTests(unittest.TestCase):
+class Phase4CSuppressionIsRemovalOnlyTests(unittest.TestCase):
+    """ADR-0046 invariants 1-4, as properties over all fifteen queries.
+
+    Owner ruling 2 made the removal-not-promotion property a condition of
+    reversing ADR-0031's demotion-only constraint, so the subsequence test below
+    is an explicit order-preserving walk. A set comparison would accept a
+    promotion and is therefore not sufficient.
+    """
+
     def setUp(self) -> None:
         self.with_hedge = frozen_report()
         self.without_hedge = evaluate_hybrid(FIXTURES, self_disclaiming_cues=())
@@ -339,7 +484,7 @@ class Phase4CHedgeIsDemotionOnlyTests(unittest.TestCase):
         plain = {item["id"]: item for item in self.without_hedge["operational"]["results"]}
         self.assertEqual(len(hedged), BOUNDS.query_count)
         self.assertEqual(set(hedged), set(plain))
-        compared = 0
+        compared = lowered = 0
         for query_id, hedged_entry in hedged.items():
             hedged_scores = {
                 hit["document_id"]: hit["fused_score"] for hit in hedged_entry["hits"]
@@ -352,22 +497,33 @@ class Phase4CHedgeIsDemotionOnlyTests(unittest.TestCase):
                 with self.subTest(query=query_id, document=document_id):
                     self.assertLessEqual(score, plain_scores[document_id])
                 compared += 1
+                if score < plain_scores[document_id]:
+                    lowered += 1
         self.assertGreater(compared, 0)
+        # The comparison is not vacuous: some scores really are lowered.
+        self.assertGreater(lowered, 0)
 
     def test_hedge_never_introduces_a_document_over_every_query(self) -> None:
         hedged = result_by_id(self.with_hedge)
         plain = result_by_id(self.without_hedge)
         for query_id, entry in hedged.items():
             with self.subTest(query=query_id):
+                # FORBIDDEN: introducing a document. The pre-suppression
+                # candidate set is byte-identical to the empty-cue-table set
+                # once both are canonically ordered.
                 self.assertEqual(
+                    sorted(entry["fused_candidate_ids"]),
+                    sorted(plain[query_id]["fused_candidate_ids"]),
+                )
+                self.assertLessEqual(
+                    set(entry["ordered_ids"]) | set(entry["suppressed_ids"]),
                     set(entry["fused_candidate_ids"]),
-                    set(plain[query_id]["fused_candidate_ids"]),
                 )
                 self.assertLessEqual(
-                    set(entry["demoted_ids"]), set(entry["fused_candidate_ids"])
+                    set(entry["suppressed_ids"]), set(entry["fused_candidate_ids"])
                 )
                 self.assertLessEqual(
-                    set(entry["demoted_ids"]),
+                    set(entry["suppressed_ids"]),
                     set(entry["lexical_candidate_ids"])
                     | set(entry["alias_introduced_ids"]),
                 )
@@ -382,7 +538,7 @@ class Phase4CHedgeIsDemotionOnlyTests(unittest.TestCase):
                 [
                     HedgeVerdict(
                         document_id="intruder",
-                        demoted=True,
+                        suppressed=True,
                         self_disclaiming_cues=("insufficient",),
                         object_level_cues=(),
                         scoped_query_terms=("x",),
@@ -391,16 +547,144 @@ class Phase4CHedgeIsDemotionOnlyTests(unittest.TestCase):
                 alias_phrase_points=ALIAS_PHRASE_POINTS,
             )
 
-    def test_demoted_hits_rank_below_every_non_demoted_hit(self) -> None:
+    def test_the_score_raise_guard_is_reachable_and_used_by_fusion(self) -> None:
+        # FORBIDDEN: a verdict raising a fused score. The happy path being
+        # monotone is not a demonstration that the guard works, so the guard is
+        # called directly with a raised score, and `fuse` is shown to route
+        # every candidate through it.
+        fusion_module.enforce_no_score_raise("d", 2.0, 2.0)
+        fusion_module.enforce_no_score_raise("d", 2.0, 1.0)
+        with self.assertRaises(Phase4CValidationError) as caught:
+            fusion_module.enforce_no_score_raise("d", 1.0, 2.0)
+        self.assertIn("raised the fused score", str(caught.exception))
+        source = ast.parse(
+            (PACKAGE_DIR / "fusion.py").read_text(encoding="utf-8")
+        )
+        fuse_body = next(
+            node
+            for node in ast.walk(source)
+            if isinstance(node, ast.FunctionDef) and node.name == "fuse"
+        )
+        called = {
+            node.func.id
+            for node in ast.walk(fuse_body)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        }
+        self.assertIn("enforce_no_score_raise", called)
+        self.assertIn("enforce_subsequence", called)
+
+    def test_the_retained_ordering_is_a_subsequence_of_the_pre_suppression_one(
+        self,
+    ) -> None:
+        # FORBIDDEN: promotion. Owner ruling 2's condition. The walk below is
+        # written out here rather than delegated to the production helper, so a
+        # bug in that helper cannot make this test vacuous.
+        def is_subsequence(inner: list[str], outer: list[str]) -> bool:
+            position = 0
+            for identifier in inner:
+                while position < len(outer) and outer[position] != identifier:
+                    position += 1
+                if position == len(outer):
+                    return False
+                position += 1
+            return True
+
+        self.assertTrue(is_subsequence(["a", "c"], ["a", "b", "c"]))
+        self.assertFalse(is_subsequence(["c", "a"], ["a", "b", "c"]))
+        self.assertFalse(is_subsequence(["a", "d"], ["a", "b", "c"]))
+        checked = 0
         for entry in self.with_hedge["results"]:
-            demoted_flags = [hit["demoted"] for hit in entry["hits"]]
             with self.subTest(query=entry["id"]):
-                # Non-demoted hits all precede demoted hits: the flag sequence
-                # is monotone.
-                self.assertEqual(demoted_flags, sorted(demoted_flags))
+                self.assertTrue(
+                    is_subsequence(
+                        entry["ordered_ids"], entry["pre_suppression_ordered_ids"]
+                    ),
+                    "suppression reordered or promoted a candidate",
+                )
+                # And against the untruncated ordering, which is stronger:
+                # truncation is not a reordering.
+                self.assertTrue(
+                    is_subsequence(entry["ordered_ids"], entry["fused_candidate_ids"])
+                )
+            checked += 1
+        self.assertEqual(checked, BOUNDS.query_count)
+
+    def test_the_subsequence_guard_rejects_a_promotion(self) -> None:
+        fusion_module.enforce_subsequence(["a", "c"], ["a", "b", "c"])
+        for retained_ids in (["c", "a"], ["a", "d"]):
+            with self.subTest(retained=retained_ids), self.assertRaises(
+                Phase4CValidationError
+            ):
+                fusion_module.enforce_subsequence(retained_ids, ["a", "b", "c"])
+
+    def test_no_suppressed_document_is_ever_returned(self) -> None:
+        observed = 0
+        for entry in self.with_hedge["results"]:
+            with self.subTest(query=entry["id"]):
+                self.assertEqual(
+                    set(entry["ordered_ids"]) & set(entry["suppressed_ids"]), set()
+                )
+                for hit in entry["hits"]:
+                    if hit["suppressed"]:
+                        self.assertNotIn(hit["document_id"], entry["ordered_ids"])
+                        observed += 1
+        self.assertGreater(observed, 0)
+
+    def test_an_empty_suppressing_table_suppresses_nothing(self) -> None:
+        report = evaluate_hybrid(
+            FIXTURES, self_disclaiming_cues=(), alias_signal=EmptyAliasSignal()
+        )
+        for entry in report["results"]:
+            with self.subTest(query=entry["id"]):
+                self.assertEqual(entry["suppressed_ids"], [])
+                self.assertEqual(entry["suppressed_inapplicable_ids"], [])
+                self.assertEqual(
+                    entry["ordered_ids"],
+                    entry["lexical_candidate_ids"][: entry["top_k"]],
+                )
+                self.assertEqual(
+                    entry["ordered_ids"], entry["pre_suppression_ordered_ids"]
+                )
+
+    def test_emptying_the_object_level_table_changes_no_suppression(self) -> None:
+        neutralised = result_by_id(evaluate_hybrid(FIXTURES, object_level_cues=()))
+        frozen = result_by_id(self.with_hedge)
+        for query_id, entry in neutralised.items():
+            with self.subTest(query=query_id):
+                self.assertEqual(
+                    entry["suppressed_ids"], frozen[query_id]["suppressed_ids"]
+                )
+                self.assertEqual(
+                    entry["ordered_ids"], frozen[query_id]["ordered_ids"]
+                )
+
+    def test_suppressed_hits_rank_below_every_retained_hit(self) -> None:
+        for entry in self.with_hedge["results"]:
+            flags = [hit["suppressed"] for hit in entry["hits"]]
+            with self.subTest(query=entry["id"]):
+                # The pre-suppression ordering still places every suppressed
+                # candidate after every retained one, so the flag sequence is
+                # monotone. Removal is what moves a metric; the score penalty
+                # exists so the disclosed pre-suppression ordering is the one
+                # ADR-0031 would have returned.
+                self.assertEqual(flags, sorted(flags))
 
 
 class Phase4CCueClassTests(unittest.TestCase):
+    def test_the_cue_tables_are_byte_frozen_literals(self) -> None:
+        # FORBIDDEN: a fitted lexicon. ADR-0046 changed the scope unit and must
+        # not have changed a cue, so both tables are compared against literals
+        # spelled out in this file rather than against themselves.
+        self.assertEqual(SELF_DISCLAIMING_CUES, FROZEN_SELF_DISCLAIMING_CUES)
+        self.assertEqual(OBJECT_LEVEL_CUES, FROZEN_OBJECT_LEVEL_CUES)
+        self.assertEqual(len(FROZEN_SELF_DISCLAIMING_CUES), 6)
+        self.assertEqual(len(FROZEN_OBJECT_LEVEL_CUES), 3)
+        declared = frozen_report()["declared_method"]["hedging_signal"]
+        self.assertEqual(
+            declared["self_disclaiming_cues"], list(FROZEN_SELF_DISCLAIMING_CUES)
+        )
+        self.assertEqual(declared["object_level_cues"], list(FROZEN_OBJECT_LEVEL_CUES))
+
     def test_cue_classes_are_disjoint(self) -> None:
         self.assertEqual(set(SELF_DISCLAIMING_CUES) & set(OBJECT_LEVEL_CUES), set())
         self.assertEqual(len(set(SELF_DISCLAIMING_CUES)), len(SELF_DISCLAIMING_CUES))
@@ -415,39 +699,55 @@ class Phase4CCueClassTests(unittest.TestCase):
                 object_level_cues=("fails",),
             )
 
-    def test_object_level_cues_cannot_cause_a_demotion(self) -> None:
-        # Emptying the object-level table changes neither the fused ordering
-        # nor a single demotion, so object-level cues have no ordering effect.
-        neutralised = evaluate_hybrid(FIXTURES, object_level_cues=())
-        frozen = result_by_id(frozen_report())
-        for entry in neutralised["results"]:
-            with self.subTest(query=entry["id"]):
-                self.assertEqual(
-                    entry["ordered_ids"], frozen[entry["id"]]["ordered_ids"]
-                )
-                self.assertEqual(
-                    entry["demoted_ids"], frozen[entry["id"]]["demoted_ids"]
-                )
-
-    def test_a_document_with_only_object_level_cues_is_never_demoted(self) -> None:
+    def test_a_document_with_only_object_level_cues_is_never_suppressed(self) -> None:
         observed = 0
         for entry in frozen_report()["results"]:
             for hit in entry["hits"]:
                 if hit["object_level_cues"] and not hit["self_disclaiming_cues"]:
                     observed += 1
                     with self.subTest(query=entry["id"], document=hit["document_id"]):
-                        self.assertFalse(hit["demoted"])
+                        self.assertFalse(hit["suppressed"])
         self.assertGreater(observed, 0)
 
-    def test_neither_contradiction_gold_is_ever_demoted(self) -> None:
+    def test_neither_contradiction_gold_is_ever_suppressed(self) -> None:
         for entry in frozen_report()["results"]:
             for gold in MEASURED_CONTRADICTION_GOLDS:
                 with self.subTest(query=entry["id"], gold=gold):
-                    self.assertNotIn(gold, entry["demoted_ids"])
+                    self.assertNotIn(gold, entry["suppressed_ids"])
+
+    def test_no_gold_carries_a_self_disclaiming_cue_anywhere_in_its_body(self) -> None:
+        # The load-bearing guard on all five recall gates, asserted corpus-wide
+        # rather than per scope unit: if no protected gold contains a
+        # self-disclaiming cue ANYWHERE in its bytes, then under ANY scope unit
+        # -- sentence, scope block, paragraph, whole document -- no protected
+        # gold is suppressible. Widening the scope unit cannot cost recall here.
+        documents = load_corpus(FIXTURES)
+        queries, _ = load_gold(FIXTURES, documents)
+        protected: set[str] = set()
+        for query in queries:
+            if query.category == "applicability":
+                # For an applicability query the inapplicable relevant documents
+                # are exactly the ones the signal is meant to remove, so only
+                # the applicable ids are protected.
+                protected |= set(query.applicable_ids or ())
+            else:
+                protected |= set(query.relevant_ids)
+        self.assertEqual(len(protected), 14)
+        patterns = [text_module.cue_pattern(cue) for cue in SELF_DISCLAIMING_CUES]
+        checked = 0
+        for document in documents:
+            if document.identifier not in protected:
+                continue
+            with self.subTest(document=document.identifier):
+                folded = document.text.casefold()
+                for cue, pattern in zip(SELF_DISCLAIMING_CUES, patterns, strict=True):
+                    self.assertIsNone(pattern.search(folded), cue)
+            checked += 1
+        self.assertEqual(checked, 14)
 
     def test_boundary_contradiction_carries_object_level_cues_in_query_scope(self) -> None:
         # This is the exact case a naive negation signal breaks: an applicable
-        # contradiction gold whose matched query terms share a sentence with
+        # contradiction gold whose matched query terms share a scope block with
         # `fails`, `violates`, and `counterexample`.
         documents = load_corpus(FIXTURES)
         signal = HedgingScopeSignal(documents)
@@ -456,7 +756,7 @@ class Phase4CCueClassTests(unittest.TestCase):
             item for item in queries if item.identifier == "contradiction-boundary"
         )
         verdict = signal.verdicts(query.query, ["boundary-contradiction"])[0]
-        self.assertFalse(verdict.demoted)
+        self.assertFalse(verdict.suppressed)
         self.assertEqual(verdict.self_disclaiming_cues, ())
         self.assertEqual(
             set(verdict.object_level_cues), {"fails", "violates", "counterexample"}
@@ -484,8 +784,8 @@ class Phase4CCueClassTests(unittest.TestCase):
             "Dirichlet drawer principle distribution", ["renamed-container-count-result"]
         )[0]
         self.assertTrue(
-            verdict.demoted,
-            "bare `no` demotes an applicable gold, which is why it is excluded",
+            verdict.suppressed,
+            "bare `no` suppresses an applicable gold, which is why it is excluded",
         )
 
     def test_cue_matching_is_word_boundary_anchored(self) -> None:
@@ -493,53 +793,162 @@ class Phase4CCueClassTests(unittest.TestCase):
         self.assertIsNone(pattern.search("this note states no theorem"))
         self.assertIsNotNone(pattern.search("the hypothesis is not satisfied"))
 
-    def test_there_is_no_cue_count_threshold(self) -> None:
+    def test_there_is_no_cue_count_threshold_and_no_scope_parameter(self) -> None:
         self.assertIsNone(hedging_module.CUE_COUNT_THRESHOLD)
         declared = frozen_report()["declared_method"]["hedging_signal"]
         self.assertIsNone(declared["cue_count_threshold"])
-        self.assertEqual(declared["direction"], "demotion_only")
+        self.assertEqual(declared["direction"], "suppression_only")
+        # The declared method cannot drift from the method run: the constant and
+        # the report must carry the same literal.
         self.assertEqual(
-            declared["scope_rule"],
-            "matched-query-term-in-same-sentence-as-self-disclaiming-cue",
+            hedging_module.SCOPE_RULE,
+            "matched-query-term-in-same-scope-block-as-self-disclaiming-cue",
         )
+        self.assertEqual(declared["scope_rule"], hedging_module.SCOPE_RULE)
+        self.assertEqual(declared["scope_block_rule"], text_module.SCOPE_BLOCK_RULE)
+        self.assertEqual(declared["sentence_rule"], text_module.SENTENCE_RULE)
+        self.assertEqual(
+            declared["sentence_split_pattern"], text_module.SENTENCE_SPLIT_PATTERN
+        )
+        # Antecedent depth is a stated rule, not a tunable window length: the
+        # only integer in the declared scope method is the literal 1.
+        self.assertEqual(declared["anaphor_antecedent_depth"], 1)
+        self.assertEqual(declared["anaphor_pronouns"], list(FROZEN_ANAPHOR_PRONOUNS))
 
     def test_the_cue_table_hits_exactly_the_non_applicable_documents(self) -> None:
-        # Corpus-wide audit of the demoting table, independent of any query.
+        # Corpus-wide audit of the suppressing table, independent of any query.
         documents = load_corpus(FIXTURES)
         patterns = [text_module.cue_pattern(cue) for cue in SELF_DISCLAIMING_CUES]
         hit = {
             document.identifier
             for document in documents
             if any(
-                pattern.search(sentence.casefold())
-                for sentence in text_module.sentences(document.text)
+                pattern.search(block.casefold())
+                for block in text_module.scope_blocks(document.text)
                 for pattern in patterns
             )
         }
+        self.assertEqual(hit, set(FROZEN_SUPPRESSED_DOCUMENT_IDS))
         non_applicable = {
             document.identifier
             for document in documents
             if document.applicability != "applicable"
         }
-        self.assertEqual(hit, non_applicable)
+        # The coincidence is disclosed, not relied on: the assertion above is
+        # against a literal, and the label-mutation test is what shows the rule
+        # does not read `applicability`.
+        self.assertEqual(non_applicable, set(FROZEN_SUPPRESSED_DOCUMENT_IDS))
+
+
+class Phase4CScopeBlockTests(unittest.TestCase):
+    """The ADR-0046 scope unit, tested as a unit rule with no query in sight."""
+
+    def test_the_anaphor_list_is_a_frozen_closed_six_tuple(self) -> None:
+        # FORBIDDEN: padding the vocabulary until a query passes.
+        self.assertEqual(text_module.ANAPHOR_PRONOUNS, FROZEN_ANAPHOR_PRONOUNS)
+        self.assertEqual(len(FROZEN_ANAPHOR_PRONOUNS), 6)
+        self.assertEqual(len(set(FROZEN_ANAPHOR_PRONOUNS)), 6)
+        for pronoun in FROZEN_ANAPHOR_PRONOUNS:
+            with self.subTest(pronoun=pronoun):
+                self.assertEqual(pronoun, pronoun.lower())
+                self.assertEqual(text_module.tokens(pronoun), (pronoun,))
+
+    def test_an_anaphor_initial_sentence_unions_with_exactly_its_predecessor(
+        self,
+    ) -> None:
+        blocks = text_module.scope_blocks("Alpha holds. It does not provide beta.")
         self.assertEqual(
-            non_applicable,
-            {
-                "optimization-distractor",
-                "topology-distractor",
-                "unbounded-spectral-mismatch",
-            },
+            blocks, ("Alpha holds.", "Alpha holds. It does not provide beta.")
+        )
+
+    def test_a_non_anaphor_sentence_does_not_union(self) -> None:
+        blocks = text_module.scope_blocks("Alpha holds. Beta does not provide gamma.")
+        self.assertEqual(blocks, ("Alpha holds.", "Beta does not provide gamma."))
+
+    def test_the_first_sentence_never_unions(self) -> None:
+        self.assertEqual(text_module.scope_blocks("It fails."), ("It fails.",))
+
+    def test_empty_text_yields_no_blocks(self) -> None:
+        for empty in ("", "   ", "\n\t"):
+            with self.subTest(text=repr(empty)):
+                self.assertEqual(text_module.scope_blocks(empty), ())
+                self.assertEqual(text_module.sentences(empty), ())
+
+    def test_a_mid_sentence_anaphor_creates_no_union(self) -> None:
+        source = "Alpha holds. Beta shows that it fails."
+        self.assertEqual(
+            text_module.scope_blocks(source), text_module.sentences(source)
+        )
+
+    def test_the_relation_is_not_transitive(self) -> None:
+        # FORBIDDEN: an unbounded window. Chaining would make the scope a
+        # window, a window has a length, and a length read off a corpus is the
+        # forbidden outcome. The third block contains the second sentence and
+        # NOT the first.
+        blocks = text_module.scope_blocks("S one. It two. It three.")
+        self.assertEqual(len(blocks), 3)
+        self.assertEqual(blocks[2], "It two. It three.")
+        self.assertNotIn("S one", blocks[2])
+        self.assertEqual(blocks[1], "S one. It two.")
+
+    def test_each_block_covers_exactly_one_sentence_plus_at_most_one_more(self) -> None:
+        for document in load_corpus(FIXTURES):
+            units = text_module.sentences(document.text)
+            blocks = text_module.scope_blocks(document.text)
+            with self.subTest(document=document.identifier):
+                self.assertEqual(len(blocks), len(units))
+                for index, block in enumerate(blocks):
+                    self.assertIn(units[index], block)
+                    if block != units[index]:
+                        self.assertGreater(index, 0)
+                        self.assertEqual(block, f"{units[index - 1]} {units[index]}")
+
+    def test_the_block_partition_reduces_to_the_sentence_partition_elsewhere(
+        self,
+    ) -> None:
+        differing = tuple(
+            sorted(
+                document.identifier
+                for document in load_corpus(FIXTURES)
+                if text_module.scope_blocks(document.text)
+                != text_module.sentences(document.text)
+            )
+        )
+        # Only two of the seventeen documents open a sentence with an anaphor,
+        # so for the other fifteen the new scope unit is the old one exactly.
+        self.assertEqual(differing, FROZEN_SCOPE_BLOCK_UNION_DOCUMENT_IDS)
+
+    def test_the_shared_tokenizer_behaviour_is_unchanged(self) -> None:
+        # `text` is shared by all three signals, so the scope-block addition
+        # must not perturb the tokenizer or the phrase matcher.
+        self.assertEqual(text_module.NORMALIZATION_FORM, "NFC")
+        self.assertEqual(text_module.TOKEN_PATTERN, r"[^\W_]+")
+        self.assertEqual(
+            text_module.SENTENCE_RULE,
+            "nfc-collapse-whitespace-then-split-after-terminal-period-question-exclamation",
+        )
+        self.assertTrue(
+            text_module.contains_token_run(
+                text_module.tokens("The finite-subcover principle says"),
+                text_module.tokens("finite subcover"),
+            )
+        )
+        self.assertFalse(
+            text_module.contains_token_run(
+                text_module.tokens("this note states no theorem"),
+                text_module.tokens("is not"),
+            )
         )
 
 
 class Phase4CCueNeutralityTests(unittest.TestCase):
-    def test_removing_every_demoting_cue_yields_the_pure_lexical_ordering(self) -> None:
+    def test_removing_every_suppressing_cue_yields_the_pure_lexical_ordering(self) -> None:
         report = evaluate_hybrid(
             FIXTURES, self_disclaiming_cues=(), alias_signal=EmptyAliasSignal()
         )
         for entry in report["results"]:
             with self.subTest(query=entry["id"]):
-                self.assertEqual(entry["demoted_ids"], [])
+                self.assertEqual(entry["suppressed_ids"], [])
                 self.assertEqual(
                     entry["ordered_ids"],
                     entry["lexical_candidate_ids"][: entry["top_k"]],
@@ -560,13 +969,79 @@ class Phase4CCueNeutralityTests(unittest.TestCase):
         self.assertGreater(len(changed), 0)
         for query_id in changed:
             with self.subTest(query=query_id):
-                # An ordering change implies a demotion. Nothing else moved.
-                self.assertTrue(hedged[query_id]["demoted_ids"])
+                # An ordering change implies a suppression. Nothing else moved.
+                self.assertTrue(hedged[query_id]["suppressed_ids"])
 
+    def test_suppression_is_invariant_under_every_mutated_label(self) -> None:
+        # FORBIDDEN: the applicability label as a retrieval feature. Every
+        # `applicability`, `source_class` and `duplicate_group` value is mutated
+        # in an in-memory copy of the corpus metadata and the suppression set is
+        # asserted unchanged, query by query. This is the executable answer to
+        # "does the rule secretly read the label"; it is done at the signal
+        # level because the gold loader validates `applicable_ids` against the
+        # manifest's labels and would reject a mutated fixture on disk.
+        documents = load_corpus(FIXTURES)
+        queries, _ = load_gold(FIXTURES, documents)
+        rotated_applicability = {
+            "applicable": "insufficient_evidence",
+            "insufficient_evidence": "incompatible_hypotheses",
+            "incompatible_hypotheses": "applicable",
+        }
+        rotated_source = {
+            "primary": "informal",
+            "secondary": "primary",
+            "historical": "secondary",
+            "informal": "historical",
+        }
+        mutated = tuple(
+            dataclasses.replace(
+                document,
+                applicability=rotated_applicability[document.applicability],
+                source_class=rotated_source[document.source_class],
+                duplicate_group=(
+                    None
+                    if document.duplicate_group is None
+                    else f"mutated-{document.duplicate_group}"
+                ),
+            )
+            for document in documents
+        )
+        for original, changed in zip(documents, mutated, strict=True):
+            self.assertNotEqual(original.applicability, changed.applicability)
+            self.assertNotEqual(original.source_class, changed.source_class)
+            self.assertEqual(original.text, changed.text)
+        baseline = HedgingScopeSignal(documents)
+        perturbed = HedgingScopeSignal(mutated)
+        identifiers = [document.identifier for document in documents]
+        observed = 0
+        for query in queries:
+            before = {
+                verdict.document_id: verdict.suppressed
+                for verdict in baseline.verdicts(query.query, identifiers)
+            }
+            after = {
+                verdict.document_id: verdict.suppressed
+                for verdict in perturbed.verdicts(query.query, identifiers)
+            }
+            with self.subTest(query=query.identifier):
+                self.assertEqual(before, after)
+            observed += sum(before.values())
+        self.assertGreater(observed, 0)
 
-# --------------------------------------------------------------------------
-# 6, 7, 8. The alias table
-# --------------------------------------------------------------------------
+    def test_the_suppressed_set_is_a_frozen_literal_not_a_label_lookup(self) -> None:
+        # Disclosure, per ADR-0046. The corpus-wide suppressed set is asserted
+        # against a literal enumerated in this file. It coincides exactly with
+        # the corpus's three non-applicable documents; that coincidence is a
+        # property of how the fixture was authored -- the author wrote the
+        # disclaimers into those three documents -- and is not evidence that the
+        # rule reads the label. `test_suppression_is_invariant_under_every_
+        # mutated_label` is what shows the rule does not read it, and ADR-0046
+        # defers the negative control that would show it does not over-fire.
+        suppressed: set[str] = set()
+        for entry in frozen_report()["results"]:
+            suppressed |= set(entry["suppressed_ids"])
+        self.assertEqual(tuple(sorted(suppressed)), FROZEN_SUPPRESSED_DOCUMENT_IDS)
+        self.assertEqual(len(FROZEN_SUPPRESSED_DOCUMENT_IDS), 3)
 
 
 class Phase4CAliasTableTests(unittest.TestCase):
@@ -715,8 +1190,10 @@ class Phase4CDeterminismTests(unittest.TestCase):
                 cwd=str(REPO_ROOT),
                 env=environment,
             )
-            # Exit 1 is the measured gate failure, not a crash.
-            self.assertIn(completed.returncode, (0, 1), completed.stderr)
+            # Every gate passes under ADR-0046, so the fresh process must exit
+            # 0. Tolerating exit 1 here would let a regression to a failing
+            # gate pass this determinism check unnoticed.
+            self.assertEqual(completed.returncode, 0, completed.stderr)
             return json.loads(output.read_text(encoding="utf-8"))
 
     def test_three_normal_builds_are_byte_identical(self) -> None:
@@ -814,7 +1291,11 @@ class Phase4CHonestMetricTests(unittest.TestCase):
             sorted(item["id"] for item in report["results"]),
         )
         self.assertEqual(len(report["results"]), BOUNDS.query_count)
-        for name in ("applicability_precision_at_5", "duplicate_rate_at_5"):
+        for name in (
+            "applicability_precision_at_5",
+            DISCLOSURE_METRIC,
+            "duplicate_rate_at_5",
+        ):
             with self.subTest(metric=name):
                 self.assertIsNone(report["metrics"][name])
                 self.assertEqual(report["metric_support"][name]["denominator"], 0)
@@ -870,7 +1351,9 @@ class Phase4CHonestMetricTests(unittest.TestCase):
                     "duplicate_ids_at_5",
                     "inapplicable_retrieved_ids",
                     "zero_hit",
-                    "demoted_ids",
+                    "suppressed_ids",
+                    "suppressed_inapplicable_ids",
+                    "pre_suppression_ordered_ids",
                     "hits",
                     "alias_expansions",
                     "lexical_candidate_ids",
@@ -908,7 +1391,106 @@ class Phase4CHonestMetricTests(unittest.TestCase):
             "applicability-certificate",
             [item["id"] for item in results if item["duplicate_ids_at_5"]],
         )
-        self.assertTrue(any(item["inapplicable_retrieved_ids"] for item in results))
+        # No inapplicable hit is RETAINED any more, which is the improvement.
+        # The visibility obligation therefore moves rather than disappears: the
+        # inapplicable hits that were retrieved and then removed are reported
+        # per query, so the report still shows every one of them.
+        self.assertFalse(any(item["inapplicable_retrieved_ids"] for item in results))
+        self.assertTrue(any(item["suppressed_inapplicable_ids"] for item in results))
+        self.assertEqual(
+            sorted(
+                {
+                    identifier
+                    for item in results
+                    for identifier in item["suppressed_inapplicable_ids"]
+                }
+            ),
+            list(FROZEN_SUPPRESSED_DOCUMENT_IDS),
+        )
+
+    def test_no_suppressed_candidate_leaves_the_report(self) -> None:
+        # FORBIDDEN: hiding an inapplicable hit. Suppression removes a candidate
+        # from the returned list and from nothing else, so every suppressed
+        # candidate must still carry a full hit record with its cue evidence,
+        # its scoped query terms, and its pre-suppression rank.
+        documents = load_corpus(FIXTURES)
+        applicability = {
+            document.identifier: document.applicability for document in documents
+        }
+        audited = 0
+        for entry in frozen_report()["results"]:
+            hits = {hit["document_id"]: hit for hit in entry["hits"]}
+            with self.subTest(query=entry["id"]):
+                # Nothing leaves the report: the hit records are exactly the
+                # pre-suppression candidate set.
+                self.assertEqual(set(hits), set(entry["fused_candidate_ids"]))
+                self.assertEqual(
+                    sorted(hits),
+                    sorted(set(entry["ordered_ids"]) | set(entry["suppressed_ids"])
+                           | set(entry["fused_candidate_ids"])),
+                )
+                self.assertEqual(
+                    sorted(entry["suppressed_ids"]),
+                    sorted(
+                        hit["document_id"] for hit in entry["hits"] if hit["suppressed"]
+                    ),
+                )
+                self.assertEqual(
+                    entry["suppressed_inapplicable_ids"],
+                    sorted(
+                        identifier
+                        for identifier in entry["suppressed_ids"]
+                        if applicability[identifier] != "applicable"
+                    ),
+                )
+                ranks = [hit["pre_suppression_rank"] for hit in entry["hits"]]
+                self.assertEqual(ranks, list(range(1, len(entry["hits"]) + 1)))
+                for identifier in entry["suppressed_ids"]:
+                    hit = hits[identifier]
+                    self.assertTrue(hit["suppressed"])
+                    self.assertTrue(hit["self_disclaiming_cues"])
+                    self.assertTrue(hit["scoped_query_terms"])
+                    self.assertGreaterEqual(hit["pre_suppression_rank"], 1)
+                    audited += 1
+        self.assertEqual(audited, sum(len(v) for v in MEASURED_SUPPRESSED_IDS.values()))
+
+    def test_the_pre_suppression_number_stays_recomputable_from_the_report(self) -> None:
+        # FORBIDDEN: hiding the pre-improvement number. The disclosure metric
+        # holds ADR-0031's measured 0.6 and is recomputed here from `results`
+        # by running the same metric definition over the pre-suppression
+        # ordering, so the report cannot claim a disclosure it does not support.
+        report = frozen_report()
+        self.assertEqual(report["metrics"][DISCLOSURE_METRIC], 0.6)
+        self.assertEqual(
+            report["metric_support"][DISCLOSURE_METRIC],
+            {"numerator": 6, "denominator": 10, "defined": True},
+        )
+        recomputed = benchmark_module.applicability_precision(
+            report["results"], "pre_suppression_ordered_ids"
+        )
+        self.assertEqual((recomputed.numerator, recomputed.denominator), (6, 10))
+        self.assertEqual(recomputed.value, report["metrics"][DISCLOSURE_METRIC])
+        # And the gated metric, over the retained ordering, is the improvement.
+        gated = benchmark_module.applicability_precision(report["results"])
+        self.assertEqual((gated.numerator, gated.denominator), (6, 6))
+        self.assertEqual(gated.value, report["metrics"]["applicability_precision_at_5"])
+        self.assertEqual(
+            report["metrics"][DISCLOSURE_METRIC],
+            BASELINE_METRICS["applicability_precision_at_5"],
+        )
+
+    def test_the_disclosure_metric_can_never_pass_or_fail_a_gate(self) -> None:
+        report = frozen_report()
+        self.assertIn(DISCLOSURE_METRIC, report["metrics"])
+        self.assertNotIn(DISCLOSURE_METRIC, THRESHOLD_KEYS)
+        self.assertNotIn(DISCLOSURE_METRIC, report["gate_evaluation"])
+        self.assertNotIn(DISCLOSURE_METRIC, report["proposed_thresholds"])
+        self.assertNotIn(DISCLOSURE_METRIC, bounds_module.GATE_COMPARISONS)
+        self.assertNotIn(
+            DISCLOSURE_METRIC,
+            {value[0] for value in bounds_module.GATE_COMPARISONS.values()},
+        )
+        self.assertEqual(benchmark_module.DISCLOSURE_METRIC, DISCLOSURE_METRIC)
 
     def test_declared_provenance_is_the_executed_sql(self) -> None:
         declared = frozen_report()["declared_method"]["lexical_signal"]
@@ -1315,6 +1897,30 @@ class Phase4CPinnedMeasurementTests(unittest.TestCase):
                 self.assertEqual(support[name]["numerator"], numerator)
                 self.assertEqual(support[name]["denominator"], denominator)
                 self.assertTrue(support[name]["defined"])
+        # The duplicate denominator is the retrieved-hit total at the cutoff,
+        # and it is the retained total, not the pre-suppression one.
+        self.assertEqual(
+            support["duplicate_rate_at_5"]["denominator"], MEASURED_RETRIEVED_HITS_AT_5
+        )
+
+    def test_the_retrieved_hit_total_fell_only_by_removal(self) -> None:
+        results = result_by_id(frozen_report())
+        retained = sum(
+            min(len(entry["ordered_ids"]), BOUNDS.duplicate_cutoff)
+            for entry in results.values()
+        )
+        pre = sum(
+            min(len(entry["pre_suppression_ordered_ids"]), BOUNDS.duplicate_cutoff)
+            for entry in results.values()
+        )
+        self.assertEqual(retained, MEASURED_RETRIEVED_HITS_AT_5)
+        self.assertEqual(pre, MEASURED_PRE_SUPPRESSION_HITS_AT_5)
+        self.assertLess(retained, pre)
+        # The duplicate numerator does not rise. A rise would have proved that
+        # suppression promoted a document into the cutoff.
+        self.assertEqual(frozen_report()["metric_support"]["duplicate_rate_at_5"][
+            "numerator"
+        ], 1)
 
     def test_measured_gate_statuses_and_summary_are_pinned(self) -> None:
         report = frozen_report()
@@ -1324,20 +1930,38 @@ class Phase4CPinnedMeasurementTests(unittest.TestCase):
         )
         self.assertEqual(report["gate_summary"], MEASURED_GATE_SUMMARY)
         self.assertEqual(set(report["gate_evaluation"]), set(THRESHOLD_KEYS))
+        self.assertEqual(len(THRESHOLD_KEYS), 7)
 
     def test_measured_values_are_not_the_proposed_thresholds(self) -> None:
+        # The gates are still READ FROM THE FIXTURE, never from a measurement.
+        # Every gate now holds, so "measured is below its gate" no longer
+        # separates the two -- what separates them is that `proposed_thresholds`
+        # is byte-equal to a literal frozen in this file, so a gate CANNOT have
+        # been lowered to meet the measurement.
         report = frozen_report()
         thresholds = report["proposed_thresholds"]
+        _queries, loaded = load_gold(FIXTURES, load_corpus(FIXTURES))
+        self.assertEqual(thresholds, loaded)
+        self.assertEqual(
+            canonical_bytes(thresholds), canonical_bytes(FROZEN_PROPOSED_THRESHOLDS)
+        )
         self.assertEqual(thresholds["applicability_precision_at_5"], 1.0)
         self.assertEqual(thresholds["renamed_known_result_recall_at_10"], 1.0)
         self.assertEqual(thresholds["duplicate_rate_at_5_maximum"], 0.05)
-        # The measured applicability precision is strictly below its gate. This
-        # slice does not meet that gate and the suite records the fact.
-        self.assertLess(
+        self.assertEqual(set(thresholds), set(THRESHOLD_KEYS))
+        # The measured applicability precision now EQUALS its gate rather than
+        # sitting below it, and the gate value is unchanged from ADR-0031.
+        self.assertEqual(
             report["metrics"]["applicability_precision_at_5"],
             thresholds["applicability_precision_at_5"],
         )
-        self.assertEqual(MEASURED_GATE_STATUS["applicability_precision_at_5"], "fail")
+        self.assertEqual(MEASURED_GATE_STATUS["applicability_precision_at_5"], "pass")
+        # And the pre-suppression number is still below it, which is what the
+        # disclosure metric is for.
+        self.assertLess(
+            report["metrics"][DISCLOSURE_METRIC],
+            thresholds["applicability_precision_at_5"],
+        )
 
     def test_ordered_ids_are_pinned_per_query(self) -> None:
         results = result_by_id(frozen_report())
@@ -1346,11 +1970,29 @@ class Phase4CPinnedMeasurementTests(unittest.TestCase):
             with self.subTest(query=query_id):
                 self.assertEqual(tuple(results[query_id]["ordered_ids"]), expected)
 
-    def test_demotions_are_pinned_per_query(self) -> None:
+    def test_pre_suppression_ordered_ids_are_pinned_per_query(self) -> None:
         results = result_by_id(frozen_report())
-        for query_id, expected in MEASURED_DEMOTED_IDS.items():
+        self.assertEqual(set(results), set(MEASURED_PRE_SUPPRESSION_ORDERED_IDS))
+        for query_id, expected in MEASURED_PRE_SUPPRESSION_ORDERED_IDS.items():
             with self.subTest(query=query_id):
-                self.assertEqual(tuple(results[query_id]["demoted_ids"]), expected)
+                entry = results[query_id]
+                self.assertEqual(tuple(entry["pre_suppression_ordered_ids"]), expected)
+                # Side by side: the retained ordering is this list with the
+                # suppressed ids taken out, in place.
+                self.assertEqual(
+                    tuple(
+                        identifier
+                        for identifier in expected
+                        if identifier not in set(entry["suppressed_ids"])
+                    )[: entry["top_k"]],
+                    tuple(entry["ordered_ids"]),
+                )
+
+    def test_suppressions_are_pinned_per_query(self) -> None:
+        results = result_by_id(frozen_report())
+        for query_id, expected in MEASURED_SUPPRESSED_IDS.items():
+            with self.subTest(query=query_id):
+                self.assertEqual(tuple(results[query_id]["suppressed_ids"]), expected)
 
     def test_hybrid_does_not_worsen_a_metric_the_baseline_already_met(self) -> None:
         metrics = frozen_report()["metrics"]
@@ -1361,7 +2003,29 @@ class Phase4CPinnedMeasurementTests(unittest.TestCase):
         ):
             with self.subTest(metric=name):
                 self.assertGreaterEqual(metrics[name], BASELINE_METRICS[name])
+        # `duplicate_rate_at_5` is compared against its GATE, not against the
+        # baseline VALUE, per the owner ruling recorded in ADR-0046 and in a
+        # dated note in HYBRID_RETRIEVAL_BENCHMARK_V1.md. The reason is that the
+        # rate is not monotone in retrieval quality: its denominator is a
+        # retrieval volume, so removing a non-duplicate bad result raises the
+        # rate while removing zero duplicates. Reading "may not worsen" against
+        # the baseline value would therefore penalise a signal precisely for
+        # improving precision, and on this corpus the literal reading is jointly
+        # unsatisfiable with the precision gate for any label-blind signal:
+        # reaching 1.0 drops the denominator to at most 50 while the numerator
+        # cannot fall below 1 without removing an applicable duplicate gold,
+        # which would itself be "hiding a duplicate".
+        thresholds = frozen_report()["proposed_thresholds"]
         self.assertLessEqual(
+            metrics["duplicate_rate_at_5"], thresholds["duplicate_rate_at_5_maximum"]
+        )
+        self.assertEqual(
+            frozen_report()["gate_evaluation"]["duplicate_rate_at_5_maximum"]["status"],
+            "pass",
+        )
+        # The movement is disclosed rather than hidden: the rate did rise off
+        # the baseline value, and it is still inside its gate.
+        self.assertGreater(
             metrics["duplicate_rate_at_5"], BASELINE_METRICS["duplicate_rate_at_5"]
         )
         # The required gain: the renamed gate moves from 0.0 to 1.0.
@@ -1369,60 +2033,136 @@ class Phase4CPinnedMeasurementTests(unittest.TestCase):
             metrics["renamed_known_result_recall_at_10"],
             BASELINE_METRICS["renamed_known_result_recall_at_10"],
         )
-        # And the honest non-gain: applicability precision does not move.
-        self.assertEqual(
+        # And what was an honest non-gain under ADR-0031 is now a strict gain.
+        self.assertGreater(
             metrics["applicability_precision_at_5"],
             BASELINE_METRICS["applicability_precision_at_5"],
         )
+        self.assertEqual(
+            metrics[DISCLOSURE_METRIC],
+            BASELINE_METRICS["applicability_precision_at_5"],
+        )
 
-    def test_why_the_applicability_gate_cannot_be_met_by_demotion(self) -> None:
-        """The measured failure has two causes; both are recorded here.
+    def test_why_the_applicability_gate_is_met_by_suppression(self) -> None:
+        """The gate is met by removal, and the record shows why removal is what it took.
 
-        1. On three of four applicability queries the hedge demotes exactly the
-           inapplicable relevant document, but the fused candidate set is no
-           larger than top-k, so a demotion-only reordering cannot remove it
-           from the retrieved set.
-        2. On `applicability-selfadjoint` the same-sentence scope rule does not
-           fire at all: the self-disclaiming sentence of
-           `unbounded-spectral-mismatch` shares no token with that query.
+        1. Every applicability query's pre-suppression candidate set is at or
+           below its top-k cutoff, so no reordering could move this metric:
+           `6/10` was invariant under every permutation. That is why ADR-0031's
+           demotion-only rule could not reach the gate, and why this slice had
+           to be able to remove.
+        2. On all four queries the inapplicable relevant documents are now
+           suppressed and therefore absent from `ordered_ids`, while every
+           applicable relevant document is retained.
+        3. `applicability-selfadjoint` is the query ADR-0031 recorded as the
+           residual at `6/7 = 0.857`: its self-disclaiming sentence shares no
+           token with the query, and only the scope block reaches it. It
+           suppresses `unbounded-spectral-mismatch` here.
         """
 
         results = result_by_id(frozen_report())
-        for query_id in (
+        applicability_ids = (
             "applicability-spectral",
             "applicability-certificate",
             "applicability-compactness",
             "applicability-selfadjoint",
-        ):
-            entry = results[query_id]
-            with self.subTest(query=query_id):
-                self.assertLessEqual(len(entry["fused_candidate_ids"]), entry["top_k"])
-        for query_id in (
-            "applicability-spectral",
-            "applicability-certificate",
-            "applicability-compactness",
-        ):
-            entry = results[query_id]
-            inapplicable_relevant = {
-                identifier
-                for identifier in entry["relevant_ids"]
-                if identifier not in entry["applicable_ids"]
-            }
-            with self.subTest(query=query_id):
-                self.assertTrue(inapplicable_relevant <= set(entry["demoted_ids"]))
-                # Demoted, still retrieved: the demotion had nowhere to go.
-                self.assertTrue(inapplicable_relevant <= set(entry["ordered_ids"]))
-        self.assertEqual(results["applicability-selfadjoint"]["demoted_ids"], [])
-        self.assertIn(
-            "unbounded-spectral-mismatch",
-            results["applicability-selfadjoint"]["inapplicable_retrieved_ids"],
         )
+        for query_id in applicability_ids:
+            entry = results[query_id]
+            with self.subTest(query=query_id):
+                self.assertLessEqual(
+                    len(entry["fused_candidate_ids"]), entry["top_k"]
+                )
+                inapplicable_relevant = {
+                    identifier
+                    for identifier in entry["relevant_ids"]
+                    if identifier not in entry["applicable_ids"]
+                }
+                self.assertTrue(inapplicable_relevant)
+                self.assertTrue(inapplicable_relevant <= set(entry["suppressed_ids"]))
+                # Removed, not merely ranked last.
+                self.assertEqual(
+                    inapplicable_relevant & set(entry["ordered_ids"]), set()
+                )
+                self.assertEqual(entry["inapplicable_retrieved_ids"], [])
+                # Every applicable relevant document survives.
+                self.assertTrue(
+                    set(entry["applicable_ids"]) & set(entry["pre_suppression_ordered_ids"])
+                    <= set(entry["ordered_ids"])
+                )
+        # The residual ADR-0031 recorded, and the query the scope block reaches.
+        selfadjoint = results["applicability-selfadjoint"]
+        self.assertEqual(
+            selfadjoint["suppressed_ids"], ["unbounded-spectral-mismatch"]
+        )
+        self.assertIn(
+            "unbounded-spectral-mismatch", selfadjoint["pre_suppression_ordered_ids"]
+        )
+        # Under the frozen SENTENCE unit this query suppressed nothing, which is
+        # exactly the 6/7 = 0.857 ADR-0031 measured. That is asserted here so
+        # the improvement is attributed to the scope unit and to nothing else.
+        documents = load_corpus(FIXTURES)
+        queries, _ = load_gold(FIXTURES, documents)
+        query = next(
+            item for item in queries if item.identifier == "applicability-selfadjoint"
+        )
+        sentence_scoped = _sentence_scope_verdict(
+            documents, query.query, "unbounded-spectral-mismatch"
+        )
+        self.assertFalse(sentence_scoped)
+
+    def test_every_missed_relevant_document_was_deliberately_suppressed(self) -> None:
+        # A consequence of removal that the report must show rather than
+        # smooth over: an inapplicable document named in an applicability
+        # query's `relevant_ids` IS topically relevant, so removing it makes it
+        # a "missed relevant" hit. That is correct and it is disclosed. The
+        # property asserted here is that nothing else goes missing: every
+        # missed relevant document is one this slice suppressed on purpose, and
+        # no applicable document is ever missed.
+        results = result_by_id(frozen_report())
+        missed_queries = sorted(
+            query_id for query_id, entry in results.items() if entry["missed_relevant_ids"]
+        )
+        self.assertEqual(
+            missed_queries,
+            [
+                "applicability-certificate",
+                "applicability-compactness",
+                "applicability-selfadjoint",
+                "applicability-spectral",
+            ],
+        )
+        for query_id, entry in results.items():
+            with self.subTest(query=query_id):
+                self.assertLessEqual(
+                    set(entry["missed_relevant_ids"]), set(entry["suppressed_ids"])
+                )
+                if entry["category"] == "applicability":
+                    self.assertEqual(
+                        set(entry["missed_relevant_ids"])
+                        & set(entry["applicable_ids"]),
+                        set(),
+                    )
+                else:
+                    # Every recall gate is at 1.0, so nothing is missed here.
+                    self.assertEqual(entry["missed_relevant_ids"], [])
 
     def test_schema_version_and_method_are_pinned(self) -> None:
-        self.assertEqual(SCHEMA_VERSION, "adaivy.phase4c-hybrid-retrieval.v1")
+        self.assertEqual(SCHEMA_VERSION, "adaivy.phase4c-hybrid-retrieval.v2")
         self.assertEqual(frozen_report()["schema_version"], SCHEMA_VERSION)
         self.assertEqual(frozen_report()["method"], benchmark_module.METHOD)
         self.assertEqual(benchmark_module.METHOD, "phase4c-hybrid-score-space-fusion")
+        self.assertEqual(
+            benchmark_module.FUSION_METHOD,
+            "score-space-additive-fusion-with-suppression",
+        )
+
+    def test_a_v1_report_is_rejected_rather_than_migrated(self) -> None:
+        report = json.loads(json.dumps(frozen_report()))
+        report["schema_version"] = "adaivy.phase4c-hybrid-retrieval.v1"
+        with self.assertRaises(Phase4CValidationError) as caught:
+            verify_report(report)
+        self.assertIn("schema version", str(caught.exception))
 
 
 # --------------------------------------------------------------------------
@@ -1431,7 +2171,7 @@ class Phase4CPinnedMeasurementTests(unittest.TestCase):
 
 
 class Phase4CCliTests(unittest.TestCase):
-    def test_benchmark_exits_one_on_a_measured_gate_failure(self) -> None:
+    def test_benchmark_exits_zero_when_every_gate_passes(self) -> None:
         from math_research.phase4c_cli import main
 
         with tempfile.TemporaryDirectory() as directory:
@@ -1439,11 +2179,54 @@ class Phase4CCliTests(unittest.TestCase):
             status = main(
                 ["benchmark", "--fixtures", str(FIXTURES), "--output", str(output)]
             )
-            self.assertEqual(status, 1)
+            self.assertEqual(status, 0)
             report = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(report["content_hash"], frozen_report()["content_hash"])
             self.assertEqual(output.read_bytes(), canonical_bytes(report))
-            self.assertEqual(main(["inspect", str(output)]), 1)
+            self.assertEqual(main(["inspect", str(output)]), 0)
+
+    def test_benchmark_still_exits_one_and_still_emits_on_a_gate_failure(self) -> None:
+        # This test exists because the happy path turned green. With every gate
+        # passing, "a failing gate is never hidden" would otherwise become
+        # untested at exactly the moment nothing fails, so a gate failure is
+        # forced here through a degenerate lexical signal and the CLI is
+        # required to exit 1 AND still emit a full verifiable report.
+        from math_research import phase4c_cli
+
+        def collapsed(fixtures, **kwargs):
+            return evaluate_hybrid(
+                fixtures,
+                lexical_signal=EmptyLexicalIndex(),
+                alias_signal=EmptyAliasSignal(),
+                **kwargs,
+            )
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "report.json"
+            with patch.object(phase4c_cli, "evaluate_hybrid", collapsed):
+                status = phase4c_cli.main(
+                    ["benchmark", "--fixtures", str(FIXTURES), "--output", str(output)]
+                )
+            self.assertEqual(status, 1)
+            report = json.loads(output.read_text(encoding="utf-8"))
+            self.assertNotEqual(
+                report["gate_summary"]["overall"], "pass", report["gate_summary"]
+            )
+            self.assertTrue(verify_report(report)["verified"])
+            # Nothing is hidden: every query is still present, and the failing
+            # and undetermined gates are named.
+            self.assertEqual(len(report["results"]), BOUNDS.query_count)
+            self.assertEqual(
+                sorted(report["zero_hit_query_ids"]),
+                sorted(item["id"] for item in report["results"]),
+            )
+            failing = sorted(
+                key
+                for key, value in report["gate_evaluation"].items()
+                if value["status"] != "pass"
+            )
+            self.assertTrue(failing)
+            self.assertEqual(phase4c_cli.main(["inspect", str(output)]), 1)
 
     def test_missing_fixtures_exit_two(self) -> None:
         from math_research.phase4c_cli import main
@@ -1460,9 +2243,34 @@ class Phase4CCliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "report.json"
             report = json.loads(json.dumps(frozen_report()))
-            report["metrics"]["applicability_precision_at_5"] = 1.0
+            self.assertNotEqual(
+                report["metrics"]["applicability_precision_at_5"], 0.5
+            )
+            report["metrics"]["applicability_precision_at_5"] = 0.5
             path.write_bytes(canonical_bytes(report))
             self.assertEqual(main(["inspect", str(path)]), 1)
+
+    def test_the_cli_summary_reports_suppression(self) -> None:
+        from math_research.phase4c_cli import _summary
+
+        summary = _summary(frozen_report())
+        self.assertEqual(
+            summary["queries_with_suppressions"],
+            sorted(
+                query_id
+                for query_id, ids in MEASURED_SUPPRESSED_IDS.items()
+                if ids
+            ),
+        )
+        self.assertEqual(
+            summary["suppressed_inapplicable_ids"],
+            list(FROZEN_SUPPRESSED_DOCUMENT_IDS),
+        )
+        self.assertEqual(summary["failing_gates"], [])
+        self.assertEqual(summary["undetermined_gates"], [])
+        self.assertEqual(summary["gate_summary"], MEASURED_GATE_SUMMARY)
+        self.assertEqual(summary["queries_with_inapplicable_hits"], [])
+        self.assertNotIn("queries_with_demotions", summary)
 
 
 if __name__ == "__main__":

@@ -1,14 +1,14 @@
 """Bounded Phase 4C hybrid retrieval over the frozen benchmark fixtures.
 
 Three deterministic offline signals, fused in score space: an FTS5/BM25 lexical
-baseline, a demotion-only hedging-scope discrimination signal, and a
+baseline, a suppression-only hedging-scope discrimination signal, and a
 content-keyed alias expansion signal. Standard library only. No network, no
 model call, no embedding, no vector, no third-party dependency.
 
-Scope per ADR-0031: this package reads the project-authored Phase 4C benchmark
-fixtures and nothing else. It consumes no Phase 4B parse projection, reads no
-Phase 4A rights decision, touches no deletable content or protected evidence
-manifest, and does not extend `RightsUse`.
+Scope per ADR-0031 and ADR-0046: this package reads the project-authored
+Phase 4C benchmark fixtures and nothing else. It consumes no Phase 4B parse
+projection, reads no Phase 4A rights decision, touches no deletable content or
+protected evidence manifest, and does not extend `RightsUse`.
 
 Retrieval is candidate generation. Nothing here creates an `EpistemicWarrant`,
 approves semantic alignment, asserts source applicability, or sets novelty or
