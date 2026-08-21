@@ -1,6 +1,6 @@
 # Phase 4B Dependency and License Assessment
 
-Status: **assessment complete; no third-party parser dependency authorized**
+Status: **parser assessment complete; exact OCI sandbox runtime authorized**
 
 Assessment date: 2026-08-20. Target: CPython 3.14 on Darwin arm64. The
 machine-readable snapshot is
@@ -9,13 +9,15 @@ It is an assessment record, not an install lock and not runtime authority.
 
 ## Decision
 
-Keep the production parser boundary disabled. None of the reviewed packages
-closes the Phase 4B activation evidence. The in-repo strict HTML/TeX candidate
+Keep every parser boundary fail closed unless the exact OCI runtime is supplied.
+None of the reviewed parser packages closes the Phase 4B activation evidence;
+no such package is used. The in-repo strict HTML/TeX candidate
 now supplies deterministic hostile-fixture results, exact byte anchors, and a
 named-Darwin sandbox bridge. A separate dependency-free strict PDF candidate
 and bridge covers only classic, uncompressed, flat-page Base-14 text PDFs.
-Actual-corpus authorization, portable enforcement, and strict transient-memory
-enforcement remain missing. The preferred wheels did pass one disposable
+Actual-corpus authorization passes, and the exact OCI gate supplies strict
+transient-memory enforcement without making a generic portable claim. The
+preferred wheels did pass one disposable
 hash-locked offline-install inventory spike; that result is not activation.
 
 | Capability | Candidate | Disposition | Reason |
@@ -28,15 +30,75 @@ hash-locked offline-install inventory spike; that result is not activation.
 This decision does not install a package, add a dependency, approve PDF
 parsing, or make the fixture oracle production-capable.
 
+## Approved exact OCI sandbox runtime
+
+Phase 4B production parsing uses no third-party Python parser package. The
+strict in-repository HTML/TeX and PDF candidates may instead run inside the
+exact Linux/arm64 OCI image locked by
+`config/phase4b-oci-image-linux-arm64-v1.json`. The selected image is the
+official CPython 3.14.7 Alpine 3.23 image at OCI index digest
+`sha256:6b8f06d04d5305c1d1288435388df9165ab41e681fae6439d6349d8053cc3f83`
+and arm64 manifest digest
+`sha256:753f2ef3ad540b98b87064279a6be282f06f1013755c6576235bcd5b35b79b57`.
+It is invoked only with `--pull=never`, no network, a read-only root, no host
+mounts, non-root identity, all capabilities dropped, no-new-privileges,
+bounded noexec temporary storage, and kernel memory, swap, process, CPU, file,
+and open-file limits. Absence or identity drift fails before parsing.
+
+The saved offline archive is 18,829,824 bytes with SHA-256
+`c1b1b8cbc18768a08de61e5b1b63378d026cbb85cfb27c2a7149ba63888d2797`.
+An offline `docker load` reproduced the exact local image ID without a pull.
+The image's installed APK database hash is
+`8ebc165acfae86a1d1a10d1e120ddb16b01bb2454841e9de8ecc74386f0720e8`;
+the bundled CPython license file hash is
+`b0e25a78cffb43f4d92de8b61ccfa1f1f98ecbc22330b54b5251e7b6ba010231`.
+
+The 29 installed Alpine records declare these license families: PSF for
+CPython; MIT, BSD-2-Clause, BSD-3-Clause, Apache-2.0, MPL-2.0, X11, Zlib,
+bzip2, 0BSD, public-domain, SQLite blessing, GPL-2.0, GPL-3.0, and LGPL-2.1.
+The runtime is an operational dependency and is not redistributed by this
+repository. GPL-covered utilities are not imported, linked, or copied into
+AdaIvy. Any later redistribution of the saved image requires preserving the
+complete upstream notices and source-offer obligations independently of this
+assessment.
+
+| Installed artifact | License expression |
+|---|---|
+| CPython 3.14.7 | PSF-2.0 |
+| alpine-baselayout 3.7.2-r0; alpine-baselayout-data 3.7.2-r0 | GPL-2.0-only |
+| alpine-keys 2.6-r0; alpine-release 3.23.5-r0 | MIT |
+| apk-tools 3.0.6-r0; libapk 3.0.6-r0 | GPL-2.0-only |
+| busybox 1.37.0-r30; busybox-binsh 1.37.0-r30; ssl_client 1.37.0-r30 | GPL-2.0-only |
+| ca-certificates 20260611-r0; ca-certificates-bundle 20260611-r0 | MPL-2.0 AND MIT |
+| gdbm 1.26-r0; readline 8.3.1-r0 | GPL-3.0-or-later |
+| libbz2 1.0.8-r6 | bzip2-1.0.6 |
+| libcrypto3 3.5.7-r0; libssl3 3.5.7-r0 | Apache-2.0 |
+| libffi 3.5.2-r0 | MIT |
+| libncursesw 6.5_p20251123-r0; libpanelw 6.5_p20251123-r0; ncurses-terminfo-base 6.5_p20251123-r0 | X11 |
+| libuuid 2.41.4-r0 | BSD-3-Clause |
+| musl 1.2.5-r23 | MIT |
+| musl-utils 1.2.5-r23 | MIT AND BSD-2-Clause AND GPL-2.0-or-later |
+| scanelf 1.3.8-r2 | GPL-2.0-only |
+| sqlite-libs 3.51.2-r0 | blessing |
+| tzdata 2026c-r0 | Public-Domain |
+| xz-libs 5.8.3-r0 | GPL-2.0-or-later AND 0BSD AND Public-Domain AND LGPL-2.1-or-later |
+| zlib 1.3.2-r0 | Zlib |
+| zstd-libs 1.5.7-r2 | BSD-3-Clause OR GPL-2.0-or-later |
+
+Configured activation evidence exercises all twelve exact parser fixtures and
+records twelve matching dispositions, zero false admissions, a kernel cgroup
+`OOMKilled` memory probe, and enforced network-none, read-only-root, noexec-temp,
+ambient-secret, and CPU controls. Ordinary `make check` remains independent of
+Docker and honestly skips the configured-runtime probe when the exact image and
+daemon are not explicitly supplied.
+
 Separately, the repository now contains a dependency-free exact-source parser
 candidate for a strict UTF-8 HTML subset and a non-expanding TeX subset. Its
-multibyte byte anchors and bounds are executable, but it rejects PDF and is not
-an authorized production worker. A source-bound copy of its exact semantics now
-runs through the named Darwin resource sandbox, but portable and strict
-transient-memory enforcement remain open. It therefore does not change the
-third-party dispositions above or clear this gate. The strict PDF candidate is
-also source-bound to the Darwin sandbox and avoids a third-party runtime, but
-it is intentionally not a general PDF extractor.
+multibyte byte anchors and bounds are executable. Source-bound copies of the
+HTML/TeX and strict PDF semantics run through both the named Darwin sandbox and
+the exact OCI runtime. The OCI path clears the parser sandbox gate; it does not
+change the third-party dispositions above. The strict PDF candidate remains
+intentionally narrower than a general PDF extractor.
 
 ## Disposable preferred-candidate spike
 
@@ -199,9 +261,9 @@ demonstrates bounded wall time, output, CPU, open files, process creation, and
 file size with per-process CPU measurements on Darwin; RSS is a sampled
 tripwire rather than strict transient-spike enforcement. That fixture is not the
 only evidence now: source-bound strict HTML, TeX, and PDF bridges also run
-successfully. No portable claim is made, RSS remains sampled, and these narrow
-profiles are not production-authorized. The production parser sandbox blocker
-therefore remains.
+successfully. No portable claim is made for the Darwin path and its RSS remains
+sampled. The exact Linux/arm64 OCI path instead supplies the production memory,
+network, filesystem, temporary-storage, secret, process, CPU, and file controls.
 
 ## Source-rights boundary
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
 import tempfile
@@ -15,8 +15,9 @@ from math_research.phase4b.acquisition import (
     TermsSnapshot,
 )
 from math_research.phase4b.live_gate import (
-    LiveGatePlan, live_gate_plan_bytes, load_live_gate_plan, not_executed_report,
-    run_live_gate, verify_live_gate_report,
+    LiveGatePlan, live_gate_plan_bytes, live_gate_plan_hash,
+    load_live_gate_plan, not_executed_report, run_live_gate,
+    verify_live_gate_report,
 )
 from math_research.phase4b.live_transport import (
     LiveNetworkPermit, OptInHttpsTransport, OptInSystemResolver,
@@ -100,6 +101,7 @@ class Phase4BLiveGateTests(unittest.TestCase):
         original = plan()
         data = live_gate_plan_bytes(original)
         self.assertEqual(original, load_live_gate_plan(data))
+        self.assertEqual(json.loads(data)["content_hash"], live_gate_plan_hash(original))
         value = json.loads(data)
         value["recorded_at_epoch"] += 1
         with self.assertRaisesRegex(ValueError, "content hash"):
@@ -119,6 +121,25 @@ class Phase4BLiveGateTests(unittest.TestCase):
             observed = json.loads(stdout.getvalue())
             self.assertEqual("not_executed", observed["execution_status"])
             self.assertEqual(observed, json.loads(output.read_text("utf-8")))
+
+    def test_cli_execution_acknowledgement_is_bound_to_exact_plan_hash(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "live-plan.json"
+            source.write_bytes(live_gate_plan_bytes(plan()))
+            with redirect_stderr(StringIO()):
+                with self.assertRaises(SystemExit):
+                    phase4b_main([
+                        "live-gate", str(source), "--execute",
+                        "--confirm-live-network",
+                        "I_ACKNOWLEDGE_PHASE4B_LIVE_NETWORK",
+                    ])
+                with self.assertRaises(SystemExit):
+                    phase4b_main([
+                        "live-gate", str(source), "--execute",
+                        "--confirm-live-network",
+                        "I_ACKNOWLEDGE_PHASE4B_LIVE_NETWORK",
+                        "--confirm-plan-hash", "sha256:" + "0" * 64,
+                    ])
 
     def test_not_executed_report_is_deterministic_and_nonactivating(self) -> None:
         left = not_executed_report(plan())

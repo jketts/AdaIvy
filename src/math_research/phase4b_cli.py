@@ -13,6 +13,7 @@ from pathlib import Path
 from .phase4a.content_store import read_interchange_file
 from .phase4b.interchange import verify_export_bytes
 from .phase4b.records import MAX_EXPORT_BYTES
+from .phase4b.serialization import canonical_bytes
 from .phase4b.workspace import Phase4BWorkspace
 
 
@@ -37,6 +38,24 @@ def _summary(value: dict[str, object]) -> dict[str, object]:
             if isinstance(item, dict)
         ),
     }
+
+
+def _strict_canonical_json(data: bytes, label: str) -> dict[str, object]:
+    def pairs(items: list[tuple[str, object]]) -> dict[str, object]:
+        value: dict[str, object] = {}
+        for key, item in items:
+            if key in value:
+                raise ValueError(f"{label} contains a duplicate key")
+            value[key] = item
+        return value
+
+    try:
+        value = json.loads(data.decode("utf-8", "strict"), object_pairs_hook=pairs)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"{label} is invalid JSON") from error
+    if not isinstance(value, dict) or canonical_bytes(value) != data:
+        raise ValueError(f"{label} is not canonical")
+    return value
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -69,6 +88,27 @@ def main(argv: list[str] | None = None) -> int:
     live_gate.add_argument("--output", type=Path)
     live_gate.add_argument("--execute", action="store_true")
     live_gate.add_argument("--confirm-live-network")
+    live_gate.add_argument("--confirm-plan-hash")
+    oci_gate = commands.add_parser(
+        "oci-gate", help="run the strict exact-image parser activation gate"
+    )
+    oci_gate.add_argument("repository", type=Path)
+    oci_gate.add_argument("feasible_report", type=Path)
+    oci_gate.add_argument("--docker", type=Path, required=True)
+    oci_gate.add_argument("--daemon-host", required=True)
+    oci_gate.add_argument("--image", required=True)
+    oci_gate.add_argument("--platform", default="linux/arm64")
+    oci_gate.add_argument("--output", type=Path, required=True)
+    combine = commands.add_parser(
+        "combine-activation-evidence",
+        help="strictly combine two offline gates, one live gate, and the OCI gate",
+    )
+    combine.add_argument("repository", type=Path)
+    combine.add_argument("first_feasible_report", type=Path)
+    combine.add_argument("second_feasible_report", type=Path)
+    combine.add_argument("live_report", type=Path)
+    combine.add_argument("oci_report", type=Path)
+    combine.add_argument("output", type=Path)
     args = parser.parse_args(argv)
 
     if args.command == "inspect":
@@ -83,24 +123,32 @@ def main(argv: list[str] | None = None) -> int:
         data = json.dumps(value, indent=2, sort_keys=True) + "\n"
         if args.output is not None:
             args.output.parent.mkdir(parents=True, exist_ok=True)
-            args.output.write_text(data, encoding="utf-8")
+            args.output.write_bytes(canonical_bytes(value))
         print(data, end="")
         return 0
 
     if args.command == "live-gate":
         from .phase4b.live_gate import (
-            load_live_gate_plan, not_executed_report, run_live_gate,
+            MAX_PLAN_BYTES, live_gate_plan_hash, load_live_gate_plan,
+            not_executed_report, run_live_gate,
         )
         from .phase4b.live_transport import (
             OptInHttpsTransport, OptInSystemResolver, SystemMonotonicClock,
         )
 
-        plan = load_live_gate_plan(args.plan.read_bytes())
+        plan = load_live_gate_plan(
+            read_interchange_file(args.plan, max_bytes=MAX_PLAN_BYTES)
+        )
         if args.execute:
             if args.confirm_live_network != "I_ACKNOWLEDGE_PHASE4B_LIVE_NETWORK":
                 parser.error(
                     "--execute requires --confirm-live-network "
                     "I_ACKNOWLEDGE_PHASE4B_LIVE_NETWORK"
+                )
+            if args.confirm_plan_hash != live_gate_plan_hash(plan):
+                parser.error(
+                    "--execute requires --confirm-plan-hash equal to the exact "
+                    "verified plan content_hash"
                 )
             value = run_live_gate(
                 plan,
@@ -109,14 +157,75 @@ def main(argv: list[str] | None = None) -> int:
                 start_clock=SystemMonotonicClock(),
             )
         else:
-            if args.confirm_live_network is not None:
-                parser.error("--confirm-live-network is valid only with --execute")
+            if (
+                args.confirm_live_network is not None
+                or args.confirm_plan_hash is not None
+            ):
+                parser.error("live-network confirmations are valid only with --execute")
             value = not_executed_report(plan)
         data = json.dumps(value, indent=2, sort_keys=True) + "\n"
         if args.output is not None:
             args.output.parent.mkdir(parents=True, exist_ok=True)
-            args.output.write_text(data, encoding="utf-8")
+            args.output.write_bytes(canonical_bytes(value))
         print(data, end="")
+        return 0
+
+    if args.command == "oci-gate":
+        from .phase4b.gate import MAX_REPORT_BYTES, load_feasible_gate_report
+        from .phase4b.oci_parser_sandbox import OciRuntimeIdentity
+        from .phase4b.oci_sandbox_activation import (
+            run_oci_sandbox_activation_evidence,
+        )
+
+        feasible = load_feasible_gate_report(
+            read_interchange_file(args.feasible_report, max_bytes=MAX_REPORT_BYTES),
+            args.repository,
+        )
+        runtime = OciRuntimeIdentity.measure(
+            docker_executable=args.docker,
+            daemon_host=args.daemon_host,
+            image_reference=args.image,
+            platform=args.platform,
+        )
+        value = run_oci_sandbox_activation_evidence(
+            args.repository, feasible["parser_corpus_authorization"], runtime,
+        )
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_bytes(canonical_bytes(value))
+        print(json.dumps(value, indent=2, sort_keys=True))
+        return 0
+
+    if args.command == "combine-activation-evidence":
+        from .phase4b.activation import create_activation_evidence
+        from .phase4b.gate import MAX_REPORT_BYTES, load_feasible_gate_report
+        from .phase4b.live_gate import verify_live_gate_report
+        from .phase4b.oci_sandbox_activation import (
+            MAX_EVIDENCE_BYTES, load_oci_sandbox_activation_evidence,
+            verify_oci_sandbox_activation_evidence,
+        )
+
+        feasible = tuple(
+            load_feasible_gate_report(
+                read_interchange_file(path, max_bytes=MAX_REPORT_BYTES),
+                args.repository,
+            )
+            for path in (args.first_feasible_report, args.second_feasible_report)
+        )
+        live = _strict_canonical_json(
+            read_interchange_file(args.live_report, max_bytes=262_144),
+            "live gate report",
+        )
+        verify_live_gate_report(live)
+        oci = load_oci_sandbox_activation_evidence(
+            read_interchange_file(args.oci_report, max_bytes=MAX_EVIDENCE_BYTES)
+        )
+        value = create_activation_evidence(
+            feasible, live, oci, repository_root=args.repository,
+            sandbox_verifier=verify_oci_sandbox_activation_evidence,
+        )
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_bytes(canonical_bytes(value))
+        print(json.dumps(value, indent=2, sort_keys=True))
         return 0
 
     with Phase4BWorkspace(args.workspace) as workspace:

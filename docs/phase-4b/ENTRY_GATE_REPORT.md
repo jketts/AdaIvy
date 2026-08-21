@@ -1,6 +1,6 @@
 # Phase 4B Entry-Gate Report
 
-Status: **owner accepted; implementation evidence pending**
+Status: **owner accepted; parser gate passed; live gate pending**
 
 Date: 2026-08-20
 
@@ -8,13 +8,13 @@ Scope: authorized HTTPS acquisition and isolated rich parsing only
 
 ## Gate result
 
-The owner accepted the architecture gate and bounded implementation is in
-progress. The feasible offline harness executes the acquisition policy engine,
+The owner accepted the architecture gate and bounded implementation. The
+feasible offline harness executes the acquisition policy engine,
 fixture parser oracle, all six lifecycle/integration fixtures through production
-service and persistence paths, preservation checks, and deterministic replay,
-but it is not the complete Phase 4B gate. Production activation remains
-blocked until the acceptance suite supplies machine-readable evidence for every
-threshold and control.
+service and persistence paths, preservation checks, and deterministic replay.
+Two independent gate processes produce identical canonical evidence. The strict
+OCI parser gate is complete; production activation remains blocked only on the
+separately acknowledged live HTTPS observation.
 
 The accepted delivery dependency is Phase 4A -> Phase 4B -> Phase 4C. Phase 4B
 must not implement hybrid retrieval or allow its parser choices to determine a
@@ -44,8 +44,8 @@ future index design.
 5. A format-selected isolated worker proposes structured HTML, bounded TeX, or
    born-digital PDF segments with exact source anchors. Dependency-free strict
    candidates now cover HTML, non-expanding TeX, and a narrow classic,
-   uncompressed PDF subset through source-bound Darwin workers. They remain
-   pre-activation; the standard-library fallback remains a fixture oracle only.
+   uncompressed PDF subset through source-bound Darwin and exact OCI workers.
+   The standard-library fallback remains a fixture oracle only.
 6. Policy admits the proposal or quarantines it. No parser result receives
    applicability or mathematical authority.
 
@@ -85,8 +85,9 @@ The versioned worker protocol distinguishes parser content rejection, which
 becomes a content-free `quarantined/rejected` result, from infrastructure or
 worker failure, which remains `failed`. This clears the actual-corpus
 parser-profile authorization measurement without configuring or activating a
-production worker. Strict transient-memory enforcement, portable enforcement,
-and the external live HTTPS operator gate remain incomplete.
+production worker. The exact Linux/arm64 OCI gate now supplies strict cgroup
+memory, network-none, read-only-root, noexec-temp, ambient-secret, and CPU
+enforcement. The external live HTTPS operator gate remains incomplete.
 Acquisition attempt traces and non-reconstructive rich-proposal
 metadata now replay canonically in the v2 audit export; source and parsed prose
 remain outside immutable exports so deletion stays meaningful.

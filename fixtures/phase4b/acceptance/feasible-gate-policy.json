@@ -1,5 +1,5 @@
 {
-  "schema_version": "adaivy.phase4b-feasible-gate-policy.v2",
+  "schema_version": "adaivy.phase4b-feasible-gate-policy.v3",
   "required_passes": {
     "fixture_manifest_total": 30,
     "acquisition_fixture_executions": 12,
@@ -10,8 +10,8 @@
     "protected_evidence_mismatches": 0,
     "credential_marker_matches": 0,
     "in_process_repeat_count": 3,
-    "independent_process_count": 2,
-    "restart_count": 1,
+    "independent_export_verifier_process_count": 2,
+    "fresh_process_restart_count": 1,
     "replay_count": 1,
     "reverse_order_rebuild_count": 1,
     "semantic_hashes_identical": true,

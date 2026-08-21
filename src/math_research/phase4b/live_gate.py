@@ -197,6 +197,12 @@ def live_gate_plan_bytes(plan: LiveGatePlan) -> bytes:
     return canonical_bytes(live_gate_plan_value(plan))
 
 
+def live_gate_plan_hash(plan: LiveGatePlan) -> str:
+    """Return the exact content hash an operator must acknowledge to execute."""
+
+    return str(live_gate_plan_value(plan)["content_hash"])
+
+
 def load_live_gate_plan(data: bytes) -> LiveGatePlan:
     if not isinstance(data, bytes) or not 1 <= len(data) <= MAX_PLAN_BYTES:
         raise ValueError("live gate plan size invalid")
@@ -671,6 +677,7 @@ def verify_live_gate_report(report: dict[str, Any]) -> None:
 
 __all__ = [
     "LiveGatePlan", "MAX_PLAN_BYTES", "PLAN_SCHEMA", "REPORT_SCHEMA",
-    "live_gate_plan_bytes", "live_gate_plan_value", "load_live_gate_plan",
-    "not_executed_report", "run_live_gate", "verify_live_gate_report",
+    "live_gate_plan_bytes", "live_gate_plan_hash", "live_gate_plan_value",
+    "load_live_gate_plan", "not_executed_report", "run_live_gate",
+    "verify_live_gate_report",
 ]

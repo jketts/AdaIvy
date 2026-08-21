@@ -51,7 +51,8 @@ class PreActivationFixtureOracleTests(unittest.TestCase):
     def test_stdlib_profile_is_explicitly_a_pre_activation_fixture_oracle(self) -> None:
         self.assertEqual("fixture_oracle_only", PARSER_ACTIVATION_STATUS)
         entry_gate = (ROOT / "docs" / "phase-4b" / "ENTRY_GATE_REPORT.md").read_text("utf-8")
-        self.assertIn("implementation evidence pending", entry_gate)
+        self.assertIn("parser gate passed; live gate pending", entry_gate)
+        self.assertIn("standard-library fallback remains a fixture oracle only", entry_gate)
 
     def assert_anchors(self, result, original: bytes) -> None:
         self.assertTrue(result.segments)

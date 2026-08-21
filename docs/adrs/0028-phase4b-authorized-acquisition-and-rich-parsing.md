@@ -80,7 +80,8 @@ acceptance run uses only
 project-authored fixtures and fake transports and makes zero network, model, or
 external API calls.
 
-The current bounded implementation is pre-activation. Its acquisition policy
+The bounded implementation is activation-ready except for the separately
+acknowledged external live gate. Its acquisition policy
 engine and metadata workspace are executable, but its standard-library parser
 is a fixture oracle and the production parser entry point fails closed. A new
 dependency-free exact-source candidate parses only a strict UTF-8 HTML subset
@@ -89,7 +90,8 @@ strict born-digital PDF candidate accepts only classic, flat, uncompressed
 Base-14 text PDFs and anchors surfaced literal payloads exactly; general PDF
 extraction remains unsupported. Self-contained source-bound bridges run all
 three strict semantics through the named Darwin sandbox without exposing a
-project path or weakening the read profile. The bridges remain pre-activation. The
+project path or weakening the read profile. Exact-image OCI bridges additionally
+provide strict production resource enforcement. The
 append-only metadata schema now atomically retains a versioned per-attempt
 acquisition trace and a replayable, non-reconstructive rich parse proposal.
 Proposal text, reference targets, warnings, transformations, segment IDs, and
@@ -104,9 +106,9 @@ Its content-hashed operator plan and CLI default to a deterministic
 network operation. DNS runs in a killable bounded child, HTTP uses one absolute
 deadline across dial, TLS, send, headers, and slow-drip bodies, and the redacted
 report verifier checks its complete closed schema rather than trusting its hash
-alone. The external live-network gate has not executed. The feasible gate
-continues to block activation on that external gate and the remaining
-parser-sandbox controls.
+alone. The external live-network gate has not executed. Two independent
+feasible-gate processes now produce identical canonical evidence, and the exact
+OCI gate closes the remaining parser-sandbox controls.
 A named Darwin sandbox probe now demonstrates actual OS denials for network,
 filesystem writes, process forks, unapproved reads, and inherited secrets. It
 is now accompanied by a protocol-connected fixture worker with parent-enforced
@@ -122,9 +124,12 @@ parser's content rejection from an infrastructure or worker failure, mapping
 the former to a content-free `quarantined/rejected` result and preserving the
 latter as `failed`. Current named-Darwin evidence records twelve exact
 disposition matches out of twelve and zero false admissions, clearing the
-actual-corpus parser-profile authorization measurement. No portable enforcement
-claim is made, and authorization does not configure or activate a production
-worker. The production sandbox and activation controls remain separate.
+actual-corpus parser-profile authorization measurement. No generic portable
+claim is made for the Darwin worker. The exact Linux/arm64 OCI gate supplies
+strict cgroup memory, network, filesystem, noexec temporary storage, secret,
+process, CPU, and file controls for an explicitly configured production worker.
+Activation evidence remains separate from parser results and cannot promote
+trust.
 
 ## Consequences
 

@@ -53,15 +53,17 @@ jobs:
 
       - name: Assert the suite did not silently skip the offline tests
         run: |
-          # 15 skips are expected and legitimate: the Phase 4 gate tests require
-          # the disposable validator environment. Any other count means a test
-          # quietly stopped running, which would hide a regression.
+          # 16 skips are expected and legitimate: 15 Phase 4 gate tests require the
+          # disposable validator environment, and 1 Phase 4B OCI parser-sandbox test
+          # requires the exact pinned runtime driven by `make check-phase4b-oci`.
+          # Any other count means a test quietly stopped running, which would hide
+          # a regression.
           PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m unittest discover -s tests 2>&1 \
             | tee /tmp/suite.txt
           skips=$(grep -oE 'skipped=[0-9]+' /tmp/suite.txt | grep -oE '[0-9]+' || echo 0)
           echo "skipped=$skips"
-          if [ "$skips" != "15" ]; then
-            echo "::error::expected exactly 15 skips (Phase 4 gate env), got $skips"
+          if [ "$skips" != "16" ]; then
+            echo "::error::expected exactly 16 skips (15 Phase 4 gate env + 1 Phase 4B OCI runtime), got $skips"
             exit 1
           fi
 

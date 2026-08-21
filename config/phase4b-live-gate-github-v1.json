@@ -1,0 +1,96 @@
+{
+  "authorization": {
+    "actor_id": "human.repository-owner",
+    "actor_kind": "human",
+    "approved_origins": ["https://github.com"],
+    "authority": "human_final",
+    "capability_id": "capability.phase4b.live",
+    "network_enabled": true,
+    "operation": "acquire_https",
+    "policy_hash": "dbdf92fe15ccfc15f8b73d4f14008ff93ccdae686a0763f214ddba234e3ce493",
+    "resources": [
+      {
+        "request_id": "request.github.repository-root.v1",
+        "url": "https://github.com/jketts/AdaIvy"
+      }
+    ],
+    "run_id": "run.phase4b.activation.github.v1"
+  },
+  "content_hash": "sha256:d7eae5570b1d70b889e695fd566b9e57dacc7a31662ee3c901d93c2b4cfdb723",
+  "now_epoch": 1787235349,
+  "permit": {
+    "actor_id": "human.repository-owner",
+    "actor_kind": "human",
+    "approved_origins": ["https://github.com"],
+    "authority": "human_final",
+    "capability_id": "capability.phase4b.live",
+    "network_enabled": true,
+    "run_id": "run.phase4b.activation.github.v1"
+  },
+  "policy": {
+    "max_body_bytes": 2097152,
+    "max_header_bytes": 65536,
+    "max_redirects": 5,
+    "max_retries": 0,
+    "max_run_milliseconds": 1800000,
+    "max_snapshot_age_seconds": 86400,
+    "max_sources": 100,
+    "max_total_body_bytes": 67108864,
+    "policy_version": "phase4b-acquisition-v1"
+  },
+  "recorded_at_epoch": 1787235349,
+  "requests": [
+    {
+      "actor_id": "human.repository-owner",
+      "headers": [],
+      "request_id": "request.github.repository-root.v1",
+      "run_id": "run.phase4b.activation.github.v1",
+      "url": "https://github.com/jketts/AdaIvy"
+    }
+  ],
+  "rights": [
+    {
+      "actor_kind": "human",
+      "authority": "human_final",
+      "decision_id": "rights.phase4b.github.acquire.v1",
+      "intended_use": "acquisition",
+      "run_id": "run.phase4b.activation.github.v1",
+      "url": "https://github.com/jketts/AdaIvy",
+      "valid_from_epoch": 1787235349,
+      "valid_until_epoch": null,
+      "value": "allowed"
+    },
+    {
+      "actor_kind": "human",
+      "authority": "human_final",
+      "decision_id": "rights.phase4b.github.retain.v1",
+      "intended_use": "storage_and_retention",
+      "run_id": "run.phase4b.activation.github.v1",
+      "url": "https://github.com/jketts/AdaIvy",
+      "valid_from_epoch": 1787235349,
+      "valid_until_epoch": null,
+      "value": "allowed"
+    }
+  ],
+  "robots": [
+    {
+      "allowed": true,
+      "captured_at_epoch": 1787235349,
+      "content_hash": "05a5baaac2db2fe11b62ae620d6e0f864ee187fb9d676a7bf55204178700296b",
+      "snapshot_id": "robots.github.2026-08-20",
+      "url": "https://github.com/jketts/AdaIvy",
+      "valid": true
+    }
+  ],
+  "schema_version": "adaivy.phase4b-live-gate-plan.v1",
+  "terms": [
+    {
+      "acquisition_allowed": true,
+      "captured_at_epoch": 1787235349,
+      "content_hash": "8c385f8e256d947d1079781b6202e3d9abdb45fc9bf86d229110d7f3ae7d4722",
+      "origin": "https://github.com",
+      "snapshot_id": "terms.github.tos.2026-08-20",
+      "valid": true
+    }
+  ]
+}
