@@ -54,44 +54,29 @@ Verified by execution before this slice was written:
   `tests/test_phase6_clean_room_replay.py::test_verify_integrity_cannot_stand_in_for_bundle_verification`
   records that so the verifier is not later deleted as redundant.
 
-Four release fields are also affirmations that no record in the bundle supports.
+Some release fields are also affirmations that no record in the bundle supports.
 They fall into two materially different kinds, and one label for both would let a
-reader treat a constant as a measurement of unknown quality:
+reader treat an assertion as a measurement of unknown quality:
 
 *Outside the system's view.* `semantic_fidelity: "researcher_approved"`
 (`service.py`:273) has no corresponding semantic-alignment review record.
 `negative_and_superseded_attempts_retained: True` (`service.py`:285) is a
 literal; retention *completeness* is not expressible from the bundle.
 
-*Constants presented as measured outcomes.* Verified by reading the source:
+*An unmeasured baseline presented beside measured outcomes.* ADR-0034 replaced
+the earlier declarative controls with thirteen executed controls, thirteen
+falsifiability probes, and two positive controls. The replay verifier reconstructs
+the protocol-bound suite specification from the recorded execution and executes
+it again. Those counts therefore vary and are derived. The remaining gap is the
+comparison baseline:
 
-- `_generality_controls()` (`service.py`:26-68) takes no argument and reads no
-  state. All five candidates carry the literal `False` as their admission, and
-  `passed` is defined as `admitted is False`, so `5/5` is structural and cannot
-  vary. Its docstring says "Execute the compact trust-policy controls"; nothing
-  is executed. The docstring's inaccuracy is recorded here and deliberately not
-  corrected, because the producer is out of scope for this slice.
-- **There is no positive control** — not one case where a pass requires
-  admission. The suite therefore cannot distinguish "correctly refuses unsound
-  candidates" from "refuses everything, sound candidates included". A
-  blanket-refusal system scores `5/5` identically. Adding a positive control is
-  the only change that would make the score informative; it is out of scope
-  here, and its absence is recorded as the reason the score is uninformative,
-  not as work in flight.
-- The sharpest illustration: control 1 is named `unsupported_consensus` with the
-  reason "model agreement cannot create proof status" — AGENTS.md's first
-  engineering rule. The control asserting that rule is itself a hardcoded
-  assertion granted pass status. It exhibits the exact failure mode it names.
 - `simplest_baseline_passed: 0` (`service.py`:288) is a literal and the only
   occurrence of `simplest_baseline` anywhere in `src/`. The baseline the protocol
   names, `arithmetic_only_without_trust_controls`
   (`fixtures/phase6/confirmatory-protocol-v1.json`:27), is never executed and
-  never referenced by name. `phase6_passed` is `controls_passed`
-  (`service.py`:289), which is always 5. So the release package asserts a
-  5-versus-0 comparative advantage **in which both operands are literals**. That
-  is not an unverified comparison; it is a comparison that was never performed,
-  formatted as a result. Of the four fields this is the most serious, and it must
-  not be reported under a label as mild as "unverifiable".
+  never executed. `phase6_passed` is derived from the eleven negative controls,
+  but the comparison itself is not a controlled baseline experiment and is not
+  a generality rate.
 
 The in-repo precedent for what was missing already exists one phase earlier:
 `math_research.phase4b.interchange.verify_export_bytes` (:333-386) rejects
@@ -107,7 +92,7 @@ as `replay()` (:408-410).
 | Adopt: harden `save_verified_export` in place | Producer is one function; the forgery reproduces in ~20 lines | One code path; nothing new to discover | Mutates the producer this slice is meant to audit; ingest and verification stay indistinguishable; a verifier that shares the producer's helpers can share its blind spots | Rejected: the producer must stay untouched for the audit to mean anything |
 | Wrap: new read-only `phase6/replay.py`, new `phase6 verify` subcommand, `replay` kept | Phase 4B `verify_export_bytes` is the same shape and is green | Independent derivation; ingest-versus-verify visible in the CLI; zero producer risk; historical `release_hash` values unaffected | Producer constants are restated and can drift | **Chosen.** Drift is pinned by the acceptance suite against the live producer |
 | Interoperate: call `phase4b.interchange.verify_export_bytes` | Function exists | No new code | Wrong schema, wrong records, wrong hashes; would only appear to verify | Rejected: the brief requires mirroring its shape, not calling it |
-| Build/defer: derive the four asserted fields properly | Straightforward per field | Removes the gaps outright | Changes `release_hash` for every historical Phase 6 release; needs an owner-approved release schema bump | Deferred to a separate ADR and an owner ruling |
+| Build/defer: derive the remaining asserted fields properly | Straightforward per field | Removes the gaps outright | Changes `release_hash` for every historical Phase 6 release; needs an owner-approved release schema bump | Deferred to a separate ADR and an owner ruling |
 
 ## Decision
 
@@ -136,8 +121,11 @@ Ordering is part of the contract, not an implementation detail:
    holds **before** any held-out recomputation;
 5. `run_case` recomputation of `case_result_hash`, warrant, applicability, and
    primal/dual agreement — the discharge of blueprint :2245;
-6. generality controls compared candidate by candidate against a restated table;
-7. confirmatory-run identity, frozen method, access manifest, and the Phase 5
+6. the ADR-0034 suite source reconstructed from its result, hash-bound to the
+   protocol, then all thirteen controls and probes re-executed; the separate
+   suite record and embedded result must agree byte-for-byte;
+7. held-out-access record identity plus confirmatory-run identity, frozen method,
+   access manifest, and the Phase 5
    run binding, including `phase5_run_id` re-derived from the objective and this
    fixture;
 8. `result_id`, assessment, and contribution identities, with the three
@@ -164,19 +152,14 @@ Ordering is part of the contract, not an implementation detail:
 **Reporting is split in two.** `unverifiable` names claims about facts outside
 the system's view (`semantic_fidelity`,
 `negative_and_superseded_attempts_retained`). `not_derived` names constants the
-release presents as measured outcomes (`controls_passed`, `controls_total`,
-`baseline_comparison` as a block, `baseline_comparison.simplest_baseline_passed`,
-`baseline_comparison.phase6_passed`). Every entry in both lists carries
+release presents as measured outcomes (`baseline_comparison` as a block and
+`baseline_comparison.simplest_baseline_passed`). Every entry in both lists carries
 `counted_as_evidence: false`; `not_derived` entries additionally carry
 `varies: false`. No field in either list appears as a check name.
 
-One honest tension is recorded rather than smoothed over: `controls_passed` and
-`controls_total` **are** bound against the re-derived constant, because an
-inflated count must be refused. That binding is anti-tamper, not measurement,
-and the check reports `measures_capability: false` and
-`positive_control_present: false` in its own detail so it cannot be read as a
-capability result. `simplest_baseline_passed` is bound to nothing at all — there
-is nothing to bind it to — so a bundle with an altered baseline literal still
+The control and probe counts are re-derived by execution and the verifier records
+that positive controls are present. `simplest_baseline_passed` is bound to
+nothing at all — there is nothing to bind it to — so a bundle with an altered baseline literal still
 verifies, and the verdict reports the altered value under `not_derived`. That is
 demonstrated by an explicit test, so the boundary is visible rather than assumed.
 
@@ -216,9 +199,9 @@ alignment, asserts source applicability, or sets novelty or significance.
   future change. Each failure message says what to update. This follows the
   ADR-0031 phase4c precedent: a silent improvement to a frozen artefact is an
   unreviewed change.
-- **Negative consequence: the four asserted fields are still asserted.** This
-  slice names them; it does not fix them. A reader who ignores `not_derived`
-  can still misread `5/5` and `5 versus 0` as measurements.
+- **Negative consequence: the baseline remains unexecuted.** This slice names
+  that gap; it does not fix it. A reader who ignores `not_derived` can still
+  misread the boundary-count comparison as a generality measurement.
 - **Migration.** None. No schema, no migration, no stored data changes, and no
   historical `release_hash` moves.
 - **Licensing.** No dependency added.
@@ -252,7 +235,7 @@ artefact, no publication path, no external distribution format. *Necessity:*
 packaging an artefact whose contents could not be independently re-derived would
 ship the forgery surface rather than close it, so verification is the correct
 half to take first; and packaging touches the release schema, which is exactly
-what deriving the four asserted fields also requires. *Revisit trigger:*
+what deriving the remaining asserted fields also requires. *Revisit trigger:*
 packaging must be a separate slice with its own ADR, and it should be sequenced
 after — or together with — the owner ruling on deriving `semantic_fidelity`,
 `negative_and_superseded_attempts_retained`, and the baseline comparison, because
@@ -291,8 +274,8 @@ Evidence that would cause reconsideration:
 - An owner ruling to derive `semantic_fidelity`,
   `negative_and_superseded_attempts_retained`, or the baseline comparison, with
   the release schema bump that implies. `not_derived` should shrink accordingly.
-- A positive generality control being added, which would make the control score
-  informative and change what `controls_passed` means.
+- A change to the frozen ADR-0034 suite identity, control engines, or probe
+  semantics, which requires updating the independent replay contract.
 - A decision to harden `save_verified_export` itself, at which point the
   producer-untouched claim, the digest pins, and
   `test_currently_accepted_forgery`-style expectations must all be revised in the

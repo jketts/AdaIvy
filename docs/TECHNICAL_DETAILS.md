@@ -490,15 +490,12 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m math_research.cli phase6 ver
 The verdict separates what was checked from what was not, in two distinct
 categories. `unverifiable` names claims about facts outside the system's view:
 `semantic_fidelity` and `negative_and_superseded_attempts_retained`.
-`not_derived` names constants that the release package presents as measured
-outcomes: `controls_passed`, `controls_total`, and the `baseline_comparison`
-block including `simplest_baseline_passed` and `phase6_passed`. The distinction
-matters because a number that cannot vary is not a measurement. In particular the
-advertised five-versus-zero trust-control advantage has literals on both sides —
-the named baseline `arithmetic_only_without_trust_controls` is never executed —
-and the control suite contains no positive control, so a system that refused
-every candidate, sound ones included, would score identically. Nothing in either
-list is counted toward `verified`.
+`not_derived` names the `baseline_comparison` block and its
+`simplest_baseline_passed` operand. The Phase 6 operand is now re-derived by
+re-executing all thirteen controls and probes, including two positive controls;
+the named `arithmetic_only_without_trust_controls` baseline is still not
+executed. The block therefore counts enforced boundaries and must not be read as
+a generality rate. Nothing in either named-gap list is counted toward `verified`.
 
 ## Bounded exploratory synthesis
 

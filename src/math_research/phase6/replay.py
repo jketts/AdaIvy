@@ -42,6 +42,7 @@ from typing import Any
 
 from ..phase5.quantum import DiagonalCase, QuantumInputError, run_case
 from ..phase5.serialization import canonical_bytes, canonical_hash, stable_id
+from .generality import GeneralitySuiteError, SUITE_SCHEMA_VERSION, run_suite
 
 
 class Phase6ReplayError(ValueError):
@@ -66,11 +67,13 @@ PHASE5_EXPORT_VERSION = "adaivy.phase5-workspace.v1"
 PHASE5_RECORD_VERSION = "adaivy.phase5-record.v1"
 FIXTURE_VERSION = "adaivy.quantum-diagonal-fixture.v1"
 PROTOCOL_VERSION = "adaivy.confirmatory-protocol.v1"
-RESULT_VERSION = "adaivy.confirmatory-result.v1"
-RELEASE_VERSION = "adaivy.phase6-release-package.v1"
+RESULT_VERSION = "adaivy.confirmatory-result.v2"
+RELEASE_VERSION = "adaivy.phase6-release-package.v2"
 BENCHMARK_ID = "QD-FS-01"
 STOPPING_RULE = "one_pass_no_adaptation"
 PHASE_NAME = "confirmatory"
+GENERALITY_SUITE_ID = "suite.phase6.generality-controls-v1"
+GENERALITY_SUITE_HASH = "sha256:e2e4d640ea54b4eafd56908d218e86aa20cfac7830109c1dd3518c964ea168c4"
 
 PHASE6_EXPORT_FIELDS = frozenset(
     {"schema_version", "phase5_export_hash", "records", "content_hash"}
@@ -90,6 +93,7 @@ PROTOCOL_FIELDS = frozenset(
         "schema_version", "protocol_id", "version", "phase", "benchmark_id",
         "phase5_fixture_hash", "heldout_case_ids", "allowed_capabilities", "metrics",
         "success_criteria", "stopping_rule", "baseline", "frozen_at", "frozen_by",
+        "generality_suite_id", "generality_suite_hash",
     }
 )
 ALLOWED_CAPABILITIES = frozenset(
@@ -111,18 +115,25 @@ ACCESS_MANIFEST_FIELDS = frozenset(
         "allowed_capabilities", "heldout_case_ids_exposed", "access_count",
         "exploratory_result_access_during_execution",
         "method_hash_frozen_before_access", "adaptations_after_access",
+        "access_record_ids", "first_access_recorded_at", "adaptation_protocol_ids",
+        "refused_access_count",
     }
 )
 RESULT_FIELDS = frozenset(
     {
         "schema_version", "case_id", "status", "case_result_hash", "exact_feasibility",
         "independent_primal_dual_agreement", "generality_controls",
+        "generality_suite_id", "generality_suite_hash",
         "mathematical_warrant", "applicability_status", "graph_admitted",
         "external_cost_usd", "model_calls", "network_calls",
     }
 )
-CONTROL_FIELDS = frozenset(
-    {"control_id", "candidate", "graph_admitted", "passed", "reason"}
+ACCESS_PAYLOAD_FIELDS = frozenset(
+    {
+        "schema_version", "benchmark_id", "case_id", "protocol_id",
+        "protocol_hash", "stopping_rule", "allowed_capabilities",
+        "method_hash_frozen_before_access",
+    }
 )
 NOVELTY_FIELDS = frozenset({"status", "limitations", "inferred_from_warrant"})
 SIGNIFICANCE_FIELDS = frozenset(
@@ -133,6 +144,8 @@ BASELINE_FIELDS = frozenset(
     {
         "capability", "simplest_baseline_passed", "phase6_passed",
         "additional_external_cost_usd", "additional_expert_actions",
+        "positive_controls_passed", "probes_flipped", "is_generality_measure",
+        "interpretation",
     }
 )
 RELEASE_FIELDS = frozenset(
@@ -146,6 +159,11 @@ RELEASE_FIELDS = frozenset(
         "controls_total", "material_result_count",
         "negative_and_superseded_attempts_retained", "baseline_comparison",
         "release_limitations", "release_hash",
+        "heldout_access_record_id", "heldout_access_violation_records",
+        "generality_suite_id", "generality_suite_hash", "generality_suite_record_id",
+        "control_corpus_provenance", "probes_flipped", "probes_total",
+        "positive_control_admitted", "positive_control_ids",
+        "generality_categories_covered", "generality_control_verdicts",
     }
 )
 
@@ -154,6 +172,8 @@ RELEASE_FIELDS = frozenset(
 # and nowhere else, because no derived identity in the bundle depends on order.
 EXPECTED_RECORD_TYPES = (
     "confirmatory_protocol",
+    "heldout_access",
+    "generality_control_suite",
     "confirmatory_run",
     "confirmatory_result",
     "novelty_assessment",
@@ -172,45 +192,26 @@ EXPECTED_METHOD = {
     "selection": "protocol_frozen_before_access",
 }
 
-# The blueprint section 18.4 generality controls, restated candidate by
-# candidate. `controls_passed` is derived from this table, never read from the
-# release, so an inflated count fails.
-EXPECTED_CONTROLS: tuple[dict[str, Any], ...] = (
+# The accepted ADR-0034 suite is named by stable identities. Its full source
+# specification is reconstructed from the recorded execution result, hashed
+# against the protocol, and executed again below.
+EXPECTED_CONTROL_IDS = (
+    "GC-01", "GC-02A", "GC-02B", "GC-03", "GC-04", "GC-05", "GC-06A",
+    "GC-06B", "GC-07", "GC-08A", "GC-08B", "GC-09A", "GC-09B",
+)
+EXPECTED_CONTROLS = EXPECTED_CONTROL_IDS
+
+SUITE_SOURCE_FIELDS = frozenset(
+    {"schema_version", "suite_id", "version", "control_corpus_provenance", "limitations", "controls"}
+)
+CONTROL_SOURCE_FIELDS = frozenset(
     {
-        "control_id": "unsupported_consensus",
-        "candidate": {"model_agreement": 2, "deterministic_warrant": False},
-        "graph_admitted": False,
-        "passed": True,
-        "reason": "model agreement cannot create proof status",
-    },
-    {
-        "control_id": "finite_experiment_overreach",
-        "candidate": {"finite_samples": 1_000_000, "claim_scope": "universal"},
-        "graph_admitted": False,
-        "passed": True,
-        "reason": "finite experiments cannot prove an unrestricted theorem",
-    },
-    {
-        "control_id": "mistranslated_formal_target",
-        "candidate": {"formal_kernel": True, "semantic_alignment": "rejected"},
-        "graph_admitted": False,
-        "passed": True,
-        "reason": "formal validity cannot resolve a semantically rejected target",
-    },
-    {
-        "control_id": "inapplicable_source",
-        "candidate": {"source_exists": True, "applicability": "rejected"},
-        "graph_admitted": False,
-        "passed": True,
-        "reason": "a real but inapplicable source cannot carry mathematical weight",
-    },
-    {
-        "control_id": "open_representation_bridge",
-        "candidate": {"transformed_result": True, "bridge_obligation": "open"},
-        "graph_admitted": False,
-        "passed": True,
-        "reason": "an open representation bridge blocks graph admission",
-    },
+        "control_id", "category", "blueprint_reference", "polarity", "engine",
+        "parameters", "expected", "probe", "limitations",
+    }
+)
+PROBE_SOURCE_FIELDS = frozenset(
+    {"probe_id", "field", "value", "forbidden_outcome", "expected"}
 )
 
 # Release fields this verifier declines to sign off, in two distinct kinds. The
@@ -244,27 +245,12 @@ UNVERIFIABLE_FIELDS = (
 # Deriving any of them would change `release_hash` for every historical Phase 6
 # release, which is a separate decision needing its own ADR and an owner ruling.
 # Out of scope here: report only, fix nothing.
-_CONTROLS_REASON = (
-    "Structurally constant. `_generality_controls()` (phase6/service.py:26-68) "
-    "takes no argument and reads no state; all five candidates carry the literal "
-    "False, and `passed` is defined as `admitted is False`, so 5/5 cannot vary. "
-    "Its docstring says \"Execute the compact trust-policy controls\"; nothing is "
-    "executed. The suite also has NO POSITIVE CONTROL -- not one case where a "
-    "pass requires admission -- so the score cannot distinguish correctly "
-    "refusing unsound candidates from refusing everything, sound candidates "
-    "included. A blanket-refusal system scores 5/5 identically. The verifier "
-    "reproduces the same constant and refuses an altered count, which detects "
-    "tampering and measures nothing."
-)
 NOT_DERIVED_FIELDS = (
-    ("controls_passed", _CONTROLS_REASON),
-    ("controls_total", _CONTROLS_REASON),
     (
         "baseline_comparison",
-        "The whole comparison block is literals. The release package asserts a "
-        "5-versus-0 comparative advantage in which BOTH OPERANDS ARE CONSTANTS. "
-        "That is not an unverified comparison; it is a comparison that was never "
-        "performed, formatted as a result.",
+        "The Phase 6 operand is derived from executed controls, but the simplest "
+        "baseline operand is still a literal: no baseline run is bundled. This "
+        "block counts enforced boundaries and is not a generality rate.",
     ),
     (
         "baseline_comparison.simplest_baseline_passed",
@@ -274,11 +260,6 @@ NOT_DERIVED_FIELDS = (
         "\"arithmetic_only_without_trust_controls\", is never executed and never "
         "referenced by name. There is nothing to check this value against, so the "
         "verifier reports it and signs off nothing.",
-    ),
-    (
-        "baseline_comparison.phase6_passed",
-        "Assigned `controls_passed` at phase6/service.py:289, which is always 5 "
-        "for the reason recorded against `controls_passed`.",
     ),
 )
 
@@ -422,6 +403,38 @@ def _positive_zero(value: object, label: str) -> None:
         _fail(f"{label} must be the integer zero in a Phase 6 release")
 
 
+def _reconstruct_suite(result: Mapping[str, Any]) -> dict[str, Any]:
+    """Recover the frozen suite input from its self-describing execution result."""
+
+    controls = result.get("controls")
+    if not isinstance(controls, list):
+        _fail("generality suite controls must be a list")
+    source_controls: list[dict[str, Any]] = []
+    for index, item in enumerate(controls):
+        if not isinstance(item, Mapping):
+            _fail(f"generality control {index} must be an object")
+        missing = CONTROL_SOURCE_FIELDS - set(item)
+        if missing:
+            _fail(f"generality control {index} omits source fields: {sorted(missing)}")
+        probe = item.get("probe")
+        if not isinstance(probe, Mapping):
+            _fail(f"generality control {index} probe must be an object")
+        probe_missing = PROBE_SOURCE_FIELDS - set(probe)
+        if probe_missing:
+            _fail(f"generality control {index} probe omits source fields: {sorted(probe_missing)}")
+        source = {key: item[key] for key in CONTROL_SOURCE_FIELDS}
+        source["probe"] = {key: probe[key] for key in PROBE_SOURCE_FIELDS}
+        source_controls.append(source)
+    return {
+        "schema_version": SUITE_SCHEMA_VERSION,
+        "suite_id": result.get("suite_id"),
+        "version": result.get("suite_version"),
+        "control_corpus_provenance": result.get("control_corpus_provenance"),
+        "limitations": result.get("limitations"),
+        "controls": source_controls,
+    }
+
+
 def verify_release_bundle(
     phase6_export_bytes: bytes,
     phase5_export_bytes: bytes,
@@ -558,6 +571,8 @@ def _verify(
     )
 
     protocol_record = _one(records, "confirmatory_protocol")
+    access_record = _one(records, "heldout_access")
+    suite_record = _one(records, "generality_control_suite")
     run_record = _one(records, "confirmatory_run")
     result_record = _one(records, "confirmatory_result")
     novelty_record = _one(records, "novelty_assessment")
@@ -600,6 +615,11 @@ def _verify(
         isinstance(protocol["allowed_capabilities"], list)
         and set(protocol["allowed_capabilities"]) == set(ALLOWED_CAPABILITIES),
         "held-out capability boundary differs from the frozen allowlist",
+    )
+    _require(
+        protocol["generality_suite_id"] == GENERALITY_SUITE_ID
+        and protocol["generality_suite_hash"] == GENERALITY_SUITE_HASH,
+        "confirmatory protocol names an unknown generality control suite",
     )
     _require(
         protocol_record["record_id"] == protocol["protocol_id"]
@@ -683,39 +703,60 @@ def _verify(
         independent_dual_optimum=case_result["independent_dual_optimum"],
     )
 
-    # 6. Generality controls, re-derived rather than read.
-    controls = result["generality_controls"]
-    _require(isinstance(controls, list), "generality controls must be a list")
+    # 6. Generality controls. Reconstruct the frozen suite source from the
+    #    recorded execution, verify its protocol-bound hash, then execute every
+    #    control and falsifiability probe again.
+    suite_result = suite_record["payload"]
+    _require(isinstance(suite_result, Mapping), "generality suite record must be an object")
+    suite_spec = _reconstruct_suite(suite_result)
     _require(
-        len(controls) == len(EXPECTED_CONTROLS),
-        "generality control count differs from the frozen blueprint 18.4 suite",
+        suite_spec["suite_id"] == GENERALITY_SUITE_ID
+        and canonical_hash(suite_spec) == GENERALITY_SUITE_HASH,
+        "generality suite source differs from the protocol-bound frozen suite",
     )
-    for index, control in enumerate(controls):
-        observed = _object(control, CONTROL_FIELDS, f"generality control {index}")
-        expected = EXPECTED_CONTROLS[index]
-        _require(
-            dict(observed) == expected,
-            f"generality control {index} differs from the frozen control: "
-            f"{observed.get('control_id')!r}",
-        )
-    controls_total = len(EXPECTED_CONTROLS)
-    controls_passed = sum(1 for item in EXPECTED_CONTROLS if item["passed"] is True)
-    expected_status = "passed" if (agreement and controls_passed == controls_total) else "failed"
+    try:
+        replayed_suite = run_suite(suite_spec)
+    except GeneralitySuiteError as error:
+        raise Phase6ReplayError(f"generality suite does not replay: {error}") from error
+    _require(
+        canonical_bytes(suite_result) == canonical_bytes(replayed_suite),
+        "generality suite execution differs from clean-room replay",
+    )
+    _require(
+        tuple(item["control_id"] for item in replayed_suite["controls"])
+        == EXPECTED_CONTROL_IDS,
+        "generality control identities differ from the frozen ADR-0034 suite",
+    )
+    _require(
+        suite_record["record_id"] == stable_id("suite.phase6", replayed_suite)
+        and suite_record["subject_id"] == GENERALITY_SUITE_ID,
+        "generality suite record identity is not derived from its result",
+    )
+    _require(
+        canonical_bytes(result["generality_controls"]) == canonical_bytes(replayed_suite)
+        and result["generality_suite_id"] == GENERALITY_SUITE_ID
+        and result["generality_suite_hash"] == GENERALITY_SUITE_HASH,
+        "confirmatory result generality suite binding differs from the replayed suite",
+    )
+    controls_total = int(replayed_suite["controls_total"])
+    controls_passed = int(replayed_suite["controls_passed"])
+    probes_total = int(replayed_suite["probes_total"])
+    probes_flipped = int(replayed_suite["probes_flipped"])
+    expected_status = "passed" if (agreement and replayed_suite["suite_passed"] is True) else "failed"
     _require(
         result["status"] == expected_status,
         f"confirmatory status is not derived: recorded {result['status']!r}, "
         f"derived {expected_status!r}",
     )
     passed(
-        "generality_controls_constant_reproduced",
+        "generality_controls_reexecuted",
         controls_passed=controls_passed,
         controls_total=controls_total,
+        probes_flipped=probes_flipped,
+        probes_total=probes_total,
         derived_status=expected_status,
-        # Deliberately recorded: this check detects an altered count. It is not
-        # a capability measurement, and `controls_passed`/`controls_total` are
-        # reported under `not_derived` for that reason.
-        measures_capability=False,
-        positive_control_present=False,
+        measures_capability=True,
+        positive_control_present=bool(replayed_suite["positive_control_ids"]),
     )
 
     # 7. Confirmatory run: method, access manifest, and the Phase 5 run binding.
@@ -725,9 +766,34 @@ def _verify(
     manifest = _object(
         run_payload["access_manifest"], ACCESS_MANIFEST_FIELDS, "held-out access manifest"
     )
+    access_payload = _object(
+        access_record["payload"], ACCESS_PAYLOAD_FIELDS, "held-out access record payload"
+    )
+    expected_access_id = stable_id(
+        "access.phase6", {"benchmark_id": BENCHMARK_ID, "case_id": selected_id}
+    )
+    _require(
+        access_record["record_id"] == expected_access_id
+        and access_record["subject_id"] == selected_id,
+        "held-out access record identity is not derived from benchmark and case",
+    )
+    _require(
+        access_payload["schema_version"] == "adaivy.heldout-access.v1"
+        and access_payload["benchmark_id"] == BENCHMARK_ID
+        and access_payload["case_id"] == selected_id
+        and access_payload["protocol_id"] == protocol["protocol_id"]
+        and access_payload["protocol_hash"] == protocol_hash
+        and access_payload["stopping_rule"] == STOPPING_RULE
+        and list(access_payload["allowed_capabilities"]) == sorted(ALLOWED_CAPABILITIES),
+        "held-out access record differs from the frozen protocol boundary",
+    )
     _require(
         manifest["method_hash_frozen_before_access"] == canonical_hash(dict(method)),
         "frozen method hash is not derived from the recorded method",
+    )
+    _require(
+        access_payload["method_hash_frozen_before_access"] == canonical_hash(dict(method)),
+        "held-out access record method hash is not derived from the recorded method",
     )
     _require(
         list(manifest["allowed_capabilities"]) == sorted(ALLOWED_CAPABILITIES),
@@ -736,6 +802,13 @@ def _verify(
     _require(
         list(manifest["heldout_case_ids_exposed"]) == [selected_id],
         "access manifest exposes a different held-out case",
+    )
+    _require(
+        list(manifest["access_record_ids"]) == [expected_access_id]
+        and manifest["first_access_recorded_at"] == access_record["recorded_at"]
+        and list(manifest["adaptation_protocol_ids"]) == []
+        and manifest["refused_access_count"] == 0,
+        "access manifest does not reproduce the held-out access ledger",
     )
     _require(
         manifest["exploratory_result_access_during_execution"] is False,
@@ -919,14 +992,52 @@ def _verify(
     )
     _require(
         release["controls_passed"] == controls_passed
-        and release["controls_total"] == controls_total,
-        "release control counts are not the derived counts",
+        and release["controls_total"] == controls_total
+        and release["probes_flipped"] == probes_flipped
+        and release["probes_total"] == probes_total,
+        "release control or probe counts are not the derived counts",
+    )
+    _require(
+        release["generality_suite_id"] == GENERALITY_SUITE_ID
+        and release["generality_suite_hash"] == GENERALITY_SUITE_HASH
+        and release["generality_suite_record_id"] == suite_record["record_id"]
+        and release["control_corpus_provenance"]
+        == replayed_suite["control_corpus_provenance"]
+        and release["positive_control_admitted"]
+        is replayed_suite["positive_control_admitted"]
+        and list(release["positive_control_ids"])
+        == list(replayed_suite["positive_control_ids"])
+        and list(release["generality_categories_covered"])
+        == list(replayed_suite["categories_covered"]),
+        "release generality suite binding differs from the replayed suite",
+    )
+    expected_verdicts = [
+        {
+            "control_id": item["control_id"],
+            "category": item["category"],
+            "polarity": item["polarity"],
+            "engine": item["engine"],
+            "passed": item["passed"],
+            "probe_id": item["probe"]["probe_id"],
+            "probe_flipped": item["probe"]["flipped"],
+        }
+        for item in replayed_suite["controls"]
+    ]
+    _require(
+        list(release["generality_control_verdicts"]) == expected_verdicts,
+        "release generality control verdicts differ from clean-room replay",
+    )
+    _require(
+        release["heldout_access_record_id"] == access_record["record_id"]
+        and release["heldout_access_violation_records"] == 0,
+        "release held-out access binding differs from the access ledger",
     )
     _require(
         list(release["release_limitations"]) == [
             "Exact commuting/diagonal case only.",
             "No universal noncommuting QD-FS-01 resolution.",
             "Novelty and significance remain unassessed.",
+            *replayed_suite["limitations"],
         ],
         "release limitations differ from the frozen limitation set",
     )
@@ -941,6 +1052,16 @@ def _verify(
     _require(
         baseline["capability"] == "trust_boundary_rejections",
         "baseline comparison names another capability",
+    )
+    _require(
+        baseline["phase6_passed"] == replayed_suite["negative_controls_passed"]
+        and baseline["positive_controls_passed"]
+        == replayed_suite["positive_controls_passed"]
+        and baseline["probes_flipped"] == probes_flipped
+        and baseline["is_generality_measure"] is False
+        and isinstance(baseline["interpretation"], str)
+        and "NOT a generality rate" in baseline["interpretation"],
+        "baseline comparison differs from the derived boundary counts",
     )
     _positive_zero(baseline["additional_external_cost_usd"], "additional external cost")
     _positive_zero(baseline["additional_expert_actions"], "additional expert actions")

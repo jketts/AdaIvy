@@ -65,7 +65,7 @@ T1 = "2026-08-20T14:00:00Z"
 # pinned here. Determinism across runs, restarts, and processes is a requirement
 # (README.md:24-28, AGENTS.md:69-71), and a literal computed in another process
 # is the cross-process evidence available without spawning a subprocess.
-VERDICT_HASH = "sha256:ed5265c7ca87da2ccd42fcbdee79a2b88627269543ec7feb0309c185ec3f5ace"
+VERDICT_HASH = "sha256:d413855eaac2a3b9df335cd0fac4a4a14536e030ae45233cfcf03d8284770099"
 
 # The producer this slice must not touch. ADR-0044's core claim is that the
 # clean-room verifier was added without editing the thing it verifies, so the
@@ -73,11 +73,11 @@ VERDICT_HASH = "sha256:ed5265c7ca87da2ccd42fcbdee79a2b88627269543ec7feb0309c185e
 # ever intended, update ADR-0044 and this pin in the same change.
 PRODUCER_DIGESTS = {
     "src/math_research/phase6/service.py":
-        "b549c9b85ec5fa722ad9a1b710beeae8292be383e8cef7eb725dc34977be7fd2",
+        "940c4834cc1167c7f1051abd361e2c0a380e99d8b5c041ec91c6580680df0ed5",
     "src/math_research/phase6/workspace.py":
         "ef2385efc26d57e87a94e3fd6152122a704df3a1f9be1fddd297b27bb9fb79aa",
     "fixtures/phase6/confirmatory-protocol-v1.json":
-        "967156de05645f260fce2a67bc3915b2e1e41f6716b832b00f4eec42fa867fac",
+        "befbb3c206a75610b0b420f19b3a9f09d53c8063908943eed4faa5e56ea2f8b2",
     "migrations/phase6/0001_confirmatory_release.sql":
         "19f470af7a73247b8042cfb8e0dac6146b9c2a7f7da945178d7a03556a255743",
 }
@@ -378,17 +378,11 @@ class CleanRoomPositiveTests(BundleCase):
             [item["release_value"] for item in verdict["unverifiable"]],
         )
         self.assertEqual(
-            [
-                "controls_passed",
-                "controls_total",
-                "baseline_comparison",
-                "baseline_comparison.simplest_baseline_passed",
-                "baseline_comparison.phase6_passed",
-            ],
+            ["baseline_comparison", "baseline_comparison.simplest_baseline_passed"],
             [item["field"] for item in verdict["not_derived"]],
         )
         self.assertEqual(
-            [5, 5, 0, 5],
+            [0],
             [
                 item["release_value"] for item in verdict["not_derived"]
                 if not isinstance(item["release_value"], dict)
@@ -415,10 +409,9 @@ class CleanRoomPositiveTests(BundleCase):
             {item["field"] for item in named}
             & {item["check"] for item in verdict["checks"]},
         )
-        # The one check that touches the control counts says so itself.
-        detail = self.detail("generality_controls_constant_reproduced", verdict)
-        self.assertIs(False, detail["measures_capability"])
-        self.assertIs(False, detail["positive_control_present"])
+        detail = self.detail("generality_controls_reexecuted", verdict)
+        self.assertIs(True, detail["measures_capability"])
+        self.assertIs(True, detail["positive_control_present"])
 
     def test_not_derived_baseline_value_does_not_gate_the_verdict(self) -> None:
         """`simplest_baseline_passed` is reported, never signed off.
@@ -440,23 +433,12 @@ class CleanRoomPositiveTests(BundleCase):
         }
         self.assertEqual(4, reported["baseline_comparison.simplest_baseline_passed"])
 
-    def test_generality_controls_have_no_positive_control(self) -> None:
-        """Recorded, not repaired. Adding one is out of scope for this slice.
-
-        Every candidate carries `graph_admitted: False` and `passed` is defined
-        as `admitted is False`, so a system that refused everything -- sound
-        candidates included -- would score 5/5 identically.
-        """
-
-        controls = producer._generality_controls()
-        self.assertEqual(5, len(controls))
-        self.assertTrue(all(item["graph_admitted"] is False for item in controls))
-        self.assertTrue(all(item["passed"] is True for item in controls))
-        self.assertEqual(
-            [], [item for item in controls if item["graph_admitted"] is True],
-            "a positive control now exists; ADR-0044 records its absence, so "
-            "update the ADR and this assertion in the same change",
-        )
+    def test_generality_controls_include_positive_controls_and_flipped_probes(self) -> None:
+        suite = record_of(self.p6(), "generality_control_suite")["payload"]
+        self.assertEqual(13, suite["controls_total"])
+        self.assertEqual(["GC-01", "GC-09A"], suite["positive_control_ids"])
+        self.assertTrue(suite["positive_control_admitted"])
+        self.assertEqual(suite["probes_total"], suite["probes_flipped"])
 
 
 # --------------------------------------------------------------------------
@@ -572,7 +554,7 @@ class CleanRoomBoundaryTests(BundleCase):
             },
         )
         self.assertEqual(
-            {"..phase5.quantum", "..phase5.serialization", "json", "tempfile",
+            {"..phase5.quantum", "..phase5.serialization", ".generality", "json", "tempfile",
              "collections.abc", "pathlib", "typing", "__future__"},
             imported,
             "replay.py's import set changed; a clean-room verifier must not "
@@ -591,7 +573,11 @@ class CleanRoomBoundaryTests(BundleCase):
     def test_restated_producer_constants_do_not_drift(self) -> None:
         self.assertEqual(frozenset(producer.PROTOCOL_FIELDS), PROTOCOL_FIELDS)
         self.assertEqual(frozenset(producer.ALLOWED_CAPABILITIES), ALLOWED_CAPABILITIES)
-        self.assertEqual(list(producer._generality_controls()), list(EXPECTED_CONTROLS))
+        suite = record_of(self.p6(), "generality_control_suite")["payload"]
+        self.assertEqual(
+            list(EXPECTED_CONTROLS),
+            [item["control_id"] for item in suite["controls"]],
+        )
         self.assertEqual(PHASE6_EXPORT_VERSION, replay_module.PHASE6_EXPORT_VERSION)
         self.assertEqual(PHASE6_RECORD_VERSION, replay_module.PHASE6_RECORD_VERSION)
         self.assertEqual(PHASE5_EXPORT_VERSION, replay_module.PHASE5_EXPORT_VERSION)
@@ -613,9 +599,7 @@ class CleanRoomBoundaryTests(BundleCase):
             | {item[0] for item in NOT_DERIVED_FIELDS},
             {
                 "semantic_fidelity", "negative_and_superseded_attempts_retained",
-                "controls_passed", "controls_total", "baseline_comparison",
-                "baseline_comparison.simplest_baseline_passed",
-                "baseline_comparison.phase6_passed",
+                "baseline_comparison", "baseline_comparison.simplest_baseline_passed",
             },
         )
 
@@ -643,7 +627,9 @@ class CleanRoomBoundaryTests(BundleCase):
                     phase5_run_id=phase5["run_id"], recorded_at=T1,
                 )
                 stored = workspace.save_verified_export(forged)
-                self.assertTrue(stored["records"][2]["payload"]["graph_admitted"])
+                self.assertTrue(
+                    record_of(stored, "confirmatory_result")["payload"]["graph_admitted"]
+                )
                 # Still reports itself intact.
                 workspace.verify_integrity()
                 self.assertEqual(
@@ -694,7 +680,7 @@ class RecordTamperTests(BundleCase):
     def test_reordered_records_are_refused(self) -> None:
         value = self.p6()
         records = value["records"]
-        records[3], records[4] = records[4], records[3]
+        records[5], records[6] = records[6], records[5]
         self.refuses(
             p6=reseal(value, level="identities"), because="record type order differs"
         )
@@ -702,7 +688,7 @@ class RecordTamperTests(BundleCase):
     def test_reordered_contributions_are_refused(self) -> None:
         value = self.p6()
         records = value["records"]
-        records[5], records[7] = records[7], records[5]
+        records[7], records[9] = records[9], records[7]
         self.refuses(
             p6=reseal(value, level="release"),
             because="contribution 0 is not the derived contribution",
@@ -804,31 +790,28 @@ class RefusalInvariantTamperTests(BundleCase):
         record_of(value, "release_package")["payload"]["controls_passed"] = 6
         self.refuses(
             p6=reseal(value, level="release"),
-            because="release control counts are not the derived counts",
+            because="release control or probe counts are not the derived counts",
         )
 
     def test_extra_generality_control_is_refused(self) -> None:
         value = self.p6()
         result = record_of(value, "confirmatory_result")["payload"]
-        result["generality_controls"].append({
-            "control_id": "invented_control",
-            "candidate": {"anything": True},
-            "graph_admitted": False,
-            "passed": True,
-            "reason": "invented",
-        })
+        result["generality_controls"]["controls"].append(
+            copy.deepcopy(result["generality_controls"]["controls"][0])
+        )
+        result["generality_controls"]["controls"][-1]["control_id"] = "invented_control"
         self.refuses(
             p6=reseal(value, level="release"),
-            because="generality control count differs",
+            because="confirmatory result generality suite binding differs",
         )
 
     def test_weakened_generality_control_is_refused(self) -> None:
         value = self.p6()
         result = record_of(value, "confirmatory_result")["payload"]
-        result["generality_controls"][0]["graph_admitted"] = True
+        result["generality_controls"]["controls"][0]["passed"] = False
         self.refuses(
             p6=reseal(value, level="release"),
-            because="generality control 0 differs from the frozen control",
+            because="confirmatory result generality suite binding differs",
         )
 
     def test_heldout_accesses_above_one_is_refused(self) -> None:
@@ -1210,7 +1193,7 @@ class CleanRoomCliTests(BundleCase):
             path.write_bytes(self.p6_bytes)
             code, summary = self._run(["replay", str(root / "workspace"), str(path)])
         self.assertEqual(0, code)
-        self.assertEqual(9, summary["records"])
+        self.assertEqual(11, summary["records"])
 
 
 if __name__ == "__main__":
