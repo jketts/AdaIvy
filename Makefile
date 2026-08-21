@@ -310,13 +310,16 @@ synthesis:
 
 # ADR-0036: the publication projection renders the manuscript record set into a
 # content-addressed bundle and asserts the recorded outcome rather than the exit
-# status. Three things must fail this target rather than pass quietly: a claim
+# status. Four things must fail this target rather than pass quietly: a claim
 # promoted to a theorem the records do not support, a render rule whose
-# falsifiability probe stops flipping, and a typeset status reported as anything
-# other than `not_typeset` when no compile has run. The fixture is expected to
-# render ZERO theorems on this path, because `make check` deliberately excludes
-# the sealed ADR-0016 Lean runtime, so a nonzero theorem count here means the
-# renderer invented one.
+# falsifiability probe stops flipping, a typeset status reported as anything
+# other than `not_typeset` when no compile has run, and -- since ADR-0058 -- a
+# displayed title that either lost its derived qualifier or gained one the
+# records do not support. The counts below are whatever the fixtures produce; a
+# fixture is never adjusted to match a number here, the number is moved.
+# The first fixture is expected to render ZERO theorems on this path, because
+# `make check` deliberately excludes the sealed ADR-0016 Lean runtime, so a
+# nonzero theorem count here means the renderer invented one.
 publication:
 	@printf '\n== publication projection (records -> tex -> bundle) ==\n'
 	@d=$$(mktemp -d "$(TMPROOT)/adaivy-pub.XXXXXX") && \
@@ -327,10 +330,16 @@ publication:
 	  $(PY) -m math_research.cli publication inspect "$$d/bundle" \
 	    > "$$d/inspect.json" && \
 	  diff -r "$$d/bundle" "$$d/replay" >/dev/null && \
-	  $(PY) -c 'import json,sys; m=json.load(open(sys.argv[1])); c=m["evidence_class_counts"]; t=open(sys.argv[2],encoding="utf-8").read(); assert m["verified"] is True, "publication bundle did not verify"; assert c["kernel_checked_theorem"] == 0, "publication rendered a theorem with no attestation: %s" % c; assert (c["exact_certificate_proposition"], c["proposal"]) == (3, 2), "publication evidence class counts moved: %s" % c; assert m["probes_flipped"] == m["probes_total"] and m["probes_total"] >= 21, "publication probes moved: %s of %s" % (m["probes_flipped"], m["probes_total"]); assert m["typeset_status"] == "not_typeset" and m["pdf_sha256"] is None, "publication reported a typeset PDF without a compile"; assert "no fully Lean-verified Theorems" in t, "publication status block stopped naming the absent fully verified theorems"; assert "No linked formal artifact has a recorded successful Lean kernel check" in t, "publication status block stopped stating the Lean result"; assert "\\begin{adatheorem}" not in t, "publication emitted a theorem environment"' \
+	  $(PY) -c 'import json,sys; m=json.load(open(sys.argv[1])); c=m["evidence_class_counts"]; h=m["headline"]; t=open(sys.argv[2],encoding="utf-8").read(); assert m["verified"] is True, "publication bundle did not verify"; assert c["kernel_checked_theorem"] == 0, "publication rendered a theorem with no attestation: %s" % c; assert (c["exact_certificate_proposition"], c["convention_relative_proposition"], c["proposal"]) == (3, 0, 2), "publication evidence class counts moved: %s" % c; assert m["probes_flipped"] == m["probes_total"] and m["probes_total"] >= 27, "publication probes moved: %s of %s" % (m["probes_flipped"], m["probes_total"]); assert h["displayed_title"] == h["title_stem"] and h["qualifiers"] == [], "publication qualified a headline for a manuscript that resolves nothing: %s" % h; assert h["displayed_title"] in t, "the composed headline is not the displayed title"; assert m["typeset_status"] == "not_typeset" and m["pdf_sha256"] is None, "publication reported a typeset PDF without a compile"; assert "no fully Lean-verified Theorems" in t, "publication status block stopped naming the absent fully verified theorems"; assert "no convention-relative Propositions" in t, "publication status block stopped counting the convention-relative rung"; assert "No linked formal artifact has a recorded successful Lean kernel check" in t, "publication status block stopped stating the Lean result"; assert "\\begin{adatheorem}" not in t, "publication emitted a theorem environment"; assert "\\begin{adaconditional}" not in t, "publication emitted a convention-relative environment with no verdict matrix"' \
 	    "$$d/inspect.json" "$$d/bundle/paper.tex" && \
+	  $(PY) -m math_research.cli publication render \
+	    fixtures/publication/manuscript-graffiti-322-v1.json --output-dir "$$d/g322" >/dev/null && \
+	  $(PY) -m math_research.cli publication inspect "$$d/g322" \
+	    > "$$d/g322-inspect.json" && \
+	  $(PY) -c 'import json,sys; m=json.load(open(sys.argv[1])); c=m["evidence_class_counts"]; h=m["headline"]; t=open(sys.argv[2],encoding="utf-8").read(); p=json.load(open(sys.argv[3])); assert m["verified"] is True, "the Graffiti 322 rebuild did not verify"; assert (c["kernel_checked_theorem"], c["exact_certificate_proposition"], c["convention_relative_proposition"], c["proposal"]) == (0, 0, 1, 0), "the rebuild evidence class counts moved: %s" % c; assert "\\begin{adaconditional}" in t, "a convention-relative claim rendered outside adaconditional"; assert "Candidate Counterexample to Graffiti 322" in h["displayed_title"], "the derived headline lost its computed resolution phrase: %s" % h; assert "convention-relative" in h["qualifiers"] and "prior art relationship unresolved" in h["qualifiers"], "the derived headline lost a qualifier the records require: %s" % h; assert h["displayed_title"] != h["title_stem"] and h["displayed_title"] in t, "the derived headline is not the displayed title"; assert "vm.graffiti-322-g14-18.v1" in h["record_refs"] and "recheck.graffiti-322.prior-candidate.v1" in h["record_refs"], "the headline left the ledger without resolving refs: %s" % h; assert m["probes_flipped"] == m["probes_total"] and m["probes_total"] >= 18, "the rebuild probes moved: %s of %s" % (m["probes_flipped"], m["probes_total"]); assert p["status"] == "recorded" and p["source"] == "prior_art_engagement" and p["report_classification"] == "prior_art_relationship_unresolved", "records/prior-art.json reverted to the approval-only key: %s" % p; assert "even\\_excludes\\_v, range\\_distinct\\_count} & \\texttt{4} & \\texttt{3} & \\texttt{refutes}" in t, "the C4 replay row stopped refuting under even_excludes_v"; assert "even\\_includes\\_v, range\\_distinct\\_count} & \\texttt{2} & \\texttt{3} & \\texttt{does\\_not\\_refute}" in t, "the C4 replay row stopped standing under even_includes_v"; assert "source-asserted reading" in t, "the rebuild stopped naming its weakest reading"; assert "No claim in this document is described as source-faithful" in t, "the rebuild stopped disclaiming source fidelity it has not earned"' \
+	    "$$d/g322-inspect.json" "$$d/g322/paper.tex" "$$d/g322/records/prior-art.json" && \
 	  rm -rf "$$d" && \
-	  printf 'publication ok (0 theorems, 3 exact propositions, 2 proposals; 21 probes flipped; not typeset)\n'
+	  printf 'publication ok (0 theorems, 3 exact propositions, 2 proposals, 27 probes flipped; rebuild: 1 convention-relative proposition, derived headline, 18 probes flipped; not typeset)\n'
 
 # Explicit networked setup for the separate publication toolchain. The normal
 # offline gate never calls this target. Installation stays under gitignored

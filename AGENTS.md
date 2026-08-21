@@ -234,6 +234,66 @@ execution remains disabled until its distinct digest-pinned OCI sandbox gate
 passes; the offline suite uses only injected scripted ports. This activates no
 parallel specialist, evolutionary, or higher search tier.
 
+ADR-0058, ADR-0059, and ADR-0060 move the trust boundary UPSTREAM of the
+proposition. Every earlier boundary governs whether reasoning about a fixed
+statement is sound; these three govern which statement is being made and whose
+statement it already was. They exist because the Graffiti 322 report shipped a
+correct exact certificate under a title the records did not earn.
+
+A contested definitional term is now a content-hashed `ConventionRecord` in
+`src/math_research/conventions.py` enumerating at least two source-anchored
+readings. A claim that resolves a named external problem is `resolution_target`
+typed and carries a `VerdictMatrix` covering exactly the record's reading
+tuples; `classify_scope` derives `unconditional`, `convention_relative`,
+`contested_unevaluated`, or `no_reading_refutes` from the verdicts alone.
+Scope demotes: `convention_relative` caps the claim at the new
+`convention_relative_proposition` rung rendered as "Proposition
+(convention-relative)", and the two weaker scopes reach `proposal`. Ignorance
+demotes before disagreement does. `unconditional` means unconditional over the
+ENUMERATED readings only -- the enumeration is author-supplied, and a contested
+term omitted entirely is invisible to this machinery. Reports must say so.
+
+`src/math_research/exact_graph/` is the exact spectral engine and the first
+in-repo implementation of the engine the Graffiti 322 certificate names, so that
+certificate is reproducible from the repository for the first time. It is also
+the counter-candidate replay engine: where prior art offers a witness, that
+witness is replayed under every enumerated reading and each verdict is recorded.
+Integers and `Fraction` only; the distinct-eigenvalue count is the degree of the
+minimal polynomial of a symmetric integer distance matrix, and an undecidable
+comparison is a typed refusal rather than a guess. Replaying the published C4
+candidate reproduces the whole external-review finding mechanically: it refutes
+only under `even_excludes_v`, while G(14,18) refutes under both readings of
+`Even` and neither reading of spectral extent.
+
+Citing a work that addresses the same target problem obliges classification, not
+a bibliography entry. Target engagement is FAIL-CLOSED and derived: a citation
+addresses the target by default and whenever the question cannot be decided, and
+escaping that needs an attributable `target_exclusion` naming a closed-vocabulary
+reason. A `prior_resolution_candidate` can never be excluded. Prior art gets a
+top-level `prior_art_engagement` slot that does NOT hang off approval, because
+ADR-0055's gate returned early whenever `publication_approval` was null -- which
+is every draft, and drafts are what circulate. The teeth are now in
+`produce_publication`. The recheck must bind to the manuscript subject hash; the
+24-hour freshness window is deliberately NOT re-enforced at render time, because
+that would make an existing bundle unrebuildable and break ADR-0036's
+regenerable-from-records guarantee.
+
+A passage record separates the bytes we hold from how well we read them:
+`extraction_method`, `reading_status`, `verbatim_text`, and a `verbatim_hash`
+distinct from the byte `content_hash`. A content hash is tamper-evidence and says
+nothing about interpretive faithfulness. `manual_transcription` never reaches
+`verbatim_confirmed` because a hand transcription cannot be re-derived from the
+file. A reading nobody can re-extract forces an open `reading`-tagged obligation,
+may not be called source-faithful, and reaches the headline through the scope
+gate. The displayed report title is composed from a `title_stem` plus a DERIVED
+qualifier, enters the provenance ledger like every other block, and no input
+field can select it -- title and abstract were previously the only reader-facing
+text in the projection with no derivation and no falsifiability probe.
+
+None of this creates novelty status, significance, mathematical warrant, or graph
+admission, and none of it makes an unapproved draft an endorsed result. It makes
+one class of over-claim mechanically detectable. It does not make a report correct.
+
 The Phase 1 domain/trust semantics, sealed Phase 2 evidence, Phase 3A memory,
 sealed Phase 3B runtime, and Phase 4A rights/applicability boundaries remain
 authoritative. ADR-0048's bounded Azure proposer, ADR-0049's bounded exact

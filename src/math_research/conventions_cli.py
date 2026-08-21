@@ -8,6 +8,7 @@ from pathlib import Path
 
 from .conventions import (
     POLICY_ID,
+    READING_STATUS_ORDER,
     SCHEMA_VERSION,
     ConventionError,
     read_convention,
@@ -35,6 +36,8 @@ def _inspect(convention_path: Path, matrix_path: Path | None) -> dict[str, objec
                     {
                         "reading_id": reading.reading_id,
                         "reading_status": reading.reading_status,
+                        "publication_restricted": reading.publication_restricted,
+                        "effective_reading_status": reading.effective_reading_status(),
                         "source_passage_ref": reading.source_passage_ref,
                         "attributed_to": reading.attributed_to,
                     }
@@ -50,6 +53,7 @@ def _inspect(convention_path: Path, matrix_path: Path | None) -> dict[str, objec
             }
             for item in convention.reading_tuples()
         ],
+        "reading_status_order": list(READING_STATUS_ORDER),
         "verdict_matrix": None,
         "derived_scope": None,
         "creates_mathematical_warrant": False,

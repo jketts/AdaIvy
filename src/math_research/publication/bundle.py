@@ -36,8 +36,10 @@ flows back.
 - `records/evidence.json` records the computed evidence class of every claim and
   why. No input field selects an environment.
 - `records/prior-art.json` records the derived prior-result/report
-  classification. An identified matching proof or refutation cannot be hidden
-  behind the broader `novelty: not_assessed` status.
+  classification, read from the manuscript's own prior-art engagement record and
+  only then from an approval. An identified matching proof or refutation cannot be
+  hidden behind the broader `novelty: not_assessed` status, and an unapproved
+  draft carrying a real classification no longer reports `not_assessed`.
 - `records/probes.json` records the falsifiability probes: single-field
   mutations of the manuscript, each of which must produce a named refusal or a
   named demotion.
@@ -106,10 +108,21 @@ def build_bundle(
         "evidence_class_counts": dict(document.statistics["evidence_class_counts"]),
     }
 
+    # ADR-0059 and amendment B7. The classification is keyed off the manuscript's
+    # own prior-art engagement record, and only then off an approval. Keying it
+    # off `publication_approval` left `records/prior-art.json` reading
+    # `not_assessed` on every draft even when the manuscript carried a real
+    # classification -- and a draft is exactly the artifact that circulates.
     approval = manuscript.value["publication_approval"]
-    if approval is None:
+    recheck = manuscript.prior_art_recheck()
+    source = "prior_art_engagement"
+    if recheck is None and approval is not None:
+        recheck = load_recheck(approval["novelty_rechecks"][1])
+        source = "publication_approval"
+    if recheck is None:
         prior_art = {
             "status": "not_assessed",
+            "source": "absent",
             "outcome": "not_assessed",
             "relationship": "not_assessed",
             "resolution": "not_assessed",
@@ -120,18 +133,22 @@ def build_bundle(
             "creates_mathematical_warrant": False,
             "recheck_id": None,
             "recheck_hash": None,
+            "subject_id": None,
+            "subject_hash": None,
         }
     else:
-        announcement = load_recheck(approval["novelty_rechecks"][1])
         prior_art = {
             "status": "recorded",
-            "outcome": announcement.outcome,
-            "relationship": announcement.prior_art_relationship,
-            "resolution": announcement.prior_resolution,
-            "verification_status": announcement.prior_resolution_verification,
-            **announcement.classification().payload(),
-            "recheck_id": announcement.recheck_id,
-            "recheck_hash": announcement.content_hash,
+            "source": source,
+            "outcome": recheck.outcome,
+            "relationship": recheck.prior_art_relationship,
+            "resolution": recheck.prior_resolution,
+            "verification_status": recheck.prior_resolution_verification,
+            **recheck.classification().payload(),
+            "recheck_id": recheck.recheck_id,
+            "recheck_hash": recheck.content_hash,
+            "subject_id": recheck.subject_id,
+            "subject_hash": recheck.subject_hash,
         }
 
     build = {
@@ -201,6 +218,13 @@ def build_bundle(
         "manuscript_hash": manuscript.hash,
         "template_hash": document.template_hash,
         "document_hash": document.document_hash,
+        "headline": {
+            "title_stem": document.headline.title_stem,
+            "displayed_title": document.headline.displayed_title,
+            "qualifiers": list(document.headline.qualifiers),
+            "record_refs": list(document.headline.record_refs),
+            "creates_mathematical_warrant": False,
+        },
         "publication_approval": manuscript.value["publication_approval"],
         "run_disclosure": dict(manuscript.value["run_disclosure"]),
         "corpus_provenance": manuscript.value["corpus_provenance"],

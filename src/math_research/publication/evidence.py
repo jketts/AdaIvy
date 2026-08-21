@@ -14,11 +14,19 @@ is exactly how an exact result becomes an overstated one.
 here. The axioms it leans on are approved, so the claim is reportable, but the
 reader is entitled to see the dependence in the environment rather than in an
 appendix they may not reach.
+
+ADR-0058 adds a second, independent demotion axis. Everything above answers "how
+well is this checked?"; the scope cap answers "under which reading is it even
+being asserted?". A claim whose verdict flips with a definitional reading is not
+a proposition about the conjecture, and the reader meets that in the environment
+name rather than in a footnote. The two axes compose by taking the weaker: a
+convention-relative claim can be demoted further by a bad certificate, and never
+promoted by a good one.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Mapping
 
 from .errors import PublicationValidationError
@@ -30,19 +38,50 @@ from .manuscript import Manuscript
 EVIDENCE_CLASSES = (
     "kernel_checked_theorem",
     "exact_certificate_proposition",
+    # ADR-0058. Inserted, never appended: strictly weaker than an exact
+    # certificate proposition and strictly stronger than a proposal, because the
+    # arithmetic is exact and only the reading is contested.
+    "convention_relative_proposition",
     "proposal",
 )
 
 ENVIRONMENTS = {
     "kernel_checked_theorem": "adatheorem",
     "exact_certificate_proposition": "adaproposition",
+    "convention_relative_proposition": "adaconditional",
     "proposal": "adaconjecture",
 }
 
 HEADINGS = {
     "kernel_checked_theorem": "Theorem",
     "exact_certificate_proposition": "Proposition",
+    "convention_relative_proposition": "Proposition (convention-relative)",
     "proposal": "Conjecture",
+}
+
+#: ADR-0058 section 4.1, as data. The value is the *weakest class this scope
+#: admits*; a claim already at or below it keeps what it had. ``unconditional``
+#: is absent on purpose: it caps nothing, so the existing ladder stands.
+SCOPE_CAPS = {
+    "convention_relative": "convention_relative_proposition",
+    "contested_unevaluated": "proposal",
+    "no_reading_refutes": "proposal",
+}
+
+SCOPE_CAP_REASONS = {
+    "convention_relative": (
+        "the verdict matrix refutes under some enumerated readings and not under "
+        "others, so the result is asserted relative to a reading rather than "
+        "about the conjecture"
+    ),
+    "contested_unevaluated": (
+        "at least one enumerated reading was never evaluated, so no sweep of the "
+        "readings exists to be relative to"
+    ),
+    "no_reading_refutes": (
+        "no enumerated reading yields a refutation, so the records support no "
+        "resolution of the target at all"
+    ),
 }
 
 
@@ -62,7 +101,46 @@ class EvidenceClassification:
         return EVIDENCE_CLASSES.index(self.evidence_class)
 
 
+def apply_scope_cap(
+    manuscript: Manuscript, claim_id: str, base: EvidenceClassification
+) -> EvidenceClassification:
+    """Cap a classification at what its derived reading scope admits.
+
+    The cap is read from the verdict matrix a claim *names*, not from whether the
+    claim happens to carry a ``resolution_target``: dropping the target must not
+    be a way to shed the cap while keeping the matrix. Only ever weakens.
+    """
+
+    matrix = manuscript.verdict_matrix_for(claim_id)
+    if matrix is None:
+        return base
+    scope = manuscript.derived_scope(claim_id)
+    cap = SCOPE_CAPS.get(str(scope))
+    if cap is None:
+        return base
+    refs = tuple(dict.fromkeys(base.record_refs + (matrix.matrix_id, matrix.convention_id)))
+    if EVIDENCE_CLASSES.index(base.evidence_class) >= EVIDENCE_CLASSES.index(cap):
+        # Already at or below the cap. The scope still belongs in the record
+        # references, because it is part of why the claim reads as it does.
+        return replace(base, record_refs=refs)
+    return replace(
+        base,
+        evidence_class=cap,
+        environment=ENVIRONMENTS[cap],
+        heading=HEADINGS[cap],
+        reason=(
+            f"{base.reason}; capped at {cap} because the derived scope is {scope}: "
+            f"{SCOPE_CAP_REASONS[str(scope)]}"
+        ),
+        record_refs=refs,
+    )
+
+
 def classify_claim(manuscript: Manuscript, claim_id: str) -> EvidenceClassification:
+    return apply_scope_cap(manuscript, claim_id, _classify_evidence(manuscript, claim_id))
+
+
+def _classify_evidence(manuscript: Manuscript, claim_id: str) -> EvidenceClassification:
     if claim_id not in manuscript.claims:
         raise PublicationValidationError("record_ref_unresolved", f"claim {claim_id!r}")
     claim: Mapping[str, Any] = manuscript.claims[claim_id]

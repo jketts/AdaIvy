@@ -138,10 +138,21 @@ the index; the class is inserted and the existing entries are never reordered.
 The renderer composes the displayed title from the stem plus a qualifier
 computed from the weakest evidence class, the derived scope, the ADR-0059
 prior-art classification, and any open obligation tagged `novelty` or
-`prior_art`. On the current Graffiti 322 records that composition must produce
-**"Candidate Counterexample to Graffiti 322 (convention-relative; prior art not
-assessed)"**, and the qualifier can only be lost when the records earn its
-loss. The frozen `RESOLUTION_LEXICON` — sixteen entries covering the resolution
+`prior_art`. On the current Graffiti 322 records that composition produces
+**"Inverse Even and the distance spectrum of the triangle-free family G(r,t):
+Candidate Counterexample to Graffiti 322 (convention-relative; prior art
+relationship unresolved; open novelty and prior-art obligations)"**, and the
+qualifier can only be lost when the records earn its loss.
+
+An earlier draft of this ADR fixed the required string as "Candidate
+Counterexample to Graffiti 322 (convention-relative; prior art not assessed)".
+That string is not producible from these records and asserting it would have
+been a defect of exactly the kind this ADR exists to prevent: the rebuilt
+manuscript carries a real prior-art classification, so "prior art not assessed"
+is false, and a stem containing "Counterexample" is refused by
+`title_stem_asserts_resolution`. The requirement is that the qualifier be
+DERIVED from the four named inputs and ledger-covered, never that it match a
+string an author wrote down in advance. The frozen `RESOLUTION_LEXICON` — sixteen entries covering the resolution
 verbs, their noun forms, and the fidelity phrase ADR-0060 owns, matched
 case-insensitively on word boundaries — is refused in
 author-supplied headline text whenever the records do not earn it, under

@@ -55,7 +55,8 @@
       "cited_object": "definition",
       "intended_use": "publication",
       "passage_id": "psg.adr-0023.diagonal-reduction",
-      "source_id": "src.adr-0023-exact-commuting"
+      "source_id": "src.adr-0023-exact-commuting",
+      "target_exclusion": null
     },
     {
       "citation_class": "source_record",
@@ -63,7 +64,8 @@
       "cited_object": "problem",
       "intended_use": "publication",
       "passage_id": "psg.adr-0023.diagonal-reduction",
-      "source_id": "src.adr-0023-exact-commuting"
+      "source_id": "src.adr-0023-exact-commuting",
+      "target_exclusion": null
     },
     {
       "citation_class": "source_record",
@@ -71,7 +73,8 @@
       "cited_object": "lemma",
       "intended_use": "publication",
       "passage_id": "psg.adr-0033.cubic-boundary",
-      "source_id": "src.adr-0033-quadratic-extension"
+      "source_id": "src.adr-0033-quadratic-extension",
+      "target_exclusion": null
     },
     {
       "citation_class": "source_record",
@@ -79,7 +82,8 @@
       "cited_object": "hypothesis",
       "intended_use": "publication",
       "passage_id": "psg.adr-0035.verification-only",
-      "source_id": "src.adr-0035-verification-only"
+      "source_id": "src.adr-0035-verification-only",
+      "target_exclusion": null
     },
     {
       "citation_class": "mathlib_declaration",
@@ -129,7 +133,9 @@
       "original_problem_citation_id": "cite.adr-0023.original-problem",
       "prose_statement": "For the orthogonal two-dimensional diagonal ensemble of the frozen QD-FS-01 fixture, the exact primal value attained by the iteration and the exact independent dual optimum coincide, so the optimum is determined rather than approximated.",
       "representation_id": "rep.orthogonal-2d-optimum",
-      "representation_status": "proposed"
+      "representation_status": "proposed",
+      "resolution_target": null,
+      "verdict_matrix_id": null
     },
     {
       "attestation_id": null,
@@ -163,7 +169,9 @@
       "original_problem_citation_id": "cite.adr-0023.original-problem",
       "prose_statement": "For the scalar full-support case, eight iterations leave the objective strictly below the exact optimum, and the residual is an exact rational. The iteration therefore approaches the optimum without attaining it in finitely many steps on this case.",
       "representation_id": "rep.scalar-iterate-separation",
-      "representation_status": "proposed"
+      "representation_status": "proposed",
+      "resolution_target": null,
+      "verdict_matrix_id": null
     },
     {
       "attestation_id": null,
@@ -197,7 +205,9 @@
       "original_problem_citation_id": "cite.adr-0023.original-problem",
       "prose_statement": "A fixed point of the iteration need not be optimal. On the boundary case, an initialization without full support reaches a fixed point whose exact objective is strictly below the exact independent optimum.",
       "representation_id": "rep.nonoptimal-fixed-point",
-      "representation_status": "proposed"
+      "representation_status": "proposed",
+      "resolution_target": null,
+      "verdict_matrix_id": null
     },
     {
       "attestation_id": null,
@@ -225,7 +235,9 @@
       "original_problem_citation_id": null,
       "prose_statement": "For a two-outcome noncommuting ensemble in dimension three whose difference operator has an irreducible cubic characteristic polynomial, the optimum has degree three over the rationals, so no certificate over any quadratic extension can close its gap. This repository records the boundary as a measured rejection and holds no proof of the statement.",
       "representation_id": "rep.cubic-optimum-degree",
-      "representation_status": "proposed"
+      "representation_status": "proposed",
+      "resolution_target": null,
+      "verdict_matrix_id": null
     },
     {
       "attestation_id": null,
@@ -252,7 +264,9 @@
       "original_problem_citation_id": null,
       "prose_statement": "For general noncommuting ensembles the inverse-JRF iteration converges to the optimum. Nothing in this repository bears on this statement: the noncommuting slice verifies certificates supplied to it and never discovers them, so it produces no evidence about convergence in either direction.",
       "representation_id": "rep.general-noncommuting-convergence",
-      "representation_status": "proposed"
+      "representation_status": "proposed",
+      "resolution_target": null,
+      "verdict_matrix_id": null
     }
   ],
   "corpus_provenance": "project_authored",
@@ -266,13 +280,19 @@
       "obligation_id": "obl.jrf-general-convergence",
       "reason": "The reliance is real and the record is absent. Rendering it as a citation would imply reading that did not happen.",
       "statement": "Locate and record an acquisition-backed statement of inverse-JRF convergence for general noncommuting ensembles, with a located passage, before any part of this document relies on it.",
-      "status": "open"
+      "status": "open",
+      "tags": [
+        "prior_art"
+      ]
     },
     {
       "obligation_id": "obl.latex-lean-representation-binding",
       "reason": "The generated Lean artifacts expose exact arithmetic subclaims for checking, but they do not yet encode the complete mathematical meaning of the rendered statements, so every representation status remains proposed.",
       "statement": "Bind each rendered LaTeX statement to a semantically complete Lean statement under one verified representation record, so that a mismatch between the two becomes a record inconsistency rather than a reader's problem.",
-      "status": "open"
+      "status": "open",
+      "tags": [
+        "formalization"
+      ]
     }
   ],
   "publication_approval": null,
@@ -514,9 +534,78 @@
       "probe_id": "pr.run-token-total-must-close",
       "rationale": "The reported total token count must equal the recorded input and output counts.",
       "value": 1
+    },
+    {
+      "probe_id": "pr.title-must-not-assert-resolution",
+      "field": "title_stem",
+      "value": "An exact counterexample for the QD-FS-01 diagonal benchmark",
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "title_stem_asserts_resolution"
+      },
+      "rationale": "Headline resolution language is refused while no record earns it."
+    },
+    {
+      "probe_id": "pr.abstract-must-not-overclaim",
+      "field": "abstract",
+      "value": "This note refutes the QD-FS-01 boundary conjecture.",
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "abstract_overclaims_evidence"
+      },
+      "rationale": "The abstract is screened by the same lexicon as the headline."
+    },
+    {
+      "probe_id": "pr.source-fidelity-must-be-earned",
+      "field": "abstract",
+      "value": "A source-faithful reading of the QD-FS-01 benchmark is recorded here.",
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "source_fidelity_overclaimed"
+      },
+      "rationale": "Fidelity is computed from reading statuses, never asserted in prose."
+    },
+    {
+      "probe_id": "pr.resolution-claim-requires-verdict-matrix",
+      "field": "claims[cl.orthogonal-2d-optimum].resolution_target",
+      "value": {
+        "subject_id": "problem.qd-fs-01-diagonal-boundary",
+        "citation_id": "cite.adr-0023.original-problem",
+        "kind": "proof"
+      },
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "resolution_claim_without_verdict_matrix"
+      },
+      "rationale": "A claim that resolves a conjecture must carry a verdict per reading."
+    },
+    {
+      "probe_id": "pr.target-exclusion-must-be-justified",
+      "field": "citations[cite.adr-0023.diagonal-reduction].target_exclusion",
+      "value": {
+        "reason": "not_applicable",
+        "excluded_by": "reviewer.publisher"
+      },
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "target_exclusion_unjustified"
+      },
+      "rationale": "An empty or not_applicable reason excludes no work from the target."
+    },
+    {
+      "probe_id": "pr.obligation-tag-must-be-known",
+      "field": "obligations[obl.jrf-general-convergence].tags",
+      "value": [
+        "novel"
+      ],
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "obligation_tag_unknown"
+      },
+      "rationale": "The headline gate reads these tags, so an unknown tag is a refusal."
     }
   ],
-  "schema_version": "1.3.0",
+  "schema_version": "1.4.0",
   "sections": [
     {
       "blocks": [
@@ -725,7 +814,12 @@
           "anchor": "L9-L14",
           "content_hash": "sha256:97a488b8daff164f1b973031c62045a018b57d16c048d925800ce956e85fe472",
           "passage_id": "psg.adr-0023.diagonal-reduction",
-          "quotation_permitted": true
+          "quotation_permitted": true,
+          "extraction_method": "text_layer",
+          "reading_status": "verbatim_confirmed",
+          "verbatim_text": "Implement the first executable `QD-FS-01` slice for diagonal weighted states\nand diagonal POVMs using standard-library rational arithmetic. This is the\nbenchmark's classical/commuting tier, not a universal noncommuting result.\nThe independent optimum check is the exact diagonal primal/dual SDP reduction:\neach coordinate is assigned to a maximal weight and the dual diagonal is the\ncoordinatewise maximum.\n",
+          "verbatim_hash": "sha256:97a488b8daff164f1b973031c62045a018b57d16c048d925800ce956e85fe472",
+          "publication_restricted": false
         }
       ],
       "rights": {
@@ -750,7 +844,12 @@
           "anchor": "L91-L97",
           "content_hash": "sha256:02bc1e57dbd5722ca630602c015903a7266e95416b9c93916495b4a9ff758e54",
           "passage_id": "psg.adr-0033.cubic-boundary",
-          "quotation_permitted": true
+          "quotation_permitted": true,
+          "extraction_method": "text_layer",
+          "reading_status": "verbatim_confirmed",
+          "verbatim_text": "- *A cubic or higher irreducible extension.* This is the substantive boundary,\n  and it is reached by an ordinary instance rather than a contrived one. A\n  two-outcome ensemble in dimension three whose difference operator has an\n  irreducible cubic characteristic polynomial has eigenvalues of degree three\n  over `Q`; the trace norm, and therefore the optimum, is then not of the form\n  `a + b*sqrt(d)` for any rational `a, b` and any `d`. No certificate over any\n  quadratic extension can close that gap. The fixture set contains such a case\n",
+          "verbatim_hash": "sha256:02bc1e57dbd5722ca630602c015903a7266e95416b9c93916495b4a9ff758e54",
+          "publication_restricted": false
         }
       ],
       "rights": {
@@ -775,7 +874,12 @@
           "anchor": "L47-L49",
           "content_hash": "sha256:3c97b1bbcea136c9939675f56f0a7671bc6e2eff8217e4d43d085d3b22864f4b",
           "passage_id": "psg.adr-0035.verification-only",
-          "quotation_permitted": true
+          "quotation_permitted": true,
+          "extraction_method": "text_layer",
+          "reading_status": "verbatim_confirmed",
+          "verbatim_text": "Adopt the first option. The production noncommuting Phase 5 expansion **verifies\ncertificates supplied to it and never discovers them.** No numerical solver is\nadopted, now or as a gated adapter.\n",
+          "verbatim_hash": "sha256:3c97b1bbcea136c9939675f56f0a7671bc6e2eff8217e4d43d085d3b22864f4b",
+          "publication_restricted": false
         }
       ],
       "rights": {
@@ -785,12 +889,17 @@
       "source_id": "src.adr-0035-verification-only"
     }
   ],
-  "title": "Exact certificates and their boundaries for the QD-FS-01 diagonal benchmark",
+  "title_stem": "Exact certificates and their boundaries for the QD-FS-01 diagonal benchmark",
   "toolchain": {
     "elan_version": "v4.2.1",
     "lean_commit": "f054605aea4b840552cca2e725580bffd1e1b704",
     "lean_version": "v4.32.1",
     "mathlib_commit": "520045ab14e26149ee970e2e617ca04b09bde5d6",
     "mathlib_version": "v4.32.1"
-  }
+  },
+  "conventions": [],
+  "verdict_matrices": [],
+  "counter_candidate_replays": [],
+  "prior_art_engagement": null,
+  "novelty_rechecks": []
 }

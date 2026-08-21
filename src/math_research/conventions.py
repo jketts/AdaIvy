@@ -13,8 +13,8 @@ This module makes the definitional fork a record.  A ``ConventionRecord``
 enumerates the contested terms and every reading of each, and says how well the
 *source passage* behind each reading could actually be read.  A
 ``VerdictMatrix`` carries one verdict per enumerated reading tuple.  The
-reader-facing scope -- unconditional, convention-relative, contested but
-unevaluated, or refuted under no reading -- is *derived* from that matrix by
+reader-facing scope -- ``unconditional``, ``convention_relative``,
+``contested_unevaluated``, ``no_reading_refutes`` -- is *derived* from that matrix by
 ``classify_scope``; there is deliberately no input field that supplies it, and a
 matrix that does not cover exactly the convention's reading tuples is a typed
 refusal rather than an implied full sweep.
@@ -25,6 +25,15 @@ visibly invalidates every claim asserted under it instead of silently
 invalidating some of them.  ``weakest_reading_status`` reports when a claim
 rests on a passage nobody could re-extract, so a renderer cannot describe such a
 claim as source-faithful.
+
+Two limits are structural and are stated here because a label a reader cannot
+interpret is worse than no label.  First, ``unconditional`` means unconditional
+*over the enumerated readings only*: the enumeration is author-supplied, so a
+contested term left out of the record entirely is invisible to this machinery and
+no code here can detect it.  Second, scope is a truth-conditional axis; it does
+not distinguish "conditional on a reading" from "true under every reading but
+pre-empted by prior art under one".  That second question is prior-art priority
+and lives in the replay and re-check records, not here.
 
 Nothing here creates mathematical warrant, novelty status, significance, or
 graph admission, and nothing here decides which reading is correct.  Enumerating
@@ -52,17 +61,18 @@ MAX_TERMS = 8
 MAX_READINGS_PER_TERM = 8
 MAX_READING_TUPLES = 64
 
-READING_STATUSES = frozenset({"verbatim_confirmed", "transcribed", "asserted"})
+# The total order on reading strength, weakest first.  Stated once, as data, so
+# the renderer, the schema, and these tests read the same source of truth:
+# asserted < transcribed < verbatim_confirmed.
+READING_STATUS_ORDER = ("asserted", "transcribed", "verbatim_confirmed")
+READING_STATUSES = frozenset(READING_STATUS_ORDER)
 VERDICTS = frozenset({"refutes", "does_not_refute", "not_evaluated"})
 CONVENTION_SCOPES = frozenset({
-    "unconditional",             # every enumerated reading tuple: refutes
-    "convention_relative",       # some refutes, some does_not_refute, none unevaluated
-    "contested_unevaluated",     # any reading tuple not_evaluated
-    "refuted_under_no_reading",  # no reading tuple refutes
+    "unconditional",          # every enumerated reading tuple: refutes
+    "convention_relative",    # some refutes, some does_not_refute, none unevaluated
+    "contested_unevaluated",  # any reading tuple not_evaluated
+    "no_reading_refutes",     # no reading tuple refutes
 })
-
-# Weakest first.  A tuple is only as strong as its least-well-read passage.
-_READING_STATUS_STRENGTH = {"asserted": 0, "transcribed": 1, "verbatim_confirmed": 2}
 
 _ID = re.compile(r"^[a-z0-9][a-z0-9._-]{2,127}$")
 _TOKEN = re.compile(r"^[a-z][a-z0-9_]{2,63}$")
@@ -186,13 +196,26 @@ def _require_envelope(value: Mapping[str, Any]) -> None:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Reading:
-    """One reading of one contested term, and how well its source was read."""
+    """One reading of one contested term, and how well its source was read.
+
+    ``reading_status`` and ``publication_restricted`` are deliberately separate
+    facts.  A reading can be ``verbatim_confirmed`` and still be unquotable, and
+    the record keeps both: that we read it, and that the reader cannot be shown
+    it.  They are merged only in :meth:`effective_reading_status`, because a
+    reading a reader cannot be shown is, to that reader, unsupported.
+    """
 
     reading_id: str
     statement: str
     source_passage_ref: str
     reading_status: str
     attributed_to: str | None
+    publication_restricted: bool = False
+
+    def effective_reading_status(self) -> str:
+        """Reader-facing strength.  Unquotable text supports nothing."""
+
+        return "asserted" if self.publication_restricted else self.reading_status
 
     def payload(self) -> dict[str, Any]:
         return {
@@ -200,6 +223,7 @@ class Reading:
             "statement": self.statement,
             "source_passage_ref": self.source_passage_ref,
             "reading_status": self.reading_status,
+            "publication_restricted": self.publication_restricted,
             "attributed_to": self.attributed_to,
         }
 
@@ -287,7 +311,7 @@ _CONVENTION_FIELDS = frozenset({
 _TERM_FIELDS = frozenset({"term_id", "term", "readings"})
 _READING_FIELDS = frozenset({
     "reading_id", "statement", "source_passage_ref", "reading_status",
-    "attributed_to",
+    "publication_restricted", "attributed_to",
 })
 
 
@@ -297,6 +321,9 @@ def _load_reading(value: Any, field: str) -> Reading:
     status = value["reading_status"]
     if not isinstance(status, str) or status not in READING_STATUSES:
         raise ConventionError("reading_status_unknown")
+    restricted = value["publication_restricted"]
+    if restricted is not True and restricted is not False:
+        raise ConventionError("publication_restriction_not_boolean")
     attributed = value["attributed_to"]
     if attributed is not None:
         attributed = _identifier(attributed, f"{field}.attributed_to")
@@ -308,6 +335,7 @@ def _load_reading(value: Any, field: str) -> Reading:
         ),
         reading_status=status,
         attributed_to=attributed,
+        publication_restricted=restricted,
     )
 
 
@@ -420,6 +448,13 @@ def classify_scope(
     the verdicts must cover it *exactly*: a matrix that evaluated three of four
     readings must not read as a full sweep, because that is precisely how a
     convention-relative result gets announced as unconditional.
+
+    Limit, and it is not fixable here: ``unconditional`` means unconditional over
+    the *enumerated* readings.  The enumeration comes from the convention record,
+    which an author wrote, so a contested term nobody thought to record is
+    undetectable by this function.  A reader must read ``unconditional`` as
+    "refutes under every reading this record enumerates", never as "refutes under
+    every reading that exists".
     """
 
     items = tuple(verdicts)
@@ -448,7 +483,7 @@ def classify_scope(
     if "not_evaluated" in outcomes:
         return "contested_unevaluated"
     if "refutes" not in outcomes:
-        return "refuted_under_no_reading"
+        return "no_reading_refutes"
     if outcomes == {"refutes"}:
         return "unconditional"
     return "convention_relative"
@@ -588,10 +623,13 @@ def require_convention_binding(
 def weakest_reading_status(
     convention: ConventionRecord, reading_tuple: Iterable[str]
 ) -> str:
-    """The least-well-read passage in a reading tuple.
+    """The weakest reading in a tuple, under ``READING_STATUS_ORDER``.
 
-    ``asserted`` here means the claim rests on source text nobody in the review
-    chain could re-extract.  Such a claim must not be described as
+    ``asserted`` here means the claim rests on source text the reader cannot
+    check: either nobody in the review chain could re-extract it, or its rights
+    forbid reproducing it in the published bundle.  The record keeps those two
+    facts apart; this derivation merges them, because both leave the reader
+    unable to verify the reading.  Such a claim must not be described as
     source-faithful.
     """
 
@@ -600,8 +638,8 @@ def weakest_reading_status(
         raise ConventionError("reading_tuple_not_enumerated")
     index = convention.readings()
     return min(
-        (index[reading_id].reading_status for reading_id in key),
-        key=lambda status: (_READING_STATUS_STRENGTH[status], status),
+        (index[reading_id].effective_reading_status() for reading_id in key),
+        key=READING_STATUS_ORDER.index,
     )
 
 

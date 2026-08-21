@@ -1,0 +1,29 @@
+{
+  "schema_version": "adaivy.exact-graph-decomposition-blocks.v1",
+  "blocks_id": "graffiti-322-g14-18-blocks-v1",
+  "source_ref": "output/pdf/graffiti-322-counterexample/paper.tex",
+  "graph_family": {"family": "graffiti_family", "r": 14, "t": 18},
+  "scalar_blocks": [[-2, 238], [-1, 155]],
+  "quotient_blocks": [
+    {
+      "matrix": [[39, 663, 954], [51, 805, 1170], [53, 845, 1204]],
+      "multiplicity": 1
+    },
+    {
+      "matrix": [[-3, -37, -23, -54], [-3, -38, -23, -54], [-2, -25, -12, -36], [-3, -37, -23, -56]],
+      "multiplicity": 13
+    }
+  ],
+  "shipped_claims": {
+    "order": 448,
+    "size": 525,
+    "triangle_free": true,
+    "connected": true,
+    "inverse_even_even_includes_v": "40049/4444",
+    "distinct_distance_eigenvalues": 9,
+    "quotient_characteristic_polynomials": [
+      [1, -2048, -25454, -54228],
+      [1, 109, -146, -442, -20]
+    ]
+  }
+}

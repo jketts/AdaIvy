@@ -1,5 +1,5 @@
 {
-  "content_hash": "sha256:3e6b5eb8aabb51d38975381f44bbd3b9be47f4329f6393a433e314020c67fffd",
+  "content_hash": "sha256:df72aa95680152beb7f48c7eeac667778cdb023d0477fc0ea41360f163bab513",
   "convention_id": "conv.graffiti-322-readings.v1",
   "coupled_subject_ids": [
     "problem.graffiti-197"
@@ -34,6 +34,7 @@
       "readings": [
         {
           "attributed_to": "adaivy",
+          "publication_restricted": false,
           "reading_id": "even_includes_v",
           "reading_status": "asserted",
           "source_passage_ref": "psg.wow.even-definition",
@@ -41,6 +42,7 @@
         },
         {
           "attributed_to": "roucairol-cazenave",
+          "publication_restricted": false,
           "reading_id": "even_excludes_v",
           "reading_status": "asserted",
           "source_passage_ref": "psg.wow.even-definition",
@@ -54,15 +56,17 @@
       "readings": [
         {
           "attributed_to": "roucairol-cazenave",
+          "publication_restricted": false,
           "reading_id": "range_distinct_count",
-          "reading_status": "transcribed",
+          "reading_status": "asserted",
           "source_passage_ref": "psg.wow.graffiti-322",
           "statement": "The range of the distance spectrum is the number of distinct distance eigenvalues. The Graffiti 197 prior-resolution record is filed under this same meaning of range, and AdaIvy separately re-asserted it in prose for Graffiti 322."
         },
         {
           "attributed_to": null,
+          "publication_restricted": false,
           "reading_id": "range_extent",
-          "reading_status": "transcribed",
+          "reading_status": "asserted",
           "source_passage_ref": "psg.roucairol-cazenave.graffiti-322",
           "statement": "The range of the distance spectrum is the extent lambda_max minus lambda_min. Under this meaning the Graffiti 322 result is false rather than merely unoriginal."
         }

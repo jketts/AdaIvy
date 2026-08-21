@@ -1,7 +1,7 @@
 {
   "claim_id": "cl.graffiti-322-counterexample",
-  "content_hash": "sha256:055371fd2f0a66358cf6ed95b5140c74b2c5b80473850e2517b566707fc3e9ad",
-  "convention_hash": "sha256:3e6b5eb8aabb51d38975381f44bbd3b9be47f4329f6393a433e314020c67fffd",
+  "content_hash": "sha256:c777ac747d3e425b201d6c5d62b97cf4c4b5a7b23ab4aef3820f5ef9a4a297bb",
+  "convention_hash": "sha256:df72aa95680152beb7f48c7eeac667778cdb023d0477fc0ea41360f163bab513",
   "convention_id": "conv.graffiti-322-readings.v1",
   "creates_mathematical_warrant": false,
   "creates_novelty_status": false,

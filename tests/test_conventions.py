@@ -21,6 +21,7 @@ from math_research.cli import main as root_main
 from math_research.conventions import (
     CONVENTION_SCOPES,
     READING_STATUSES,
+    READING_STATUS_ORDER,
     SCHEMA_VERSION,
     VERDICTS,
     ContestedTerm,
@@ -50,7 +51,7 @@ SCOPE_FIXTURES = {
     "unconditional": FIXTURES / "verdict-matrix-unconditional-v1.json",
     "convention_relative": FIXTURES / "verdict-matrix-convention-relative-c4-v1.json",
     "contested_unevaluated": FIXTURES / "verdict-matrix-contested-unevaluated-g322-v1.json",
-    "refuted_under_no_reading": FIXTURES / "verdict-matrix-refuted-under-no-reading-v1.json",
+    "no_reading_refutes": FIXTURES / "verdict-matrix-no-reading-refutes-v1.json",
 }
 
 TUPLES = (
@@ -86,10 +87,17 @@ class VocabularyTests(unittest.TestCase):
         self.assertEqual(
             {
                 "unconditional", "convention_relative", "contested_unevaluated",
-                "refuted_under_no_reading",
+                "no_reading_refutes",
             },
             set(CONVENTION_SCOPES),
         )
+
+    def test_reading_strength_is_a_stated_total_order_weakest_first(self) -> None:
+        self.assertEqual(
+            ("asserted", "transcribed", "verbatim_confirmed"), READING_STATUS_ORDER
+        )
+        self.assertEqual(set(READING_STATUS_ORDER), set(READING_STATUSES))
+        self.assertEqual(len(READING_STATUS_ORDER), len(set(READING_STATUS_ORDER)))
 
 
 class ConventionRecordTests(unittest.TestCase):
@@ -171,6 +179,24 @@ class ConventionRecordTests(unittest.TestCase):
             load_convention(b"{" + b" " * 70_000 + b"}")
         with self.assertRaisesRegex(ConventionError, "record_not_json"):
             load_convention(b"{not json")
+
+    def test_publication_restriction_is_a_recorded_boolean(self) -> None:
+        self.assertEqual(
+            [False] * 4,
+            [
+                reading.publication_restricted
+                for term in self.convention.terms
+                for reading in term.readings
+            ],
+        )
+        payload = self.convention.payload()
+        payload["terms"][0]["readings"][0]["publication_restricted"] = "yes"
+        with self.assertRaisesRegex(ConventionError, "publication_restriction_not_boolean"):
+            load_convention(payload)
+        payload = self.convention.payload()
+        payload["terms"][0]["readings"][0].pop("publication_restricted")
+        with self.assertRaisesRegex(ConventionError, "reading_field_set_mismatch"):
+            load_convention(payload)
 
     def test_an_unknown_reading_status_is_refused(self) -> None:
         payload = self.convention.payload()
@@ -277,6 +303,13 @@ class ScopeDerivationTests(unittest.TestCase):
                 mutated = list(loaded.verdicts)
                 mutated[0] = verdict(mutated[0].reading_tuple, outcome)
                 self.assertEqual(expected, classify_scope(tuple(mutated)))
+
+    def test_no_refuting_reading_is_the_weakest_scope_not_a_refutation(self) -> None:
+        loaded = read_verdict_matrix(SCOPE_FIXTURES["no_reading_refutes"])
+        self.assertEqual("no_reading_refutes", loaded.scope(convention=self.convention))
+        self.assertEqual(
+            {"does_not_refute"}, {item.verdict for item in loaded.verdicts}
+        )
 
     def test_an_unevaluated_reading_outranks_every_other_signal(self) -> None:
         outcomes = {key: "refutes" for key in TUPLES}
@@ -508,6 +541,69 @@ class WeakestReadingStatusTests(unittest.TestCase):
         for reading_tuple, status in expected.items():
             with self.subTest(reading_tuple=reading_tuple):
                 self.assertEqual(status, weakest_reading_status(record, reading_tuple))
+
+    def test_a_reading_we_may_not_quote_is_unsupported_to_the_reader(self) -> None:
+        record = ConventionRecord(
+            convention_id="conv.test.restricted.v1", subject_ids=("problem.test",),
+            coupled_subject_ids=(),
+            terms=(
+                ContestedTerm(
+                    term_id="restricted_term", term="R",
+                    readings=(
+                        Reading(
+                            reading_id="r_confirmed_open",
+                            statement="Confirmed and quotable.",
+                            source_passage_ref="psg.test.open",
+                            reading_status="verbatim_confirmed", attributed_to=None,
+                        ),
+                        Reading(
+                            reading_id="r_confirmed_restricted",
+                            statement="Confirmed but the rights forbid reproducing it.",
+                            source_passage_ref="psg.test.restricted",
+                            reading_status="verbatim_confirmed", attributed_to=None,
+                            publication_restricted=True,
+                        ),
+                    ),
+                ),
+                ContestedTerm(
+                    term_id="second_term", term="B",
+                    readings=(
+                        Reading(
+                            reading_id="b_confirmed", statement="Confirmed reading.",
+                            source_passage_ref="psg.test.b",
+                            reading_status="verbatim_confirmed", attributed_to=None,
+                        ),
+                        Reading(
+                            reading_id="b_transcribed", statement="Transcribed reading.",
+                            source_passage_ref="psg.test.b",
+                            reading_status="transcribed", attributed_to=None,
+                        ),
+                    ),
+                ),
+            ),
+        ).finalized()
+        readings = record.readings()
+        # The record keeps both facts apart: we did read it, and it may not be shown.
+        self.assertEqual(
+            "verbatim_confirmed", readings["r_confirmed_restricted"].reading_status
+        )
+        self.assertTrue(readings["r_confirmed_restricted"].publication_restricted)
+        self.assertEqual(
+            "asserted", readings["r_confirmed_restricted"].effective_reading_status()
+        )
+        self.assertEqual(
+            "verbatim_confirmed", readings["r_confirmed_open"].effective_reading_status()
+        )
+        # Only the derivation merges them.
+        self.assertEqual(
+            "asserted",
+            weakest_reading_status(record, ("r_confirmed_restricted", "b_confirmed")),
+        )
+        self.assertEqual(
+            "verbatim_confirmed",
+            weakest_reading_status(record, ("r_confirmed_open", "b_confirmed")),
+        )
+        self.assertEqual(record, load_convention(record.payload()))
 
     def test_an_unenumerated_reading_tuple_is_refused(self) -> None:
         with self.assertRaisesRegex(ConventionError, "reading_tuple_not_enumerated"):

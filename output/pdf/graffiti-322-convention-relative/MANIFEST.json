@@ -1,0 +1,166 @@
+{
+  "bundle_hash": "sha256:09fae08092ce8fadc4a186fa306599ad89f4e38a95be7731c56f82966f72ca7d",
+  "canonicalization_version": "1.0.0",
+  "corpus_provenance": "project_authored",
+  "document_hash": "sha256:2b9f3e6f1bcd5dd8acd807f180df7c63c7ab68a387d94d54cd006b14d4550faf",
+  "evidence_class_counts": {
+    "convention_relative_proposition": 1,
+    "exact_certificate_proposition": 0,
+    "kernel_checked_theorem": 0,
+    "proposal": 0
+  },
+  "files": [
+    {
+      "bytes": 1937,
+      "path": "README.md",
+      "sha256": "sha256:b58b1a7949f681e5aabf543132e7f8fd7a210fbeacfa283c632193d4a1565f08"
+    },
+    {
+      "bytes": 1493,
+      "path": "build.json",
+      "sha256": "sha256:ee180c54c3900acc84e387fc7c9de54c446f51d390c63c787b7da18c825d117a"
+    },
+    {
+      "bytes": 573,
+      "path": "lean/AdaIvyPhase3B_AdaIvyGraffiti322ArithmeticCertificate.lean",
+      "sha256": "sha256:afdb315fc4f30699c06adc3b768e59faa163ed59e62b297d85b5b13d210ad78f"
+    },
+    {
+      "bytes": 20286,
+      "path": "paper.tex",
+      "sha256": "sha256:2b9f3e6f1bcd5dd8acd807f180df7c63c7ab68a387d94d54cd006b14d4550faf"
+    },
+    {
+      "bytes": 1014,
+      "path": "records/evidence.json",
+      "sha256": "sha256:dc0d4e46d530d29ce895162befae70c3ff69f32654c152c94492263948d8a6eb"
+    },
+    {
+      "bytes": 6810,
+      "path": "records/ledger.json",
+      "sha256": "sha256:9d81b923006475da46c1128537a9a700836378283770224757d4a9772f88582e"
+    },
+    {
+      "bytes": 31134,
+      "path": "records/manuscript.json",
+      "sha256": "sha256:641247dc2a902ff5a7a8b4c88f1d19a2fb7bc81b44ecf0d6ee85f1a32b374292"
+    },
+    {
+      "bytes": 627,
+      "path": "records/prior-art.json",
+      "sha256": "sha256:4a087c5358e75fae734e5097f2a211c09166bc21d5537b42b41884d1087f52cf"
+    },
+    {
+      "bytes": 5511,
+      "path": "records/probes.json",
+      "sha256": "sha256:6466c07d46481defe431d61edf7e0ab5e7549ecda5ce0a3fbfd0717c2380be63"
+    },
+    {
+      "bytes": 1218,
+      "path": "refs.bib",
+      "sha256": "sha256:f707c198fda4ec75dbd2fc345126714be4ae720cfe74e032df5c3329cbc8deda"
+    }
+  ],
+  "headline": {
+    "creates_mathematical_warrant": false,
+    "displayed_title": "Inverse Even and the distance spectrum of the triangle-free family G(r,t): Candidate Counterexample to Graffiti 322 (convention-relative; prior art relationship unresolved; open novelty and prior-art obligations)",
+    "qualifiers": [
+      "convention-relative",
+      "prior art relationship unresolved",
+      "open novelty and prior-art obligations"
+    ],
+    "record_refs": [
+      "ms.graffiti-322-convention-relative.v1",
+      "cl.graffiti-322-counterexample",
+      "vm.graffiti-322-g14-18.v1",
+      "conv.graffiti-322-readings.v2",
+      "recheck.graffiti-322.prior-candidate.v1",
+      "obl.graffiti-322-prior-candidate-priority"
+    ],
+    "title_stem": "Inverse Even and the distance spectrum of the triangle-free family G(r,t)"
+  },
+  "manuscript_hash": "sha256:605c3ed101a505d29cdbe6c9ad7bfbc430bef3a6c6b36630ecc57f96fac519de",
+  "manuscript_id": "ms.graffiti-322-convention-relative.v1",
+  "novelty": {
+    "inferred_from_warrant": false,
+    "status": "not_assessed"
+  },
+  "pdf_sha256": null,
+  "policy_id": "publication.projection",
+  "policy_version": "1.4.0",
+  "prior_art": {
+    "creates_mathematical_warrant": false,
+    "novelty_status": "not_assessed",
+    "outcome": "prior_art_found",
+    "recheck_hash": "sha256:ab801b61eb677a4adbbcfdbdb9403a24d5690355143cb0716f7ae358ff9e1e2a",
+    "recheck_id": "recheck.graffiti-322.prior-candidate.v1",
+    "relationship": "unresolved",
+    "report_classification": "prior_art_relationship_unresolved",
+    "resolution": "unresolved",
+    "source": "prior_art_engagement",
+    "status": "recorded",
+    "subject_hash": "sha256:b84998f0a8302f004017ba6ecc706ae048e1b3f6fad00ebc8c4c0655b88bc534",
+    "subject_id": "ms.graffiti-322-convention-relative.v1",
+    "target_resolution_status": "unresolved",
+    "verification_status": "unresolved"
+  },
+  "probes_flipped": 18,
+  "probes_total": 18,
+  "publication_approval": null,
+  "run_disclosure": {
+    "budget_cap_usd": "40",
+    "cost_usd": "0.029632",
+    "input_tokens": 13114,
+    "measurement_status": "partial",
+    "model_calls": 5,
+    "models": [
+      {
+        "calls": 5,
+        "model": "gpt-5-mini-2025-08-07",
+        "outcome": "recorded proposals and verifier calls; none contributed the witness",
+        "provider": "openai"
+      },
+      {
+        "calls": 0,
+        "model": "gpt-5.6-sol",
+        "outcome": "two HTTP 401 attempts with zero reported usage",
+        "provider": "azure_openai"
+      }
+    ],
+    "note": "Provider telemetry covers the bounded AdaIvy sessions only. The surrounding interactive authoring session exposed no billable usage to the ledger and is neither included nor estimated.",
+    "output_tokens": 13175,
+    "run_id": "run.graffiti-322.two-rounds.v1",
+    "total_tokens": 26289,
+    "usage_scope": "two bounded Graffiti 322 research rounds recorded by AdaIvy"
+  },
+  "schema_version": "1.0.0",
+  "significance": {
+    "inferred_from_warrant": false,
+    "status": "not_assessed"
+  },
+  "statistics": {
+    "bibliography_entries": 2,
+    "blocks": 20,
+    "cite_keys": 2,
+    "claims": 1,
+    "derived_blocks": 14,
+    "evidence_class_counts": {
+      "convention_relative_proposition": 1,
+      "exact_certificate_proposition": 0,
+      "kernel_checked_theorem": 0,
+      "proposal": 0
+    },
+    "manuscript_blocks": 6,
+    "obligations_open": 3,
+    "tex_bytes": 20286
+  },
+  "template_hash": "sha256:b74514c9ddeeeeb4a62a2bd1feda80602a5985e53523ac15c1c96e4c9afed5a4",
+  "toolchain": {
+    "elan_version": "v4.2.1",
+    "lean_commit": "f054605aea4b840552cca2e725580bffd1e1b704",
+    "lean_version": "v4.32.1",
+    "mathlib_commit": "520045ab14e26149ee970e2e617ca04b09bde5d6",
+    "mathlib_version": "v4.32.1"
+  },
+  "typeset_status": "not_typeset"
+}

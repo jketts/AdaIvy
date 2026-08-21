@@ -24,6 +24,8 @@ from .render import render_manuscript
 
 _INDEXED = re.compile(r"^([a-z_]+)\[([^\]]+)\]\.(.+)$")
 _PLAIN = re.compile(r"^([a-z_]+)(?:\.([a-z_]+))?$")
+#: One list step, ``name[N]``, and only inside a record. Amendment B8.
+_LIST_STEP = re.compile(r"^([a-z_]+)\[(\d+)\]$")
 
 _COLLECTION_KEYS = {
     "sources": "source_id",
@@ -32,6 +34,11 @@ _COLLECTION_KEYS = {
     "certificates": "certificate_id",
     "claims": "claim_id",
     "obligations": "obligation_id",
+    # Schema 1.4.0 records. Without these three the convention, verdict and
+    # replay rules are unaddressable, and an unaddressable rule has no probe.
+    "conventions": "convention_id",
+    "verdict_matrices": "matrix_id",
+    "counter_candidate_replays": "replay_id",
 }
 
 
@@ -44,7 +51,9 @@ class ProbeResult:
     detail: str
 
 
-def _resolve(value: dict[str, Any], path: str) -> tuple[dict[str, Any], str]:
+def _resolve(
+    value: dict[str, Any], path: str
+) -> tuple[dict[str, Any] | list[Any], str | int]:
     indexed = _INDEXED.match(path)
     if indexed:
         collection, identifier, remainder = indexed.groups()
@@ -75,16 +84,39 @@ def _resolve(value: dict[str, Any], path: str) -> tuple[dict[str, Any], str]:
     return container, tail
 
 
-def _descend(item: dict[str, Any], remainder: str, path: str) -> tuple[dict[str, Any], str]:
-    parts = remainder.split(".")
+def _descend(
+    item: dict[str, Any], remainder: str, path: str
+) -> tuple[dict[str, Any] | list[Any], str | int]:
+    """Walk a dotted path inside one record, allowing one ``name[N]`` list step.
+
+    Amendment B8. Passages, verdicts and replay readings live in lists inside a
+    record, so before this step roughly fourteen 1.4.0 rules had unit tests and no
+    reachable falsification. A rule that cannot be made to fail proves nothing
+    (ADR-0034), so the probe language had to reach them.
+    """
+
     container: Any = item
-    for part in parts[:-1]:
+    parts = remainder.split(".")
+    for index, part in enumerate(parts):
+        last = index == len(parts) - 1
+        step = _LIST_STEP.match(part)
+        if step is not None:
+            name, position = step.group(1), int(step.group(2))
+            if not isinstance(container, dict) or name not in container:
+                raise PublicationValidationError("probe_field_unresolved", path)
+            sequence = container[name]
+            if not isinstance(sequence, list) or not 0 <= position < len(sequence):
+                raise PublicationValidationError("probe_field_unresolved", path)
+            if last:
+                return sequence, position
+            container = sequence[position]
+            continue
         if not isinstance(container, dict) or part not in container:
             raise PublicationValidationError("probe_field_unresolved", path)
+        if last:
+            return container, part
         container = container[part]
-    if not isinstance(container, dict) or parts[-1] not in container:
-        raise PublicationValidationError("probe_field_unresolved", path)
-    return container, parts[-1]
+    raise PublicationValidationError("probe_field_unresolved", path)
 
 
 def apply_probe(value: Mapping[str, Any], probe: Mapping[str, Any]) -> dict[str, Any]:

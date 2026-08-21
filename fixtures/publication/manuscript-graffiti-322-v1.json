@@ -1,0 +1,919 @@
+{
+  "schema_version": "1.4.0",
+  "manuscript_id": "ms.graffiti-322-convention-relative.v1",
+  "title_stem": "Inverse Even and the distance spectrum of the triangle-free family G(r,t)",
+  "authors": [
+    {
+      "name": "AdaIvy project",
+      "role": "AI-assisted mathematical research system"
+    }
+  ],
+  "abstract": "A connected triangle-free graph on 448 vertices, G(14,18), has Inverse Even 40049/4444 when Even(v) counts v itself, and exactly nine distinct distance eigenvalues under a verified invariant-subspace decomposition. Whether those two exact values stand in the relation Graffiti 322 forbids depends on two contested readings of the conjecture, and this report enumerates them rather than choosing between them: each reading pair is carried as a record with its own exact verdict, alongside a replay of the previously published C4 candidate under the same four readings. Novelty and significance are not assessed.",
+  "corpus_provenance": "project_authored",
+  "novelty": {
+    "status": "not_assessed",
+    "inferred_from_warrant": false
+  },
+  "significance": {
+    "status": "not_assessed",
+    "inferred_from_warrant": false
+  },
+  "publication_approval": null,
+  "toolchain": {
+    "elan_version": "v4.2.1",
+    "lean_version": "v4.32.1",
+    "lean_commit": "f054605aea4b840552cca2e725580bffd1e1b704",
+    "mathlib_version": "v4.32.1",
+    "mathlib_commit": "520045ab14e26149ee970e2e617ca04b09bde5d6"
+  },
+  "run_disclosure": {
+    "run_id": "run.graffiti-322.two-rounds.v1",
+    "usage_scope": "two bounded Graffiti 322 research rounds recorded by AdaIvy",
+    "measurement_status": "partial",
+    "models": [
+      {
+        "provider": "openai",
+        "model": "gpt-5-mini-2025-08-07",
+        "calls": 5,
+        "outcome": "recorded proposals and verifier calls; none contributed the witness"
+      },
+      {
+        "provider": "azure_openai",
+        "model": "gpt-5.6-sol",
+        "calls": 0,
+        "outcome": "two HTTP 401 attempts with zero reported usage"
+      }
+    ],
+    "model_calls": 5,
+    "cost_usd": "0.029632",
+    "budget_cap_usd": "40",
+    "input_tokens": 13114,
+    "output_tokens": 13175,
+    "total_tokens": 26289,
+    "note": "Provider telemetry covers the bounded AdaIvy sessions only. The surrounding interactive authoring session exposed no billable usage to the ledger and is neither included nor estimated."
+  },
+  "sources": [
+    {
+      "source_id": "src.fajtlowicz.written-on-wall-2004",
+      "content_hash": "sha256:d2c779d2c28418b30ab1b4f84bf7112c0e000bca1f2d6a3c48d0baba78af7733",
+      "authority": "source_provenance",
+      "rights": {
+        "publication": "permitted",
+        "excerpting": "permitted"
+      },
+      "bibliographic": {
+        "entry_type": "unpublished",
+        "author": "Siemion Fajtlowicz",
+        "title": "Written on the Wall",
+        "container": "July 2004 compilation",
+        "year": "2004",
+        "identifier": "https://independencenumber.wordpress.com/wp-content/uploads/2012/08/wow-july2004.pdf"
+      },
+      "passages": [
+        {
+          "passage_id": "psg.wow.graffiti-322",
+          "anchor": "PDF page 82, Graffiti 322",
+          "content_hash": "sha256:b6ee91daf9c36d251e7f8424820ca5d85c46d0c9a7fccd723f33eacd72651e29",
+          "quotation_permitted": true,
+          "extraction_method": "unextractable",
+          "reading_status": "asserted",
+          "verbatim_hash": null,
+          "publication_restricted": false
+        },
+        {
+          "passage_id": "psg.wow.even-definition",
+          "anchor": "PDF page 47, Even definition",
+          "content_hash": "sha256:c88e5032622fc9423f14532f2679e13fc6487fff7be985cc0e17cb77d51040d1",
+          "quotation_permitted": true,
+          "extraction_method": "unextractable",
+          "reading_status": "asserted",
+          "verbatim_hash": null,
+          "publication_restricted": false
+        }
+      ]
+    },
+    {
+      "source_id": "src.roucairol-cazenave.spectral-refutations",
+      "content_hash": "sha256:fdda6abff9fd19f503a907f4170ea2040238cf0c0f0f317d280c2613fd17603f",
+      "authority": "source_provenance",
+      "rights": {
+        "publication": "permitted",
+        "excerpting": "permitted"
+      },
+      "bibliographic": {
+        "entry_type": "inproceedings",
+        "author": "Milo Roucairol and Tristan Cazenave",
+        "title": "Refutation of Spectral Graph Theory Conjectures with Search Algorithms",
+        "container": "Communications in Computer and Information Science 2976",
+        "year": "2026",
+        "identifier": "doi:10.1007/978-3-032-28263-7_2; arXiv:2409.18626v1"
+      },
+      "passages": [
+        {
+          "passage_id": "psg.roucairol-cazenave.graffiti-322",
+          "anchor": "Graffiti 322 discussion and C4 candidate",
+          "content_hash": "sha256:cdc256f8c653c285911827f9d2b3287cc358e45486ab15b19d75f239ca1377e7",
+          "quotation_permitted": true,
+          "extraction_method": "text_layer",
+          "reading_status": "asserted",
+          "verbatim_hash": null,
+          "publication_restricted": false
+        }
+      ]
+    }
+  ],
+  "citations": [
+    {
+      "citation_id": "cite.wow.graffiti-322",
+      "citation_class": "source_record",
+      "source_id": "src.fajtlowicz.written-on-wall-2004",
+      "passage_id": "psg.wow.graffiti-322",
+      "cited_object": "problem",
+      "intended_use": "publication",
+      "target_exclusion": null
+    },
+    {
+      "citation_id": "cite.wow.even-definition",
+      "citation_class": "source_record",
+      "source_id": "src.fajtlowicz.written-on-wall-2004",
+      "passage_id": "psg.wow.even-definition",
+      "cited_object": "definition",
+      "intended_use": "publication",
+      "target_exclusion": {
+        "reason": "cited_for_definition_only",
+        "excluded_by": "researcher.repository-owner"
+      }
+    },
+    {
+      "citation_id": "cite.roucairol-cazenave.graffiti-322",
+      "citation_class": "source_record",
+      "source_id": "src.roucairol-cazenave.spectral-refutations",
+      "passage_id": "psg.roucairol-cazenave.graffiti-322",
+      "cited_object": "prior_resolution_candidate",
+      "intended_use": "publication",
+      "target_exclusion": null
+    }
+  ],
+  "attestations": [
+    {
+      "attestation_id": "att.graffiti-322-arithmetic",
+      "finding_id": "formal-finding.c2e6c2a57cb80712a61747fe",
+      "declaration_name": "AdaIvyPhase3B.AdaIvyGraffiti322ArithmeticCertificate",
+      "outcome": "kernel_checked",
+      "approved_axioms": [],
+      "unapproved_assumptions": [],
+      "target_statement_hash": "sha256:a19684d3c595a5037c3260dd78c47197da05ac625e2f9331a8e3a93b7f3e6897",
+      "wrapper_hash": "sha256:afdb315fc4f30699c06adc3b768e59faa163ed59e62b297d85b5b13d210ad78f",
+      "runtime_hash": "sha256:39457cf097e89537ac90e7ddee08cbda8f7f2d49e443cc60a87d6d02d8cb896f",
+      "lean_source": "import Mathlib.Data.Nat.Basic\nset_option autoImplicit false\nnamespace AdaIvyPhase3B\ntheorem AdaIvyGraffiti322ArithmeticCertificate : (14 * 14 + 14 * 18 : Nat) = 448 ∧ (3 * 14 * 13 / 2 + 14 * 18 : Nat) = 525 ∧ (1 + 13 * 13 + 13 * 18 : Nat) = 404 ∧ (3 * 14 - 4 + 18 : Nat) = 56 ∧ (2 * 14 - 2 + 18 : Nat) = 44 ∧ (3 + 4 * 13 + (14 * 14 - 3 * 14 + 1) + 14 * 17 : Nat) = 448 ∧ (9 * 4444 : Nat) = 39996 ∧ (40049 - 39996 : Nat) = 53 ∧ ¬ ((40049 : Nat) ≤ 9 * 4444) := by decide\n#print axioms AdaIvyPhase3B.AdaIvyGraffiti322ArithmeticCertificate\nend AdaIvyPhase3B\n"
+    }
+  ],
+  "certificates": [
+    {
+      "certificate_id": "cert.graffiti-322-exact-separation",
+      "case_id": "graffiti-322-g14-18",
+      "run_id": "run.graffiti-322.exact-family.v1",
+      "engine": "exact_graph_distance_and_invariant_space_v2",
+      "arithmetic": "fractions-exact",
+      "float_used": false,
+      "primal_value": "40049/4444",
+      "dual_value": "9",
+      "gap": "53/4444",
+      "classification": "counterexample_values_separated",
+      "result_hash": "sha256:2e93bd5ac6829079f89091300d0dad0146f08e5e2354f9734b6384874c6edb6c"
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "cl.graffiti-322-counterexample",
+      "prose_statement": "The connected triangle-free graph G(14,18) has Inverse Even 40049/4444 and exactly nine distinct distance eigenvalues, so under the enumerated reading (even_includes_v, range_distinct_count) it is a candidate counterexample to Graffiti 322. Under the range_extent reading of the same conjecture it is not, and the previously published C4 candidate is a candidate under (even_excludes_v, range_distinct_count). Which reading is the source's is not decided here.",
+      "latex_statement": "\\operatorname{InvEven}(G_{14,18})=\\frac{40049}{4444}>9=\\lvert\\operatorname{spec}(D(G_{14,18}))\\rvert",
+      "lean_statement": ": (14 * 14 + 14 * 18 : Nat) = 448 ∧ (3 * 14 * 13 / 2 + 14 * 18 : Nat) = 525 ∧ (1 + 13 * 13 + 13 * 18 : Nat) = 404 ∧ (3 * 14 - 4 + 18 : Nat) = 56 ∧ (2 * 14 - 2 + 18 : Nat) = 44 ∧ (3 + 4 * 13 + (14 * 14 - 3 * 14 + 1) + 14 * 17 : Nat) = 448 ∧ (9 * 4444 : Nat) = 39996 ∧ (40049 - 39996 : Nat) = 53 ∧ ¬ ((40049 : Nat) ≤ 9 * 4444)",
+      "representation_id": "rep.graffiti-322-partial-formalization.v1",
+      "representation_status": "partially_verified",
+      "attestation_id": "att.graffiti-322-arithmetic",
+      "certificate_id": "cert.graffiti-322-exact-separation",
+      "certificate_role": "separates_values",
+      "citations": [
+        "cite.wow.even-definition",
+        "cite.roucairol-cazenave.graffiti-322"
+      ],
+      "authorship": {
+        "ai_generated": true,
+        "generator": "AdaIvy project"
+      },
+      "lean_artifact": {
+        "artifact_id": "lean.graffiti-322-arithmetic-certificate",
+        "declaration_name": "AdaIvyPhase3B.AdaIvyGraffiti322ArithmeticCertificate",
+        "source": "import Mathlib.Data.Nat.Basic\nset_option autoImplicit false\nnamespace AdaIvyPhase3B\ntheorem AdaIvyGraffiti322ArithmeticCertificate : (14 * 14 + 14 * 18 : Nat) = 448 ∧ (3 * 14 * 13 / 2 + 14 * 18 : Nat) = 525 ∧ (1 + 13 * 13 + 13 * 18 : Nat) = 404 ∧ (3 * 14 - 4 + 18 : Nat) = 56 ∧ (2 * 14 - 2 + 18 : Nat) = 44 ∧ (3 + 4 * 13 + (14 * 14 - 3 * 14 + 1) + 14 * 17 : Nat) = 448 ∧ (9 * 4444 : Nat) = 39996 ∧ (40049 - 39996 : Nat) = 53 ∧ ¬ ((40049 : Nat) ≤ 9 * 4444) := by decide\n#print axioms AdaIvyPhase3B.AdaIvyGraffiti322ArithmeticCertificate\nend AdaIvyPhase3B\n",
+        "source_hash": "sha256:afdb315fc4f30699c06adc3b768e59faa163ed59e62b297d85b5b13d210ad78f",
+        "verification_status": "kernel_checked",
+        "finding_id": "formal-finding.c2e6c2a57cb80712a61747fe"
+      },
+      "original_problem_citation_id": "cite.wow.graffiti-322",
+      "derivation": {
+        "status": "included",
+        "summary": "Construct G(r,t) by replacing every edge of K(r) with a length-three path and attaching t leaves at each branch vertex. Classify the even-distance counts exactly, verify the supplied invariant-subspace decomposition against the graph's own distance matrix, and compare the exact rational Inverse Even value with the distinct eigenvalue count.",
+        "citations": [
+          "cite.wow.even-definition"
+        ]
+      },
+      "resolution_target": {
+        "subject_id": "problem.graffiti-322",
+        "citation_id": "cite.wow.graffiti-322",
+        "kind": "refutation"
+      },
+      "verdict_matrix_id": "vm.graffiti-322-g14-18.v1"
+    }
+  ],
+  "obligations": [
+    {
+      "obligation_id": "obl.graffiti-322-even-reading-unreproduced",
+      "statement": "Re-extract or transcribe passage psg.wow.even-definition and record the text behind the even_includes_v reading; page 47 of the 2004 compilation has no usable text layer and no transcription is on record.",
+      "status": "open",
+      "reason": "The reading the claim rests on is asserted, so nobody outside the run that produced it can reproduce it.",
+      "tags": [
+        "reading"
+      ]
+    },
+    {
+      "obligation_id": "obl.graffiti-322-prior-candidate-priority",
+      "statement": "Decide, under a recorded reading, whether the previously published C4 candidate pre-empts this construction, and record the classification.",
+      "status": "open",
+      "reason": "The replay shows the C4 witness refuting under even_excludes_v and not under even_includes_v, so priority is reading-dependent and is not decided here.",
+      "tags": [
+        "prior_art",
+        "novelty"
+      ]
+    },
+    {
+      "obligation_id": "obl.graffiti-322-human-graph-proof-review",
+      "statement": "A human reviewer must check the graph-distance classification and the invariant-subspace decomposition.",
+      "status": "open",
+      "reason": "The sealed Lean artifact covers closed arithmetic, not the complete 448-vertex graph and spectrum derivation.",
+      "tags": [
+        "human_review",
+        "formalization"
+      ]
+    }
+  ],
+  "conventions": [
+    {
+      "schema_version": "adaivy.convention-reading.v1",
+      "policy_id": "convention-relative-claim-v1",
+      "convention_id": "conv.graffiti-322-readings.v2",
+      "subject_ids": [
+        "problem.graffiti-322"
+      ],
+      "coupled_subject_ids": [
+        "problem.graffiti-197"
+      ],
+      "terms": [
+        {
+          "term_id": "even_membership",
+          "term": "Even(v)",
+          "readings": [
+            {
+              "reading_id": "even_includes_v",
+              "statement": "Even(v) is the set of vertices at even distance from v and includes v itself, because distance zero is even. This is the reading AdaIvy froze for the Graffiti 322 report. No transcription of the defining page is recorded, so the reading is asserted rather than re-extractable.",
+              "source_passage_ref": "psg.wow.even-definition",
+              "reading_status": "asserted",
+              "publication_restricted": false,
+              "attributed_to": "adaivy"
+            },
+            {
+              "reading_id": "even_excludes_v",
+              "statement": "Even(v) is the set of vertices other than v at even distance from v, so v itself is not counted. This is the reading under which the previously published C4 candidate refutes Graffiti 322.",
+              "source_passage_ref": "psg.wow.even-definition",
+              "reading_status": "asserted",
+              "publication_restricted": false,
+              "attributed_to": "roucairol-cazenave"
+            }
+          ]
+        },
+        {
+          "term_id": "range_meaning",
+          "term": "range",
+          "readings": [
+            {
+              "reading_id": "range_distinct_count",
+              "statement": "The range of the distance spectrum is the number of distinct distance eigenvalues. The Graffiti 197 prior-resolution record is filed under this same meaning of range.",
+              "source_passage_ref": "psg.wow.graffiti-322",
+              "reading_status": "asserted",
+              "publication_restricted": false,
+              "attributed_to": null
+            },
+            {
+              "reading_id": "range_extent",
+              "statement": "The range of the distance spectrum is the extent lambda_max minus lambda_min. Under this meaning the G(14,18) evaluation does not refute Graffiti 322 at all.",
+              "source_passage_ref": "psg.roucairol-cazenave.graffiti-322",
+              "reading_status": "asserted",
+              "publication_restricted": false,
+              "attributed_to": null
+            }
+          ]
+        }
+      ],
+      "reading_tuples": [
+        [
+          "even_excludes_v",
+          "range_distinct_count"
+        ],
+        [
+          "even_excludes_v",
+          "range_extent"
+        ],
+        [
+          "even_includes_v",
+          "range_distinct_count"
+        ],
+        [
+          "even_includes_v",
+          "range_extent"
+        ]
+      ],
+      "creates_mathematical_warrant": false,
+      "resolves_contested_reading": false,
+      "content_hash": "sha256:4e78ca62cbd067d5d78b1ff55eb34c05f91d64ee39c0d6c4c8e2bc08205ec738"
+    }
+  ],
+  "verdict_matrices": [
+    {
+      "schema_version": "adaivy.convention-reading.v1",
+      "policy_id": "convention-relative-claim-v1",
+      "matrix_id": "vm.graffiti-322-g14-18.v1",
+      "claim_id": "cl.graffiti-322-counterexample",
+      "convention_id": "conv.graffiti-322-readings.v2",
+      "convention_hash": "sha256:4e78ca62cbd067d5d78b1ff55eb34c05f91d64ee39c0d6c4c8e2bc08205ec738",
+      "verdicts": [
+        {
+          "reading_tuple": [
+            "even_excludes_v",
+            "range_distinct_count"
+          ],
+          "verdict": "refutes",
+          "evidence_ref": "sha256:3a140807afa91ad0a2fa736212023b28edc72e1c4417d0cea238fd8fee03b843",
+          "detail": "InvEven(G(14,18)) = 8772568/953095 also exceeds 9, so excluding v from Even(v) does not change the outcome for this witness."
+        },
+        {
+          "reading_tuple": [
+            "even_excludes_v",
+            "range_extent"
+          ],
+          "verdict": "does_not_refute",
+          "evidence_ref": "sha256:3a140807afa91ad0a2fa736212023b28edc72e1c4417d0cea238fd8fee03b843",
+          "detail": "The same exact bound settles the extent reading for the exclude-v value."
+        },
+        {
+          "reading_tuple": [
+            "even_includes_v",
+            "range_distinct_count"
+          ],
+          "verdict": "refutes",
+          "evidence_ref": "sha256:3a140807afa91ad0a2fa736212023b28edc72e1c4417d0cea238fd8fee03b843",
+          "detail": "InvEven(G(14,18)) = 40049/4444 exceeds the 9 distinct distance eigenvalues returned by the verified invariant-subspace decomposition, so the witness refutes under this reading."
+        },
+        {
+          "reading_tuple": [
+            "even_includes_v",
+            "range_extent"
+          ],
+          "verdict": "does_not_refute",
+          "evidence_ref": "sha256:3a140807afa91ad0a2fa736212023b28edc72e1c4417d0cea238fd8fee03b843",
+          "detail": "The exact Rayleigh bound 2W/n = 32915/16 already exceeds InvEven, so the spectral extent is strictly greater and the witness refutes nothing under this reading."
+        }
+      ],
+      "derived_scope": "convention_relative",
+      "creates_mathematical_warrant": false,
+      "creates_novelty_status": false,
+      "content_hash": "sha256:61128fc593ee1ca2b8764395f19d64e2e634175734f7e70a5ae73733758ffac7"
+    }
+  ],
+  "counter_candidate_replays": [
+    {
+      "schema_version": "adaivy.counter-candidate-replay.v1",
+      "replay_id": "replay.graffiti-322.c4-candidate.v1",
+      "witness_graph_id": "C4",
+      "witness_spec_hash": "sha256:431fba4033a54f68a9bb949a24dace75cd75eb0c70b27aa46a92303bba70b491",
+      "engine": "exact_graph_distance_and_invariant_space_v2",
+      "arithmetic": "fractions-exact",
+      "float_used": false,
+      "order": 4,
+      "triangle_free": true,
+      "connected": true,
+      "readings": [
+        {
+          "reading": [
+            "even_includes_v",
+            "range_distinct_count"
+          ],
+          "inverse_even": "2",
+          "range_value": "3",
+          "verdict": "does_not_refute",
+          "detail": "|spec(D)|=3 via confirmed_minimal_polynomial"
+        },
+        {
+          "reading": [
+            "even_includes_v",
+            "range_extent"
+          ],
+          "inverse_even": "2",
+          "range_value": "greater_than:2",
+          "verdict": "does_not_refute",
+          "detail": "rayleigh_extent_bound=2W/n=4 >= InvEven, and lambda_max-lambda_min > 2W/n exactly"
+        },
+        {
+          "reading": [
+            "even_excludes_v",
+            "range_distinct_count"
+          ],
+          "inverse_even": "4",
+          "range_value": "3",
+          "verdict": "refutes",
+          "detail": "|spec(D)|=3 via confirmed_minimal_polynomial"
+        },
+        {
+          "reading": [
+            "even_excludes_v",
+            "range_extent"
+          ],
+          "inverse_even": "4",
+          "range_value": "greater_than:4",
+          "verdict": "does_not_refute",
+          "detail": "rayleigh_extent_bound=2W/n=4 >= InvEven, and lambda_max-lambda_min > 2W/n exactly"
+        }
+      ],
+      "creates_mathematical_warrant": false,
+      "result_hash": "sha256:6d0e8d6e0d9b5a4c5bd3dbf9d0f609cf424071ca32002fd40437acb9f2d71423",
+      "citation_id": "cite.roucairol-cazenave.graffiti-322"
+    },
+    {
+      "schema_version": "adaivy.counter-candidate-replay.v1",
+      "replay_id": "replay.graffiti-322.g14-18-witness.v1",
+      "witness_graph_id": "G(14,18)",
+      "witness_spec_hash": "sha256:53a845bb4b0f7134ed9b3903094fe076f13bc8d28d8c544805d8e0541b3d4f34",
+      "engine": "exact_graph_distance_and_invariant_space_v2",
+      "arithmetic": "fractions-exact",
+      "float_used": false,
+      "order": 448,
+      "triangle_free": true,
+      "connected": true,
+      "readings": [
+        {
+          "reading": [
+            "even_includes_v",
+            "range_distinct_count"
+          ],
+          "inverse_even": "40049/4444",
+          "range_value": "9",
+          "verdict": "refutes",
+          "detail": "|spec(D)|=9 via verified_decomposition"
+        },
+        {
+          "reading": [
+            "even_includes_v",
+            "range_extent"
+          ],
+          "inverse_even": "40049/4444",
+          "range_value": "greater_than:40049/4444",
+          "verdict": "does_not_refute",
+          "detail": "rayleigh_extent_bound=2W/n=32915/16 >= InvEven, and lambda_max-lambda_min > 2W/n exactly"
+        },
+        {
+          "reading": [
+            "even_excludes_v",
+            "range_distinct_count"
+          ],
+          "inverse_even": "8772568/953095",
+          "range_value": "9",
+          "verdict": "refutes",
+          "detail": "|spec(D)|=9 via verified_decomposition"
+        },
+        {
+          "reading": [
+            "even_excludes_v",
+            "range_extent"
+          ],
+          "inverse_even": "8772568/953095",
+          "range_value": "greater_than:8772568/953095",
+          "verdict": "does_not_refute",
+          "detail": "rayleigh_extent_bound=2W/n=32915/16 >= InvEven, and lambda_max-lambda_min > 2W/n exactly"
+        }
+      ],
+      "creates_mathematical_warrant": false,
+      "result_hash": "sha256:3a140807afa91ad0a2fa736212023b28edc72e1c4417d0cea238fd8fee03b843",
+      "citation_id": null
+    }
+  ],
+  "prior_art_engagement": {
+    "recheck": {
+      "schema_version": "adaivy.novelty-recheck.v1",
+      "policy_id": "novelty-recheck-two-checkpoint-v1",
+      "recheck_id": "recheck.graffiti-322.prior-candidate.v1",
+      "checkpoint": "before_announcement",
+      "subject_id": "ms.graffiti-322-convention-relative.v1",
+      "subject_hash": "sha256:b84998f0a8302f004017ba6ecc706ae048e1b3f6fad00ebc8c4c0655b88bc534",
+      "next_action_id": "approval.graffiti-322-convention-relative.v1",
+      "performed_by": "researcher.repository-owner",
+      "performer_kind": "human",
+      "performed_at": "2026-08-21T18:00:00Z",
+      "search_protocol": {
+        "protocol_id": "protocol.graffiti-322.prior-candidate.v1",
+        "query_terms": [
+          "Graffiti 322 refutation",
+          "C4 candidate distance spectrum"
+        ],
+        "searched_sources": [
+          "acquired Roucairol and Cazenave proceedings entry"
+        ],
+        "equivalence_checks": [
+          "their C4 witness replayed under all four enumerated readings by our own engine",
+          "their reported claim compared against our evaluation rather than adopted from it"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "ref_id": "replay.graffiti-322.c4-candidate.v1",
+          "content_hash": "sha256:6d0e8d6e0d9b5a4c5bd3dbf9d0f609cf424071ca32002fd40437acb9f2d71423"
+        },
+        {
+          "ref_id": "replay.graffiti-322.g14-18-witness.v1",
+          "content_hash": "sha256:3a140807afa91ad0a2fa736212023b28edc72e1c4417d0cea238fd8fee03b843"
+        }
+      ],
+      "outcome": "prior_art_found",
+      "prior_art": {
+        "relationship": "unresolved",
+        "resolution": "unresolved",
+        "verification_status": "unresolved",
+        "report_classification": "prior_art_relationship_unresolved",
+        "target_resolution_status": "unresolved",
+        "novelty_status": "not_assessed",
+        "creates_mathematical_warrant": false
+      },
+      "limitations": [
+        "Whether the prior candidate pre-empts this construction depends on which reading of Even(v) the source intends, and no record here decides that.",
+        "The replay establishes what their witness does under our readings, not what their paper claims."
+      ],
+      "previous_recheck_id": "recheck.graffiti-322.before-research.v1",
+      "previous_recheck_hash": "sha256:c030b97734cb60d5c846977dc29aa2e473af95bd5961cab4e58acc0a88ca8c83",
+      "creates_mathematical_warrant": false,
+      "automatic_novelty_authority": false,
+      "content_hash": "sha256:ab801b61eb677a4adbbcfdbdb9403a24d5690355143cb0716f7ae358ff9e1e2a"
+    }
+  },
+  "novelty_rechecks": [
+    {
+      "schema_version": "adaivy.novelty-recheck.v1",
+      "policy_id": "novelty-recheck-two-checkpoint-v1",
+      "recheck_id": "recheck.graffiti-322.before-research.v1",
+      "checkpoint": "before_research",
+      "subject_id": "problem.graffiti-322",
+      "subject_hash": "sha256:b6ee91daf9c36d251e7f8424820ca5d85c46d0c9a7fccd723f33eacd72651e29",
+      "next_action_id": "run.graffiti-322.two-rounds.v1",
+      "performed_by": "researcher.repository-owner",
+      "performer_kind": "human",
+      "performed_at": "2026-08-20T09:00:00Z",
+      "search_protocol": {
+        "protocol_id": "protocol.graffiti-322.pre-research.v1",
+        "query_terms": [
+          "Graffiti 322",
+          "inverse even distance spectrum range"
+        ],
+        "searched_sources": [
+          "acquired local corpus",
+          "Roucairol and Cazenave preprint record"
+        ],
+        "equivalence_checks": [
+          "same Graffiti 322 statement under the distinct-count meaning of range",
+          "candidate witnesses reported for the same conjecture"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "ref_id": "source.roucairol-cazenave.spectral-refutations",
+          "content_hash": "sha256:cdc256f8c653c285911827f9d2b3287cc358e45486ab15b19d75f239ca1377e7"
+        }
+      ],
+      "outcome": "inconclusive",
+      "prior_art": {
+        "relationship": "unresolved",
+        "resolution": "unresolved",
+        "verification_status": "unresolved",
+        "report_classification": "prior_art_search_inconclusive",
+        "target_resolution_status": "unresolved",
+        "novelty_status": "not_assessed",
+        "creates_mathematical_warrant": false
+      },
+      "limitations": [
+        "A bounded search over the acquired corpus cannot establish the absence of prior art.",
+        "This checkpoint predates the G(14,18) construction and cannot speak to its priority."
+      ],
+      "previous_recheck_id": null,
+      "previous_recheck_hash": null,
+      "creates_mathematical_warrant": false,
+      "automatic_novelty_authority": false,
+      "content_hash": "sha256:c030b97734cb60d5c846977dc29aa2e473af95bd5961cab4e58acc0a88ca8c83"
+    }
+  ],
+  "sections": [
+    {
+      "section_id": "sec.statement",
+      "title": "Statement and the readings it depends on",
+      "blocks": [
+        {
+          "block_id": "blk.statement.readings",
+          "kind": "prose",
+          "record_refs": [
+            "conv.graffiti-322-readings.v2",
+            "vm.graffiti-322-g14-18.v1",
+            "cl.graffiti-322-counterexample"
+          ],
+          "runs": [
+            {
+              "t": "text",
+              "v": "Two terms of the conjecture are contested. Whether Even(v) counts v itself, and whether the range of the distance spectrum is the number of distinct distance eigenvalues or the extent of the spectrum, are enumerated as a convention record with one verdict per reading rather than settled in this prose. The verdict for each reading is an exact evaluation, not a judgement about what the source meant."
+            }
+          ],
+          "citations": [
+            "cite.wow.graffiti-322",
+            "cite.wow.even-definition"
+          ]
+        },
+        {
+          "block_id": "blk.statement.claim",
+          "kind": "claim",
+          "record_refs": [
+            "cl.graffiti-322-counterexample",
+            "vm.graffiti-322-g14-18.v1"
+          ],
+          "claim_id": "cl.graffiti-322-counterexample"
+        },
+        {
+          "block_id": "blk.statement.certificate",
+          "kind": "certificate_table",
+          "record_refs": [
+            "cert.graffiti-322-exact-separation"
+          ],
+          "certificate_id": "cert.graffiti-322-exact-separation"
+        }
+      ]
+    },
+    {
+      "section_id": "sec.prior-candidate",
+      "title": "The previously published candidate, replayed",
+      "blocks": [
+        {
+          "block_id": "blk.prior.replay",
+          "kind": "prose",
+          "record_refs": [
+            "replay.graffiti-322.c4-candidate.v1",
+            "cite.roucairol-cazenave.graffiti-322",
+            "recheck.graffiti-322.prior-candidate.v1"
+          ],
+          "runs": [
+            {
+              "t": "text",
+              "v": "A previously published candidate for the same conjecture is C4. Its witness was replayed by this repository's own exact engine under all four enumerated readings rather than read off the prior paper's reported numbers: it refutes under one reading and not under the other three. The prior-art classification that records this comparison is bound to the same reading set."
+            }
+          ],
+          "citations": [
+            "cite.roucairol-cazenave.graffiti-322"
+          ]
+        },
+        {
+          "block_id": "blk.prior.search",
+          "kind": "prose",
+          "record_refs": [
+            "recheck.graffiti-322.before-research.v1",
+            "recheck.graffiti-322.prior-candidate.v1"
+          ],
+          "runs": [
+            {
+              "t": "text",
+              "v": "A bounded pre-research literature search over the acquired corpus returned an inconclusive outcome, and a second, result-specific prior art classification was performed after the construction existed. Both are records in this bundle, and neither establishes that no earlier refutation exists."
+            }
+          ],
+          "citations": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec.limits",
+      "title": "What is not established",
+      "blocks": [
+        {
+          "block_id": "blk.limits.obligations",
+          "kind": "prose",
+          "record_refs": [
+            "obl.graffiti-322-even-reading-unreproduced",
+            "obl.graffiti-322-prior-candidate-priority",
+            "obl.graffiti-322-human-graph-proof-review"
+          ],
+          "runs": [
+            {
+              "t": "text",
+              "v": "The reading on which the headline evaluation rests has never been re-extracted from the 2004 compilation, priority against the earlier candidate is reading-dependent and undecided, and no human has checked the 448-vertex derivation. Each of those is an open obligation in the table below rather than a sentence here."
+            }
+          ],
+          "citations": []
+        }
+      ]
+    }
+  ],
+  "render_probes": [
+    {
+      "probe_id": "pr.g322.title-must-not-assert-resolution",
+      "field": "title_stem",
+      "value": "An Exact Counterexample to Graffiti 322",
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "title_stem_asserts_resolution"
+      },
+      "rationale": "The shipped headline is refused by the records that back the rebuild."
+    },
+    {
+      "probe_id": "pr.g322.abstract-must-not-overclaim",
+      "field": "abstract",
+      "value": "This note refutes Graffiti 322 for the family G(r,t).",
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "abstract_overclaims_evidence"
+      },
+      "rationale": "A convention-relative verdict cannot be announced as a refutation."
+    },
+    {
+      "probe_id": "pr.g322.source-fidelity-must-be-earned",
+      "field": "abstract",
+      "value": "A source-faithful reading of Graffiti 322 is recorded in this bundle.",
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "source_fidelity_overclaimed"
+      },
+      "rationale": "Every reading here is asserted, so the fidelity phrase is unearned."
+    },
+    {
+      "probe_id": "pr.g322.resolution-claim-requires-verdict-matrix",
+      "field": "claims[cl.graffiti-322-counterexample].verdict_matrix_id",
+      "value": null,
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "resolution_claim_without_verdict_matrix"
+      },
+      "rationale": "A resolution-typed claim carries a verdict for every reading or none."
+    },
+    {
+      "probe_id": "pr.g322.silence-does-not-exclude-a-cited-work",
+      "field": "citations[cite.wow.even-definition].target_exclusion",
+      "value": null,
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "resolution_claim_without_prior_art_engagement"
+      },
+      "rationale": "Removing the exclusion record leaves the citation addressing the target, so a replay becomes owed. Silence triggers the gate rather than escaping it."
+    },
+    {
+      "probe_id": "pr.g322.prior-candidate-cannot-be-excluded",
+      "field": "citations[cite.roucairol-cazenave.graffiti-322].target_exclusion",
+      "value": {
+        "reason": "different_conjecture",
+        "excluded_by": "researcher.repository-owner"
+      },
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "prior_candidate_cannot_be_excluded"
+      },
+      "rationale": "A published candidate for the same conjecture cannot be talked down."
+    },
+    {
+      "probe_id": "pr.g322.asserted-reading-needs-an-open-obligation",
+      "field": "obligations[obl.graffiti-322-even-reading-unreproduced].tags",
+      "value": [],
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "asserted_reading_without_obligation"
+      },
+      "rationale": "An unreproduced reading must name itself in the obligations table, which the headline gate reads."
+    },
+    {
+      "probe_id": "pr.g322.prior-art-engagement-must-be-a-valid-record",
+      "field": "prior_art_engagement.recheck",
+      "value": {},
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "prior_art_engagement_invalid"
+      },
+      "rationale": "The engagement slot carries an ADR-0055 record or nothing; an empty object is not a classification."
+    },
+    {
+      "probe_id": "pr.g322.search-assertion-needs-a-recheck-record",
+      "field": "blocks[blk.prior.search].record_refs",
+      "value": [
+        "obl.graffiti-322-prior-candidate-priority"
+      ],
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "prose_asserts_unrecorded_search"
+      },
+      "rationale": "An asserted literature search with no re-check record reads as diligence."
+    },
+    {
+      "probe_id": "pr.g322.headline-subject-cannot-assert-resolution",
+      "field": "claims[cl.graffiti-322-counterexample].resolution_target",
+      "value": {
+        "subject_id": "problem.refutation-of-graffiti-322",
+        "citation_id": "cite.wow.graffiti-322",
+        "kind": "refutation"
+      },
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "resolution_subject_label_asserts_resolution"
+      },
+      "rationale": "The composed title quotes a label derived from the subject identifier. A record id that reads as a resolution would pre-empt the derived qualifier, so it is refused rather than rendered."
+    },
+    {
+      "probe_id": "pr.g322.claim-prose-must-not-overclaim",
+      "field": "claims[cl.graffiti-322-counterexample].prose_statement",
+      "value": "The graph G(14,18) refutes Graffiti 322.",
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "claim_prose_overclaims_evidence"
+      },
+      "rationale": "Claim prose is reader-facing text with no derivation behind it, so an unhedged resolution assertion beside a convention-relative claim is refused."
+    },
+    {
+      "probe_id": "pr.g322.replay-float-refused",
+      "field": "counter_candidate_replays[replay.graffiti-322.c4-candidate.v1].float_used",
+      "value": true,
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "replay_used_floating_point"
+      },
+      "rationale": "An inexact replay of a prior candidate decides nothing."
+    },
+    {
+      "probe_id": "pr.g322.passage-verbatim-missing",
+      "field": "sources[src.roucairol-cazenave.spectral-refutations].passages[0].reading_status",
+      "value": "transcribed",
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "passage_verbatim_missing"
+      },
+      "rationale": "Claiming a stronger reading than asserted requires the text a reader would re-extract; the content hash proves bytes exist, not that anyone read them."
+    },
+    {
+      "probe_id": "pr.g322.passage-extraction-inconsistent",
+      "field": "sources[src.fajtlowicz.written-on-wall-2004].passages[1].reading_status",
+      "value": "verbatim_confirmed",
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "passage_extraction_inconsistent"
+      },
+      "rationale": "The 2004 compilation page has no usable text layer, and an unextractable passage admits no status but asserted."
+    },
+    {
+      "probe_id": "pr.g322.convention-hash-rebound",
+      "field": "verdict_matrices[vm.graffiti-322-g14-18.v1].convention_hash",
+      "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "convention_hash_mismatch"
+      },
+      "rationale": "A matrix is bound to the exact reading set it was decided under. Rebinding it to a reading set this manuscript does not hold strands the claim, loudly."
+    },
+    {
+      "probe_id": "pr.g322.verdict-matrix-incomplete",
+      "field": "verdict_matrices[vm.graffiti-322-g14-18.v1].verdicts[0].reading_tuple",
+      "value": [
+        "even_excludes_v",
+        "range_unrecorded"
+      ],
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "verdict_matrix_incomplete"
+      },
+      "rationale": "Moving one verdict onto an unenumerated reading leaves the enumerated set uncovered, and a partial matrix must not read as a full sweep."
+    },
+    {
+      "probe_id": "pr.g322.verdict-cannot-be-flipped-without-rebinding",
+      "field": "verdict_matrices[vm.graffiti-322-g14-18.v1].verdicts[3].verdict",
+      "value": "refutes",
+      "expected_outcome": "refusal",
+      "expected": {
+        "code": "verdict_matrix_invalid"
+      },
+      "rationale": "A verdict is content-bound. Flipping one without re-deriving the record's hash is refused, so no reading's outcome can be edited in place."
+    },
+    {
+      "probe_id": "pr.g322.zero-gap-demotes-the-separation-claim",
+      "field": "certificates[cert.graffiti-322-exact-separation].gap",
+      "value": "0",
+      "expected_outcome": "demotion",
+      "expected": {
+        "claim_id": "cl.graffiti-322-counterexample",
+        "evidence_class": "proposal"
+      },
+      "rationale": "The claim asserts a separation. A certificate closing the gap to zero certifies that there is nothing to separate, which demotes below the convention-relative rung rather than into it."
+    }
+  ]
+}
