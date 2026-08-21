@@ -65,6 +65,11 @@ text, or credentials. Every checker attempt remains proposal-only durable state.
 - The first live result is operational evidence about one configured model and
   request, not evidence of general solve rate or cost-adjusted retention gain.
 
+`fixtures/phase3b/live-repair-smoke.json` is the bounded activation request. Its
+deliberately unknown proof term produces `elaboration_failure`; a live proposer
+may replace only that fragment while the trivial theorem `(n : Nat) : n = n`
+and every other request field remain frozen.
+
 ## Measured gates
 
 `tests/test_phase3b_live_proposer.py` demonstrates configuration hash checking,

@@ -15,13 +15,18 @@ network-none, read-only-root, noexec-temp, and ambient-secret controls. Network
 remains off by default. The separately acknowledged live HTTPS gate is the
 final activation step; its absence must never be counted as a pass.
 
-Phases 0 through 6 remain implemented and authoritative. Phase 5 now has two
-scopes and both must be stated exactly. The sealed scope is exact
+Phases 0 through 6 remain implemented and authoritative. Phase 5 now has three
+scopes and all must be stated exactly. The sealed scope is exact
 scalar/diagonal `QD-FS-01`: commuting cases, computed results, deterministic
 tier-0 branches. The noncommuting scope (ADR-0035) **verifies certificates
 supplied to it and never discovers them**, so it is a checker and not a solver.
-Search tiers 2--4 stay disabled in both. The Phase 6 scope is still one frozen
-held-out case plus the generality control suite and canonical replay.
+ADR-0049 adds a separate bounded exact solver for exactly two outcomes in
+dimension two over one measured `Q(sqrt(d))(i)` field. It constructs a candidate
+and submits it to the ADR-0035 verifier; only exact feasibility, zero gap, and
+complementarity create the result. The dimension-three irreducible-cubic case
+remains explicitly unresolved. Search tiers 2--4 stay disabled. The Phase 6
+scope is still one frozen held-out case plus the generality control suite and
+canonical replay.
 
 Phase 3B now has two scopes and both must be stated exactly. The sealed
 single-shot scope is unchanged. On top of it, ADR-0040 adds a **bounded repair
@@ -37,10 +42,14 @@ is never fed back, because a validator diagnostic describes how to evade the
 validator, and meaning-test failures and unapproved-assumption results are
 terminal for the same reason. Nothing is promoted: `epistemic_warrant_created`
 is `False` unconditionally, including on a successful repair, and a repaired
-proof is attributed to `MODEL` and never to the operator. The
-`ProofProposer` port has **no live implementation** and this ADR authorizes
-none; the acceptance path drives a scripted proposer and makes zero model and
-zero network calls. Nothing measures whether repair helps -- that is an
+proof is attributed to `MODEL` and never to the operator. ADR-0048 supplies an
+opt-in Azure OpenAI implementation of the `ProofProposer` port. It requires
+explicit live execution, content-hashed bounds, confirmed pricing, the pinned
+SDK, and the sealed Lean image. It returns only a proof fragment and records
+provider, model, usage, cost, and hashes without retaining secret or proof text
+in the public call audit. The offline acceptance path still uses a scripted
+proposer and makes zero model and network calls. Nothing yet measures whether
+repair improves retained verified progress -- that is an
 ADR-0029 retention question and is open. `docs/phase-3b-repair/` is the
 normative gate package, per ADR-0026's revisit trigger.
 
@@ -176,8 +185,10 @@ parallel, evolutionary, or higher search tier.
 
 The Phase 1 domain/trust semantics, sealed Phase 2 evidence, Phase 3A memory,
 sealed Phase 3B runtime, and Phase 4A rights/applicability boundaries remain
-authoritative. Do not add a web UI or HTTP API, crawler, network acquisition,
-embeddings, PDF parsing, model/external API calls, noncommuting SDP solver,
+authoritative. ADR-0048's bounded Azure proposer and ADR-0049's bounded exact
+noncommuting solver are the only newly authorized model/solver paths. Do not add
+a web UI or HTTP API, crawler, broader network acquisition, embeddings, PDF
+parsing, another model/external API path, a broader noncommuting SDP solver,
 multi-agent or evolutionary search, automated novelty/significance assessment,
 or enable higher search tiers without a later explicit implementation request,
 the ADR-0029 activation evidence, and measured cost-adjusted verified gain.

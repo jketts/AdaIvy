@@ -50,8 +50,17 @@ another model agrees with it.
   owner activation; a live acquisition yields an untrusted candidate carrying no
   mathematical warrant, and is never itself counted as activation. Network
   remains off by default.
-- **Phase 5** covers the exact commuting/diagonal benchmark slice only; search
-  tiers 2–4 are recorded and disabled.
+- **Phase 5** retains the sealed exact commuting/diagonal slice, verifies
+  human-supplied noncommuting certificates, and now discovers certificates for
+  the bounded two-outcome, 2×2 `Q(sqrt(d))(i)` domain (ADR-0049). Every generated
+  candidate must pass the existing exact verifier. The retained dimension-three
+  irreducible-cubic case remains explicitly unresolved; this is not a general
+  noncommuting SDP solver, and search tiers 2–4 remain disabled.
+- **Phase 3B** supports the sealed single-shot checker, the bounded repair loop,
+  and an opt-in Azure OpenAI proposer (ADR-0048). Live repair requires an
+  explicit `--execute`, the pinned provider environment and pricing snapshot,
+  and the sealed Lean image. Model output changes only the proof fragment,
+  remains proposal-only, and never creates epistemic warrant.
 - **Phase 6** covers one frozen local held-out case with canonical replay and
   the executed Section 18.4 generality control suite (ADR-0034): thirteen
   controls that drive real Phase 1 trust policy, the exact Phase 5 engine, or the
@@ -73,8 +82,9 @@ another model agrees with it.
   signal, fused in score space. All seven gates are measured as passing under
   ADR-0032. Exclusion removes a candidate from a result list and asserts
   nothing about applicability.
-- Deferred: noncommuting SDP, retrieval embeddings and vector indexes, broader
-  media/acquisition, higher adaptive-search tiers, and external evaluation.
+- Deferred: general noncommuting SDP beyond ADR-0049's exact bounded domain,
+  retrieval embeddings and vector indexes, broader media/acquisition, higher
+  adaptive-search tiers, and external evaluation.
   Novelty and significance are recorded as `not_assessed`.
 - Retrieval uses no embedding and no model provider, so the live provider
   boundary can change without affecting it. Before embeddings are added, note

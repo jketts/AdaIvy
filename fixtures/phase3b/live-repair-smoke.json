@@ -1,0 +1,1 @@
+{"assumptions":[],"claim_id":"claim.phase3b.live-repair-smoke","declaration_name":"AdaIvyLiveRepairSmoke","imports":[],"meaning_tests":[],"proof_fragment":"by exact missing_proof_term","request_id":"request.phase3b.live-repair-smoke","schema_version":"1.0.0","semantic_alignment_id":null,"source_kind":"operator","target_statement":"(n : Nat) : n = n"}

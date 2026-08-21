@@ -116,8 +116,9 @@ fuzzer against the validator, and `proposer_rejected` counts are the signal.
 ## Blueprint deviation
 
 One deviation. `docs/phase-3b/BOUNDED_IMPLEMENTATION_PROMPT_V5.md` excludes
-proof repair and model calls. This ADR revises the repair exclusion and leaves
-the model-call exclusion in force: the port exists, no live caller does. The V5
+proof repair and model calls. This ADR revised the repair exclusion; ADR-0048
+subsequently revised the model-call exclusion through a separately gated live
+Azure implementation. The V5
 instruction to "stop and require a fresh entry gate" if the runtime "cannot
 support the bounded production contract unchanged" is satisfied without a new
 runtime gate, because the contract is unchanged -- the slice adds submissions,
