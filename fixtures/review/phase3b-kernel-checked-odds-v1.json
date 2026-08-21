@@ -1,0 +1,61 @@
+{
+  "approved_axioms": [],
+  "claim_id": "claim.sum-of-two-odds-is-even.odd_plus_odd_is_even",
+  "content_hash": "sha256:b97d6a85a79eee7e3598be2b7a63b7038d5a45c964182a748272c3da9308037e",
+  "contribution_approved": false,
+  "created_at": "2026-08-21T12:20:00Z",
+  "disposition": "proposal",
+  "epistemic_warrant_created": false,
+  "exact_statement_only": true,
+  "execution": {
+    "adapter_diagnostics": [],
+    "container_removed": true,
+    "elapsed_milliseconds": 4213,
+    "exit_code": 0,
+    "stderr": {
+      "byte_length": 0,
+      "content_hash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained_byte_length": 0,
+      "retained_utf8": "",
+      "truncated": false
+    },
+    "stdout": {
+      "byte_length": 89,
+      "content_hash": "sha256:f1dc19a07204d562b02beae6707e04e35ce48bb96327b21c465b70ee62710cd6",
+      "retained_byte_length": 89,
+      "retained_utf8": "{\"severity\":\"information\",\"data\":\"'adaivy_review_target' does not depend on any axioms\"}\n",
+      "truncated": false
+    },
+    "termination_reason": "completed"
+  },
+  "hash_profile": "phase3b-semantic-v1",
+  "id": "formal-finding.review-kernel-checked-v1",
+  "meaning_tests_diagnostic_only": true,
+  "novelty_approved": false,
+  "outcome": "kernel_checked",
+  "policy_rejections": [],
+  "request_id": "formal-request.review-kernel-checked-v1",
+  "schema_version": "1.0.0",
+  "semantic_alignment_approved": false,
+  "semantic_alignment_id": "alignment.sum-of-two-odds-is-even.v1",
+  "significance_approved": false,
+  "source_applicability_approved": false,
+  "source_kind": "operator",
+  "trust_effect": "none",
+  "unapproved_assumptions": [],
+  "wrapper_manifest": {
+    "declaration_hash": "sha256:355c0d600a468f094b810f2e9e69428bdaa773ef8c667c865eca6cbc73f50275",
+    "import_manifest_hash": "sha256:0dcc7245fb4c9ae1a6ee8df19e56e5208136aff77f2547de9f40989d1fe04a7e",
+    "invocation_hash": "sha256:cc896a132892746166b7234a01aa8ba261f7e45db63d6994fa283b69f6d4bb73",
+    "meaning_test_start_line": 9,
+    "policy_hash": "sha256:3f241219297d36830570766a7dcdcca01f14073455aa7df35095d187f4a21dc4",
+    "proof_fragment_hash": "sha256:41900097ca85a742d4ed86c84a8538cc8949f84b2f7781980f2d0757975ebad4",
+    "runtime_hash": "sha256:e10540f53d282b2792892088f4db5234e6b8cc20159f2cb6d19ac3b1f1cab18f",
+    "schema_version": "1.0.0",
+    "source_hash": "sha256:ed4f5a7416769e097c99be365102e72b6b154a9de0160f3d383f22c5ae387557",
+    "target_hash": "sha256:a57891ff5f0dce8c8335017051b5585b2ab2c23990ca96240a48459078f0efa5",
+    "target_line": 5,
+    "wrapper_byte_length": 512,
+    "wrapper_hash": "sha256:7c42a198b13735c27ef364f9231d8a9867e273b286a60d27ddc75d60814676dd"
+  }
+}

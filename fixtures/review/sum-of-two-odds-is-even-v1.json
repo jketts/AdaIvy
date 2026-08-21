@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "sum-of-two-odds-is-even",
+  "declared_domain": "elementary-number-theory",
+  "originating_principal": "actor.example_researcher",
+  "problem": {
+    "title": "The sum of two odd integers is even",
+    "informal_statement": "Show that adding any two odd integers yields an even integer.\n\nThe target is stated for every pair of odd integers, with no bound on their size. This problem exists so the ADR-0042 review surface has a target whose declared semantic alignment is equivalent with no assumption or edge-case delta, which is what TrustPolicy.target_resolution requires before a granted warrant can resolve the target.",
+    "problem_type": "prove",
+    "tags": ["arithmetic", "parity", "review-surface-fixture"]
+  },
+  "target_claim": {
+    "local_id": "odd_plus_odd_is_even",
+    "kind": "theorem",
+    "statement": "For all integers a and b, if a and b are odd, then a + b is even.",
+    "scope": "unrestricted_universal"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "odd_definition",
+      "kind": "definition",
+      "statement": "An integer n is odd iff there exists an integer k with n = 2k + 1.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "even_definition",
+      "kind": "definition",
+      "statement": "An integer n is even iff there exists an integer k with n = 2k.",
+      "scope": "definitional"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "forall a b : Int, Odd(a) and Odd(b) implies Even(a + b)",
+    "formal_language": "typed_informal_math",
+    "quantifiers": ["forall a : Int", "forall b : Int"],
+    "assumption_local_ids": ["odd_definition", "even_definition"],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [["a", "any integer a"], ["b", "any integer b"]],
+    "definition_mapping": [
+      ["Even(n)", "there exists an integer k with n = 2k"],
+      ["Odd(n)", "there exists an integer k with n = 2k + 1"]
+    ],
+    "assumption_delta": [],
+    "edge_case_delta": [],
+    "strength_relation": "equivalent"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": ["obligations_opened", "obligations_discharged"],
+    "success_criteria": ["a derivation covering every pair of odd integers, not a finite sample"],
+    "stopping_rules": ["stop on a checked counterexample", "stop when review records a verdict"]
+  }
+}
