@@ -78,6 +78,24 @@ MEASURED_TRUST: dict[str, dict[str, object]] = {
             "semantic_target_not_resolved",
         ),
     },
+    # The matched negative control for `sum-two-squares-mod-four-v1`. Its target is
+    # FALSE (n = 21 is positive, congruent to 1 mod 4, and not a sum of two squares),
+    # and it measures exactly what the true near-twin measures. Intake declares no
+    # truth value, so a false target and a true one are indistinguishable here -- which
+    # is the property being pinned, not an oversight.
+    "one-mod-four-is-sum-of-two-squares-v1.json": {
+        "logical_status": "unknown",
+        "semantic_alignment_status": "not_approved_equivalent",
+        "warrant_kinds": (),
+        "novelty_status": "not_assessed",
+        "significance_status": "not_assessed",
+        "contribution_status": "unattributed",
+        "blockers": (
+            "open_obligation:obligation.one-mod-four-is-sum-of-two-squares.alignment_unapproved",
+            "open_obligation:obligation.one-mod-four-is-sum-of-two-squares.target_unwarranted",
+            "semantic_target_not_resolved",
+        ),
+    },
     "sum-two-squares-mod-four-v1.json": {
         "logical_status": "unknown",
         "semantic_alignment_status": "not_approved_equivalent",

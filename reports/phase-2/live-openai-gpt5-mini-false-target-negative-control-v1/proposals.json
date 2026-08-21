@@ -1,0 +1,89 @@
+[
+  {
+    "content": {
+      "mathematical_payload": {
+        "statement": "There exists a positive integer n with n \u2261 1 (mod 4) for which no integers a,b satisfy n = a^2 + b^2. Concretely, n = 21 is such a witness.",
+        "steps": [
+          "Verify hypothesis: 21 > 0 and 21 mod 4 = 1.",
+          "List integer squares \u2264 21: 0, 1, 4, 9, 16.",
+          "Check all unordered sums of two squares from that list: 16+16=32, 16+9=25, 16+4=20, 16+1=17, 16+0=16, 9+9=18, 9+4=13, 9+1=10, 9+0=9, 4+4=8, 4+1=5, 4+0=4, 1+1=2, 1+0=1, 0+0=0.",
+          "None of these sums equals 21, so there do not exist integers a,b with 21 = a^2 + b^2."
+        ],
+        "witness": "n = 21"
+      },
+      "referenced_entity_ids": [
+        "claim.one-mod-four-is-sum-of-two-squares.square_residues_mod_four"
+      ],
+      "result_type": "counterexample",
+      "schema_version": "2.0.0",
+      "target_claim_id": "claim.one-mod-four-is-sum-of-two-squares.one_mod_four_is_sum_of_two_squares"
+    },
+    "record": {
+      "artifact_hash": "sha256:8325a62083c74af6e8934b5175c483ef35d58d0ffb5a79232e203b7148264891",
+      "disposition": "proposal",
+      "proposal_id": "proposal.run.falsetarget.live.v1.proposer",
+      "proposal_kind": "counterexample",
+      "run_id": "run.falsetarget.live.v1",
+      "schema_version": "2.0.0",
+      "source_id": "call.run.falsetarget.live.v1.proposer.attempt.1",
+      "source_kind": "model",
+      "target_claim_id": "claim.one-mod-four-is-sum-of-two-squares.one_mod_four_is_sum_of_two_squares"
+    }
+  },
+  {
+    "content": {
+      "candidate_artifact_hash": "sha256:8325a62083c74af6e8934b5175c483ef35d58d0ffb5a79232e203b7148264891",
+      "declared_rationale": "Verify that the proposed witness n = 21 satisfies the hypothesis (positive, \u22611 mod 4) and that no integers a,b exist with a^2 + b^2 = 21 by exhaustive check of all possible integer square summands \u2264 21. This provides a concrete counterexample to the universal claim.",
+      "findings": [
+        {
+          "code": "HYP_CHECK",
+          "detail": "Check hypothesis: 21 > 0 and 21 \u2261 1 (mod 4). Both hold (21 is positive; 21 = 5*4 + 1).",
+          "outcome": "supports",
+          "referenced_entity_ids": [
+            "claim.one-mod-four-is-sum-of-two-squares.one_mod_four_is_sum_of_two_squares"
+          ]
+        },
+        {
+          "code": "SQUARES_ENUM",
+          "detail": "List all integer squares \u2264 21: 0, 1, 4, 9, 16. Any integer solution a,b must have a^2 and b^2 from this list (since squares are nonnegative and \u226421).",
+          "outcome": "supports",
+          "referenced_entity_ids": [
+            "claim.one-mod-four-is-sum-of-two-squares.square_residues_mod_four",
+            "claim.one-mod-four-is-sum-of-two-squares.one_mod_four_is_sum_of_two_squares"
+          ]
+        },
+        {
+          "code": "SUMS_CHECK",
+          "detail": "Compute all unordered sums of two squares from {0,1,4,9,16}: 0,1,2,4,5,8,9,10,13,16,17,18,20,25,32. None equals 21, so no integers a,b satisfy a^2 + b^2 = 21.",
+          "outcome": "supports",
+          "referenced_entity_ids": [
+            "claim.one-mod-four-is-sum-of-two-squares.one_mod_four_is_sum_of_two_squares"
+          ]
+        },
+        {
+          "code": "COUNTEREXAMPLE_CONCLUSION",
+          "detail": "Since n = 21 meets the theorem's hypothesis but fails to be representable as a sum of two integer squares, it is a valid counterexample that contradicts the universal target claim.",
+          "outcome": "contradicts",
+          "referenced_entity_ids": [
+            "claim.one-mod-four-is-sum-of-two-squares.one_mod_four_is_sum_of_two_squares"
+          ]
+        }
+      ],
+      "recommendation": "manual_review",
+      "result_type": "finding",
+      "schema_version": "2.0.0",
+      "target_claim_id": "claim.one-mod-four-is-sum-of-two-squares.one_mod_four_is_sum_of_two_squares"
+    },
+    "record": {
+      "artifact_hash": "sha256:ed713e234473149059fda18bedd73f83428a36cb13162a8aec5109032400cca3",
+      "disposition": "proposal",
+      "proposal_id": "proposal.run.falsetarget.live.v1.verifier",
+      "proposal_kind": "verifier_finding",
+      "run_id": "run.falsetarget.live.v1",
+      "schema_version": "2.0.0",
+      "source_id": "call.run.falsetarget.live.v1.verifier.attempt.1",
+      "source_kind": "model",
+      "target_claim_id": "claim.one-mod-four-is-sum-of-two-squares.one_mod_four_is_sum_of_two_squares"
+    }
+  }
+]
