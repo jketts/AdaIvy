@@ -41,7 +41,7 @@ OUT ?= reports/local/run-$(REPORT_STAMP)
 WORK ?= work/$(REPORT_STAMP)
 
 .PHONY: check check-all check-sealed check-gate check-typeset check-phase4b-oci \
-        test phase0 phase1 problem-intake phase2 phase3a phase3b phase4a phase4b \
+        spike-phase5-sdp test phase0 phase1 problem-intake phase2 phase3a phase3b phase4a phase4b \
         phase4c phase5 phase6 synthesis publication report clean help
 
 help:
@@ -51,6 +51,7 @@ help:
 	@printf '  check-gate    phase 4 gate tests (requires the disposable jsonschema env)\n'
 	@printf '  check-typeset publication PDF build (requires the pinned TeX Live engine)\n'
 	@printf '  check-phase4b-oci strict Phase 4B parser gate (requires exact pinned image)\n'
+	@printf '  spike-phase5-sdp  ADR-0045 noncommuting-SDP comparison (engines optional)\n'
 	@printf '  check-all     check + check-sealed\n'
 	@printf '  report        write every readable artifact to $$(OUT) with a hashed index\n'
 	@printf '                default OUT=reports/local/run-<stamp> (gitignored)\n'
@@ -209,6 +210,27 @@ phase5:
 	    "$$d/noncommuting-run.json" "$$d/noncommuting-report.md" && \
 	  rm -rf "$$d" && \
 	  printf 'phase 5 ok (diagonal QD-FS-01 computed; 4 noncommuting certificates VERIFIED not discovered, 1 measured cubic boundary, 1 unresolved without a certificate)\n'
+
+# Separate, spike-only numerical comparison. The forced fail-closed leg is the
+# offline assertion: absent engines are recorded and never counted as a pass.
+spike-phase5-sdp:
+	@printf '\n== ADR-0045 noncommuting-SDP comparison: forced fail-closed leg ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-p5sdp.XXXXXX") && \
+	  { PYTHONPATH=src:. $(PY) -m spikes.phase5_noncommuting_sdp.comparison_cli run \
+	      --no-engines --output "$$d/closed.json" >/dev/null || true; } && \
+	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["experiment_status"]=="incomplete_engines_absent_or_refused", r["experiment_status"]; assert r["minimum_independent_engines_executed"]==0; assert len(r["missing_tool_records"])==6, r["missing_tool_records"]; assert r["all_cases_exactly_certified"] is True; assert r["guardrails"]["warrant_created"] is False; assert r["guardrails"]["search_tiers_enabled"] is False; assert r["guardrails"]["phase5_integrated"] is False' \
+	    "$$d/closed.json" && \
+	  rm -rf "$$d" && \
+	  printf 'fail-closed leg ok (2 engines absent, 6 missing-tool records, 3 exact certificates)\n'
+	@printf '\n== engine-present leg (requires the disposable pinned environment) ==\n'
+	@if $(PY) -c 'import importlib.util,sys; sys.exit(0 if importlib.util.find_spec("clarabel") and importlib.util.find_spec("cvxpy") else 1)'; then \
+	    PYTHONPATH=src:. $(PY) -m spikes.phase5_noncommuting_sdp.comparison_cli run \
+	      >/dev/null && printf 'two-engine comparison complete\n'; \
+	  else \
+	    printf 'clarabel/cvxpy are not importable for %s, so no engine ran.\n' '$(PY)'; \
+	    printf 'That is the expected offline result and is NOT a pass.\n'; \
+	    printf 'Use requirements-phase5-sdp-comparison-py314-macos-arm64.txt in a disposable environment.\n'; \
+	  fi
 
 # ADR-0034: the recorded generality outcome is asserted, not just the exit
 # status. The suite it replaced was a literal table whose pass count could not

@@ -54,3 +54,19 @@ does not extend to every instance -- see the measured `real-noncommuting-irreduc
 fixture, whose optimum is provably outside every quadratic extension. That case
 is exactly the one where an SDP adapter would still be the only route to a
 candidate, so the comparison table above remains live for it.
+
+## Authorization update, 21 August 2026 (ADR-0045)
+
+The bounded comparison experiment admits only Clarabel (Apache-2.0), SCS
+(MIT), and CVXPY (Apache-2.0), with their permissively licensed transitive
+closure pinned in `requirements-phase5-sdp-comparison-py314-macos-arm64.txt`.
+CVXOPT, MOSEK, and every unapproved CVXPY extra remain excluded. The adapters
+are spike-local and absent by default.
+
+Both permitted engines reported numerical success on the three comparison
+fixtures, but exact conversion rejected every returned floating-point point:
+the residuals were small, not zero. The engine-independent exact
+reconstruction closed the bounded two-outcome, dimension-two cases over a
+quadratic field. Thus the experiment corroborates the formulation but adopts
+no engine, grants no warrant, enables no search tier, and does not expand the
+production Phase 5 scope.

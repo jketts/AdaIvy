@@ -674,7 +674,14 @@ class FloatFreeCertificatePathTests(unittest.TestCase):
         forbidden_modules = {"math", "cmath", "decimal", "statistics", "random", "numpy"}
         forbidden_calls = {"float", "complex", "round", "pow", "divmod"}
         violations: list[str] = []
-        for path in sorted(SPIKE.glob("*.py")):
+        certificate_modules = {
+            "__init__.py",
+            "algebraic.py",
+            "field_probe.py",
+            "matrices.py",
+            "validator.py",
+        }
+        for path in sorted(SPIKE / name for name in certificate_modules):
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             for node in ast.walk(tree):
                 if isinstance(node, ast.Constant) and isinstance(node.value, (float, complex)):

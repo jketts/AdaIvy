@@ -1,0 +1,62 @@
+# Phase 5 noncommuting-SDP engine-comparison SPIKE only: CPython 3.14, macOS, ARM64.
+# ADR-0045. Never installed into the repository .venv, system Python, user site,
+# or any production import path. `make check` must stay green with zero of these
+# packages installed; the spike fails closed when they are absent.
+#
+# Owner restriction (ADR-0045): permissive licences only. CVXOPT (GPLv3-or-later)
+# and MOSEK (commercial EULA) are OUT OF SCOPE. They appear ONLY as unselected
+# cvxpy extras (`cvxopt; extra == "cvxopt"`, `Mosek; extra == "mosek"`,
+# `ecos; extra == "ecos"`). Install cvxpy with NO extras, or the closure changes.
+#
+# Regenerate/verify (network step; do this in a scratch directory OUTSIDE the repo):
+#   python3 -m pip download --no-cache-dir --only-binary=:all: \
+#     --dest "$WHEELS" clarabel scs cvxpy
+#   python3 -m pip hash "$WHEELS"/*.whl
+# Install (no network after the audit):
+#   python3 -m venv "$ENVDIR"
+#   "$ENVDIR"/bin/python -m pip install --no-index --no-cache-dir \
+#     --find-links "$WHEELS" --require-hashes --only-binary=:all: \
+#     -r requirements-phase5-sdp-comparison-py314-macos-arm64.txt
+#
+# Recorded acquisition observation (see docs/adrs/0034-*.md):
+#   Python CPython 3.14.4, macOS ARM64, pip 26.0.1, resolved 2026-08-21.
+#   15 wheels, binary-only, no source distribution, no extras selected.
+#   Every digest below was computed with hashlib.sha256 over the downloaded
+#   wheel bytes on this machine. None is transcribed from a third party.
+
+--only-binary=:all:
+--require-hashes
+
+# Direct spike requirements.
+clarabel==0.11.1 \
+    --hash=sha256:8963687ee250d27310d139eea5a6816f9c3ae31f33691b56579ca4f0f0b64b63
+scs==3.2.11 \
+    --hash=sha256:fe43181c3822bed600363c25c7566a643b319e0edb0c2af385c5f086a9c826d2
+cvxpy==1.9.2 \
+    --hash=sha256:54a34e4ff10b80659023ba5f1517f4171ea9b905e90c824b467a7a4234379faf
+
+# Transitive closure of the three direct requirements, no extras.
+numpy==2.5.2 \
+    --hash=sha256:9e9413326d726c2545bfa65d2c0876871e8d8386e77f992c1d426e180bbd4323
+scipy==1.18.0 \
+    --hash=sha256:f2a6af57bd9e4a75d70e4117e78a1bbee84f79ae3fbb6d0111005d6ebcc4cb8d
+cffi==2.1.1 \
+    --hash=sha256:661c298b4821edebead0c91edd2b00374d67ad7c5a1f7a91d4442633b79d6a72
+pycparser==3.0 \
+    --hash=sha256:b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992
+osqp==1.1.3 \
+    --hash=sha256:e730047c4cba86ad97ca73c03ea4c3cca765b22fa79c3fbefff11b3cce317742
+qdldl==0.1.9.post1 \
+    --hash=sha256:496bebf154c002fb7a36443b9a26cc0f7251e8e9251d3742590300cd2edec7a8
+highspy==1.15.1 \
+    --hash=sha256:9a00e1278ea46a426b1eaa0aea69df9d72ed1d75b18227cad992384ebbdc0c74
+sparsediffpy==0.3.0 \
+    --hash=sha256:b62d0531c6470d6cea800ff60952857d16b7a3e177369c729a8e5f31dba9a4ea
+jinja2==3.1.6 \
+    --hash=sha256:85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67
+MarkupSafe==3.0.3 \
+    --hash=sha256:c47a551199eb8eb2121d4f0f15ae0f923d31350ab9280078d1e5f12b249e0026
+joblib==1.5.3 \
+    --hash=sha256:5fc3c5039fc5ca8c0276333a188bbd59d6b7ab37fe6632daa76bc7f9ec18e713
+setuptools==84.0.0 \
+    --hash=sha256:51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670

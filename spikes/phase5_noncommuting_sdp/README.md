@@ -36,3 +36,21 @@ certificate is written in and nothing else.
 Nothing here integrates with Phase 5, changes its sealed records, enables
 search tiers 2--4, imports a dependency, or grants a mathematical warrant to
 any result. The checker verifies supplied certificates; it does not find them.
+
+## ADR-0045 engine-comparison experiment
+
+The optional comparison keeps its separate exact arithmetic in
+`comparison_algebraic.py` and preserves its older file-based baseline as
+`comparison_validator.py`, so it cannot replace the ADR-0033 certificate
+checker. Clarabel and CVXPY/SCS are gated, spike-only dependencies; absent
+engines produce explicit missing-tool records. Numerical agreement creates no
+warrant, and only the exact reconstruction can close a gap.
+
+Run the offline fail-closed leg with `make spike-phase5-sdp`. To exercise both
+engines, use the hash-pinned
+`requirements-phase5-sdp-comparison-py314-macos-arm64.txt` in a disposable
+environment and pass its Python as `PY=...`.
+
+The comparison retains its original three-case input separately as
+`fixtures/phase5-noncommuting-sdp/comparison-small-cases-v1.json`; it does not
+reinterpret or replace the expanded ADR-0033 certificate fixture.
