@@ -1,0 +1,1 @@
+Project-authored historical record. The older statement holds that a family of bounded linear operators on a complete normed linear space, pointwise bounded at each vector, must share one uniform bound on its norms.

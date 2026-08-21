@@ -1,0 +1,1 @@
+Project-authored historical record. The older counting statement says that placing more objects than containers forces at least one container to hold two or more objects, so no distribution can keep every container single.

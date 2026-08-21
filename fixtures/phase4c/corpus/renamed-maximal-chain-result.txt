@@ -1,0 +1,1 @@
+Project-authored historical record. The older ordering statement says that a partially ordered set in which every chain has an upper bound must contain at least one maximal element.

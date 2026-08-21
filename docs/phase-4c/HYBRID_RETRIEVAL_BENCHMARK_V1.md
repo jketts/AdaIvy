@@ -15,19 +15,49 @@ extraction fidelity, mathematical warrant, and graph admission remain separate.
 
 ## Corpus and query contract
 
-- `fixtures/phase4c/corpus-manifest.json` names exactly 14 UTF-8 documents.
+- `fixtures/phase4c/corpus-manifest.json` names exactly 17 UTF-8 documents.
 - Every document is project-authored under
   `LicenseRef-AdaIvy-Synthetic-Fixture` and carries an applicability class,
   source class, contradiction flag, and optional duplicate group.
-- `fixtures/phase4c/gold-queries.json` names exactly 10 frozen queries: three
-  necessary-lemma, two applicability, two contradiction, two notation-variant,
-  and one renamed-known-result control.
+- `fixtures/phase4c/gold-queries.json` names exactly 15 frozen queries: three
+  necessary-lemma, four applicability, two contradiction, two notation-variant,
+  and four renamed-known-result controls.
+- `fixtures/phase4c/name-aliases.json` names a content-keyed alias table of at
+  least nine entries. Each entry maps an alias name phrase to content phrases
+  only; a document identifier never appears in the file. At least five entries
+  are exercised by no query and match no corpus document, so a signal that uses
+  the table must consult a reference work rather than an answer key.
 - The lexical baseline uses Unicode NFC normalization, alphanumeric token
   extraction, case folding, FTS5 `unicode61 remove_diacritics 0`, OR-combined
   quoted tokens, the Phase 3A title/body/type BM25 weights `2.0/1.0/0.5`, and
   document ID as the deterministic tie-break.
 - Raw BM25 floats and wall time are operational observations. Canonical identity
   binds corpus/query hashes, ordered result IDs, classifications, and metrics.
+
+## Fixture extension, 21 August 2026
+
+This corpus and query set were extended from 14 documents and 10 queries under
+ADR-0031, with owner approval, before the hybrid candidate was measured.
+
+The reason was that two gates could otherwise be met without being tested. The
+renamed-known-result gate had exactly one control query, so an alias table
+containing exactly that one alias would have scored `1.0` while demonstrating
+nothing. Applicability precision was measured over two queries and five
+observations, which is too narrow to distinguish a general discrimination signal
+from one fitted to two known false hits. The extension adds three renamed
+controls over genuine mathematical name aliases and two applicability controls
+that exercise documents the discrimination signal was not authored against.
+
+Adding the controls did not move either measured value: applicability precision
+stayed at `0.6` (now 6 of 10 observations rather than 3 of 5) and
+renamed-known-result recall stayed at `0.0` (now 0 of 4). Queries were not
+selected for their score, which the forbidden outcomes below prohibit.
+
+Measured values recorded before this extension describe a different corpus and
+are not comparable with values recorded after it. The discontinuity is recorded
+here, in ADR-0031, and in the fixture manifest so that it is visible rather than
+inferred. The lexical baseline's own pinned values were re-established from
+scratch on the extended fixtures.
 
 ## Metrics
 
@@ -42,7 +72,7 @@ extraction fidelity, mathematical warrant, and graph admission remain separate.
 | Deterministic rebuild | Ordered IDs and canonical report hash across three normal builds, one reverse-insertion build, and one fresh-process run | exact equality |
 | External cost | Network, model/API calls, downloaded artifacts, and external spend | all `0`; USD `0` |
 
-Resource gates are: exactly 14 documents, exactly 10 queries, maximum query
+Resource gates are: exactly 17 documents, exactly 15 queries, maximum query
 length 4,096 UTF-8 bytes, top-k 5 except renamed control top-k 10, at most 50
 candidates per future signal, canonical report at most 262,144 bytes, derived
 benchmark database at most 2,097,152 bytes, and a 10-second parent-process hard

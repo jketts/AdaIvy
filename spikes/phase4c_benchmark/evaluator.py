@@ -58,8 +58,14 @@ FIELD_SOURCES = {
     "unit_type": "empty-corpus-has-no-unit-type-content",
 }
 
-DOCUMENT_COUNT = 14
-QUERY_COUNT = 10
+# Extended from 14/10 under ADR-0031 with owner approval. The extension exists
+# so the applicability and renamed-known-result gates measure generalization
+# rather than a one-to-one fit: three renamed controls over genuine mathematical
+# name aliases, and two applicability controls exercising documents the
+# discrimination signal was not authored against. Measured values before and
+# after the extension describe different corpora and are not comparable.
+DOCUMENT_COUNT = 17
+QUERY_COUNT = 15
 MAX_QUERY_BYTES = 4_096
 MAX_REPORT_BYTES = 262_144
 MAX_DERIVED_DB_BYTES = 2_097_152
@@ -69,10 +75,10 @@ DUPLICATE_CUTOFF = 5
 CATEGORIES = ("necessary_lemma", "applicability", "contradiction", "notation_variant", "renamed_known_result")
 CATEGORY_COUNTS = {
     "necessary_lemma": 3,
-    "applicability": 2,
+    "applicability": 4,
     "contradiction": 2,
     "notation_variant": 2,
-    "renamed_known_result": 1,
+    "renamed_known_result": 4,
 }
 TOP_K_BY_CATEGORY = {
     "necessary_lemma": 5,

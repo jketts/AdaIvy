@@ -1,0 +1,16 @@
+{
+  "schema_version": "adaivy.phase4c-name-aliases.v1",
+  "fixture_license": "LicenseRef-AdaIvy-Synthetic-Fixture",
+  "aliases": [
+    {"id":"banach-steinhaus-theorem","alias":"Banach-Steinhaus theorem","content_phrases":["bounded linear operators","complete normed linear space","pointwise bounded","uniform bound"]},
+    {"id":"bellman-gronwall-inequality","alias":"Bellman-Gronwall inequality","content_phrases":["exponential growth bound from a differential estimate","integral inequality bounding a function by its own integral"]},
+    {"id":"bolzano-weierstrass-theorem","alias":"Bolzano-Weierstrass theorem","content_phrases":["bounded infinite subset has an accumulation point","every bounded sequence has a convergent subsequence"]},
+    {"id":"borel-lebesgue-theorem","alias":"Borel-Lebesgue theorem","content_phrases":["closed bounded interval","finite subcover","finitely many members","open covering"]},
+    {"id":"cauchy-bunyakovsky-schwarz-inequality","alias":"Cauchy-Bunyakovsky-Schwarz inequality","content_phrases":["absolute value of an inner product","inequality between an inner product and the vector lengths"]},
+    {"id":"dirichlet-drawer-principle","alias":"Dirichlet drawer principle","content_phrases":["at least one container","more objects than containers","two or more objects"]},
+    {"id":"heine-cantor-theorem","alias":"Heine-Cantor theorem","content_phrases":["continuous function on a compact metric space","uniformly continuous on a compact domain"]},
+    {"id":"kuratowski-zorn-lemma","alias":"Kuratowski-Zorn lemma","content_phrases":["every chain has an upper bound","maximal element","partially ordered set"]},
+    {"id":"schur-complement-lemma","alias":"Schur complement lemma","content_phrases":["block matrix positive definiteness","complement of a block in a partitioned matrix"]},
+    {"id":"tychonoff-product-theorem","alias":"Tychonoff product theorem","content_phrases":["arbitrary product of compact spaces is compact","product topology on an infinite family of factors"]}
+  ]
+}
