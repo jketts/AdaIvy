@@ -1,5 +1,10 @@
 # AdaIvy
 
+<p align="center">
+  <a href="https://staple.ai/"><img src="docs/assets/staple-logo-dark.svg" alt="Staple AI" width="120"></a><br>
+  Sponsored and maintained by <a href="https://staple.ai/">Staple AI</a>.
+</p>
+
 **A verification-first system for mathematical research.** AdaIvy combines
 language models, literature retrieval, symbolic computation, numerical
 experiments, and formal tools to investigate mathematical research problems —
