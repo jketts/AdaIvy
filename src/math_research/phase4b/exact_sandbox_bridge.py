@@ -27,6 +27,7 @@ from .parser_sandbox import (
 
 
 ARTIFACT_SCHEMA = "adaivy.phase4b-exact-parser-sandbox-artifact.v2"
+OCI_ARTIFACT_SCHEMA = "adaivy.phase4b-exact-parser-oci-sandbox-artifact.v1"
 PROTOCOL_SCHEMA = "phase4b-parser-worker-response-v2"
 
 _REQUIRED_ASSIGNMENTS = {
@@ -198,6 +199,16 @@ class ExactSandboxArtifact:
     protocol_schema: str
 
 
+@dataclass(frozen=True, slots=True)
+class ExactOciSandboxArtifact:
+    schema_version: str
+    exact_parser_source_sha256: str
+    worker_source_sha256: str
+    dependency_environment_sha256: str
+    sandbox_policy_sha256: str
+    protocol_schema: str
+
+
 def build_exact_darwin_sandbox_worker(
     *, limits: SandboxLimits | None = None,
 ) -> tuple[DarwinResourceSandboxWorker, ExactSandboxArtifact]:
@@ -220,7 +231,30 @@ def build_exact_darwin_sandbox_worker(
     return worker, artifact
 
 
+def build_exact_oci_sandbox_worker(*, expected_runtime, limits=None):
+    """Create the exact-source worker in a reviewed strict OCI boundary."""
+    from .oci_parser_sandbox import OciParserSandboxWorker
+
+    source = _worker_source()
+    worker = OciParserSandboxWorker(
+        name=WORKER_NAME + "-oci-sandbox",
+        version=WORKER_VERSION,
+        worker_source=source,
+        expected_runtime=expected_runtime,
+        limits=limits,
+    )
+    artifact = ExactOciSandboxArtifact(
+        OCI_ARTIFACT_SCHEMA, EXACT_IMPLEMENTATION_SHA256,
+        _sha256(source.encode("utf-8")), expected_runtime.environment_sha256,
+        worker.policy_sha256, PROTOCOL_SCHEMA,
+    )
+    if artifact.worker_source_sha256 != worker.implementation_sha256:
+        raise RuntimeError("OCI sandbox worker source identity mismatch")
+    return worker, artifact
+
+
 __all__ = [
-    "ARTIFACT_SCHEMA", "ExactSandboxArtifact",
-    "build_exact_darwin_sandbox_worker",
+    "ARTIFACT_SCHEMA", "OCI_ARTIFACT_SCHEMA", "ExactOciSandboxArtifact",
+    "ExactSandboxArtifact", "build_exact_darwin_sandbox_worker",
+    "build_exact_oci_sandbox_worker",
 ]

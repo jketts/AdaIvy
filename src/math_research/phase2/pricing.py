@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from ..domain.entities import OpaqueId
+from . import SUPPORTED_LIVE_PROVIDERS
 from .records import PricingSnapshot
 from .serialization import canonical_hash, canonical_json
 
@@ -97,7 +98,7 @@ def _snapshot(payload: dict[str, Any]) -> PricingSnapshot:
     for field in ("snapshot_id", "provider", "model_identifier", "source", "captured_at", "currency", "units"):
         if not isinstance(payload[field], str) or not payload[field]:
             raise PricingSnapshotError(f"{field} must be a non-empty string")
-    if payload["provider"] != "openai":
+    if payload["provider"] not in SUPPORTED_LIVE_PROVIDERS:
         raise PricingSnapshotError("unsupported pricing provider")
     if payload["currency"] != "USD" or payload["units"] != PRICING_UNITS:
         raise PricingSnapshotError("pricing currency or units are unsupported")

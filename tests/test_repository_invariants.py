@@ -36,6 +36,7 @@ NETWORK_MODULES = frozenset(
 # needs an ADR.
 GATED_DYNAMIC_IMPORTS = frozenset(
     {
+        ("math_research/phase2/anthropic_gateway.py", "anthropic"),
         ("math_research/phase2/model_gateway.py", "openai"),
         ("phase0_harness/adapters/probes.py", "paperqa"),
     }

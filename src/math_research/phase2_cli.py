@@ -13,6 +13,7 @@ from .interchange import write_dossier
 from .phase2.artifacts import FileArtifactStore
 from .phase2.baseline_loop import BaselineResearchLoop, deterministic_fake_results
 from .phase2.fixtures import build_open_theorem_dossier
+from .phase2 import SUPPORTED_LIVE_PROVIDERS
 from .phase2.env_file import EnvFileError, load_repository_env
 from .phase2.live_config import (
     LiveRunConfiguration,
@@ -174,7 +175,7 @@ def main(argv: list[str] | None = None) -> int:
     pricing_create = sub.add_parser("pricing-create")
     pricing_create.add_argument("output", type=Path)
     pricing_create.add_argument("--snapshot-id", required=True)
-    pricing_create.add_argument("--provider", choices=("openai",), required=True)
+    pricing_create.add_argument("--provider", choices=sorted(SUPPORTED_LIVE_PROVIDERS), required=True)
     pricing_create.add_argument("--model", required=True)
     pricing_create.add_argument("--source", required=True)
     pricing_create.add_argument("--captured-at", required=True)
@@ -184,7 +185,7 @@ def main(argv: list[str] | None = None) -> int:
     config_create = sub.add_parser("live-config-create")
     config_create.add_argument("output", type=Path)
     config_create.add_argument("--configuration-id", required=True)
-    config_create.add_argument("--provider", choices=("openai",), required=True)
+    config_create.add_argument("--provider", choices=sorted(SUPPORTED_LIVE_PROVIDERS), required=True)
     config_create.add_argument("--model", required=True)
     config_create.add_argument("--pricing-snapshot-id", required=True)
     config_create.add_argument("--call-timeout-milliseconds", type=int, required=True)

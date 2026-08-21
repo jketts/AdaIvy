@@ -7,7 +7,8 @@ name = "adaivy"
 version = "0.6.0"
 description = "Verification-first mathematical research system"
 readme = "README.md"
-license = "LicenseRef-AdaIvy-Proprietary"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.14"
 dependencies = []
 

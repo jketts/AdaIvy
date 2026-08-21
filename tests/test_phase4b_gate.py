@@ -89,8 +89,9 @@ class Phase4BFeasibleGateTests(unittest.TestCase):
         self.assertEqual(required["protected_evidence_mismatches"], report["protected_evidence"]["mismatches"])
         self.assertEqual(required["credential_marker_matches"], report["credential_marker_scan"]["exact_marker_matches"])
         for field in (
-            "in_process_repeat_count", "independent_process_count", "restart_count",
-            "replay_count", "reverse_order_rebuild_count", "semantic_hashes_identical",
+            "in_process_repeat_count", "independent_export_verifier_process_count",
+            "fresh_process_restart_count", "replay_count",
+            "reverse_order_rebuild_count", "semantic_hashes_identical",
         ):
             self.assertEqual(required[field], report["determinism"][field])
         blocked = {item["control"]: item for item in report["blocked_controls"]}

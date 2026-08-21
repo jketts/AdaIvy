@@ -19,14 +19,16 @@ PHASE6_INSTANT ?= 2026-08-20T14:00:00Z
 
 TMPROOT ?= $(shell printf '%s' "$${TMPDIR:-/tmp}")
 
-.PHONY: check check-all check-sealed check-gate test phase0 phase1 phase2 \
-        phase3a phase3b phase4a phase4b phase5 phase6 synthesis clean help
+.PHONY: check check-all check-sealed check-gate check-phase4b-oci test phase0 \
+        phase1 phase2 phase3a phase3b phase4a phase4b phase5 phase6 synthesis \
+        clean help
 
 help:
 	@printf 'Targets:\n'
 	@printf '  check         offline suite: tests + phases 0,1,2,3A,4A,4B,5,6 and synthesis\n'
 	@printf '  check-sealed  phase 3B Lean formal checking (requires the ADR-0016 v5 image)\n'
 	@printf '  check-gate    phase 4 gate tests (requires the disposable jsonschema env)\n'
+	@printf '  check-phase4b-oci strict Phase 4B parser gate (requires exact pinned image)\n'
 	@printf '  check-all     check + check-sealed\n'
 	@printf '  clean         remove __pycache__ and stray sqlite journals\n'
 
@@ -144,6 +146,16 @@ check-gate:
 	  }
 	$(PY) -m unittest tests.test_phase4_gate \
 	  tests.test_phase4a_schema_conformance tests.test_material_partial_result_contract
+
+# Separate from `check`: this executes untrusted-parser fixtures inside the
+# exact no-pull OCI runtime locked in config/phase4b-oci-image-linux-arm64-v1.json.
+check-phase4b-oci:
+	@docker_bin=$$(command -v docker) && \
+	  docker_host=$$(docker context inspect --format '{{.Endpoints.docker.Host}}') && \
+	  ADAIVY_PHASE4B_OCI_DOCKER="$$docker_bin" \
+	  ADAIVY_PHASE4B_OCI_DAEMON="$$docker_host" \
+	  ADAIVY_PHASE4B_OCI_IMAGE='docker.io/library/python@sha256:6b8f06d04d5305c1d1288435388df9165ab41e681fae6439d6349d8053cc3f83' \
+	  $(PY) -m unittest tests.test_phase4b_oci_parser_sandbox
 
 clean:
 	find . -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true

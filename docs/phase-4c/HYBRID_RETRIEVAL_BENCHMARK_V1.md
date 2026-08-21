@@ -59,7 +59,24 @@ gate. It may not worsen any metric already met by the baseline.
 Any new signal must be a rebuildable projection. Index deletion or rebuild may
 not change canonical source, rights, applicability, evidence, or synthesis
 records. Embedding source use requires an independent current Phase 4A
-`embedding` rights decision.
+`embedding` rights decision naming the processor that receives the source text.
+A second provider is a distinct disclosure and needs its own decision.
+
+## Multi-provider constraint
+
+If the model-provider boundary ever admits more than one provider, a hybrid
+candidate must bind the producing provider into the vector projection's identity
+per `TECHNICAL_BLUEPRINT.md` Section 12.2.1: partition by `(provider,
+model_identifier, dimension, normalization)`, compare only within a partition,
+rebuild rather than backfill on any provider or model change, and store produced
+vectors as immutable content-hashed artifacts so the deterministic-rebuild gate
+replays bytes instead of re-calling a provider that is neither bit-reproducible
+nor stable behind its own model aliases.
+
+The failure this prevents is silent. Two same-dimension models from different
+vendors yield a corrupted similarity space that still returns a full, plausibly
+ordered result set, so none of the recall or precision gates above detects it on
+its own.
 
 ## Forbidden outcomes
 
@@ -72,7 +89,9 @@ The benchmark must make these impossible:
 - downloading a model, resolving a URI, opening a socket, or calling an API;
 - mutating Phase 3A FTS, Phase 4 content, or synthesis state;
 - selecting thresholds after observing a hybrid candidate;
-- reporting renamed-result noncoverage as novelty.
+- reporting renamed-result noncoverage as novelty;
+- comparing, merging, or ranking vectors produced by different providers or
+  different embedding models within one similarity space.
 
 ## Spike outcome
 

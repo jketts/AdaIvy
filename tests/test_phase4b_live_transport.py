@@ -122,6 +122,37 @@ class Phase4BLiveTransportTests(unittest.TestCase):
         with self.assertRaisesRegex(TransportFailure, "chunk_line_too_large"):
             self.transport(sock).fetch(request())
 
+    def test_unconsumed_response_headers_are_discarded_at_the_boundary(self) -> None:
+        sock = ScriptedSocket(
+            b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 5\r\n"
+            b"Set-Cookie: a=1; Secure\r\nSet-Cookie: b=2; Secure\r\n"
+            b"Date: Thu, 20 Aug 2026 00:00:00 GMT\r\nX-Request-Id: 7f3a\r\n\r\nproof"
+        )
+        response = self.transport(sock).fetch(request())
+        self.assertEqual(b"proof", response.body)
+        self.assertEqual(
+            (("content-length", "5"), ("content-type", "text/plain")), response.headers
+        )
+
+    def test_duplicate_framing_headers_remain_a_hard_failure(self) -> None:
+        cases = (
+            b"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Length: 6\r\n\r\nproof",
+            b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nTransfer-Encoding: identity\r\n\r\n",
+            b"HTTP/1.1 301 Moved\r\nLocation: /a\r\nLocation: /b\r\nContent-Length: 0\r\n\r\n",
+            b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Type: text/html\r\n\r\n",
+        )
+        for response in cases:
+            with self.subTest(response=response.split(b"\r\n")[1]):
+                with self.assertRaisesRegex(TransportFailure, "response_header_duplicate"):
+                    self.transport(ScriptedSocket(response)).fetch(request())
+
+    def test_malformed_header_name_is_rejected_even_when_discarded(self) -> None:
+        sock = ScriptedSocket(
+            b"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nX Bad Name: v\r\n\r\nproof"
+        )
+        with self.assertRaisesRegex(TransportFailure, "response_header_invalid"):
+            self.transport(sock).fetch(request())
+
     def test_origin_headers_compression_and_response_bounds_fail_closed(self) -> None:
         cases = (
             (request(url="https://other.example/x"), b"", "not_permitted"),

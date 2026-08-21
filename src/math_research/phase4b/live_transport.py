@@ -33,6 +33,17 @@ _FORBIDDEN_REQUEST_HEADERS = frozenset(
     }
 )
 _HEADER_NAME = re.compile(r"^[!#$%&'*+.^_`|~0-9A-Za-z-]+$")
+# Response headers the acquisition pipeline actually consumes. Every other field is
+# discarded at the parsing boundary rather than retained: `header_hash` in the
+# acquisition evidence covers whatever survives here, so retaining per-request
+# volatile fields (`set-cookie`, `date`, request ids) would both break replay
+# determinism and pull ambient session secrets into exported artifacts. Duplicates
+# among the retained set stay a hard failure -- repeated `content-length`,
+# `transfer-encoding`, or `location` are request-smuggling and response-splitting
+# vectors, not benign list-valued fields.
+_RETAINED_RESPONSE_HEADERS = frozenset(
+    {"content-encoding", "content-length", "content-type", "location", "transfer-encoding"}
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -209,7 +220,11 @@ def _parse_head(head: bytes) -> tuple[int, tuple[tuple[str, str], ...]]:
         if not line or line[:1] in {" ", "\t"} or ":" not in line:
             raise TransportFailure("response_header_invalid")
         name, value = line.split(":", 1)
+        if not _HEADER_NAME.fullmatch(name):
+            raise TransportFailure("response_header_invalid")
         normalized = name.casefold()
+        if normalized not in _RETAINED_RESPONSE_HEADERS:
+            continue
         if normalized in observed:
             raise TransportFailure("response_header_duplicate")
         observed.add(normalized)

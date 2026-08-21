@@ -25,6 +25,7 @@ from .pdf_exact_candidate import (
 
 
 ARTIFACT_SCHEMA = "adaivy.phase4b-strict-pdf-sandbox-artifact.v2"
+OCI_ARTIFACT_SCHEMA = "adaivy.phase4b-strict-pdf-oci-sandbox-artifact.v1"
 PROTOCOL_SCHEMA = "phase4b-parser-worker-response-v2"
 
 _REQUIRED_ASSIGNMENTS = {
@@ -203,6 +204,16 @@ class PdfSandboxArtifact:
     protocol_schema: str
 
 
+@dataclass(frozen=True, slots=True)
+class PdfOciSandboxArtifact:
+    schema_version: str
+    pdf_parser_source_sha256: str
+    worker_source_sha256: str
+    dependency_environment_sha256: str
+    sandbox_policy_sha256: str
+    protocol_schema: str
+
+
 def build_pdf_darwin_sandbox_worker(
     *, limits: SandboxLimits | None = None,
 ) -> tuple[DarwinResourceSandboxWorker, PdfSandboxArtifact]:
@@ -229,6 +240,30 @@ def build_pdf_darwin_sandbox_worker(
     return worker, artifact
 
 
+def build_pdf_oci_sandbox_worker(*, expected_runtime, limits=None):
+    """Create the strict-PDF worker in a reviewed strict OCI boundary."""
+    from .oci_parser_sandbox import OciParserSandboxWorker
+
+    source = _worker_source()
+    worker = OciParserSandboxWorker(
+        name=StrictBornDigitalPdfAdapter.name + "-oci-sandbox",
+        version=StrictBornDigitalPdfAdapter.version,
+        worker_source=source,
+        expected_runtime=expected_runtime,
+        limits=limits,
+    )
+    artifact = PdfOciSandboxArtifact(
+        OCI_ARTIFACT_SCHEMA, PDF_IMPLEMENTATION_SHA256,
+        _sha256(source.encode("utf-8")), expected_runtime.environment_sha256,
+        worker.policy_sha256, PROTOCOL_SCHEMA,
+    )
+    if artifact.worker_source_sha256 != worker.implementation_sha256:
+        raise RuntimeError("PDF OCI sandbox worker source identity mismatch")
+    return worker, artifact
+
+
 __all__ = [
-    "ARTIFACT_SCHEMA", "PdfSandboxArtifact", "build_pdf_darwin_sandbox_worker",
+    "ARTIFACT_SCHEMA", "OCI_ARTIFACT_SCHEMA", "PdfOciSandboxArtifact",
+    "PdfSandboxArtifact", "build_pdf_darwin_sandbox_worker",
+    "build_pdf_oci_sandbox_worker",
 ]

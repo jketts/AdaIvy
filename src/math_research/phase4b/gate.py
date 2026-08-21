@@ -39,7 +39,7 @@ from .service import Phase4BService
 from .workspace import Phase4BWorkspace
 
 
-REPORT_SCHEMA = "adaivy.phase4b-feasible-gate-evidence.v5"
+REPORT_SCHEMA = "adaivy.phase4b-feasible-gate-evidence.v6"
 MANIFEST_SCHEMA = "adaivy.phase4b-acceptance-manifest.v1"
 MAX_REPORT_BYTES = 4_194_304
 GATE_POLICY = "fixtures/phase4b/acceptance/feasible-gate-policy.json"
@@ -143,15 +143,16 @@ def _gate_policy(repository_root: Path) -> tuple[dict[str, Any], str]:
         "schema_version", "required_passes", "required_blocked_controls",
         "activation_status",
     }, "feasible gate policy")
-    if policy["schema_version"] != "adaivy.phase4b-feasible-gate-policy.v2":
+    if policy["schema_version"] != "adaivy.phase4b-feasible-gate-policy.v3":
         raise ValueError("feasible gate policy schema differs")
     passes = _exact(policy["required_passes"], {
         "fixture_manifest_total", "acquisition_fixture_executions",
         "parser_fixture_executions", "lifecycle_fixture_executions",
         "ambient_network_calls", "phase3a_writes_caused",
         "protected_evidence_mismatches", "credential_marker_matches",
-        "in_process_repeat_count", "independent_process_count", "restart_count",
-        "replay_count", "reverse_order_rebuild_count", "semantic_hashes_identical",
+        "in_process_repeat_count", "independent_export_verifier_process_count",
+        "fresh_process_restart_count", "replay_count",
+        "reverse_order_rebuild_count", "semantic_hashes_identical",
         "parser_corpus_authorized",
     }, "feasible gate required passes")
     for field, value in passes.items():
@@ -481,13 +482,16 @@ def verify_feasible_gate_report(
     _count(marker["artifacts_scanned"], "credential artifacts scanned")
     _count(marker["persisted_files_scanned"], "credential files scanned")
     determinism = _exact(value["determinism"], {
-        "status", "in_process_repeat_count", "independent_process_count",
-        "restart_count", "replay_count", "reverse_order_rebuild_count",
+        "status", "in_process_repeat_count",
+        "independent_export_verifier_process_count",
+        "fresh_process_restart_count", "replay_count",
+        "reverse_order_rebuild_count",
         "semantic_hashes_identical", "semantic_export_hash",
     }, "determinism evidence")
     for field in (
-        "in_process_repeat_count", "independent_process_count", "restart_count",
-        "replay_count", "reverse_order_rebuild_count",
+        "in_process_repeat_count", "independent_export_verifier_process_count",
+        "fresh_process_restart_count", "replay_count",
+        "reverse_order_rebuild_count",
     ):
         _count(determinism[field], f"determinism {field}")
     if type(determinism["semantic_hashes_identical"]) is not bool:
@@ -495,8 +499,9 @@ def verify_feasible_gate_report(
     if determinism != {
         "status": "passed",
         **{field: required[field] for field in (
-            "in_process_repeat_count", "independent_process_count", "restart_count",
-            "replay_count", "reverse_order_rebuild_count", "semantic_hashes_identical",
+            "in_process_repeat_count", "independent_export_verifier_process_count",
+            "fresh_process_restart_count", "replay_count",
+            "reverse_order_rebuild_count", "semantic_hashes_identical",
         )},
         "semantic_export_hash": determinism["semantic_export_hash"],
     }:
@@ -1278,10 +1283,20 @@ def _determinism_evidence(repository_root: Path, gate_root: Path) -> tuple[dict[
         reverse = workspace.export_bytes()
         if reverse != expected:
             raise ValueError("reverse projection rebuild differs")
-    with Phase4BWorkspace(workspace_root) as restarted:
-        restart = restarted.export_bytes()
+    environment = dict(os.environ)
+    environment["PYTHONPATH"] = str(repository_root / "src")
+    fresh_restart_path = gate_root / "fresh-process-restart-export.json"
+    subprocess.run(
+        [
+            sys.executable, "-m", "math_research.phase4b_cli", "export",
+            str(workspace_root), str(fresh_restart_path),
+        ],
+        cwd=repository_root, env=environment, check=True, capture_output=True,
+        text=True, timeout=30,
+    )
+    restart = fresh_restart_path.read_bytes()
     if restart != expected or canonical_bytes(replay(expected)) != expected:
-        raise ValueError("restart or replay differs")
+        raise ValueError("fresh-process restart or replay differs")
     imported_root = gate_root / "imported"
     with Phase4BWorkspace(imported_root) as imported:
         imported.import_bytes(expected)
@@ -1291,8 +1306,6 @@ def _determinism_evidence(repository_root: Path, gate_root: Path) -> tuple[dict[
 
     export_path = gate_root / "deterministic-export.json"
     export_path.write_bytes(expected)
-    environment = dict(os.environ)
-    environment["PYTHONPATH"] = str(repository_root / "src")
     process_hashes: list[str] = []
     for _ in range(2):
         completed = subprocess.run(
@@ -1306,7 +1319,8 @@ def _determinism_evidence(repository_root: Path, gate_root: Path) -> tuple[dict[
         raise ValueError("independent process semantic hashes differ")
     return {
         "status": "passed", "in_process_repeat_count": 3,
-        "independent_process_count": 2, "restart_count": 1, "replay_count": 1,
+        "independent_export_verifier_process_count": 2,
+        "fresh_process_restart_count": 1, "replay_count": 1,
         "reverse_order_rebuild_count": 1, "semantic_hashes_identical": True,
         "semantic_export_hash": expected_hash,
     }, [expected, reverse, restart, imported_bytes]

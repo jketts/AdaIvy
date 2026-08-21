@@ -6,25 +6,23 @@ current ADRs before changing architecture or phase scope.
 
 ## Current phase
 
-The bounded exploratory synthesis slice (ADR-0025, implemented under ADR-0027)
-is the current completed work, layered over the sealed Phase 6 workspace as
-`src/math_research/synthesis/`. It implements acceptance scenarios `ERS-AC-01`
-through `ERS-AC-12` from
-`docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md`: the four independent state
-axes, all fifteen run bounds with the enforceable exploration reserve, bounded
-multi-hop retrieval over the unmodified Phase 3A index, the exact
-duplicate-attempt key, composition comparison and locally minimal bridge
-candidates, transitive influence closure with append-only invalidation, captured
-proposals with generator-free replay, and append-only steering.
+Bounded Phase 4B authorized acquisition and exact-source parsing (ADR-0028) is
+the current work. Its offline acquisition, persistence, deletion, replay,
+strict HTML/TeX/PDF candidates, and exact Linux/arm64 OCI parser gate are
+implemented. The digest-pinned OCI gate reproduces all twelve parser fixtures
+with zero false admissions and demonstrates kernel memory, CPU, process, file,
+network-none, read-only-root, noexec-temp, and ambient-secret controls. Network
+remains off by default. The separately acknowledged live HTTPS gate is the
+final activation step; its absence must never be counted as a pass.
 
 Phases 0 through 6 remain implemented and authoritative. The Phase 5 scope is
 still exact scalar/diagonal `QD-FS-01` with deterministic tier-0 branches and
 search tiers 2--4 disabled; the Phase 6 scope is still one frozen held-out case
 plus deterministic generality controls and canonical replay.
 
-ADR-0026 records the accepted delivery order for the remaining work: Phase 4B
-acquisition and parsing, then Phase 4C hybrid retrieval, then the noncommuting
-Phase 5 expansion, then Phase 6 external evaluation.
+ADR-0026 records the accepted delivery order for the remaining work after
+Phase 4B: Phase 4C hybrid retrieval, then the noncommuting Phase 5 expansion,
+then Phase 6 external evaluation.
 
 ADR-0029 refines the target orchestration architecture without enabling a new
 runtime. The baseline is one coherent long-horizon research lead plus a
@@ -61,6 +59,13 @@ because sealed Phase 5 accepts an identical originating and creating principal.
   them. Prefer the standard library for the harness.
 - Record any necessary departure from the blueprint in `docs/adrs/`; do not
   silently change the architecture.
+- Never let vectors from different providers or different embedding models share
+  a similarity space. If a second model provider is admitted, partition any
+  vector projection by `(provider, model_identifier, dimension, normalization)`,
+  rebuild rather than backfill on a provider or model change, and bind stored
+  vector bytes into canonical identity so a deterministic rebuild replays
+  artifacts instead of re-calling the provider. Mixing degrades retrieval
+  silently rather than failing. See `TECHNICAL_BLUEPRINT.md` Section 12.2.1.
 - Use deterministic serialization, explicit schema versions, content hashes,
   bounded subprocesses, captured stdout/stderr, and no-network execution by
   default.
