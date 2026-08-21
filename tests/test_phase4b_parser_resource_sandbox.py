@@ -11,6 +11,7 @@ import sys
 import unittest
 from unittest.mock import patch
 
+from math_research.phase4b import parser_sandbox
 from math_research.phase4b.parser_sandbox import (
     CONTRACT_VERSION, DarwinResourceSandboxWorker, SandboxLimits, _kill_worker, _profile,
     measured_runtime_identity,
@@ -183,16 +184,98 @@ sys.stdout.write(json.dumps({
 
     def test_kernel_cpu_limit_terminates_busy_worker_before_wall_deadline(self) -> None:
         self.require_darwin()
+        # The wall bound is the sealed ceiling while the CPU bound is one
+        # second, so the kernel CPU limit is the binding constraint even when a
+        # loaded machine only schedules the busy worker for a small share of a
+        # core. A narrower wall bound would let the parent deadline outrace the
+        # limit under test and assert the wrong enforcement path.
         sandbox = worker(
             "while True: pass",
-            limits=SandboxLimits(max_wall_seconds=3, max_cpu_seconds=1),
+            limits=SandboxLimits(max_wall_seconds=30, max_cpu_seconds=1),
         )
         execution = sandbox.execute(request())
         self.assertEqual("sandbox_rejected", execution.status)
-        self.assertEqual("sandbox_cpu_limit_exceeded", execution.failure_code)
-        self.assertLess(execution.operation.duration_ms, 3_000)
         assert sandbox.last_evidence is not None
-        self.assertGreaterEqual(sandbox.last_evidence.cpu_milliseconds, 750)
+        measured_cpu_ms = sandbox.last_evidence.cpu_milliseconds
+        if execution.failure_code == "sandbox_wall_time_exceeded":
+            # 30:1 is the widest wall-to-CPU ratio the sealed parser bounds
+            # permit, since RLIMIT_CPU has whole-second granularity and the
+            # wall ceiling is thirty seconds. A machine that never schedules
+            # the busy worker for one CPU second across thirty wall seconds
+            # leaves the kernel limit unreachable, not unenforced. Separate the
+            # two exactly rather than accepting whichever limit won: a worker
+            # that did spend its whole CPU budget and survived is a real
+            # enforcement regression and still fails here. The companion
+            # rlimit probe proves the limit is applied without needing load.
+            self.assertLess(measured_cpu_ms, 1_000 * sandbox.limits.max_cpu_seconds)
+            self.skipTest(
+                f"contended machine gave the busy worker only {measured_cpu_ms} ms "
+                "of CPU across the thirty-second wall bound, leaving the kernel "
+                "CPU limit unreachable"
+            )
+        self.assertEqual("sandbox_cpu_limit_exceeded", execution.failure_code)
+        self.assertLess(execution.operation.duration_ms, 30_000)
+        self.assertGreaterEqual(measured_cpu_ms, 750)
+
+    def test_kernel_cpu_limit_is_applied_to_worker(self) -> None:
+        self.require_darwin()
+        # Load-independent companion to the termination test above: the worker
+        # reports the CPU rlimit it actually inherited, so the applied limit
+        # stays proven on a machine too contended to reach it.
+        source = r'''
+import os, resource
+os._exit(73 if resource.getrlimit(resource.RLIMIT_CPU) == (1, 1) else 74)
+'''
+        sandbox = worker(source, limits=SandboxLimits(max_cpu_seconds=1))
+        execution = sandbox.execute(request())
+        self.assertEqual("sandbox_rejected", execution.status)
+        self.assertEqual("sandbox_worker_failed", execution.failure_code)
+        self.assertEqual(73, execution.operation.worker_exit_code)
+        assert sandbox.last_evidence is not None
+        self.assertEqual(1, sandbox.last_evidence.limits["max_cpu_seconds"])
+        self.assertEqual(
+            "kernel_rlimit_cpu",
+            sandbox.last_evidence.limit_enforcement["max_cpu_seconds"],
+        )
+
+    def test_lost_resource_measurement_is_not_reported_as_memory_overage(self) -> None:
+        self.require_darwin()
+        sandbox = worker()
+        with patch(
+            "math_research.phase4b.parser_sandbox._darwin_task_metrics",
+            side_effect=PermissionError(1, "proc_pidinfo failed"),
+        ):
+            execution = sandbox.execute(request())
+        self.assertEqual("sandbox_rejected", execution.status)
+        self.assertEqual(
+            "sandbox_resource_measurement_unavailable", execution.failure_code,
+        )
+        self.assertIsNone(execution.outcome)
+
+    def test_terminated_task_measurement_loss_keeps_kernel_signal_classification(self) -> None:
+        self.require_darwin()
+        # A task killed by the kernel stops being measurable before the parent
+        # reaps its wait status, so a vanished task must not be mistaken for
+        # either a memory overage or genuine measurement loss.
+        sandbox = worker(
+            "while True: pass",
+            limits=SandboxLimits(max_wall_seconds=30, max_cpu_seconds=1),
+        )
+        measured = parser_sandbox._darwin_task_metrics
+        samples = {"count": 0}
+
+        def vanishing_task(pid: int) -> tuple[int, int]:
+            resident, cpu_milliseconds = measured(pid)
+            samples["count"] += 1
+            if cpu_milliseconds >= 950:
+                raise ProcessLookupError(3, "proc_pidinfo failed")
+            return resident, cpu_milliseconds
+
+        with patch.object(parser_sandbox, "_darwin_task_metrics", vanishing_task):
+            execution = sandbox.execute(request())
+        self.assertGreater(samples["count"], 0)
+        self.assertEqual("sandbox_rejected", execution.status)
+        self.assertEqual("sandbox_cpu_limit_exceeded", execution.failure_code)
 
     def test_sampled_resident_memory_tripwire_rejects_observed_overage(self) -> None:
         self.require_darwin()

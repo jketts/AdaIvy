@@ -5,8 +5,9 @@ caller's pinned worker source is executed through Darwin ``sandbox-exec`` with
 no network, no filesystem writes, no process forks, a cleared environment,
 parent-enforced output and wall bounds, and POSIX resource limits. Resident
 memory is only a sampled tripwire: a short-lived spike can evade observation.
-Platforms without that named boundary return a rejected
-:class:`WorkerExecution`.
+The tripwire rejects an observed overage only; measurement lost for a task that
+still exists fails closed under its own code instead. Platforms without that
+named boundary return a rejected :class:`WorkerExecution`.
 """
 
 from __future__ import annotations
@@ -408,6 +409,8 @@ class DarwinResourceSandboxWorker:
         output_limit: str | None = None
         timed_out = False
         sampled_memory_limit = False
+        measurement_lost = False
+        task_gone = False
         peak_bytes = 0
         cpu_ms = 0
         exit_code: int | None = None
@@ -433,21 +436,37 @@ class DarwinResourceSandboxWorker:
                 sent = 0
                 deadline = started + self.limits.max_wall_seconds
                 while streams.get_map():
-                    try:
-                        resident, process_cpu_ms = _darwin_task_metrics(process.pid)
-                    except OSError:
-                        # A process that has just exited may disappear between
-                        # poll iterations; all other measurement loss fails
-                        # closed below if it occurred while still running.
-                        if process.poll() is None:
-                            sampled_memory_limit = True
+                    if not task_gone:
+                        try:
+                            resident, process_cpu_ms = _darwin_task_metrics(process.pid)
+                        except ProcessLookupError:
+                            # The worker's kernel task no longer exists, so the
+                            # worker has already terminated: unmeasurable, not
+                            # unmeasured. ``poll`` is not a liveness test -- it
+                            # reports only whether this parent has reaped the
+                            # wait status yet, so a task just killed by
+                            # RLIMIT_CPU is routinely still unreaped here. Stop
+                            # sampling, keep draining the pipes, and let the
+                            # exit status classify the termination. Draining on
+                            # rather than failing closed is safe only because
+                            # the profile denies process-fork and the sealed
+                            # ceiling pins max_processes to 1, so this task is
+                            # the whole group and nothing survives it to hold
+                            # the pipes open. Fail closed here instead if a
+                            # payload is ever allowed to fork.
+                            task_gone = True
+                        except OSError:
+                            # Measurement genuinely lost for a task that still
+                            # exists: fail closed under its own code rather
+                            # than claiming an overage nothing observed.
+                            measurement_lost = True
                             break
-                    else:
-                        peak_bytes = max(peak_bytes, resident)
-                        cpu_ms = max(cpu_ms, process_cpu_ms)
-                        if resident > self.limits.max_memory_bytes:
-                            sampled_memory_limit = True
-                            break
+                        else:
+                            peak_bytes = max(peak_bytes, resident)
+                            cpu_ms = max(cpu_ms, process_cpu_ms)
+                            if resident > self.limits.max_memory_bytes:
+                                sampled_memory_limit = True
+                                break
                     remaining = deadline - time.monotonic()
                     if remaining <= 0:
                         timed_out = True
@@ -479,7 +498,7 @@ class DarwinResourceSandboxWorker:
                         break
                     if process.poll() is not None and not streams.get_map():
                         break
-                if timed_out or output_limit or sampled_memory_limit:
+                if timed_out or output_limit or sampled_memory_limit or measurement_lost:
                     _kill_worker(process)
                 try:
                     exit_code = process.wait(timeout=1)
@@ -526,6 +545,13 @@ class DarwinResourceSandboxWorker:
         if sampled_memory_limit:
             return self._rejected(
                 request, "sandbox_sampled_memory_limit_exceeded", started=started,
+                stdout=bounded_stdout, stderr=bounded_stderr, exit_code=exit_code,
+                cpu_ms=cpu_ms, peak_bytes=peak_bytes, profile_hash=profile_hash,
+                stdout_observed=len(stdout), stderr_observed=len(stderr),
+            )
+        if measurement_lost:
+            return self._rejected(
+                request, "sandbox_resource_measurement_unavailable", started=started,
                 stdout=bounded_stdout, stderr=bounded_stderr, exit_code=exit_code,
                 cpu_ms=cpu_ms, peak_bytes=peak_bytes, profile_hash=profile_hash,
                 stdout_observed=len(stdout), stderr_observed=len(stderr),
