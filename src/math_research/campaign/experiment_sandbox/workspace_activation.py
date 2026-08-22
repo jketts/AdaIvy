@@ -26,6 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 from pathlib import Path
+import re
 from typing import Any
 
 from ..records import canonical_bytes, canonical_hash
@@ -36,6 +37,7 @@ from .workspace_sandbox import BOOTSTRAP_V2_SHA256
 WORKSPACE_REPORT_SCHEMA = "adaivy.campaign-workspace-sandbox-gate.v2"
 WORKSPACE_ACTIVATION_SCHEMA = "adaivy.campaign-workspace-sandbox-activation.v2"
 MAX_WORKSPACE_ACTIVATION_BYTES = 2_097_152
+_SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 #: The sixteen v2 probes.  The operator runs them on the built image; each one
 #: must flip against a fresh container before the gate records ``activated``.
@@ -96,6 +98,11 @@ class WorkspaceActivation:
             raise ValueError("workspace activation status is outside the vocabulary")
         if self.epistemic_warrant_created is not False:
             raise ValueError("a workspace activation may never create warrant")
+        if any(
+            not isinstance(item, int) or isinstance(item, bool)
+            for item in (self.probes_total, self.probes_flipped, self.probes_blocked)
+        ):
+            raise ValueError("workspace probe counts must be integers")
         if self.probes_total < 1 or self.probes_flipped < 0 or self.probes_blocked < 0:
             raise ValueError("workspace probe counts are invalid")
         if self.probes_flipped + self.probes_blocked > self.probes_total:
@@ -104,6 +111,15 @@ class WorkspaceActivation:
             self.probes_flipped != self.probes_total or self.probes_blocked != 0
         ):
             raise ValueError("activation requires every probe flipped")
+        for name in (
+            "environment_hash", "policy_hash", "bootstrap_hash",
+            "workspace_lock_sha256", "target_class_definition_hash",
+            "content_hash",
+        ):
+            if not isinstance(getattr(self, name), str) or _SHA256.fullmatch(
+                getattr(self, name)
+            ) is None:
+                raise ValueError(f"workspace activation {name} is malformed")
 
     @property
     def activated(self) -> bool:
@@ -131,11 +147,34 @@ def require_activatable_workspace_lock(repository_root: Path) -> WorkspaceImageL
             "image on a linux/arm64 Docker host, record the real digests, "
             "then re-run the gate"
         )
-    evidence = repository_root / lock.probe_evidence_path
-    if not evidence.is_file():
+    try:
+        root = repository_root.resolve(strict=True)
+        evidence = repository_root / lock.probe_evidence_path
+        resolved_evidence = evidence.resolve(strict=True)
+        if not resolved_evidence.is_relative_to(root) or evidence.is_symlink():
+            raise WorkspaceActivationError(
+                "workspace_probe_evidence_path_invalid: activation evidence "
+                "must be a regular file inside the repository"
+            )
+        data = evidence.read_bytes()
+    except WorkspaceActivationError:
+        raise
+    except OSError as error:
         raise WorkspaceActivationError(
             "workspace_probe_evidence_absent: the lock claims built_and_probed "
             f"but {lock.probe_evidence_path} does not exist"
+        ) from error
+    try:
+        _report, activation = load_workspace_activation(data)
+    except (TypeError, ValueError) as error:
+        raise WorkspaceActivationError(
+            "workspace_probe_evidence_invalid: the named activation evidence "
+            "does not pass the closed record gate"
+        ) from error
+    if activation.workspace_lock_sha256 != lock.lock_sha256:
+        raise WorkspaceActivationError(
+            "workspace_probe_evidence_lock_mismatch: activation evidence was "
+            "produced for a different workspace image lock"
         )
     return lock
 
@@ -152,6 +191,7 @@ def build_workspace_activation_report(
     the exact shape :func:`verify_workspace_activation` demands.
     """
 
+    _reject_floats((environment_hash, policy_hash, determinism_replica_policy, probes))
     if lock.pending:
         raise WorkspaceActivationError(
             "workspace_image_lock_pending_operator_build"
@@ -181,6 +221,7 @@ def build_workspace_activation_report(
 def verify_workspace_activation(value: object) -> WorkspaceActivation:
     """Strictly verify a raw v2 gate record and return its small attestation."""
 
+    _reject_floats(value)
     if not isinstance(value, dict) or set(value) != _REPORT_FIELDS:
         raise ValueError("workspace activation fields differ")
     if value["schema_version"] != WORKSPACE_REPORT_SCHEMA:
@@ -255,7 +296,7 @@ def verify_workspace_activation(value: object) -> WorkspaceActivation:
         "environment_hash", "policy_hash", "workspace_lock_sha256",
         "target_class_definition_hash",
     ):
-        if not isinstance(value[name], str) or not value[name].startswith("sha256:"):
+        if not isinstance(value[name], str) or _SHA256.fullmatch(value[name]) is None:
             raise ValueError(f"workspace activation {name} is malformed")
     passed = sum(item["passed"] is True for item in probes)
     blocked = len(probes) - passed
@@ -280,6 +321,20 @@ def verify_workspace_activation(value: object) -> WorkspaceActivation:
         probes_blocked=value["probes_blocked"],
         content_hash=value["content_hash"],
     )
+
+
+def _reject_floats(value: object) -> None:
+    """Reject JSON floats recursively before any activation claim is checked."""
+
+    if isinstance(value, float):
+        raise ValueError("workspace activation contains a float")
+    if isinstance(value, dict):
+        for key, item in value.items():
+            _reject_floats(key)
+            _reject_floats(item)
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            _reject_floats(item)
 
 
 def load_workspace_activation(data: bytes) -> tuple[dict[str, Any], WorkspaceActivation]:

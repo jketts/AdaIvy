@@ -247,6 +247,10 @@ class CampaignVerifierRouter:
         candidate_hash, candidate = request.candidate_artifact
         route = ROUTE_UNSUPPORTED
         try:
+            if not isinstance(request.determinism_unverified, bool):
+                raise _RouteRefusal(
+                    "refused", "determinism_status_malformed", {},
+                )
             if _raw_hash(candidate) != candidate_hash:
                 raise _RouteRefusal(
                     "refused", "candidate_bytes_do_not_match_their_hash", {},
@@ -462,6 +466,8 @@ class CampaignVerifierRouter:
             "trust": dict(_ROUTER_TRUST),
             "epistemic_warrant_created": False,
         }
+        if request.determinism_unverified:
+            payload["input_determinism_unverified"] = True
         payload["content_hash"] = canonical_hash(payload)
         result = canonical_bytes(payload)
         return ExperimentResult(
@@ -485,6 +491,7 @@ class CampaignVerifierRouter:
             wall_milliseconds=None,
             peak_memory_bytes=None,
             output_bytes=None,
+            determinism_unverified=request.determinism_unverified,
         )
 
 

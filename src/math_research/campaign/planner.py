@@ -216,7 +216,7 @@ class GatewayCampaignPlanner:
         )
 
     def _payload(self, context: PlannerContext) -> dict[str, object]:
-        return {
+        payload: dict[str, object] = {
             "schema_version": CAMPAIGN_PROMPT_VERSION,
             "campaign_id": context.campaign_id,
             "target_hash": context.target_hash,
@@ -288,6 +288,14 @@ class GatewayCampaignPlanner:
                 self.configuration.budget.max_cost_microusd - self.cost_microusd_used,
             ),
         }
+        # Preserve the v1 prompt bytes when the v1 determinism gate ran, while
+        # making the weaker one-replica v2 fact impossible to omit from a
+        # planner-authored report.
+        if context.latest_tool_determinism_unverified:
+            payload["latest_tool_determinism_unverified"] = True
+        if context.selected_tool_determinism_unverified:
+            payload["selected_tool_determinism_unverified"] = True
+        return payload
 
     @staticmethod
     def _status(status: ModelResultStatus) -> RecordStatus:

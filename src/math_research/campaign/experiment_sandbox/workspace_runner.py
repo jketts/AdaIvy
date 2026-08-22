@@ -148,8 +148,14 @@ class ActivatedWorkspaceCampaignRunner:
             raise WorkspaceRunnerError("sandbox control policy differs from activation")
         if self.activation.bootstrap_hash != sandbox.bootstrap_sha256:
             raise WorkspaceRunnerError("sandbox bootstrap differs from activation")
-        configured = sandbox.configuration_record().get("limits")
-        if configured is not None and configured != derived.to_record():
+        configuration = sandbox.configuration_record()
+        if (
+            not isinstance(configuration, dict)
+            or "limits" not in configuration
+            or configuration["limits"] != derived.to_record()
+            or configuration.get("determinism_unverified")
+            is not derived.determinism_unverified
+        ):
             raise WorkspaceRunnerError("sandbox limits differ from admitted request")
         execution = sandbox.run(
             SandboxProgramRequest(
@@ -160,13 +166,21 @@ class ActivatedWorkspaceCampaignRunner:
             ),
             self.workspace_dir,
         )
+        if (
+            execution.determinism_replicas != derived.determinism_replicas
+            or execution.determinism_unverified
+            is not derived.determinism_unverified
+        ):
+            raise WorkspaceRunnerError(
+                "sandbox determinism status differs from admitted request"
+            )
         self.run_records.append(execution.semantic_record())
         result, status = self._project(execution)
         outcome = execution.outcome
         return ExperimentResult(
             adapter_id=WORKSPACE_ADAPTER_ID,
             adapter_version=WORKSPACE_ADAPTER_VERSION,
-            adapter_configuration_hash=canonical_hash(sandbox.configuration_record()),
+            adapter_configuration_hash=canonical_hash(configuration),
             environment_hash=sandbox.environment_sha256,
             status=status,
             result=result,
@@ -181,6 +195,7 @@ class ActivatedWorkspaceCampaignRunner:
                 + outcome.stdout_bytes_observed
                 + outcome.stderr_bytes_observed
             ),
+            determinism_unverified=execution.determinism_unverified,
         )
 
     @staticmethod

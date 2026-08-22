@@ -56,7 +56,9 @@ digests themselves, never from the flag alone, and three layers refuse a
 pending lock: the loader (a `built_and_probed` claim with any placeholder is a
 hard reject), the `WorkspaceSandbox` constructor, and
 `require_activatable_workspace_lock`, which additionally demands the stored
-probe evidence at the lock's `probe_evidence_path`. Nothing in this
+probe evidence at the lock's `probe_evidence_path`, parses it through the
+closed canonical activation-record gate, and checks that it names the current
+lock hash. Mere file presence is not activation evidence. Nothing in this
 repository can execute against the v2 image until the operator completes the
 build step below.
 
@@ -99,8 +101,10 @@ below the ceilings and are never rounded up (`limits_from_request_v2`).
 The replica count is recorded in every run record. Two to four replicas run
 the byte-identical gate over result, stdout, stderr, exit, **and** the
 post-run workspace manifest. One replica means the gate did not run: the
-execution carries `determinism_unverified: true` in its semantic record and
-adapter configuration, and verifiers and reports **must surface** that flag.
+execution carries `determinism_unverified: true` in its semantic record,
+adapter configuration, explicit `ExperimentResult`, planner/report context,
+verification request, and verifier result. Verifiers and reports **must
+surface** that flag.
 A determinism-unverified result is never silently equal to a verified one.
 
 ### Trust framing, unchanged

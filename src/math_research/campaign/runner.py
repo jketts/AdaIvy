@@ -183,6 +183,8 @@ class PlannerContext:
     # -- ADR-0078 bounded repair ---------------------------------------------
     last_rejection: str | None = None
     repair_attempts_remaining: int = 0
+    latest_tool_determinism_unverified: bool = False
+    selected_tool_determinism_unverified: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -230,6 +232,9 @@ class ExperimentResult:
     wall_milliseconds: int | None
     peak_memory_bytes: int | None
     output_bytes: int | None
+    # Backward-compatible metadata: v1 adapters default to a completed
+    # determinism gate, while the v2 one-replica mode must surface its absence.
+    determinism_unverified: bool = False
 
 
 class CampaignExperimentRunner(Protocol):
@@ -243,6 +248,7 @@ class VerificationRequest:
     target_hash: str
     candidate_artifact: tuple[str, bytes]
     tool_artifacts: tuple[tuple[str, bytes], ...]
+    determinism_unverified: bool = False
 
 
 class VerifierPort(Protocol):
@@ -542,12 +548,15 @@ class SequentialCampaignRunner:
         programs: set[str] = set()
         candidates: set[str] = set()
         tool_artifacts: set[str] = set()
+        tool_artifact_determinism: dict[str, bool] = {}
         verifier_private_artifacts: set[str] = set()
         suspended: set[str] = set()
         selected_candidate: str | None = None
         selected_tools: tuple[str, ...] = ()
+        selected_tool_determinism_unverified = False
         latest_tool_result: bytes | None = None
         latest_tool_hash: str | None = None
+        latest_tool_determinism_unverified = False
         report_hash: str | None = None
         terminal = "bounds_exhausted"
         first_sequence = 1
@@ -643,6 +652,12 @@ class SequentialCampaignRunner:
                 read_artifact_bytes=None if pending_read is None else pending_read[1],
                 read_artifact_truncated=(
                     False if pending_read is None else pending_read[2]
+                ),
+                latest_tool_determinism_unverified=(
+                    latest_tool_determinism_unverified
+                ),
+                selected_tool_determinism_unverified=(
+                    selected_tool_determinism_unverified
                 ),
             )
             pending_read = None
@@ -789,8 +804,15 @@ class SequentialCampaignRunner:
                     outputs.extend(artifact_hashes)
                     available.update(artifact_hashes)
                     tool_artifacts.update(artifact_hashes)
+                    tool_artifact_determinism.update({
+                        item: result.determinism_unverified
+                        for item in artifact_hashes
+                    })
                     latest_tool_hash = tool.result_hash
                     latest_tool_result = result.result
+                    latest_tool_determinism_unverified = (
+                        result.determinism_unverified
+                    )
                     action_status = result.status
                     # ADR-0077 §3: sandbox outcome and failure diagnostics are
                     # fed back as an untrusted-for-warrant structured record.
@@ -815,6 +837,10 @@ class SequentialCampaignRunner:
                     candidates.add(chosen)
                     selected_candidate = chosen
                     selected_tools = action.selected_tool_artifact_hashes
+                    selected_tool_determinism_unverified = any(
+                        tool_artifact_determinism.get(item, False)
+                        for item in selected_tools
+                    )
                 elif action.action_type is ActionType.VERIFY:
                     if len(tools) >= self.policy.max_tool_runs:
                         raise CampaignRunnerError("campaign tool-run bound exhausted")
@@ -831,6 +857,9 @@ class SequentialCampaignRunner:
                         tool_artifacts=tuple(
                             (item, self.artifacts.get(item)) for item in selected_tools
                         ),
+                        determinism_unverified=(
+                            selected_tool_determinism_unverified
+                        ),
                     )
                     result = self.verifier(verification)
                     tool, artifact_hashes = self._record_tool(
@@ -843,6 +872,8 @@ class SequentialCampaignRunner:
                             "tool_artifact_hashes": tuple(
                                 item[0] for item in verification.tool_artifacts
                             ),
+                            **({"determinism_unverified": True}
+                               if verification.determinism_unverified else {}),
                         }),
                     )
                     tools.append(tool)
@@ -1008,7 +1039,7 @@ class SequentialCampaignRunner:
 
     @staticmethod
     def _planner_request_hash(context: PlannerContext) -> str:
-        return canonical_hash({
+        value = {
             "campaign_id": context.campaign_id,
             "target_hash": context.target_hash,
             "configuration_hash": context.configuration_hash,
@@ -1034,7 +1065,12 @@ class SequentialCampaignRunner:
             # ADR-0078 bounded repair fields.
             "last_rejection": context.last_rejection,
             "repair_attempts_remaining": context.repair_attempts_remaining,
-        })
+        }
+        if context.latest_tool_determinism_unverified:
+            value["latest_tool_determinism_unverified"] = True
+        if context.selected_tool_determinism_unverified:
+            value["selected_tool_determinism_unverified"] = True
+        return canonical_hash(value)
 
     def _model_call(
         self, *, call_id: str, action_id: str, response: PlannerResponse,
@@ -1147,6 +1183,8 @@ class SequentialCampaignRunner:
     def _record_tool(
         self, action_id: str, index: int, result: ExperimentResult, *, request_hash: str,
     ) -> tuple[ToolRunRecord, tuple[str, str, str]]:
+        if not isinstance(result.determinism_unverified, bool):
+            raise CampaignRunnerError("tool determinism status must be boolean")
         for content in (result.result, result.stdout, result.stderr):
             if len(content) > self.policy.max_artifact_bytes:
                 raise CampaignRunnerError("tool artifact exceeds campaign byte bound")

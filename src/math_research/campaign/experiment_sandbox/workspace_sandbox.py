@@ -36,6 +36,7 @@ from __future__ import annotations
 import base64
 from dataclasses import dataclass
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -95,6 +96,7 @@ WORKSPACE_REFUSAL_CODES = (
     "workspace_byte_ceiling_exceeded",
     "workspace_inode_ceiling_exceeded",
     "workspace_promotion_failed",
+    "workspace_manifest_unavailable",
     "nondeterministic_workspace",
 )
 
@@ -368,44 +370,66 @@ def workspace_manifest(
     reads, so its presence is a structural refusal, not an inventory entry.
     """
 
-    if not workspace.is_dir():
-        raise SandboxError("workspace_directory_unavailable")
-    entries: list[dict[str, Any]] = []
-    total_bytes = 0
-    inode_count = 0
-    stack = [workspace]
-    while stack:
-        directory = stack.pop()
-        for child in sorted(directory.iterdir()):
-            if child.is_symlink():
-                raise SandboxError("workspace_entry_unsupported")
-            if child.is_dir():
+    try:
+        if not workspace.is_dir():
+            raise SandboxError("workspace_directory_unavailable")
+        entries: list[dict[str, Any]] = []
+        total_bytes = 0
+        inode_count = 0
+        stack = [workspace]
+        while stack:
+            directory = stack.pop()
+            for child in sorted(directory.iterdir()):
+                if child.is_symlink():
+                    raise SandboxError("workspace_entry_unsupported")
+                if child.is_dir():
+                    inode_count += 1
+                    if inode_count > max_inodes:
+                        raise SandboxError("workspace_inode_ceiling_exceeded")
+                    stack.append(child)
+                    continue
+                if not child.is_file():
+                    raise SandboxError("workspace_entry_unsupported")
                 inode_count += 1
+                data = child.read_bytes()
+                total_bytes += len(data)
+                entries.append({
+                    "path": child.relative_to(workspace).as_posix(),
+                    "sha256": _sha256(data),
+                    "size": len(data),
+                })
+                if total_bytes > max_bytes:
+                    raise SandboxError("workspace_byte_ceiling_exceeded")
                 if inode_count > max_inodes:
                     raise SandboxError("workspace_inode_ceiling_exceeded")
-                stack.append(child)
-                continue
-            if not child.is_file():
-                raise SandboxError("workspace_entry_unsupported")
-            inode_count += 1
-            data = child.read_bytes()
-            total_bytes += len(data)
-            entries.append({
-                "path": child.relative_to(workspace).as_posix(),
-                "sha256": _sha256(data),
-                "size": len(data),
-            })
-            if total_bytes > max_bytes:
-                raise SandboxError("workspace_byte_ceiling_exceeded")
-            if inode_count > max_inodes:
-                raise SandboxError("workspace_inode_ceiling_exceeded")
-    entries.sort(key=lambda item: item["path"])
+        entries.sort(key=lambda item: item["path"])
+        value: dict[str, Any] = {
+            "entries": entries,
+            "file_count": len(entries),
+            "inode_count": inode_count,
+            "schema_version": WORKSPACE_MANIFEST_SCHEMA,
+            "total_bytes": total_bytes,
+        }
+        value["content_hash"] = canonical_hash(value)
+        return value
+    except SandboxError:
+        raise
+    except (OSError, UnicodeError, ValueError) as error:
+        # Directory races, unreadable files, and filenames that cannot be
+        # encoded canonically are untrusted workspace observations.  They are
+        # a typed refusal, never an exception escaping the run boundary.
+        raise SandboxError("workspace_manifest_unavailable") from error
+
+
+def _empty_workspace_manifest() -> dict[str, Any]:
+    """A self-consistent placeholder used only beside a recorded refusal."""
+
     value: dict[str, Any] = {
-        "entries": entries,
-        "file_count": len(entries),
-        "inode_count": inode_count,
+        "entries": [],
+        "file_count": 0,
+        "inode_count": 0,
         "schema_version": WORKSPACE_MANIFEST_SCHEMA,
-        "total_bytes": total_bytes,
+        "total_bytes": 0,
     }
     value["content_hash"] = canonical_hash(value)
     return value
@@ -982,11 +1006,7 @@ class WorkspaceSandbox:
             )
         except SandboxError as error:
             outcome = self._refused_outcome(str(error.args[0]))
-            return self._refused_execution(outcome, {
-                "content_hash": canonical_hash({"unavailable": True}),
-                "entries": [], "file_count": 0, "inode_count": 0,
-                "schema_version": WORKSPACE_MANIFEST_SCHEMA, "total_bytes": 0,
-            })
+            return self._refused_execution(outcome, _empty_workspace_manifest())
         try:
             payload = self.stdin_payload(request)
         except SandboxError as error:
@@ -1057,12 +1077,29 @@ class WorkspaceSandbox:
         for other, manifest in zip(replicas[1:], manifests[1:]):
             if first.result != other.result:
                 return "nondeterministic_result"
+            if (
+                first.result_bytes_observed != other.result_bytes_observed
+                or first.result_truncated != other.result_truncated
+            ):
+                return "nondeterministic_result"
             if first.stdout != other.stdout:
+                return "nondeterministic_stdout"
+            if (
+                first.stdout_bytes_observed != other.stdout_bytes_observed
+                or first.stdout_truncated != other.stdout_truncated
+            ):
                 return "nondeterministic_stdout"
             if first.stderr != other.stderr:
                 return "nondeterministic_stderr"
             if (
-                first.child_exit_code != other.child_exit_code
+                first.stderr_bytes_observed != other.stderr_bytes_observed
+                or first.stderr_truncated != other.stderr_truncated
+            ):
+                return "nondeterministic_stderr"
+            if (
+                first.status != other.status
+                or first.container_exit_code != other.container_exit_code
+                or first.child_exit_code != other.child_exit_code
                 or first.child_signal != other.child_signal
                 or first.refusal_code != other.refusal_code
             ):
@@ -1073,22 +1110,51 @@ class WorkspaceSandbox:
 
     @staticmethod
     def _promote(workspace: Path, replica_dir: Path) -> bool:
-        """Replace the persistent workspace contents with the replica state."""
+        """Transactionally replace the workspace, rolling back on refusal.
+
+        The candidate tree is copied completely before the live directory is
+        touched.  Two same-filesystem renames form the commit; if the second
+        rename fails, the original directory is restored before ``False`` is
+        returned.  Thus an ordinary promotion refusal cannot expose a partial
+        blend of old and new files.
+        """
 
         try:
-            for child in workspace.iterdir():
-                if child.is_dir() and not child.is_symlink():
-                    shutil.rmtree(child)
-                else:
-                    child.unlink()
-            for child in replica_dir.iterdir():
-                if child.is_dir():
-                    shutil.copytree(child, workspace / child.name, symlinks=False)
-                else:
-                    shutil.copy2(child, workspace / child.name)
+            staging = Path(tempfile.mkdtemp(
+                prefix=".adaivy-workspace-promotion-", dir=workspace.parent,
+            ))
         except OSError:
             return False
-        return True
+        candidate = staging / "candidate"
+        backup = staging / "previous"
+        committed = False
+        try:
+            shutil.copytree(replica_dir, candidate, symlinks=False)
+            os.replace(workspace, backup)
+            try:
+                os.replace(candidate, workspace)
+            except OSError:
+                # The old tree is still complete and on the same filesystem.
+                # A failed rollback is an integrity failure that cannot be
+                # honestly represented as a no-mutation refusal.
+                try:
+                    os.replace(backup, workspace)
+                except OSError as rollback_error:
+                    raise SandboxError(
+                        "workspace_promotion_rollback_failed"
+                    ) from rollback_error
+                return False
+            committed = True
+            return True
+        except (OSError, shutil.Error):
+            return False
+        finally:
+            # Once committed, cleanup is operational and cannot turn a valid
+            # atomic promotion into a claimed refusal.  Before commit, this
+            # removes only staging data and the restored backup location.
+            if committed and backup.exists():
+                shutil.rmtree(backup, ignore_errors=True)
+            shutil.rmtree(staging, ignore_errors=True)
 
     def _refused_execution(
         self, outcome: SandboxOutcome, before: Mapping[str, Any],

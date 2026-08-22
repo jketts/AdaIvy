@@ -16,6 +16,7 @@ from pathlib import Path
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 from math_research.campaign.experiment_sandbox.sandbox import (
     BOOTSTRAP_SHA256,
@@ -34,6 +35,7 @@ from math_research.campaign.experiment_sandbox.workspace_activation import (
     WorkspaceActivation,
     WorkspaceActivationError,
     build_workspace_activation_report,
+    load_workspace_activation,
     require_activatable_workspace_lock,
     verify_workspace_activation,
 )
@@ -68,9 +70,12 @@ from math_research.campaign.experiment_sandbox.workspace_sandbox import (
     manifest_delta,
     workspace_manifest,
 )
-from math_research.campaign.records import RecordStatus, canonical_hash
-from math_research.campaign.runner import ExperimentRequest, ResourceLimits
+from math_research.campaign.records import RecordStatus, canonical_bytes, canonical_hash
+from math_research.campaign.runner import (
+    ExperimentRequest, ResourceLimits, VerificationRequest,
+)
 from math_research.campaign.verifier_router import (
+    CampaignVerifierRouter,
     ROUTE_EXACT_GRAPH,
     route_for_target_class,
 )
@@ -433,6 +438,56 @@ class WorkspaceManifestAcrossRunsTests(unittest.TestCase):
         with self.assertRaisesRegex(SandboxError, "entry_unsupported"):
             workspace_manifest(self.workspace, max_bytes=65_536, max_inodes=100)
 
+    def test_manifest_io_error_is_a_recorded_self_hashed_refusal(self):
+        (self.workspace / "unreadable.bin").write_bytes(b"candidate")
+        with mock.patch.object(Path, "read_bytes", side_effect=OSError("denied")):
+            execution = make_sandbox(lambda *args: b"").run(
+                program_request(), self.workspace,
+            )
+        self.assertEqual("refused", execution.status)
+        self.assertEqual("workspace_manifest_unavailable", execution.refusal_code)
+        manifest = dict(execution.workspace_manifest_before)
+        observed = manifest.pop("content_hash")
+        self.assertEqual(observed, canonical_hash(manifest))
+
+    def test_promotion_copy_failure_does_not_mutate_live_workspace(self):
+        replica = Path(tempfile.mkdtemp(prefix="adaivy-workspace-replica-"))
+        self.addCleanup(shutil.rmtree, replica, ignore_errors=True)
+        (self.workspace / "original.txt").write_bytes(b"original")
+        (replica / "new.txt").write_bytes(b"new")
+        with mock.patch(
+            "math_research.campaign.experiment_sandbox.workspace_sandbox.shutil.copytree",
+            side_effect=OSError("disk full"),
+        ):
+            promoted = WorkspaceSandbox._promote(self.workspace, replica)
+        self.assertFalse(promoted)
+        self.assertEqual(b"original", (self.workspace / "original.txt").read_bytes())
+        self.assertFalse((self.workspace / "new.txt").exists())
+
+    def test_promotion_commit_failure_rolls_back_original_workspace(self):
+        replica = Path(tempfile.mkdtemp(prefix="adaivy-workspace-replica-"))
+        self.addCleanup(shutil.rmtree, replica, ignore_errors=True)
+        (self.workspace / "original.txt").write_bytes(b"original")
+        (replica / "new.txt").write_bytes(b"new")
+        real_replace = __import__("os").replace
+        calls = 0
+
+        def fail_second(source, destination):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                raise OSError("commit refused")
+            return real_replace(source, destination)
+
+        with mock.patch(
+            "math_research.campaign.experiment_sandbox.workspace_sandbox.os.replace",
+            side_effect=fail_second,
+        ):
+            promoted = WorkspaceSandbox._promote(self.workspace, replica)
+        self.assertFalse(promoted)
+        self.assertEqual(b"original", (self.workspace / "original.txt").read_bytes())
+        self.assertFalse((self.workspace / "new.txt").exists())
+
 
 class DeterminismTests(unittest.TestCase):
     def setUp(self):
@@ -474,6 +529,26 @@ class DeterminismTests(unittest.TestCase):
         self.assertFalse(drifting.workspace_promoted)
         # A refused run must not have leaked replica state into the workspace.
         self.assertEqual([], list(self.workspace.iterdir()))
+
+    def test_observed_counts_and_truncation_flags_are_part_of_determinism(self):
+        sandbox = make_sandbox(lambda *args: b"")
+        base = sandbox._refused_outcome("probe")
+        manifest = {
+            "content_hash": digest(b"same"), "entries": [], "file_count": 0,
+            "inode_count": 0, "schema_version": "manifest", "total_bytes": 0,
+        }
+        cases = (
+            (replace(base, result_bytes_observed=1), "nondeterministic_result"),
+            (replace(base, result_truncated=True), "nondeterministic_result"),
+            (replace(base, stdout_bytes_observed=1), "nondeterministic_stdout"),
+            (replace(base, stdout_truncated=True), "nondeterministic_stdout"),
+            (replace(base, stderr_bytes_observed=1), "nondeterministic_stderr"),
+            (replace(base, stderr_truncated=True), "nondeterministic_stderr"),
+        )
+        for changed, expected in cases:
+            self.assertEqual(
+                expected, sandbox._divergence([base, changed], [manifest, manifest]),
+            )
 
 
 class FailureAsDataTests(unittest.TestCase):
@@ -613,6 +688,52 @@ class WorkspaceActivationRecordTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 verify_workspace_activation(report)
 
+    def test_nested_floats_are_refused_even_when_hashes_are_recomputed(self):
+        report = synthetic_report(built_lock())
+        report["probes"][0]["observation"]["nested"] = [{"value": 1.25}]
+        probe = report["probes"][0]
+        probe["content_hash"] = canonical_hash({
+            key: item for key, item in probe.items() if key != "content_hash"
+        })
+        report["content_hash"] = canonical_hash({
+            key: item for key, item in report.items() if key != "content_hash"
+        })
+        with self.assertRaisesRegex(ValueError, "float"):
+            verify_workspace_activation(report)
+        with self.assertRaisesRegex(ValueError, "float"):
+            load_workspace_activation(canonical_bytes(report))
+
+    def test_named_activation_evidence_is_loaded_verified_and_lock_bound(self):
+        root = Path(tempfile.mkdtemp(prefix="adaivy-workspace-evidence-"))
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
+        lock = built_lock()
+        evidence = root / lock.probe_evidence_path
+        evidence.parent.mkdir(parents=True)
+        evidence.write_bytes(canonical_bytes(synthetic_report(lock)))
+        with mock.patch(
+            "math_research.campaign.experiment_sandbox.workspace_activation."
+            "load_workspace_image_lock", return_value=lock,
+        ):
+            self.assertIs(lock, require_activatable_workspace_lock(root))
+            evidence.write_bytes(b"not-json")
+            with self.assertRaisesRegex(WorkspaceActivationError, "evidence_invalid"):
+                require_activatable_workspace_lock(root)
+
+    def test_named_activation_evidence_for_another_lock_is_refused(self):
+        root = Path(tempfile.mkdtemp(prefix="adaivy-workspace-evidence-"))
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
+        lock = built_lock()
+        other = replace(lock, lock_sha256=digest(b"other-lock"))
+        evidence = root / lock.probe_evidence_path
+        evidence.parent.mkdir(parents=True)
+        evidence.write_bytes(canonical_bytes(synthetic_report(other)))
+        with mock.patch(
+            "math_research.campaign.experiment_sandbox.workspace_activation."
+            "load_workspace_image_lock", return_value=lock,
+        ):
+            with self.assertRaisesRegex(WorkspaceActivationError, "lock_mismatch"):
+                require_activatable_workspace_lock(root)
+
 
 def attestation() -> WorkspaceActivation:
     return WorkspaceActivation(
@@ -732,6 +853,42 @@ class WorkspaceRunnerTests(unittest.TestCase):
         self.assertEqual(RecordStatus.COMPLETED, result.status)
         self.assertTrue(runner.last_run_record["determinism_unverified"])
         self.assertEqual(1, runner.last_run_record["determinism_replicas"])
+        self.assertTrue(result.determinism_unverified)
+
+        verifier_result = CampaignVerifierRouter(graph_target=None)(
+            VerificationRequest(
+                campaign_id="campaign.test", action_id="action.verify",
+                target_hash=digest(b"target"),
+                candidate_artifact=(digest(b"{}"), b"{}"),
+                tool_artifacts=((digest(result.result), result.result),),
+                determinism_unverified=result.determinism_unverified,
+            )
+        )
+        self.assertTrue(verifier_result.determinism_unverified)
+        self.assertTrue(json.loads(verifier_result.result)[
+            "input_determinism_unverified"
+        ])
+
+    def test_runner_refuses_configuration_without_closed_limits(self):
+        activation = attestation()
+        runner = ActivatedWorkspaceCampaignRunner(
+            sandbox_factory=lambda limits: FakeWorkspaceSandboxPort(
+                limits, activation,
+                lambda inner: port_execution(
+                    inner, status="completed", refusal=None, result=b"{}",
+                ),
+            ),
+            activation=activation, target_class=EXACT_GRAPH_TARGET_CLASS,
+            workspace_dir=Path("/nonexistent-fake-workspace"),
+        )
+        original = FakeWorkspaceSandboxPort.configuration_record
+        with mock.patch.object(
+            FakeWorkspaceSandboxPort, "configuration_record",
+            lambda self: {key: value for key, value in original(self).items()
+                          if key != "limits"},
+        ):
+            with self.assertRaisesRegex(WorkspaceRunnerError, "limits differ"):
+                runner(self.request())
 
     def test_runner_admits_any_in_class_target_and_refuses_off_class(self):
         runner = self.runner()

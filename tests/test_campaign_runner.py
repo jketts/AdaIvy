@@ -193,6 +193,41 @@ def runner(planner, experiment, artifacts, verifier, *, runner_policy=None):
 
 
 class CampaignRunnerTests(unittest.TestCase):
+    def test_unverified_determinism_reaches_planner_report_and_verifier_facts(self):
+        events = []
+        candidate_hash = digest(CANDIDATE)
+
+        class UnverifiedExperiment(RecordingExperiment):
+            def __call__(self, request):
+                result = super().__call__(request)
+                return replace(result, determinism_unverified=True)
+
+        planner = ScriptedPlanner([
+            action("derive", artifact_text=CANDIDATE),
+            action("write_program", program_source=PROGRAM),
+            lambda context: run_action(context.recorded_program_hashes[0]),
+            lambda context: action(
+                "inspect_result", selected_candidate_hash=candidate_hash,
+                selected_tool_artifact_hashes=[context.latest_tool_result_hash],
+            ),
+            lambda context: action(
+                "verify", selected_candidate_hash=context.selected_candidate_hash,
+                selected_tool_artifact_hashes=list(
+                    context.selected_tool_artifact_hashes
+                ),
+            ),
+            action("report", report_text="Determinism remained unverified."),
+        ])
+        verifier = RecordingVerifier()
+        completed = runner(
+            planner, UnverifiedExperiment(events), MemoryArtifacts(events), verifier,
+        ).run()
+        self.assertEqual("reported", completed.terminal_reason)
+        self.assertTrue(planner.contexts[3].latest_tool_determinism_unverified)
+        self.assertTrue(planner.contexts[4].selected_tool_determinism_unverified)
+        self.assertTrue(planner.contexts[5].selected_tool_determinism_unverified)
+        self.assertTrue(verifier.requests[0].determinism_unverified)
+
     def test_verifier_reserves_the_same_tool_run_budget(self):
         events = []
         candidate_hash = digest(CANDIDATE)
