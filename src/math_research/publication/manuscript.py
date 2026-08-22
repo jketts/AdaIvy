@@ -370,8 +370,15 @@ def citation_target_engagement(citation: Mapping[str, Any]) -> str:
     ``target_exclusion``. An absent, empty, or unrecognised reason leaves the
     citation addressing the target, so the burden is on the author to show a
     cited work is *not* about the same problem.
+
+    A ``prior_resolution_candidate`` is never excludable, matching the
+    ``prior_candidate_cannot_be_excluded`` refusal the loader raises. The loader
+    is the enforcing boundary; this function agrees with it so that a caller
+    reading engagement directly cannot reach a conclusion the loader forbids.
     """
 
+    if citation.get("cited_object") == "prior_resolution_candidate":
+        return "addresses_target"
     exclusion = citation.get("target_exclusion")
     if (
         isinstance(exclusion, Mapping)
