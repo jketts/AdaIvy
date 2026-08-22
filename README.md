@@ -33,6 +33,11 @@ Implemented components include:
 - exact mathematical verifiers and a sealed Lean 4 checking service;
 - bounded Crossref discovery and public source acquisition;
 - bounded arXiv metadata/abstract corpus replay;
+- a persistent multi-run corpus store (ADR-0072 Slice 3) at an
+  operator-selected data root outside Git, with policy-derived per-document
+  rights, quarantine, exact parsed spans, immutable content-addressed
+  generations, and takedown tombstones; live snapshot acquisition stays behind
+  its own pending activation;
 - processor-bound embedding rights, live embedding ingestion, and immutable
   exact vector artifacts;
 - four-signal Phase 4C retrieval, including semantic similarity; and

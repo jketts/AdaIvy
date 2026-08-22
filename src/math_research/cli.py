@@ -47,6 +47,8 @@ def main(argv: list[str] | None = None) -> int:
     embedding.add_argument("embedding_args", nargs=argparse.REMAINDER)
     corpus = subparsers.add_parser("corpus", help="ADR-0067 bounded arXiv metadata corpus commands")
     corpus.add_argument("corpus_args", nargs=argparse.REMAINDER)
+    corpus_service = subparsers.add_parser("corpus-service", help="ADR-0072 Slice 3 persistent corpus store commands")
+    corpus_service.add_argument("corpus_service_args", nargs=argparse.REMAINDER)
     phase2 = subparsers.add_parser("phase2", help="Phase 2 durable workspace commands")
     phase2.add_argument("phase2_args", nargs=argparse.REMAINDER)
     phase3a = subparsers.add_parser("phase3a", help="bounded Phase 3A research-memory commands")
@@ -90,6 +92,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "corpus":
         from .corpus_cli import main as corpus_main
         return corpus_main(args.corpus_args)
+    if args.command == "corpus-service":
+        from .corpus_service_cli import main as corpus_service_main
+        return corpus_service_main(args.corpus_service_args)
     if args.command == "phase2":
         from .phase2_cli import main as phase2_main
         return phase2_main(args.phase2_args)

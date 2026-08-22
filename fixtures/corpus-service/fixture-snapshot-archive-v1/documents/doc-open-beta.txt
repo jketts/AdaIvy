@@ -1,0 +1,4 @@
+Synthetic fixture document beta (LicenseRef-AdaIvy-Synthetic-Fixture).
+
+One further paragraph, so the corpus has two admitted full-text
+documents with distinct span sets.

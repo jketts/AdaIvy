@@ -19,7 +19,8 @@ operator path, and usable end to end.
 | Crossref discovery | Yes | Explicit one-request live opt-in | **No** | Operator-supplied grounded terms, at most ten metadata candidates |
 | Discovery-result following | Decision accepted | No | No | ADR-0068 and ADR-0072 are accepted; nothing is implemented |
 | Bulk corpus ingestion | Yes, bounded replay slice | Production activation pending | No | arXiv descriptive metadata and abstracts; no full text |
-| Embedding ingestion | Yes | Explicit live opt-in | No | Operator-supplied local documents with processor-bound rights; ADR-0072's policy-derived per-document rights are accepted but not implemented, and the code still requires human-authored decisions |
+| Persistent corpus store (ADR-0072 Slice 3) | Yes | Local ingest from an already-acquired archive; live snapshot acquisition pending | No | Operator-selected data root outside Git; grow-only across runs; policy-derived per-document rights with quarantine; full text and exact spans where the policy permits; immutable content-addressed generations with takedown tombstones; still `retrieval_indexed: false` |
+| Embedding ingestion | Yes | Explicit live opt-in | No | Operator-supplied local documents with processor-bound rights; ADR-0072's policy-derived per-document rights are implemented for the Slice 3 persistent corpus store, while the standalone embedding CLI path still requires human-authored decisions |
 | Persistent vector artifacts | Yes | Yes | No | Immutable exact vector artifacts; caller supplies the storage root |
 | Semantic retrieval | Yes | Offline fixture only | No | Fourth Phase 4C signal over 19 project-authored documents and 17 queries |
 | Retrieval over acquired corpus | **No** | No | No | Accepted by ADR-0072 (Slice 4); corpus records remain marked `retrieval_indexed: false` |

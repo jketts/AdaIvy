@@ -1,0 +1,5 @@
+Synthetic fixture document alpha (LicenseRef-AdaIvy-Synthetic-Fixture).
+This paragraph is the first exact span of a project-authored text.
+
+A second paragraph proves span offsets survive blank-line boundaries.
+It carries no mathematical claim and asserts nothing about any source.

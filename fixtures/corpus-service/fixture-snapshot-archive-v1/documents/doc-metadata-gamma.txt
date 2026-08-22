@@ -1,0 +1,2 @@
+Synthetic fixture document gamma (LicenseRef-AdaIvy-Synthetic-Fixture).
+Its licence permits retention but prohibits embedding and context use.

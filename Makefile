@@ -46,7 +46,7 @@ WORK ?= work/$(REPORT_STAMP)
 
 .PHONY: check check-all check-sealed check-gate setup-typeset check-typeset publication-build check-phase4b-oci check-campaign-experiment-oci \
         check-embedding-live spike-phase5-sdp test phase0 phase1 problem-intake phase2 phase3a phase3b phase4a phase4b \
-        phase4c phase4d phase5 phase6 embedding corpus synthesis campaign publication report clean help
+        phase4c phase4d phase5 phase6 embedding corpus corpus-service synthesis campaign publication report clean help
 
 help:
 	@printf 'Targets:\n'
@@ -65,7 +65,7 @@ help:
 	@printf '                default OUT=reports/local/run-<stamp> (gitignored)\n'
 	@printf '  clean         remove __pycache__ and stray sqlite journals\n'
 
-check: test phase0 phase1 problem-intake phase2 phase3a phase4a phase4b phase4c phase4d phase5 phase6 embedding corpus synthesis campaign publication
+check: test phase0 phase1 problem-intake phase2 phase3a phase4a phase4b phase4c phase4d phase5 phase6 embedding corpus corpus-service synthesis campaign publication
 	@printf '\n== offline check complete ==\n'
 
 check-all: check check-sealed
@@ -406,6 +406,34 @@ corpus:
 	  $(PY) -c 'import json,sys; d=json.load(open(sys.argv[1])); s=json.load(open(sys.argv[2])); p=json.load(open(sys.argv[3])); assert d["status"] == "not_executed" and d["network_requests"] == 0 and d["requests_made"] == 0, "the dry corpus path touched a network"; assert s["status"] == "replayed" and s["record_count"] == 6 and s["rights_records_written"] == 18 and s["network_requests"] == 0, "the replay facts moved: %s" % s; assert p["probes_total"] == p["probes_flipped"] == 29 and p["unflipped_probe_ids"] == [], "corpus probes moved: %s/%s %s" % (p["probes_flipped"], p["probes_total"], p["unflipped_probe_ids"])' "$$d/dry.json" "$$d/replay/summary.json" "$$d/probes.json" && \
 	  rm -rf "$$d" && \
 	  printf 'corpus ok (6 metadata records replayed; 18 per-document rights decisions; 29/29 probes flipped; 0 network requests; not wired into retrieval)\n'
+
+# ADR-0072 Slice 3: the persistent corpus service, exercised offline over the
+# synthetic fixture archive. Two separate runs against one data root must see
+# the same content-addressed generation and the second must reacquire nothing.
+# Live snapshot acquisition stays behind its own pending activation record.
+corpus-service:
+	@printf '\n== ADR-0072 Slice 3 persistent corpus service (offline fixtures) ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-corpus-service.XXXXXX") && \
+	  $(PY) -m math_research.cli corpus-service init \
+	    --data-root "$$d/data-root" --data-root-id dataroot.make-check \
+	    --initialized-at 2026-08-22T00:00:00Z --output "$$d/marker.json" >/dev/null && \
+	  $(PY) -m math_research.cli corpus-service ingest \
+	    --data-root "$$d/data-root" \
+	    --policy fixtures/corpus-service/fixture-source-rights-policy-v1.json \
+	    --archive-root fixtures/corpus-service/fixture-snapshot-archive-v1 \
+	    --tranche-config fixtures/corpus-service/fixture-tranche-config-v1.json \
+	    --run-id run.make-check-one --recorded-at 2026-08-22T00:00:00Z \
+	    --output "$$d/run1.json" >/dev/null && \
+	  $(PY) -m math_research.cli corpus-service ingest \
+	    --data-root "$$d/data-root" \
+	    --policy fixtures/corpus-service/fixture-source-rights-policy-v1.json \
+	    --archive-root fixtures/corpus-service/fixture-snapshot-archive-v1 \
+	    --tranche-config fixtures/corpus-service/fixture-tranche-config-v1.json \
+	    --run-id run.make-check-two --recorded-at 2026-08-22T01:00:00Z \
+	    --output "$$d/run2.json" >/dev/null && \
+	  $(PY) -c 'import json,sys; a=json.load(open(sys.argv[1])); b=json.load(open(sys.argv[2])); assert a["generation_published"] and a["documents_acquired"] == 6 and a["documents_admitted"] == 3 and a["documents_quarantined"] == 3 and a["network_requests"] == 0, "first run facts moved: %s" % a; assert b["generation_id"] == a["generation_id"] and b["generation_hash"] == a["generation_hash"] and b["documents_acquired"] == 0 and b["documents_reused"] == 6 and not b["generation_published"], "the second run reacquired or moved the generation: %s" % b; assert a["retrieval_indexed"] is False and a["documents_with_applicability_record"] == 0, "trust ceiling moved"' "$$d/run1.json" "$$d/run2.json" && \
+	  rm -rf "$$d" && \
+	  printf 'corpus-service ok (two runs, one generation; second run reacquired 0 of 6; 3 quarantined and retained; 0 network requests; not retrieval-indexed)\n'
 
 # Separate from `check`: ADR-0069 live ingestion needs a real credential and
 # bills a real provider. It is named for what it needs, like `check-sealed`.
