@@ -126,16 +126,18 @@ _MANIFEST_OPTIONAL = frozenset({
 _MANIFEST_KEY_FIELDS = frozenset({
     "provider", "model_identifier", "dimension", "normalization",
 })
-_MANIFEST_ENTRY_REQUIRED = frozenset({"document_id", "artifact_content_hash"})
+_MANIFEST_ENTRY_REQUIRED = frozenset({
+    "document_id", "source_content_hash", "artifact_content_hash",
+})
 _MANIFEST_ENTRY_OPTIONAL = frozenset({
-    "source_content_hash", "artifact_path", "artifact_kind",
+    "artifact_path", "artifact_kind",
 })
 _ARTIFACT_REQUIRED = frozenset({
     "schema_version", "document_id", "source_content_hash", "coordinates",
-    "content_hash",
+    "content_hash", "partition_key_string",
 })
 _ARTIFACT_OPTIONAL = frozenset({
-    "artifact_kind", "hash_rule", "partition_key_string", "dimension",
+    "artifact_kind", "hash_rule", "dimension",
 })
 
 
@@ -626,8 +628,37 @@ def write_partition(
     """Write artifacts then the manifest that binds their bytes into identity."""
 
     provenance = _validated_corpus_provenance(
-        key, corpus_provenance or key.required_corpus_provenance()
+        key, corpus_provenance or CORPUS_PROVENANCE_PROJECT_AUTHORED
     )
+    if provenance == CORPUS_PROVENANCE_PROVIDER_EMBEDDED:
+        raise PartitionSchemaError(
+            "provider_embedded provenance requires the live ingestion writer"
+        )
+    return _write_partition(
+        root, key, artifacts, corpus_provenance=provenance, hash_rule=hash_rule,
+    )
+
+
+def _write_provider_partition(
+    root: Path, key: PartitionKey, artifacts: Sequence[VectorArtifact], *,
+    hash_rule: str = DEFAULT_HASH_RULE,
+) -> Partition:
+    """Ingestion-only route for artifacts returned by a live provider."""
+
+    if key.is_fixture_synthetic:
+        raise PartitionSchemaError("fixture_synthetic cannot be provider_embedded")
+    return _write_partition(
+        root, key, artifacts,
+        corpus_provenance=CORPUS_PROVENANCE_PROVIDER_EMBEDDED,
+        hash_rule=hash_rule,
+    )
+
+
+def _write_partition(
+    root: Path, key: PartitionKey, artifacts: Sequence[VectorArtifact], *,
+    corpus_provenance: str, hash_rule: str,
+) -> Partition:
+    provenance = _validated_corpus_provenance(key, corpus_provenance)
     rule = _hash_rule(hash_rule, "hash_rule")
     for artifact in sorted(artifacts, key=lambda item: item.document_id):
         if len(artifact.coordinates) != key.dimension:
@@ -766,7 +797,7 @@ def _load_artifact(
         )
     require_within_scale(coordinates, key=key, where=f"{document_id}.coordinates")
     source_content_hash = _hash(payload["source_content_hash"], "artifact.source_content_hash")
-    if "source_content_hash" in entry and source_content_hash != entry["source_content_hash"]:
+    if source_content_hash != entry["source_content_hash"]:
         raise PartitionSchemaError(f"artifact {path} source_content_hash differs from manifest")
     recorded = _hash(payload["content_hash"], "artifact.content_hash")
     recomputed = payload_hash(payload, hash_field="content_hash", hash_rule=rule)

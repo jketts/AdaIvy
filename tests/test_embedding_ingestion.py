@@ -47,6 +47,7 @@ from math_research.embedding.ingestion import (
     ingestion_record_payload,
     load_ingestion_record,
     plan_ingestion,
+    read_ingestion_record,
     write_ingestion_record,
 )
 from math_research.embedding.partition import (
@@ -75,6 +76,7 @@ from math_research.embedding.run_config import (
     write_embedding_run_configuration,
 )
 from math_research.phase2.pricing import create_pricing_snapshot
+from math_research.phase2.serialization import canonical_hash
 from math_research.phase4a.records import RightsUse
 
 PROCESSOR = "processor.openai.embeddings.v1"
@@ -128,7 +130,8 @@ class TraceGate:
 
     def require_rights(
         self, source_id: str, intended_use: Any, *, at: str,
-        processor_id: str | None = None,
+        processor_id: str | None = None, provider: str | None = None,
+        model_identifier: str | None = None,
     ) -> Any:
         self.trace.append(f"rights:{source_id}:{processor_id}")
         if intended_use is not RightsUse.EMBEDDING:
@@ -140,6 +143,8 @@ class TraceGate:
             raise EmbeddingError("no decision", code="rights_blocked")
         if granted != processor_id:
             raise EmbeddingError("wrong processor", code="processor_not_authorized")
+        if provider != "openai" or model_identifier != MODEL:
+            raise EmbeddingError("wrong processor identity", code="processor_not_authorized")
         return type("Evaluation", (), {"decision_id": f"decision.{source_id}"})()
 
 
@@ -378,6 +383,12 @@ class IngestionOrderingTests(TemporaryRootMixin):
 
 
 class IngestionRecordTests(TemporaryRootMixin):
+    @staticmethod
+    def rehash(payload: dict[str, Any]) -> dict[str, Any]:
+        payload["content_hash"] = None
+        payload["content_hash"] = canonical_hash(payload)
+        return payload
+
     def test_record_closes_usage_cost_and_vector_bytes(self) -> None:
         record = self.ingest()
         partition = load_partition(self.root, PartitionKey(
@@ -448,6 +459,48 @@ class IngestionRecordTests(TemporaryRootMixin):
         path.write_text(json.dumps(payload), encoding="utf-8")
         with self.assertRaises(EmbeddingIngestionError):
             write_ingestion_record(record, path)
+
+    def test_numeric_fields_are_exact_integers_not_bools_or_decimals(self) -> None:
+        for field, value in (
+            ("document_count", True),
+            ("provider_calls", 2.0),
+            ("total_input_tokens", 24.0),
+            ("estimated_cost_microusd", False),
+        ):
+            with self.subTest(field=field):
+                payload = ingestion_record_payload(self.ingest())
+                payload[field] = value
+                self.rehash(payload)
+                with self.assertRaises(EmbeddingIngestionError):
+                    load_ingestion_record(payload)
+
+    def test_record_counts_and_usage_must_close_over_documents(self) -> None:
+        for field, value in (("provider_calls", 1), ("total_input_tokens", 23)):
+            with self.subTest(field=field):
+                payload = ingestion_record_payload(self.ingest())
+                payload[field] = value
+                self.rehash(payload)
+                with self.assertRaises(EmbeddingIngestionError):
+                    load_ingestion_record(payload)
+
+    def test_partition_key_and_document_field_sets_are_closed(self) -> None:
+        for mutate in (
+            lambda value: value["partition_key"].__setitem__("region", "us-east"),
+            lambda value: value["documents"][0].__setitem__("trusted", True),
+        ):
+            payload = ingestion_record_payload(self.ingest())
+            mutate(payload)
+            self.rehash(payload)
+            with self.assertRaises(EmbeddingIngestionError):
+                load_ingestion_record(payload)
+
+    def test_file_reader_rejects_duplicate_keys_and_decimal_literals(self) -> None:
+        path = self.root / "malformed-record.json"
+        for raw in ('{"schema_version":"x","schema_version":"y"}', '{"x":1.5}'):
+            with self.subTest(raw=raw):
+                path.write_text(raw, encoding="utf-8")
+                with self.assertRaises(EmbeddingIngestionError):
+                    read_ingestion_record(path)
 
 
 class IngestionRefusalTests(TemporaryRootMixin):
@@ -546,20 +599,28 @@ class RightsSeamTests(unittest.TestCase):
 
     class _Bound:
         def __init__(self) -> None:
-            self.calls: list[tuple[str, str | None]] = []
+            self.calls: list[tuple[str, str | None, str | None, str | None]] = []
 
         def require_rights(
             self, source_id: str, intended_use: Any, *, at: str,
-            processor_id: str | None = None,
+            processor_id: str | None = None, provider: str | None = None,
+            model_identifier: str | None = None,
         ) -> str:
-            self.calls.append((source_id, processor_id))
+            self.calls.append((source_id, processor_id, provider, model_identifier))
             return "granted"
+
+    class _KwargsOnly:
+        def require_rights(
+            self, source_id: str, intended_use: Any, *, at: str, **kwargs: Any,
+        ) -> str:
+            return "silently-swallowed"
 
     def test_embedding_use_is_already_in_the_closed_vocabulary(self) -> None:
         self.assertIs(EMBEDDING_RIGHTS_USE, RightsUse.EMBEDDING)
 
     def test_an_unbound_service_is_detected(self) -> None:
         self.assertFalse(processor_bound_rights_supported(self._Unbound()))
+        self.assertFalse(processor_bound_rights_supported(self._KwargsOnly()))
         self.assertTrue(processor_bound_rights_supported(self._Bound()))
 
     def test_the_seam_refuses_rather_than_checking_an_unbound_decision(self) -> None:
@@ -568,6 +629,7 @@ class RightsSeamTests(unittest.TestCase):
             gate.require_rights(
                 "source.alpha", RightsUse.EMBEDDING,
                 at="2026-08-22T00:00:00Z", processor_id=PROCESSOR,
+                provider="openai", model_identifier=MODEL,
             )
 
     def test_the_seam_forwards_once_the_parameter_exists(self) -> None:
@@ -577,10 +639,11 @@ class RightsSeamTests(unittest.TestCase):
             gate.require_rights(
                 "source.alpha", RightsUse.EMBEDDING,
                 at="2026-08-22T00:00:00Z", processor_id=PROCESSOR,
+                provider="openai", model_identifier=MODEL,
             ),
             "granted",
         )
-        self.assertEqual(service.calls, [("source.alpha", PROCESSOR)])
+        self.assertEqual(service.calls, [("source.alpha", PROCESSOR, "openai", MODEL)])
 
     def test_an_unnamed_processor_is_refused_before_the_service_is_consulted(self) -> None:
         service = self._Bound()
@@ -613,6 +676,7 @@ class RightsSeamTests(unittest.TestCase):
                 gate.require_rights(
                     "source.alpha", RightsUse.EMBEDDING,
                     at="2026-08-22T00:00:00Z", processor_id=PROCESSOR,
+                    provider="openai", model_identifier=MODEL,
                 )
 
 

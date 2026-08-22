@@ -245,11 +245,15 @@ class Phase4ProductionTests(unittest.TestCase):
             service.evaluate_rights(
                 source, RightsUse.EMBEDDING, at=T1,
                 processor_id=EMBEDDING_PROCESSOR.processor_id,
+                provider=EMBEDDING_PROCESSOR.provider,
+                model_identifier=EMBEDDING_PROCESSOR.model_identifier,
             ).outcome,
         )
         not_authorized = service.evaluate_rights(
             source, RightsUse.EMBEDDING, at=T1,
             processor_id=SECOND_PROVIDER_PROCESSOR.processor_id,
+            provider=SECOND_PROVIDER_PROCESSOR.provider,
+            model_identifier=SECOND_PROVIDER_PROCESSOR.model_identifier,
         )
         self.assertEqual(RightsOutcome.PROCESSOR_NOT_AUTHORIZED, not_authorized.outcome)
         self.assertFalse(not_authorized.allowed)
@@ -1683,6 +1687,8 @@ class Phase4AEmbeddingProcessorProbeTests(unittest.TestCase):
         evaluation = fixture.service.evaluate_rights(
             fixture.source_id, RightsUse.EMBEDDING, at=T2,
             processor_id=SAME_PROVIDER_OTHER_MODEL.processor_id,
+            provider=SAME_PROVIDER_OTHER_MODEL.provider,
+            model_identifier=SAME_PROVIDER_OTHER_MODEL.model_identifier,
         )
         self.assertFalse(evaluation.allowed)
         self.assertNotEqual(RightsOutcome.PERMITTED, evaluation.outcome)
@@ -1690,6 +1696,8 @@ class Phase4AEmbeddingProcessorProbeTests(unittest.TestCase):
             fixture.service.require_rights(
                 fixture.source_id, RightsUse.EMBEDDING, at=T2,
                 processor_id=SAME_PROVIDER_OTHER_MODEL.processor_id,
+            provider=SAME_PROVIDER_OTHER_MODEL.provider,
+            model_identifier=SAME_PROVIDER_OTHER_MODEL.model_identifier,
             )
         return evaluation.outcome.value
 
@@ -1706,6 +1714,8 @@ class Phase4AEmbeddingProcessorProbeTests(unittest.TestCase):
         evaluation = fixture.service.evaluate_rights(
             fixture.source_id, RightsUse.EMBEDDING, at=T2,
             processor_id=SECOND_PROVIDER_PROCESSOR.processor_id,
+            provider=SECOND_PROVIDER_PROCESSOR.provider,
+            model_identifier=SECOND_PROVIDER_PROCESSOR.model_identifier,
         )
         self.assertFalse(evaluation.allowed)
         self.assertNotEqual(
@@ -1727,6 +1737,8 @@ class Phase4AEmbeddingProcessorProbeTests(unittest.TestCase):
         evaluation = fixture.service.evaluate_rights(
             fixture.source_id, RightsUse.EMBEDDING, at=T1,
             processor_id=EMBEDDING_PROCESSOR.processor_id,
+                provider=EMBEDDING_PROCESSOR.provider,
+                model_identifier=EMBEDDING_PROCESSOR.model_identifier,
         )
         self.assertFalse(evaluation.allowed)
         self.assertNotEqual(RightsOutcome.PERMITTED, evaluation.outcome)
@@ -1779,6 +1791,8 @@ class Phase4AEmbeddingProcessorProbeTests(unittest.TestCase):
         evaluation = fixture.service.require_rights(
             fixture.source_id, RightsUse.EMBEDDING, at=T2,
             processor_id=EMBEDDING_PROCESSOR.processor_id,
+                provider=EMBEDDING_PROCESSOR.provider,
+                model_identifier=EMBEDDING_PROCESSOR.model_identifier,
         )
         self.assertEqual(RightsOutcome.PERMITTED, evaluation.outcome)
         self.assertTrue(evaluation.allowed)
@@ -1807,6 +1821,21 @@ class Phase4AEmbeddingProcessorProbeTests(unittest.TestCase):
             ],
         )
 
+    def test_reused_processor_id_cannot_change_provider_or_model(self) -> None:
+        fixture = self.granted()
+        for provider, model_identifier in (
+            ("openai", EMBEDDING_PROCESSOR.model_identifier),
+            (EMBEDDING_PROCESSOR.provider, "text-embedding-3-small"),
+        ):
+            with self.subTest(provider=provider, model_identifier=model_identifier):
+                evaluation = fixture.service.evaluate_rights(
+                    fixture.source_id, RightsUse.EMBEDDING, at=T2,
+                    processor_id=EMBEDDING_PROCESSOR.processor_id,
+                    provider=provider, model_identifier=model_identifier,
+                )
+                self.assertEqual(RightsOutcome.PROCESSOR_NOT_AUTHORIZED, evaluation.outcome)
+                self.assertFalse(evaluation.allowed)
+
     def test_model_context_also_requires_its_own_processor(self) -> None:
         fixture = self.fixture()
         self.assertEqual(
@@ -1826,6 +1855,7 @@ class Phase4AEmbeddingProcessorProbeTests(unittest.TestCase):
             fixture.service.evaluate_rights(
                 fixture.source_id, RightsUse.MODEL_CONTEXT, at=T1,
                 processor_id=local.processor_id,
+                provider=local.provider, model_identifier=local.model_identifier,
             ).outcome,
         )
 
@@ -1843,6 +1873,8 @@ class Phase4AEmbeddingProcessorProbeTests(unittest.TestCase):
                     fixture.service.evaluate_rights(
                         fixture.source_id, use, at=T1,
                         processor_id=EMBEDDING_PROCESSOR.processor_id,
+                provider=EMBEDDING_PROCESSOR.provider,
+                model_identifier=EMBEDDING_PROCESSOR.model_identifier,
                     )
                 self.assertIn(PROCESSOR_FORBIDDEN_REFUSAL, str(asked.exception))
 

@@ -63,6 +63,7 @@ from math_research.embedding.replay import replay_partition
 REPO_ROOT = Path(__file__).resolve().parent.parent
 FIXTURE = REPO_ROOT / "fixtures/embedding/fixture-synthetic-partition-v1.json"
 SCALE = 1 << 30
+FIXTURE_MANIFEST_SHA256 = "sha256:3c25fa74349829143a47c3f918ff72ba02438598fb7f5ec4f250d4737ab4b133"
 
 
 def _key(
@@ -205,6 +206,43 @@ class ArtifactStoreTests(TemporaryRootMixin):
         self.assertEqual(replayed.manifest_hash, partition.manifest_hash)
         self.assertEqual(replayed.document_ids(), ("alpha", "beta"))
         self.assertEqual(replayed.vector("alpha").coordinates, (1, 2, 3))
+
+    def test_generic_writer_cannot_claim_provider_embedded_provenance(self) -> None:
+        key = _key(provider="openai", model_identifier="text-embedding-probe")
+        artifact = _artifact(key, "alpha", (1, 2, 3))
+        with self.assertRaises(PartitionSchemaError):
+            write_partition(
+                self.root, key, [artifact],
+                corpus_provenance=CORPUS_PROVENANCE_PROVIDER_EMBEDDED,
+            )
+        partition = write_partition(self.root, key, [artifact])
+        self.assertEqual(
+            CORPUS_PROVENANCE_PROJECT_AUTHORED, partition.corpus_provenance,
+        )
+
+    def test_artifact_must_state_its_partition_binding(self) -> None:
+        key = _key()
+        write_partition(self.root, key, [_artifact(key, "alpha", (1, 2, 3))])
+        path = key.directory(self.root).joinpath(artifact_relative_path("alpha"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload.pop("partition_key_string")
+        path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
+        with self.assertRaises(PartitionSchemaError):
+            load_partition(self.root, key)
+
+    def test_manifest_must_bind_each_source_content_hash(self) -> None:
+        key = _key()
+        write_partition(self.root, key, [_artifact(key, "alpha", (1, 2, 3))])
+        path = key.directory(self.root).joinpath(MANIFEST_FILENAME)
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["vectors"][0].pop("source_content_hash")
+        from math_research.embedding.partition import payload_hash
+        payload["manifest_hash"] = payload_hash(
+            payload, hash_field="manifest_hash", hash_rule=payload["hash_rule"],
+        )
+        path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
+        with self.assertRaises(PartitionSchemaError):
+            load_partition(self.root, key)
 
     def test_document_ids_are_sorted_regardless_of_input_order(self) -> None:
         key = _key()
@@ -376,6 +414,7 @@ class ArtifactKindTests(TemporaryRootMixin):
         # A minimal hand-authored artifact: required fields only.
         minimal = {
             "schema_version": ARTIFACT_SCHEMA_VERSION,
+            "partition_key_string": key.key_string(),
             "document_id": "alpha",
             "source_content_hash": payload["source_content_hash"],
             "coordinates": payload["coordinates"],
@@ -395,6 +434,7 @@ class ArtifactKindTests(TemporaryRootMixin):
             "partition_key": key.payload(),
             "vectors": [{
                 "document_id": "alpha",
+                "source_content_hash": minimal["source_content_hash"],
                 "artifact_content_hash": minimal["content_hash"],
             }],
             "manifest_hash": None,
@@ -513,6 +553,7 @@ class AuthoredFixtureTests(TemporaryRootMixin):
             Path(self._temporary.name).joinpath("again"), spec,
         )
         self.assertEqual(first.manifest_hash, second.manifest_hash)
+        self.assertEqual(FIXTURE_MANIFEST_SHA256, first.manifest_hash)
 
     def test_the_fixture_attains_the_scale_boundary_exactly(self) -> None:
         spec = load_authoring_spec(FIXTURE)

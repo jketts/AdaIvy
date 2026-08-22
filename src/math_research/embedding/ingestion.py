@@ -23,13 +23,14 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, NoReturn, Sequence
 
 from ..phase2.pricing import estimate_cost_microusd, pricing_snapshot_is_confirmed
 from ..phase2.records import PricingSnapshot
 from ..phase2.serialization import canonical_hash, canonical_json, sha256_bytes
 from .constants import (
     CORPUS_PROVENANCE_PROJECT_AUTHORED,
+    CORPUS_PROVENANCE_PROVIDER_EMBEDDED,
     CORPUS_PROVENANCE_VALUES,
     FIXTURE_SYNTHETIC_PROVIDER,
     HASH_PATTERN,
@@ -47,7 +48,9 @@ from .gateways import gateway_corpus_provenance
 from .partition import (
     PartitionKey,
     VectorArtifact,
+    _write_provider_partition,
     create_vector_artifact,
+    partition_key_from_payload,
     write_partition,
 )
 from .ports import EmbeddingGateway, RightsGate, SourceTextReader
@@ -250,82 +253,135 @@ def load_ingestion_record(payload: Mapping[str, Any]) -> EmbeddingIngestionRecor
     for name in ("novelty_status", "significance_status"):
         if payload[name] != "not_assessed":
             raise EmbeddingIngestionError(f"{name} must be not_assessed")
-    if payload["saturated_coordinate_count"] != 0:
+    if (not isinstance(payload["saturated_coordinate_count"], int)
+            or isinstance(payload["saturated_coordinate_count"], bool)
+            or payload["saturated_coordinate_count"] != 0):
         raise EmbeddingIngestionError(
             "a saturating coordinate halts ingestion, so a record cannot report one"
         )
-    if payload["corpus_provenance"] not in CORPUS_PROVENANCE_VALUES:
+    if (not isinstance(payload["corpus_provenance"], str)
+            or payload["corpus_provenance"] not in CORPUS_PROVENANCE_VALUES):
         raise EmbeddingIngestionError("unknown corpus_provenance")
-    key = PartitionKey(
-        provider=str(payload["partition_key"]["provider"]),
-        model_identifier=str(payload["partition_key"]["model_identifier"]),
-        dimension=int(payload["partition_key"]["dimension"]),
-        normalization=str(payload["partition_key"]["normalization"]),
-    )
+    try:
+        key = partition_key_from_payload(payload["partition_key"])
+    except (TypeError, EmbeddingError) as error:
+        raise EmbeddingIngestionError("partition_key is invalid") from error
     if key.is_fixture_synthetic:
         raise FixtureProviderNotIngestibleError(
             "no ingestion record may name the fixture_synthetic provider"
         )
-    if payload["partition_key_string"] != key.key_string():
+    if (not isinstance(payload["partition_key_string"], str)
+            or payload["partition_key_string"] != key.key_string()):
         raise EmbeddingIngestionError("partition_key_string does not match partition_key")
     documents: list[EmbeddedDocument] = []
     previous = ""
     entries = payload["documents"]
-    if not isinstance(entries, list) or len(entries) != payload["document_count"]:
+    document_count = _nonnegative_integer(payload["document_count"], "document_count")
+    if not isinstance(entries, list) or len(entries) != document_count:
         raise EmbeddingIngestionError("documents must be an array matching document_count")
     for position, entry in enumerate(entries):
         if not isinstance(entry, dict) or set(entry) != set(_DOCUMENT_FIELDS):
             raise EmbeddingIngestionError(f"documents[{position}] fields differ from schema")
-        document_id = str(entry["document_id"])
+        document_id = entry["document_id"]
+        if not isinstance(document_id, str) or IDENTIFIER_PATTERN.fullmatch(document_id) is None:
+            raise EmbeddingIngestionError(f"documents[{position}].document_id is invalid")
         if document_id <= previous:
             raise EmbeddingIngestionError("documents must be sorted by document_id")
         previous = document_id
         for name in ("source_content_hash", "artifact_content_hash"):
             if HASH_PATTERN.fullmatch(str(entry[name])) is None:
                 raise EmbeddingIngestionError(f"documents[{position}].{name} is not a hash")
+        source_id = entry["source_id"]
+        if not isinstance(source_id, str) or not source_id:
+            raise EmbeddingIngestionError(f"documents[{position}].source_id is invalid")
+        input_tokens = _nonnegative_integer(
+            entry["input_tokens"], f"documents[{position}].input_tokens",
+        )
+        for name in ("provider_request_id", "rights_decision_id"):
+            if entry[name] is not None and not isinstance(entry[name], str):
+                raise EmbeddingIngestionError(f"documents[{position}].{name} is invalid")
         documents.append(EmbeddedDocument(
             document_id=document_id,
-            source_id=str(entry["source_id"]),
-            source_content_hash=str(entry["source_content_hash"]),
-            artifact_content_hash=str(entry["artifact_content_hash"]),
-            input_tokens=int(entry["input_tokens"]),
-            provider_request_id=(
-                None if entry["provider_request_id"] is None
-                else str(entry["provider_request_id"])
-            ),
-            rights_decision_id=(
-                None if entry["rights_decision_id"] is None
-                else str(entry["rights_decision_id"])
-            ),
+            source_id=source_id,
+            source_content_hash=entry["source_content_hash"],
+            artifact_content_hash=entry["artifact_content_hash"],
+            input_tokens=input_tokens,
+            provider_request_id=entry["provider_request_id"],
+            rights_decision_id=entry["rights_decision_id"],
         ))
+    total_input_tokens = _nonnegative_integer(
+        payload["total_input_tokens"], "total_input_tokens",
+    )
+    provider_calls = _nonnegative_integer(payload["provider_calls"], "provider_calls")
+    estimated_cost = _nonnegative_integer(
+        payload["estimated_cost_microusd"], "estimated_cost_microusd",
+    )
+    if total_input_tokens != sum(item.input_tokens for item in documents):
+        raise EmbeddingIngestionError("total_input_tokens does not close over documents")
+    if provider_calls != len(documents):
+        raise EmbeddingIngestionError("provider_calls does not close over documents")
+    for name in ("run_id", "recorded_at", "processor_id", "pricing_snapshot_id"):
+        if not isinstance(payload[name], str) or not payload[name]:
+            raise EmbeddingIngestionError(f"{name} must be a non-empty string")
+    for name in ("configuration_content_hash", "manifest_hash"):
+        if not isinstance(payload[name], str) or HASH_PATTERN.fullmatch(payload[name]) is None:
+            raise EmbeddingIngestionError(f"{name} is not a hash")
+    if not isinstance(payload["pricing_confirmed"], bool):
+        raise EmbeddingIngestionError("pricing_confirmed must be a boolean")
     recorded_hash = payload["content_hash"]
-    if HASH_PATTERN.fullmatch(str(recorded_hash)) is None:
+    if not isinstance(recorded_hash, str) or HASH_PATTERN.fullmatch(recorded_hash) is None:
         raise EmbeddingIngestionError("content_hash is invalid")
     rehashed = dict(payload)
     rehashed["content_hash"] = None
     if canonical_hash(rehashed) != recorded_hash:
         raise EmbeddingIngestionError("ingestion record content_hash mismatch")
     return EmbeddingIngestionRecord(
-        schema_version=str(payload["schema_version"]),
-        run_id=str(payload["run_id"]),
-        recorded_at=str(payload["recorded_at"]),
-        processor_id=str(payload["processor_id"]),
+        schema_version=payload["schema_version"],
+        run_id=payload["run_id"],
+        recorded_at=payload["recorded_at"],
+        processor_id=payload["processor_id"],
         partition_key=key,
         corpus_provenance=str(payload["corpus_provenance"]),
-        configuration_content_hash=str(payload["configuration_content_hash"]),
-        pricing_snapshot_id=str(payload["pricing_snapshot_id"]),
-        pricing_confirmed=bool(payload["pricing_confirmed"]),
-        manifest_hash=str(payload["manifest_hash"]),
+        configuration_content_hash=payload["configuration_content_hash"],
+        pricing_snapshot_id=payload["pricing_snapshot_id"],
+        pricing_confirmed=payload["pricing_confirmed"],
+        manifest_hash=payload["manifest_hash"],
         documents=tuple(documents),
-        total_input_tokens=int(payload["total_input_tokens"]),
-        estimated_cost_microusd=int(payload["estimated_cost_microusd"]),
-        provider_calls=int(payload["provider_calls"]),
-        content_hash=str(recorded_hash),
+        total_input_tokens=total_input_tokens,
+        estimated_cost_microusd=estimated_cost,
+        provider_calls=provider_calls,
+        content_hash=recorded_hash,
     )
 
 
 def read_ingestion_record(path: Path) -> EmbeddingIngestionRecord:
-    return load_ingestion_record(json.loads(path.read_text(encoding="utf-8")))
+    try:
+        payload = json.loads(
+            path.read_text(encoding="utf-8"), parse_float=_reject_decimal,
+            object_pairs_hook=_reject_duplicate_keys,
+        )
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise EmbeddingIngestionError(f"cannot parse ingestion record {path}") from error
+    return load_ingestion_record(payload)
+
+
+def _reject_decimal(raw: str) -> NoReturn:
+    raise EmbeddingIngestionError(f"decimal literal in ingestion record: {raw!r}")
+
+
+def _reject_duplicate_keys(pairs: Sequence[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise EmbeddingIngestionError(f"duplicate JSON key in ingestion record: {key!r}")
+        result[key] = value
+    return result
+
+
+def _nonnegative_integer(value: Any, where: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise EmbeddingIngestionError(f"{where} must be a non-negative integer")
+    return value
 
 
 def write_ingestion_record(record: EmbeddingIngestionRecord, path: Path) -> None:
@@ -411,6 +467,8 @@ def ingest_partition(
         evaluation = rights.require_rights(
             request_spec.source_id, EMBEDDING_RIGHTS_USE,
             at=recorded_at, processor_id=configuration.processor_id,
+            provider=configuration.provider,
+            model_identifier=configuration.model_identifier,
         )
         # 2. Only now is the text read.
         data = corpus.read(request_spec.source_id)
@@ -491,7 +549,11 @@ def ingest_partition(
     provenance = gateway_corpus_provenance(gateway)
     if provenance not in CORPUS_PROVENANCE_VALUES:  # pragma: no cover - defensive
         provenance = CORPUS_PROVENANCE_PROJECT_AUTHORED
-    partition = write_partition(root, key, artifacts, corpus_provenance=provenance)
+    partition = (
+        _write_provider_partition(root, key, artifacts)
+        if provenance == CORPUS_PROVENANCE_PROVIDER_EMBEDDED
+        else write_partition(root, key, artifacts, corpus_provenance=provenance)
+    )
     estimated_cost = estimate_cost_microusd(
         pricing, input_tokens=total_input_tokens, output_tokens=OUTPUT_TOKENS_CONSTANT,
     )

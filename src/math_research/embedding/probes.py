@@ -86,7 +86,8 @@ class _ProbeFixtureRightsGate:
 
     def require_rights(
         self, source_id: str, intended_use: Any, *, at: str,
-        processor_id: str | None = None,
+        processor_id: str | None = None, provider: str | None = None,
+        model_identifier: str | None = None,
     ) -> _ProbeRightsEvaluation:
         self.checks.append((source_id, processor_id))
         if intended_use is not EMBEDDING_RIGHTS_USE:
@@ -104,6 +105,8 @@ class _ProbeFixtureRightsGate:
                 f"decision for {source_id} names {granted}, not {processor_id}",
                 code="processor_not_authorized",
             )
+        if provider != "openai" or model_identifier != _LIVE_MODEL:
+            raise EmbeddingError("wrong processor identity", code="processor_not_authorized")
         return _ProbeRightsEvaluation(decision_id=f"decision.{source_id}")
 
 

@@ -159,8 +159,9 @@ canonical bytes plus one trailing newline; the newline is outside every preimage
 Artifact shape
 ==============
 
-Every artifact carries ``schema_version``, ``artifact_kind``, ``document_id``,
-``source_content_hash``, ``coordinates`` and ``content_hash``.
+Every artifact carries ``schema_version``, ``partition_key_string``,
+``artifact_kind``, ``document_id``, ``source_content_hash``, ``coordinates`` and
+``content_hash``.
 
 ``artifact_kind`` is ``"document"`` for the 19 corpus artifacts and ``"query"``
 for the 17 gold-query artifacts. It is **additive to** ``document_id``, not a
@@ -211,6 +212,9 @@ DIMENSION = 32
 SCALE_EXPONENT = 30
 SCALE = 2**SCALE_EXPONENT
 NORMALIZATION = "round_half_even_scale_2p30"
+PARTITION_KEY_STRING = (
+    f"{PROVIDER}~{MODEL_IDENTIFIER}~d{DIMENSION}~{NORMALIZATION}"
+)
 
 ANCHOR_MIN_DOCUMENT_FREQUENCY = 2
 HASH_SEED = "adaivy.phase4c-semantic.fixture_synthetic.v1"
@@ -631,6 +635,7 @@ def artifact_body(
     return sealed(
         {
             "schema_version": ARTIFACT_SCHEMA_VERSION,
+            "partition_key_string": PARTITION_KEY_STRING,
             "artifact_kind": kind,
             "document_id": identifier,
             "source_content_hash": source_content_hash,
@@ -697,6 +702,7 @@ def plan(built: dict[str, Any]) -> dict[str, bytes]:
                 "normalization": NORMALIZATION,
                 "provider": PROVIDER,
             },
+            "partition_key_string": PARTITION_KEY_STRING,
             "expected_counts": {
                 "artifact_count": DOCUMENT_COUNT + QUERY_COUNT,
                 "coordinate_bound_absolute": SCALE,

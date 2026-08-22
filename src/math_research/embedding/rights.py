@@ -36,7 +36,7 @@ MAX_SOURCE_TEXT_BYTES = 1_048_576
 
 
 def processor_bound_rights_supported(service: Any) -> bool:
-    """Is ADR-0064's ``processor_id`` parameter present on this service?"""
+    """Does the service explicitly bind the complete processor identity?"""
 
     method = getattr(service, "require_rights", None)
     if method is None:
@@ -45,12 +45,9 @@ def processor_bound_rights_supported(service: Any) -> bool:
         parameters = inspect.signature(method).parameters
     except (TypeError, ValueError):  # pragma: no cover - builtin or C callable
         return False
-    if "processor_id" in parameters:
-        return True
-    return any(
-        parameter.kind is inspect.Parameter.VAR_KEYWORD
-        for parameter in parameters.values()
-    )
+    # ``**kwargs`` is not evidence of support: it can silently swallow the
+    # identity and recreate the exact fail-open seam this adapter closes.
+    return {"processor_id", "provider", "model_identifier"}.issubset(parameters)
 
 
 class Phase4ProcessorRightsGate:
@@ -65,9 +62,10 @@ class Phase4ProcessorRightsGate:
 
     def require_rights(
         self, source_id: str, intended_use: Any, *, at: str,
-        processor_id: str | None = None,
+        processor_id: str | None = None, provider: str | None = None,
+        model_identifier: str | None = None,
     ) -> Any:
-        if not processor_id:
+        if not processor_id or not provider or not model_identifier:
             raise ProcessorNotNamedError(
                 "an embedding rights check must name the processor that will "
                 "receive the text"
@@ -80,6 +78,7 @@ class Phase4ProcessorRightsGate:
             )
         return self.service.require_rights(
             source_id, intended_use, at=at, processor_id=processor_id,
+            provider=provider, model_identifier=model_identifier,
         )
 
 

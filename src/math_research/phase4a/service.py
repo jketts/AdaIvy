@@ -135,28 +135,36 @@ class Phase4Service:
         return record
 
     @staticmethod
-    def _require_processor_argument(intended_use: RightsUse, processor_id: str | None) -> None:
+    def _require_processor_argument(
+        intended_use: RightsUse, processor_id: str | None,
+        provider: str | None, model_identifier: str | None,
+    ) -> None:
         """ADR-0064: naming the processor is the caller's obligation, not a default.
 
         Omitting it for a disclosing use is a programming error and raises; it
         never falls back to a decision that authorized some other processor.
         """
 
+        supplied = (processor_id, provider, model_identifier)
         if intended_use in DISCLOSING_RIGHTS_USES:
-            if processor_id is None:
+            if any(value is None for value in supplied):
                 raise ValueError(
-                    f"{PROCESSOR_REQUIRED_REFUSAL}: {intended_use.value} requires a named processor_id"
+                    f"{PROCESSOR_REQUIRED_REFUSAL}: {intended_use.value} requires "
+                    "processor_id, provider, and model_identifier"
                 )
-        elif processor_id is not None:
+        elif any(value is not None for value in supplied):
             raise ValueError(
                 f"{PROCESSOR_FORBIDDEN_REFUSAL}: {intended_use.value} must not name a processor_id"
             )
 
     def evaluate_rights(
         self, source_id: str, intended_use: RightsUse, *, at: str,
-        processor_id: str | None = None,
+        processor_id: str | None = None, provider: str | None = None,
+        model_identifier: str | None = None,
     ) -> RightsEvaluation:
-        self._require_processor_argument(intended_use, processor_id)
+        self._require_processor_argument(
+            intended_use, processor_id, provider, model_identifier,
+        )
         records = list(self.workspace.records())
         lifecycles = [
             record for record in records
@@ -199,12 +207,16 @@ class Phase4Service:
         if value is RightsValue.ALLOWED:
             if intended_use in DISCLOSING_RIGHTS_USES:
                 authorized = payload["processor"]
-                if authorized is None or authorized["processor_id"] != processor_id:
-                    named = "none" if authorized is None else authorized["processor_id"]
+                requested = (processor_id, provider, model_identifier)
+                named = None if authorized is None else (
+                    authorized["processor_id"], authorized["provider"],
+                    authorized["model_identifier"],
+                )
+                if named != requested:
                     return RightsEvaluation(
                         source_id, intended_use, RightsOutcome.PROCESSOR_NOT_AUTHORIZED, False,
                         decision["id"],
-                        f"rights decision authorizes processor {named} and not {processor_id}",
+                        f"rights decision authorizes processor identity {named} and not {requested}",
                     )
             return RightsEvaluation(source_id, intended_use, RightsOutcome.PERMITTED, True, decision["id"], "explicit human decision permits requested use")
         if value is RightsValue.PROHIBITED:
@@ -213,7 +225,8 @@ class Phase4Service:
 
     def require_rights(
         self, source_id: str, intended_use: RightsUse, *, at: str,
-        processor_id: str | None = None,
+        processor_id: str | None = None, provider: str | None = None,
+        model_identifier: str | None = None,
     ) -> RightsEvaluation:
         """Raise `RightsBlocked` on any non-permitted outcome.
 
@@ -221,7 +234,10 @@ class Phase4Service:
         identity; a caller coding to ADR-0064's `-> None` contract may ignore it.
         """
 
-        evaluation = self.evaluate_rights(source_id, intended_use, at=at, processor_id=processor_id)
+        evaluation = self.evaluate_rights(
+            source_id, intended_use, at=at, processor_id=processor_id,
+            provider=provider, model_identifier=model_identifier,
+        )
         if not evaluation.allowed:
             raise RightsBlocked(evaluation)
         try:

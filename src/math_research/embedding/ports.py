@@ -31,7 +31,8 @@ class RightsGate(Protocol):
 
     def require_rights(
         self, source_id: str, intended_use: Any, *, at: str,
-        processor_id: str | None = None,
+        processor_id: str | None = None, provider: str | None = None,
+        model_identifier: str | None = None,
     ) -> Any: ...
 
 
