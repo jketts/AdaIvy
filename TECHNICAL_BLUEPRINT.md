@@ -2549,6 +2549,31 @@ generation: source generations remain primary evidence and state
 and vector partition. This preserves the immutable/rebuildable distinction in
 Sections 11 and 14.
 
+### 21.5 Implemented depth/breadth boundary (2026-08-22)
+
+ADRs 0077–0083 widen the exploratory interior without widening the trust
+boundary. The central lead receives the frozen statement, durable notes,
+bounded artifact reads, exact verifier feedback, sandbox diagnostics, and
+remaining budgets. Malformed actions and failed experiments may be repaired
+within explicit limits. The v2 runner accepts model-selected actions through a
+closed effect registry, permits repeated ordered literature cycles, requires
+retrieval to bind a published generation, checkpoints paid planner calls
+separately from operation effects, and can resume a human answer in the same
+campaign.
+
+The corpus boundary now includes a gated resumable snapshot fetcher, pinned
+PDF/LaTeX extraction, bulk rights quarantine, a metadata bridge, and chunked
+retrieval. Discovery includes paginated bounded adapters, independently checked
+query grounding, verified depth-one following, and batch acquisition. The v2
+scientific workspace remains fail-closed until its exact image and activation
+evidence exist; one-replica runs explicitly propagate
+`determinism_unverified` into planner, verifier, and report state.
+
+The Slice 16 live gate definition is implemented and offline-tested. Its
+checked-in status is pending. No live end-to-end run, provider activation,
+source acquisition, embedding call, container run, Lean check, or publication
+approval is inferred from that definition.
+
 ## 22. Open decisions
 
 These choices should be resolved through small implementation experiments, not

@@ -42,6 +42,9 @@ capability is summarized separately in
   cross-campaign vector reuse, and provenance-closed report generation
 - ADR-0077: problem-visible planner context and durable model memory
 - ADR-0078: bounded call economics, repair, and non-terminal experiment failure
+- ADR-0079: model-driven v2 campaign runtime with a closed effect registry,
+  repeatable literature cycles, separate planner/effect checkpoints, and
+  human-answer continuation
 - ADR-0080: real corpus ingestion — gated snapshot fetcher, PDF/LaTeX
   extraction toolchain with recorded extractor identity, bulk licence-table
   rights, the arXiv-metadata silo bridge, and chunked retrieval; supersedes
@@ -53,6 +56,8 @@ capability is summarized separately in
   and single-request configuration for the v2 capability only
 - ADR-0082: exact scientific workspace sandbox v2, still fail-closed pending
   its pinned image build and activation evidence
+- ADR-0083: fail-closed live end-to-end acceptance gate; definition is shipped
+  and offline-tested, while authorized execution evidence remains pending
 
 The end-to-end integration is documented in
 [`../END_TO_END_RESEARCH_RUNTIME_PLAN.md`](../END_TO_END_RESEARCH_RUNTIME_PLAN.md).

@@ -6,6 +6,9 @@
 > reuse. Production network/provider/snapshot/OCI/Lean effects remain controlled
 > by their separate activation gates; the offline result must not be read as
 > activation of those capabilities.
+> The successor depth/breadth work is tracked in
+> `CAMPAIGN_DEPTH_AND_BREADTH_PLAN.md`; ADRs 0077–0083 add the model-driven v2
+> engine and wider component boundaries while keeping live execution pending.
 
 **Status:** implemented offline; live capabilities remain separately activated
 **Date:** 2026-08-22  

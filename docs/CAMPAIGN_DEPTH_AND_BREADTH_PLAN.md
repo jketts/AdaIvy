@@ -1,8 +1,8 @@
 # Campaign Depth and Breadth Plan
 
-**Status:** implementation roadmap; ADRs 0077, 0078, 0080, 0081, and 0082
-govern Slices 10, 11, 13, 14, and 15 respectively; ADR-0079 remains required
-before Slice 12 is integrated
+**Status:** implemented offline through Slice 16 milestone 1; ADRs 0077–0083
+govern Slices 10–16. Slice 16 milestone 2 (authorized live execution evidence)
+remains pending and is not implied by the offline suite.
 **Date:** 2026-08-22
 **Predecessor:** [`END_TO_END_RESEARCH_RUNTIME_PLAN.md`](END_TO_END_RESEARCH_RUNTIME_PLAN.md)
 (Slices 1–8, closed offline at `main@953e7a7`)
@@ -139,7 +139,8 @@ verifier counterexample.
   per-call output tokens configurable to model limits (e.g. 32k);
   `MAX_CONTEXT_BYTES_CEILING` raised toward the provider window (with a
   deterministic rolling-window policy over `previous_actions`: older actions
-  collapse to hash + rationale summaries, recoverable via `read_artifact`).
+  collapse to hash + rationale summaries; independently stored artifacts stay
+  recoverable through `read_artifact`).
 - Malformed actions get a bounded repair loop: the validation error is echoed
   to the model and a new append-only sequence records each retry, up to N
   consecutive refusals before `action_rejected` becomes terminal. Sequence

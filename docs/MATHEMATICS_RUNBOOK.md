@@ -52,9 +52,9 @@ Freeze the informal statement, objects, quantifiers, assumptions, target,
 semantic alignment, success criteria, budget, and stopping rules. Do not repair
 ambiguity silently.
 
-## 3. Satisfy the current research-start gate
+## 3. Satisfy the applicable research-start gate
 
-Until a superseding ADR is implemented, a human must create a fresh
+The legacy `campaign run` contract still requires a human-created
 `before_research` novelty re-check bound to the dossier hash and campaign ID:
 
 ```bash
@@ -70,12 +70,19 @@ PYTHONPATH=src .venv/bin/python -m math_research.cli novelty create before_resea
 Allowed outcomes are `prior_art_found`, `not_found_under_protocol`, and
 `inconclusive`. An empty search never means novel.
 
+The ADR-0072+ v2 path instead records literature search before substantive
+research under its initial bounded authorization. This does not remove the
+mandatory `before_announcement` review.
+
 ## 4. Run only available capability paths
 
-Use `docs/CAPABILITY_STATUS.md` to distinguish implemented components from the
-actual campaign path. In particular, the current campaign cannot search,
-acquire, embed, or retrieve literature and does not yet wire the activated OCI
-runner, exact verifier, or Lean checker.
+Use `docs/CAPABILITY_STATUS.md` to distinguish implemented components from
+activated ones. The deterministic `campaign start` fixture traverses search,
+acquisition, embedding, retrieval, experiment, and exact verification. The
+model-driven v2 runtime can select those actions through an injected, closed
+effect registry. This is orchestration evidence, not authorization for live
+provider, discovery, snapshot, embedding, workspace OCI, Lean, or typesetting
+effects.
 
 If the operator runs a live campaign, every internal provider call must use the
 selected AdaIvy configuration and appear in the campaign ledger. Work performed
@@ -83,8 +90,9 @@ by the host agent remains an explicit `external_codex`, `human`, or
 `external_system` import.
 
 Do not invent an ad hoc bridge between components and present it as a completed
-campaign. Record the missing integration as a blocker or perform explicitly
-authorized repository engineering first.
+campaign. A live run must first pass `campaign live-acceptance` with the sealed
+gate active, the exact acknowledgement, and every named activation record. The
+checked-in gate is pending and therefore refuses before network I/O.
 
 ## 5. Record conventions and target scope
 
@@ -140,6 +148,9 @@ make check
 Run additional named live, OCI, Lean, or typesetting gates when the work touches
 those capabilities. A missing prerequisite is a recorded blocker, never a pass.
 Retain failed and inconclusive attempts.
+
+`make check-campaign-live-definition` validates the Slice 16 gate definition
+offline. It does not execute or activate a live campaign.
 
 ## Terminal outcomes
 

@@ -28,15 +28,18 @@ Implemented components include:
 
 - provider-neutral model gateways with bounded live activation and accounting;
 - a sequential central-lead campaign with a causal, replayable ledger;
-- a digest-pinned OCI experiment sandbox for one exact-graph target;
+- a legacy digest-pinned OCI experiment sandbox plus a fail-closed v2
+  persistent scientific workspace with exact target-class routing;
 - exact mathematical verifiers and a sealed Lean 4 checking service;
-- bounded Crossref discovery and public source acquisition;
+- paginated, policy-authorized Crossref/arXiv/OpenAlex discovery, depth-one
+  following, and bounded batch public acquisition;
 - bounded arXiv metadata/abstract corpus replay;
 - a persistent multi-run corpus store (ADR-0072 Slice 3) at an
   operator-selected data root outside Git, with policy-derived per-document
   rights, quarantine, exact parsed spans, immutable content-addressed
-  generations, and takedown tombstones; live snapshot acquisition stays behind
-  its own pending activation;
+  generations, takedown tombstones, chunked retrieval, and a gated resumable
+  snapshot fetcher with pinned extraction identities; live snapshot acquisition
+  stays behind its own pending activation;
 - processor-bound embedding rights, live embedding ingestion, and immutable
   exact vector artifacts;
 - four-signal Phase 4C retrieval, including semantic similarity; and
@@ -47,7 +50,10 @@ Implemented components include:
 - first-class literature/acquire/parse/embed/index/retrieve/formal-check action
   names; and
 - `campaign start` plus action-level `campaign resume` for the complete offline
-  fixture path, using an explicit credential profile and unified budget.
+  fixture path, using an explicit credential profile and unified budget; and
+- a model-driven v2 runtime API with a closed effect registry, repeatable
+  literature cycles, published-generation retrieval checks, and durable
+  human-answer continuation.
 
 The end-to-end workflow is runnable offline. The following live scope remains
 separately gated or pending:
@@ -59,7 +65,10 @@ separately gated or pending:
   including a human novelty re-check; the new end-to-end path structurally
   records search before research and does not require that checkpoint; and
 - the offline fixture uses the bounded built-in exact experiment/verifier; the
-  generated-program OCI route remains a separately activated campaign path.
+  generated-program OCI route and v2 workspace image remain separately
+  activated campaign paths; and
+- the Slice 16 live acceptance definition is shipped fail-closed, but no live
+  end-to-end execution evidence has been recorded.
 
 `campaign resume ROOT` detects end-to-end campaign roots and replays completed
 action checkpoints without repeating paid work. It still performs the original
@@ -69,6 +78,22 @@ idempotent local projection may retry under the same key.
 
 Passing `make check` includes the complete offline fixture campaign. It does not
 activate or claim success for any live external capability.
+
+Validate the sealed live-gate definition without making any external call:
+
+```sh
+make check-campaign-live-definition
+```
+
+The active execution form additionally requires the exact acknowledgement and
+a directory containing each named, hash-valid activation record. The checked-in
+gate is intentionally pending, so this command currently refuses before I/O:
+
+```sh
+python3 -m math_research.cli campaign live-acceptance --execute \
+  --evidence-directory /path/to/activation-evidence \
+  --activation-acknowledgement I_ACKNOWLEDGE_LIVE_END_TO_END_CAMPAIGN
+```
 
 Run that path directly with an external persistent data root:
 
@@ -124,6 +149,7 @@ Important additional gates:
 | `make check-gate PY=…` | pinned Draft 2020-12 validator environment |
 | `make check-phase4b-oci` | Docker and the pinned parser image |
 | `make check-campaign-experiment-oci` | Docker and the pinned campaign image |
+| `make check-campaign-live-definition` | offline validation of the pending Slice 16 live gate |
 | `make check-embedding-live` | configured embedding provider and explicit live acknowledgement |
 | `make check-typeset` | pinned local BasicTeX toolchain |
 | `make check-all` | offline checks plus the sealed Lean gate |
