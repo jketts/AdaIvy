@@ -33,10 +33,25 @@ ALIAS_PHRASE_POINTS = 1.0
 """Score contributed per distinct matched content phrase.
 
 This is a unit weight, not a tuned parameter. It was not chosen by observing
-which value moved a gate: every renamed-control query's fused candidate set is
-smaller than its top-k of ten, so `renamed_known_result_recall_at_10` is
-invariant to any strictly positive value. The acceptance suite asserts that
-invariance directly rather than asking a reader to take it on trust.
+which value moved a gate.
+
+**The ADR-0032 justification for that claim no longer holds, and the correction
+is recorded here rather than repaired by retuning.** ADR-0032 argued the weight
+was inert because "every renamed-control query's fused candidate set is smaller
+than its top-k of ten, so `renamed_known_result_recall_at_10` is invariant to any
+strictly positive value". That reasoning depended on the top-k cutoff never
+binding, and ADR-0066 makes it bind: the semantic signal names ten candidates for
+every query, so every renamed control now has at least ten fused candidates. At a
+weight of `0.001` the alias contribution is smaller than a single semantic tier
+point, the two semantically-unreachable renamed golds fall out of the top ten,
+and the gate reads 0.5.
+
+So the weight is now LOAD-BEARING, and saying so is the honest statement. It has
+NOT been re-chosen in response: it remains the unit value it has always had, and
+picking a value because it made a gate pass would be fitting a weight to the
+fixtures it is measured on. `tests/test_phase4c_hybrid_retrieval.py` pins the
+measured conditional behaviour, and
+`tests/test_phase4c_semantic_signal.py` records it as a regression.
 """
 
 

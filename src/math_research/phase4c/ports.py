@@ -1,4 +1,4 @@
-"""Protocol ports for the three Phase 4C retrieval signals.
+"""Protocol ports for the four Phase 4C retrieval signals.
 
 The ports exist so the acceptance suite can substitute a degenerate signal --
 a lexical signal that retrieves nothing, an empty absence-operator vocabulary,
@@ -16,6 +16,17 @@ The ports also record the direction of each signal in the type system:
   candidate: it returns no scores and no documents, so no implementation is
   able to raise a fused score or add a candidate. Fusion applies the removal,
   and it leaves every score exactly as the lexical and alias signals set it.
+* `SemanticSignal` (ADR-0066) may introduce a document, and only through a
+  bounded integer tier credit derived from its exact-cosine RANK. It never
+  asserts a score of its own: the credit is a function of the rank, so no
+  implementation can hand fusion an arbitrary magnitude.
+
+`SemanticSignal` is keyed on the gold-query IDENTIFIER, not the query text, and
+that asymmetry with the other three ports is deliberate. ADR-0066 forbids
+computing a query vector inside the retrieval path, so the only query vector
+that exists is the one ADR-0065 already froze in the partition, and it is
+addressed by the identifier under which it was frozen. A port taking query text
+would be a port that could be implemented only by embedding live.
 """
 
 from __future__ import annotations
@@ -61,6 +72,45 @@ class DisclaimerVerdict:
     matched_query_terms: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class SemanticCredit:
+    """One exact-cosine hit and the bounded credit its RANK earns.
+
+    `cosine_dot` and `cosine_norm_squared_product` are the ADR-0065 exact
+    integer cosine terms, `(dot(q,d), |q|^2 * |d|^2)`. They are carried, never
+    divided: the quotient is irrational in general, so a float cosine would put
+    the ordering on machine noise. They are reported so a reader can recheck the
+    ranking by cross-multiplying integers.
+
+    `tier_credit` is derived from `rank` by `bounds.semantic_tier_credit` and
+    fusion re-derives it before use, so a signal cannot claim credit its rank
+    does not earn.
+    """
+
+    document_id: str
+    rank: int
+    tier_credit: int
+    cosine_dot: int
+    cosine_norm_squared_product: int
+
+
+@dataclass(frozen=True)
+class SemanticPartitionIdentity:
+    """The declared partition, as read from bytes. Binds report identity.
+
+    `manifest_hash` is `None` only for a signal that reads no partition at all,
+    which is the ADR-0066 "signal disabled" case and is recorded as such rather
+    than presented as a partition that happened to be empty.
+    """
+
+    partition_key_string: str
+    manifest_hash: str | None
+    corpus_provenance: str
+    vector_count: int
+    corpus_document_count: int
+    query_count: int
+
+
 @runtime_checkable
 class LexicalSignal(Protocol):
     def candidates(self, query: str, *, limit: int) -> tuple[LexicalCandidate, ...]:
@@ -81,6 +131,15 @@ class DisclaimerSignal(Protocol):
         ...
 
 
+@runtime_checkable
+class SemanticSignal(Protocol):
+    def partition_identity(self) -> SemanticPartitionIdentity:
+        ...
+
+    def credits(self, query_id: str, *, limit: int) -> tuple[SemanticCredit, ...]:
+        ...
+
+
 __all__ = [
     "AliasExpansion",
     "AliasSignal",
@@ -88,4 +147,7 @@ __all__ = [
     "DisclaimerVerdict",
     "LexicalCandidate",
     "LexicalSignal",
+    "SemanticCredit",
+    "SemanticPartitionIdentity",
+    "SemanticSignal",
 ]

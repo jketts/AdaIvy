@@ -37,6 +37,7 @@ from typing import Any
 from . import aliases as alias_module
 from . import disclaimer as disclaimer_module
 from . import lexical as lexical_module
+from . import semantic as semantic_module
 from .aliases import ALIAS_PHRASE_POINTS, AliasExpansionSignal
 from .bounds import (
     BOUNDS,
@@ -64,7 +65,18 @@ from .fixtures import (
 )
 from .fusion import fuse, retained_ids
 from .lexical import LexicalIndex, corpus_rows, derived_db_bytes, open_index
-from .ports import AliasSignal, DisclaimerSignal, LexicalSignal
+from .ports import (
+    AliasSignal,
+    DisclaimerSignal,
+    LexicalSignal,
+    SemanticPartitionIdentity,
+    SemanticSignal,
+)
+from .semantic import (
+    SemanticPartitionSignal,
+    default_partition_root,
+    load_semantic_partition,
+)
 from .serialization import canonical_bytes, content_hash, operational_hash, sha256_bytes
 
 METHOD = "phase4c-hybrid-score-space-fusion-with-exclusion"
@@ -149,6 +161,8 @@ def declared_method(
     evidence_nouns: Sequence[str],
     object_level_cues: Sequence[str],
     alias_phrase_points: float,
+    semantic_identity: SemanticPartitionIdentity,
+    semantic_tier_points: int,
 ) -> dict[str, Any]:
     return {
         "method": METHOD,
@@ -158,7 +172,9 @@ def declared_method(
             "rank_only_combiner": False,
             "reciprocal_rank_fusion": False,
             "lexical_orientation": "relevance = -bm25 (monotone, margins preserved)",
-            "composition": "fused_score = (-bm25) + alias_points",
+            "composition": (
+                "fused_score = (-bm25) + alias_points + semantic_points"
+            ),
             "exclusion_rule": (
                 "an excluded candidate is removed from the ordering; no score "
                 "changes and no penalty term exists"
@@ -170,6 +186,9 @@ def declared_method(
             absence_operators, evidence_nouns, object_level_cues
         ),
         "alias_signal": alias_module.declared_method(alias_phrase_points),
+        "semantic_signal": semantic_module.declared_method(
+            semantic_identity, semantic_tier_points=semantic_tier_points
+        ),
     }
 
 
@@ -207,9 +226,11 @@ def evaluate_hybrid(
     evidence_nouns: Sequence[str] | None = None,
     object_level_cues: Sequence[str] | None = None,
     alias_phrase_points: float | None = None,
+    semantic_partition: Path | None = None,
     lexical_signal: LexicalSignal | None = None,
     disclaimer_signal: DisclaimerSignal | None = None,
     alias_signal: AliasSignal | None = None,
+    semantic_signal: SemanticSignal | None = None,
 ) -> dict[str, Any]:
     """Run the benchmark and return a canonical report.
 
@@ -236,6 +257,10 @@ def evaluate_hybrid(
         tuple(object_level_cues) if object_level_cues is not None else OBJECT_LEVEL_CUES
     )
     points = ALIAS_PHRASE_POINTS if alias_phrase_points is None else alias_phrase_points
+    # ADR-0066 freezes the tier points before measurement, so there is no
+    # override parameter for them: the only way to change the semantic
+    # contribution is to edit the frozen constant, which is a reviewable act.
+    tier_points = BOUNDS.semantic_tier_points
 
     overrides: list[str] = []
     if alias_entries is not None:
@@ -248,12 +273,16 @@ def evaluate_hybrid(
         overrides.append("object_level_cues")
     if alias_phrase_points is not None:
         overrides.append("alias_phrase_points")
+    if semantic_partition is not None:
+        overrides.append("semantic_partition")
     if lexical_signal is not None:
         overrides.append("lexical_signal")
     if disclaimer_signal is not None:
         overrides.append("disclaimer_signal")
     if alias_signal is not None:
         overrides.append("alias_signal")
+    if semantic_signal is not None:
+        overrides.append("semantic_signal")
 
     metadata = {document.identifier: document for document in documents}
     rows = sorted(corpus_rows(documents), reverse=reverse_insertion)
@@ -267,6 +296,18 @@ def evaluate_hybrid(
             object_level_cues=neutral_cues,
         )
         expander: AliasSignal = alias_signal or AliasExpansionSignal(documents, table)
+        # A missing partition is a refusal, not a degradation. A benchmark that
+        # quietly dropped a signal would report a number for a system that was
+        # not tested, so the partition is loaded before the first query and its
+        # absence raises rather than disabling the signal.
+        semantic: SemanticSignal = semantic_signal or SemanticPartitionSignal(
+            load_semantic_partition(
+                semantic_partition
+                if semantic_partition is not None
+                else default_partition_root(fixtures)
+            )
+        )
+        semantic_identity = semantic.partition_identity()
 
         results: list[dict[str, Any]] = []
         operational_results: list[dict[str, Any]] = []
@@ -287,6 +328,11 @@ def evaluate_hybrid(
             expansions = expander.expand(
                 query.query, limit=BOUNDS.max_candidates_per_signal
             )
+            # Keyed on the query IDENTIFIER: the query vector is replayed from
+            # the frozen partition and never computed inside this path.
+            credits = semantic.credits(
+                query.identifier, limit=BOUNDS.semantic_candidate_limit
+            )
             for expansion in expansions:
                 exercised.setdefault(expansion.entry_id, []).append(query.identifier)
 
@@ -296,8 +342,18 @@ def evaluate_hybrid(
                 for document_id, _phrases in expansion.matched:
                     if document_id not in pre_ids:
                         pre_ids.append(document_id)
+            for credit in credits:
+                if credit.document_id not in pre_ids:
+                    pre_ids.append(credit.document_id)
             verdicts = disclaimer.verdicts(query.query, pre_ids)
-            hits = fuse(candidates, expansions, verdicts, alias_phrase_points=points)
+            hits = fuse(
+                candidates,
+                expansions,
+                verdicts,
+                credits=credits,
+                alias_phrase_points=points,
+                semantic_tier_points=tier_points,
+            )
 
             excluded_ids = sorted(hit.document_id for hit in hits if hit.excluded)
             if set(excluded_ids) - set(pre_ids):
@@ -351,6 +407,14 @@ def evaluate_hybrid(
                     hit.document_id
                     for hit in hits
                     if "alias" in hit.signals and "lexical" not in hit.signals
+                ),
+                "semantic_candidate_ids": [
+                    credit.document_id for credit in credits
+                ],
+                "semantic_introduced_ids": sorted(
+                    hit.document_id
+                    for hit in hits
+                    if hit.signals == ("semantic",)
                 ),
                 "alias_expansions": [
                     {
@@ -420,11 +484,14 @@ def evaluate_hybrid(
                 evidence_nouns=nouns,
                 object_level_cues=neutral_cues,
                 alias_phrase_points=points,
+                semantic_identity=semantic_identity,
+                semantic_tier_points=tier_points,
             ),
             "signal_configuration": {
                 "lexical_signal_id": getattr(lexical, "signal_id", "unknown"),
                 "disclaimer_signal_id": getattr(disclaimer, "signal_id", "unknown"),
                 "alias_signal_id": getattr(expander, "signal_id", "unknown"),
+                "semantic_signal_id": getattr(semantic, "signal_id", "unknown"),
                 "alias_entry_count": len(table),
                 "overrides": overrides,
             },
@@ -439,6 +506,12 @@ def evaluate_hybrid(
             ),
             "gold_queries_hash": sha256_bytes((fixtures / GOLD_QUERIES_NAME).read_bytes()),
             "name_aliases_hash": sha256_bytes((fixtures / NAME_ALIASES_NAME).read_bytes()),
+            # ADR-0066: the partition binds report identity. A report built
+            # against a different partition is a different report, so both the
+            # key and the manifest hash sit inside `content_hash` alongside the
+            # corpus, gold-query, and alias fixture hashes.
+            "semantic_partition_key": semantic_identity.partition_key_string,
+            "semantic_partition_manifest_hash": semantic_identity.manifest_hash,
             "source_hashes": {
                 document.identifier: document.source_hash for document in documents
             },

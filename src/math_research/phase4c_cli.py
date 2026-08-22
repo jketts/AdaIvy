@@ -1,14 +1,17 @@
 """Offline CLI for the bounded Phase 4C hybrid-retrieval benchmark.
 
-Standard library only. No network, no model call, no process spawning, no
-embedding, no vector.
+Standard library only. No network, no model call, no process spawning. ADR-0066
+adds a fourth signal that READS frozen ADR-0065 vector artifacts from disk; it
+performs no embedding and makes no provider call, so the offline posture is
+unchanged.
 
 Exit status:
 
-* `0` -- the command succeeded and every gate passed;
-* `1` -- a measured failure: a gate reported `fail` or `undetermined`, or a
-  report failed hash verification. The report is still emitted, because hiding
-  a failed query or a failed gate is a forbidden outcome;
+* `0` -- the command succeeded and every gate passed, or every probe flipped;
+* `1` -- a measured failure: a gate reported `fail` or `undetermined`, a report
+  failed hash verification, or a probe did not flip. The report is still
+  emitted, because hiding a failed query, a failed gate, or an unflipped probe
+  is a forbidden outcome;
 * `2` -- missing or invalid input: a fixture, bound, or schema rejection.
 """
 
@@ -22,6 +25,7 @@ from typing import Any
 from .phase4c.benchmark import evaluate_hybrid, verify_report
 from .phase4c.bounds import BOUNDS, Phase4CValidationError
 from .phase4c.fixtures import reject_duplicate_keys
+from .phase4c.probes import run_probes
 from .phase4c.serialization import canonical_bytes
 
 DEFAULT_FIXTURES = Path("fixtures/phase4c")
@@ -40,6 +44,8 @@ def _summary(report: dict[str, Any]) -> dict[str, Any]:
         "corpus_manifest_hash": report["corpus_manifest_hash"],
         "gold_queries_hash": report["gold_queries_hash"],
         "name_aliases_hash": report["name_aliases_hash"],
+        "semantic_partition_key": report["semantic_partition_key"],
+        "semantic_partition_manifest_hash": report["semantic_partition_manifest_hash"],
         "resource_policy_sha256": report["resource_bounds"]["policy_sha256"],
         "queries": len(results),
         "zero_hit_query_ids": report["zero_hit_query_ids"],
@@ -54,6 +60,9 @@ def _summary(report: dict[str, Any]) -> dict[str, Any]:
         ),
         "queries_with_exclusions": sorted(
             item["id"] for item in results if item["excluded_ids"]
+        ),
+        "queries_with_semantic_introductions": sorted(
+            item["id"] for item in results if item["semantic_introduced_ids"]
         ),
         "alias_entries_exercised_by_no_query": sorted(
             item["entry_id"]
@@ -112,6 +121,12 @@ def main(argv: list[str] | None = None) -> int:
         help="build the index in reverse document order (rebuild-determinism check)",
     )
 
+    probes = subparsers.add_parser(
+        "probes", help="run the ten ADR-0066 falsifiability probes"
+    )
+    probes.add_argument("--fixtures", type=Path, default=DEFAULT_FIXTURES)
+    probes.add_argument("--output", type=Path, default=None)
+
     inspect = subparsers.add_parser(
         "inspect", help="verify the canonical hashes of an emitted report"
     )
@@ -132,6 +147,17 @@ def main(argv: list[str] | None = None) -> int:
             args.output.write_bytes(canonical_bytes(report))
         print(json.dumps(_summary(report), indent=2, sort_keys=True))
         return 0 if report["gate_summary"]["overall"] == "pass" else 1
+
+    if args.command == "probes":
+        try:
+            report = run_probes(args.fixtures)
+        except Phase4CValidationError as error:
+            print(json.dumps({"error": str(error)}, indent=2, sort_keys=True))
+            return 2
+        _emit(report, args.output)
+        # A probe that cannot be made to fail proves nothing, so an unflipped
+        # probe is a measured failure and never a warning.
+        return 0 if report["probes_flipped"] == report["probes_total"] else 1
 
     if args.command == "inspect":
         try:

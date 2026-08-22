@@ -30,11 +30,28 @@ properties over the whole frozen query set, not as a happy path:
 * determinism, bounds, zero external cost, and pinned measured values kept
   separate from the proposed thresholds.
 
+ADR-0066 adds the fourth signal and every measured value below was re-measured
+against it. The corpus and the query set did not move: the same 19 documents and
+17 queries. What moved is recorded at each pin, and three movements are recorded
+as REGRESSIONS rather than absorbed:
+
+* the semantic signal displaces the gold from rank one on three of the four
+  renamed controls, because those golds are held at rank one by ALIAS points on
+  margins of roughly 1.5 and not by the 4.4-plus BM25 margins ADR-0066 reasoned
+  from. Recall@10 is unaffected, so no gate sees it;
+* `optimization-distractor`, a non-applicable document, newly enters eleven
+  result windows including three applicability windows.
+  `applicability_precision_at_5` still reads 1.0 because it is precision over
+  RELEVANT retrieved documents, so the gate is structurally blind to this;
+* `ALIAS_PHRASE_POINTS` stopped being an inert unit weight. Every candidate set
+  is now at least ten documents, so the top-k cutoff binds and the renamed gate
+  is no longer invariant to the alias weight.
+
 Measured values below are OBSERVATIONS, not targets. They are pinned so that any
 retrieval, vocabulary, weighting, fusion, or metric change has to be a
 deliberate edit to this file. They describe the ADR-0032 fixture set -- 19
-documents and 17 queries, the third extension -- and are not comparable with any
-value measured before it.
+documents and 17 queries, the third extension -- with the ADR-0066 semantic
+partition, and are not comparable with any value measured before either.
 """
 
 from __future__ import annotations
@@ -86,6 +103,7 @@ from math_research.phase4c.fixtures import (
     load_object,
 )
 from math_research.phase4c.lexical import EmptyLexicalIndex, probe
+from math_research.phase4c.semantic import DisabledSemanticSignal
 from math_research.phase4c.serialization import (
     canonical_bytes,
     content_hash,
@@ -115,10 +133,16 @@ MEASURED_METRICS = {
     "contradiction_recall_at_5": 1.0,
     "notation_variant_recall_at_5": 1.0,
     "renamed_known_result_recall_at_10": 1.0,
-    # Exclusion SHRINKS the duplicate denominator, so the rate RISES at a
-    # constant numerator: 1/61 lexical, 1/50 hybrid. ADR-0032 predicted this
-    # and requires the denominator to stay at or above 20 for the 0.05 gate.
-    "duplicate_rate_at_5": 1 / 50,
+    # 1/61 lexical, 1/50 three-signal, 1/85 four-signal. ADR-0032's exclusion
+    # SHRANK the denominator and raised the rate; ADR-0066's semantic signal
+    # names ten candidates for every query, so all 17 five-document windows now
+    # fill and the denominator reaches its maximum of 17 * 5 = 85. The numerator
+    # is unchanged at 1: the declared duplicate pair is co-retrieved on exactly
+    # the one query it was co-retrieved on before, so the fall from 0.02 to
+    # 0.0118 is denominator dilution and NOT a reduction in duplicate hits.
+    # ADR-0066 named this gate the live risk; it did not regress, and the reason
+    # it did not is arithmetic rather than clustering avoided.
+    "duplicate_rate_at_5": 1 / 85,
     "external_spend_usd": 0,
     "network_calls": 0,
     "model_or_api_calls": 0,
@@ -130,7 +154,7 @@ MEASURED_SUPPORT = {
     "contradiction_recall_at_5": (2, 2),
     "notation_variant_recall_at_5": (2, 2),
     "renamed_known_result_recall_at_10": (4, 4),
-    "duplicate_rate_at_5": (1, 50),
+    "duplicate_rate_at_5": (1, 85),
 }
 MEASURED_GATE_STATUS = {
     "necessary_lemma_recall_at_5": "pass",
@@ -144,7 +168,9 @@ MEASURED_GATE_STATUS = {
 MEASURED_GATE_SUMMARY = {"pass": 7, "fail": 0, "undetermined": 0, "overall": "pass"}
 
 # Measured lexical-baseline values on the same extended fixtures, for the
-# "may not worsen a metric the baseline already met" comparison.
+# "may not worsen a metric the baseline already met" comparison. Reaching this
+# baseline now needs the semantic signal DISABLED as well as the alias signal
+# emptied, because ADR-0066 turned the semantic signal on by default.
 BASELINE_METRICS = {
     "necessary_lemma_recall_at_5": 1.0,
     "applicability_precision_at_5": 8 / 14,
@@ -154,47 +180,94 @@ BASELINE_METRICS = {
     "duplicate_rate_at_5": 1 / 61,
 }
 
+# The post-exclusion result list per query, re-measured with the fourth
+# signal. THREE GOLDS LOST RANK ONE and none left its top-k:
+# renamed-uniform-bound-result 1->2, renamed-maximal-chain-result 1->2,
+# renamed-container-count-result 1->4. Each was held at rank one by ALIAS
+# points on a margin near 1.5, not by a BM25 margin, so three points of
+# semantic credit is enough to pass it. ADR-0066 reasoned from the 4.4-plus
+# BM25 margins and did not consider the alias-carried golds; that is an
+# error in the ADR and it is recorded here rather than repaired by retuning.
 MEASURED_ORDERED_IDS = {
     "lemma-compactness": (
-        "compactness-lemma", "spectral-lemma", "banach-notation",
-        "finite-dimensional-spectral", "renamed-uniform-bound-result",
+        "compactness-lemma", "hypothesis-free-supremum", "banach-notation",
+        "spectral-lemma", "separation-lemma"
     ),
-    "lemma-spectral": ("spectral-lemma", "finite-dimensional-spectral"),
-    "lemma-separation": ("separation-lemma", "compactness-lemma", "renamed-cover-result"),
-    "applicability-spectral": ("finite-dimensional-spectral", "spectral-lemma"),
+    "lemma-spectral": (
+        "spectral-lemma", "finite-dimensional-spectral", "banach-notation",
+        "hypothesis-free-supremum", "renamed-uniform-bound-result"
+    ),
+    "lemma-separation": (
+        "separation-lemma", "compactness-lemma", "banach-notation",
+        "hypothesis-free-supremum", "optimization-distractor"
+    ),
+    "applicability-spectral": (
+        "finite-dimensional-spectral", "spectral-lemma", "hypothesis-free-supremum",
+        "banach-notation", "boundary-contradiction"
+    ),
     "applicability-certificate": (
-        "duplicate-certificate-a", "duplicate-certificate-b",
-        "renamed-maximal-chain-result", "renamed-uniform-bound-result",
+        "duplicate-certificate-a", "duplicate-certificate-b", "banach-notation",
+        "hypothesis-free-supremum", "renamed-maximal-chain-result"
     ),
     "applicability-compactness": (
-        "compactness-lemma", "finite-dimensional-spectral", "separation-lemma",
-        "hypothesis-free-supremum",
+        "compactness-lemma", "hypothesis-free-supremum", "separation-lemma",
+        "optimization-distractor", "finite-dimensional-spectral"
     ),
     "applicability-selfadjoint": (
         "spectral-lemma", "finite-dimensional-spectral",
-        "renamed-uniform-bound-result",
+        "renamed-uniform-bound-result", "banach-notation",
+        "hypothesis-free-supremum"
     ),
-    "applicability-psd-cone": ("psd-notation",),
+    "applicability-psd-cone": (
+        "psd-notation", "monotonicity-contradiction", "optimization-distractor",
+        "banach-notation", "boundary-contradiction"
+    ),
     "applicability-supremum": (
-        "hypothesis-free-supremum", "separation-lemma", "compactness-lemma",
-        "renamed-cover-result", "finite-dimensional-spectral",
+        "hypothesis-free-supremum", "compactness-lemma", "separation-lemma",
+        "optimization-distractor", "renamed-cover-result"
     ),
     "contradiction-boundary": (
-        "boundary-contradiction", "monotonicity-contradiction", "renamed-cover-result",
+        "boundary-contradiction", "monotonicity-contradiction",
+        "renamed-cover-result", "banach-notation", "hypothesis-free-supremum"
     ),
-    "contradiction-monotonicity": ("monotonicity-contradiction", "boundary-contradiction"),
-    "notation-banach": ("banach-notation", "boundary-contradiction"),
-    "notation-psd": ("psd-notation", "finite-dimensional-spectral"),
+    "contradiction-monotonicity": (
+        "monotonicity-contradiction", "boundary-contradiction", "banach-notation",
+        "hypothesis-free-supremum", "optimization-distractor"
+    ),
+    "notation-banach": (
+        "banach-notation", "boundary-contradiction", "hypothesis-free-supremum",
+        "monotonicity-contradiction", "optimization-distractor"
+    ),
+    "notation-psd": (
+        "psd-notation", "banach-notation", "hypothesis-free-supremum",
+        "optimization-distractor", "finite-dimensional-spectral"
+    ),
     "renamed-uniform-bound": (
-        "renamed-uniform-bound-result", "banach-notation",
-        "finite-dimensional-spectral",
+        "banach-notation", "renamed-uniform-bound-result", "optimization-distractor",
+        "boundary-contradiction", "hypothesis-free-supremum",
+        "finite-dimensional-spectral", "compactness-lemma",
+        "monotonicity-contradiction", "renamed-maximal-chain-result",
+        "separation-lemma"
     ),
     "renamed-maximal-chain": (
-        "renamed-maximal-chain-result", "separation-lemma", "hypothesis-free-supremum",
-        "spectral-lemma", "compactness-lemma",
+        "hypothesis-free-supremum", "renamed-maximal-chain-result",
+        "optimization-distractor", "separation-lemma", "compactness-lemma",
+        "banach-notation", "boundary-contradiction", "monotonicity-contradiction",
+        "spectral-lemma", "renamed-uniform-bound-result"
     ),
-    "renamed-container-count": ("renamed-container-count-result", "renamed-cover-result"),
-    "renamed-known": ("renamed-cover-result", "finite-dimensional-spectral"),
+    "renamed-container-count": (
+        "renamed-cover-result", "hypothesis-free-supremum",
+        "optimization-distractor", "renamed-container-count-result",
+        "banach-notation", "boundary-contradiction", "monotonicity-contradiction",
+        "compactness-lemma", "renamed-maximal-chain-result", "separation-lemma"
+    ),
+    "renamed-known": (
+        "renamed-cover-result", "hypothesis-free-supremum",
+        "optimization-distractor", "banach-notation", "boundary-contradiction",
+        "finite-dimensional-spectral", "compactness-lemma",
+        "monotonicity-contradiction", "renamed-maximal-chain-result",
+        "separation-lemma"
+    ),
 }
 MEASURED_EXCLUDED_IDS = {
     "lemma-compactness": ("topology-distractor", "unbounded-spectral-mismatch"),
@@ -214,6 +287,35 @@ MEASURED_EXCLUDED_IDS = {
     "renamed-maximal-chain": (),
     "renamed-container-count": (),
     "renamed-known": ("topology-distractor", "unbounded-spectral-mismatch"),
+}
+
+# Non-applicable documents inside a result window, re-measured with the
+# fourth signal. This was empty on all seventeen queries under ADR-0032 and
+# is now non-empty on eleven, always the same document:
+# `optimization-distractor` is the one non-applicable document the
+# disclaimer signal does not exclude on those queries, and the semantic
+# signal promotes it into the window. `applicability_precision_at_5` still
+# reads 1.0 because it is precision over RELEVANT retrieved documents, so
+# the gate cannot see this. Pinned so the harm is measured rather than
+# invisible.
+MEASURED_INAPPLICABLE_RETRIEVED_IDS = {
+    "lemma-compactness": (),
+    "lemma-spectral": (),
+    "lemma-separation": ("optimization-distractor",),
+    "applicability-spectral": (),
+    "applicability-certificate": (),
+    "applicability-compactness": ("optimization-distractor",),
+    "applicability-selfadjoint": (),
+    "applicability-psd-cone": ("optimization-distractor",),
+    "applicability-supremum": ("optimization-distractor",),
+    "contradiction-boundary": (),
+    "contradiction-monotonicity": ("optimization-distractor",),
+    "notation-banach": ("optimization-distractor",),
+    "notation-psd": ("optimization-distractor",),
+    "renamed-uniform-bound": ("optimization-distractor",),
+    "renamed-maximal-chain": ("optimization-distractor",),
+    "renamed-container-count": ("optimization-distractor",),
+    "renamed-known": ("optimization-distractor",),
 }
 # Alias entries the frozen query set exercises, and the query each one serves.
 MEASURED_EXERCISED_ALIASES = {
@@ -559,6 +661,9 @@ class Phase4CExclusionInvariantTests(unittest.TestCase):
         self.assertFalse(hasattr(fusion_module, "HEDGE_PENALTY_RULE"))
         self.assertNotIn("HEDGE_PENALTY_RULE", fusion_module.__all__)
         fields = set(fusion_module.FusedHit.__dataclass_fields__)
+        # ADR-0066 adds five semantic fields. They are ADDITIVE and none of them
+        # is a penalty: `semantic_points` is a non-negative credit, and the two
+        # cosine terms are carried for audit and never divided.
         self.assertEqual(
             fields,
             {
@@ -568,6 +673,11 @@ class Phase4CExclusionInvariantTests(unittest.TestCase):
                 "alias_points",
                 "alias_entry_ids",
                 "alias_matched_phrases",
+                "semantic_points",
+                "semantic_rank",
+                "semantic_tier_credit",
+                "cosine_dot",
+                "cosine_norm_squared_product",
                 "pre_score",
                 "fused_score",
                 "excluded",
@@ -588,7 +698,7 @@ class Phase4CExclusionInvariantTests(unittest.TestCase):
                 self.assertNotIn("hedge_penalty", hit)
         self.assertEqual(
             self.with_signal["declared_method"]["fusion"]["composition"],
-            "fused_score = (-bm25) + alias_points",
+            "fused_score = (-bm25) + alias_points + semantic_points",
         )
 
     def test_the_declared_ordering_covers_excluded_hits_too(self) -> None:
@@ -648,9 +758,15 @@ class Phase4CCompositionalRuleTests(unittest.TestCase):
                         self.assertFalse(hit["excluded"])
 
     def test_emptying_either_vocabulary_restores_the_pure_lexical_ordering(self) -> None:
+        # "Pure lexical" needs the ADR-0066 semantic signal disabled as well as
+        # the alias signal emptied: the semantic signal is on by default and
+        # contributes score, so with it running the ordering is not lexical.
         for overrides in ({"absence_operators": ()}, {"evidence_nouns": ()}):
             report = evaluate_hybrid(
-                FIXTURES, alias_signal=EmptyAliasSignal(), **overrides
+                FIXTURES,
+                alias_signal=EmptyAliasSignal(),
+                semantic_signal=DisabledSemanticSignal(),
+                **overrides,
             )
             for entry in report["results"]:
                 with self.subTest(query=entry["id"], **overrides):
@@ -1115,7 +1231,35 @@ class Phase4CAliasTableTests(unittest.TestCase):
         for value in exercised.values():
             self.assertEqual(len(value), 1)
 
-    def test_removing_one_exercised_alias_fails_exactly_its_own_query(self) -> None:
+    def test_removing_one_exercised_alias_fails_exactly_the_two_it_still_carries(
+        self,
+    ) -> None:
+        """Two of the four renamed controls no longer need their alias entry.
+
+        Under ADR-0032 removing ANY of the four exercised alias entries failed
+        its own query. Under ADR-0066 only two still do. The fixture author
+        measured the reason before this module existed and it holds unchanged:
+        all four renamed controls have exactly zero vocabulary overlap with
+        their gold document, and second-order co-occurrence over 19 documents
+        carries exactly two of the four. So the semantic signal is a redundant
+        route for `renamed-uniform-bound` and `renamed-maximal-chain` and no
+        route at all for `renamed-known` and `renamed-container-count`.
+
+        That partition is pinned rather than the old uniform claim. Redundancy
+        is a real property and it is not a reason to weaken the test: the two
+        alias-only controls must still fail, or the alias signal would be
+        unfalsifiable.
+        """
+
+        # Alias entry -> does removing it still break its own query?
+        still_load_bearing = {
+            "banach-steinhaus-theorem": False,
+            "borel-lebesgue-theorem": True,
+            "dirichlet-drawer-principle": True,
+            "kuratowski-zorn-lemma": False,
+        }
+        self.assertEqual(set(still_load_bearing), set(MEASURED_EXERCISED_ALIASES))
+        self.assertEqual(sum(still_load_bearing.values()), 2)
         entries = load_aliases(FIXTURES)
         frozen = result_by_id(frozen_report())
         for entry_id, query_id in MEASURED_EXERCISED_ALIASES.items():
@@ -1123,8 +1267,11 @@ class Phase4CAliasTableTests(unittest.TestCase):
             self.assertEqual(len(reduced), len(entries) - 1)
             report = evaluate_hybrid(FIXTURES, alias_entries=reduced)
             results = result_by_id(report)
+            breaks = still_load_bearing[entry_id]
             with self.subTest(removed=entry_id):
-                self.assertTrue(results[query_id]["missed_relevant_ids"])
+                self.assertEqual(
+                    bool(results[query_id]["missed_relevant_ids"]), breaks
+                )
                 for other_id, other in results.items():
                     if other_id == query_id:
                         continue
@@ -1135,13 +1282,17 @@ class Phase4CAliasTableTests(unittest.TestCase):
                     )
                 self.assertEqual(
                     report["metric_support"]["renamed_known_result_recall_at_10"],
-                    {"numerator": 3, "denominator": 4, "defined": True},
+                    {
+                        "numerator": 3 if breaks else 4,
+                        "denominator": 4,
+                        "defined": True,
+                    },
                 )
                 self.assertEqual(
                     report["gate_evaluation"]["renamed_known_result_recall_at_10"][
                         "status"
                     ],
-                    "fail",
+                    "fail" if breaks else "pass",
                 )
 
     def test_alias_signal_reads_no_document_identifier(self) -> None:
@@ -1153,19 +1304,68 @@ class Phase4CAliasTableTests(unittest.TestCase):
             with self.subTest(document=document.identifier):
                 self.assertEqual(signal.expand(document.identifier, limit=50), ())
 
-    def test_renamed_gate_is_invariant_to_the_alias_phrase_weight(self) -> None:
-        # ALIAS_PHRASE_POINTS is a unit weight, not a tuned parameter.
-        for points in (0.001, 0.5, 1.0, 3.0, 1000.0):
+    def test_the_alias_weight_invariance_no_longer_holds_under_adr_0066(self) -> None:
+        """ADR-0032's alias-weight invariance is FALSIFIED by the fourth signal.
+
+        `aliases.py` justified `ALIAS_PHRASE_POINTS = 1.0` as an untuned unit
+        weight on the grounds that "every renamed-control query's fused
+        candidate set is smaller than its top-k of ten, so
+        `renamed_known_result_recall_at_10` is invariant to any strictly
+        positive value". That reasoning depended on the top-k cutoff never
+        binding.
+
+        ADR-0066 makes it bind. The semantic signal names ten candidates for
+        every query, so every renamed control now has at least ten fused
+        candidates and the cutoff is live. At `0.001` the alias contribution is
+        smaller than a single semantic tier point and the two
+        semantically-unreachable golds fall out of the top ten, taking the gate
+        to 0.5.
+
+        This is recorded, not repaired. `ALIAS_PHRASE_POINTS` is NOT retuned:
+        it stays at the unit value it has always had, and the honest statement
+        is now that it is load-bearing rather than inert. Anything else would be
+        fitting a weight to the fixtures it is measured on.
+        """
+
+        # weight -> measured renamed_known_result_recall_at_10
+        measured = {0.001: 0.5, 0.5: 1.0, 1.0: 1.0, 3.0: 1.0, 1000.0: 1.0}
+        for points, expected in measured.items():
             report = evaluate_hybrid(FIXTURES, alias_phrase_points=points)
             with self.subTest(points=points):
-                self.assertEqual(
-                    report["metrics"]["renamed_known_result_recall_at_10"], 1.0
+                self.assertAlmostEqual(
+                    report["metrics"]["renamed_known_result_recall_at_10"],
+                    expected,
+                    places=12,
                 )
-                for entry in report["results"]:
-                    if entry["category"] != "renamed_known_result":
-                        continue
-                    self.assertEqual(entry["missed_relevant_ids"], [])
+                missed = {
+                    entry["id"]: tuple(entry["missed_relevant_ids"])
+                    for entry in report["results"]
+                    if entry["category"] == "renamed_known_result"
+                    and entry["missed_relevant_ids"]
+                }
+                if expected == 1.0:
+                    self.assertEqual(missed, {})
+                else:
+                    # Exactly the two the semantic signal cannot reach.
+                    self.assertEqual(
+                        missed,
+                        {
+                            "renamed-container-count": (
+                                "renamed-container-count-result",
+                            ),
+                            "renamed-known": ("renamed-cover-result",),
+                        },
+                    )
         self.assertEqual(ALIAS_PHRASE_POINTS, 1.0)
+        # Every renamed control now has at least ten fused candidates, which is
+        # the mechanism above and is asserted rather than argued.
+        for entry in frozen_report()["results"]:
+            if entry["category"] != "renamed_known_result":
+                continue
+            with self.subTest(query=entry["id"]):
+                self.assertGreaterEqual(
+                    len(entry["fused_candidate_ids"]), entry["top_k"]
+                )
 
     def test_a_non_positive_alias_weight_is_rejected(self) -> None:
         for points in (0.0, -1.0):
@@ -1308,10 +1508,16 @@ class Phase4CHonestMetricTests(unittest.TestCase):
         )
 
     def test_total_retrieval_collapse_reports_undetermined_not_pass(self) -> None:
+        # A TOTAL collapse now needs all three retrieving signals off. ADR-0066's
+        # semantic signal retrieves ten candidates for every query from vectors
+        # alone, so with it running there is no such thing as a zero-hit query
+        # on this fixture set -- which is a real property of the fourth signal
+        # and not a reason to weaken this test.
         report = evaluate_hybrid(
             FIXTURES,
             lexical_signal=EmptyLexicalIndex(),
             alias_signal=EmptyAliasSignal(),
+            semantic_signal=DisabledSemanticSignal(),
         )
         self.assertEqual(
             sorted(report["zero_hit_query_ids"]),
@@ -1413,15 +1619,44 @@ class Phase4CHonestMetricTests(unittest.TestCase):
             [item["id"] for item in results if item["duplicate_ids_at_5"]],
         )
         # Exclusion is not filtering: every excluded document keeps its hit and
-        # its `fused_candidate_ids` entry, and no applicability query retrieves
-        # an inapplicable document any more.
+        # its `fused_candidate_ids` entry.
+        #
+        # The ADR-0032 claim that "no applicability query retrieves an
+        # inapplicable document any more" NO LONGER HOLDS under ADR-0066. The
+        # measured set is pinned instead of asserted empty, because the honest
+        # record of a regression is the regression, not a weaker assertion. See
+        # `MEASURED_INAPPLICABLE_RETRIEVED_IDS`.
         self.assertTrue(any(item["excluded_ids"] for item in results))
+        self.assertEqual(
+            {item["id"] for item in results},
+            set(MEASURED_INAPPLICABLE_RETRIEVED_IDS),
+        )
         for entry in results:
             with self.subTest(query=entry["id"]):
                 self.assertTrue(
                     set(entry["excluded_ids"]) <= set(entry["fused_candidate_ids"])
                 )
-                self.assertEqual(entry["inapplicable_retrieved_ids"], [])
+                self.assertEqual(
+                    tuple(entry["inapplicable_retrieved_ids"]),
+                    MEASURED_INAPPLICABLE_RETRIEVED_IDS[entry["id"]],
+                )
+        # Eleven of seventeen queries, every one of them the same document.
+        self.assertEqual(
+            sum(
+                1
+                for value in MEASURED_INAPPLICABLE_RETRIEVED_IDS.values()
+                if value
+            ),
+            11,
+        )
+        self.assertEqual(
+            {
+                identifier
+                for value in MEASURED_INAPPLICABLE_RETRIEVED_IDS.values()
+                for identifier in value
+            },
+            {"optimization-distractor"},
+        )
 
     def test_declared_provenance_is_the_executed_sql(self) -> None:
         declared = frozen_report()["declared_method"]["lexical_signal"]
@@ -1447,10 +1682,15 @@ class Phase4CHonestMetricTests(unittest.TestCase):
             "an excluded candidate is removed from the ordering; no score "
             "changes and no penalty term exists",
         )
-        # BM25 magnitudes survive: with the alias signal disabled and the
-        # operator vocabulary emptied, every fused score equals -bm25 exactly.
+        # BM25 magnitudes survive: with the alias and semantic signals disabled
+        # and the operator vocabulary emptied, every fused score equals -bm25
+        # exactly. The semantic signal has to be disabled explicitly now, which
+        # is exactly what `pr.semantic-disabled-is-a-true-noop` asserts.
         plain = evaluate_hybrid(
-            FIXTURES, absence_operators=(), alias_signal=EmptyAliasSignal()
+            FIXTURES,
+            absence_operators=(),
+            alias_signal=EmptyAliasSignal(),
+            semantic_signal=DisabledSemanticSignal(),
         )
         documents = load_corpus(FIXTURES)
         connection = lexical_module.open_index(lexical_module.corpus_rows(documents))
@@ -1898,7 +2138,10 @@ class Phase4CPinnedMeasurementTests(unittest.TestCase):
     def test_hybrid_does_not_worsen_a_metric_the_baseline_already_met(self) -> None:
         metrics = frozen_report()["metrics"]
         baseline = evaluate_hybrid(
-            FIXTURES, absence_operators=(), alias_signal=EmptyAliasSignal()
+            FIXTURES,
+            absence_operators=(),
+            alias_signal=EmptyAliasSignal(),
+            semantic_signal=DisabledSemanticSignal(),
         )["metrics"]
         for name, expected in BASELINE_METRICS.items():
             with self.subTest(metric=name):
@@ -1921,15 +2164,22 @@ class Phase4CPinnedMeasurementTests(unittest.TestCase):
             metrics["applicability_precision_at_5"],
             BASELINE_METRICS["applicability_precision_at_5"],
         )
-        # The honest cost, recorded rather than hidden: exclusion SHRINKS the
-        # duplicate denominator, so the rate rises from 1/61 to 1/50 at a
-        # constant numerator. ADR-0032 predicted this arithmetic and requires
-        # the gate to be asserted against the measured value, which is done
-        # here with both endpoints pinned.
-        self.assertGreater(
+        # ADR-0032 recorded that exclusion shrank the duplicate denominator and
+        # raised the rate from 1/61 to 1/50. ADR-0066 moves it the other way for
+        # a reason that is arithmetic and not quality: the semantic signal names
+        # ten candidates per query, so all 17 windows fill, the denominator
+        # reaches its maximum of 85, and the rate falls to 1/85 BELOW the
+        # lexical baseline of 1/61. The numerator never moved from 1, so this is
+        # dilution. Both endpoints are pinned and the direction is asserted
+        # explicitly so neither reading can be mistaken for the other.
+        self.assertLess(
             metrics["duplicate_rate_at_5"], BASELINE_METRICS["duplicate_rate_at_5"]
         )
-        self.assertAlmostEqual(metrics["duplicate_rate_at_5"], 1 / 50, places=12)
+        self.assertAlmostEqual(metrics["duplicate_rate_at_5"], 1 / 85, places=12)
+        self.assertEqual(
+            frozen_report()["metric_support"]["duplicate_rate_at_5"]["denominator"],
+            BOUNDS.query_count * BOUNDS.duplicate_cutoff,
+        )
         self.assertLessEqual(
             metrics["duplicate_rate_at_5"],
             frozen_report()["proposed_thresholds"]["duplicate_rate_at_5_maximum"],
@@ -1972,21 +2222,34 @@ class Phase4CPinnedMeasurementTests(unittest.TestCase):
                 self.assertTrue(
                     set(entry["applicable_ids"]) <= set(entry["ordered_ids"])
                 )
-                self.assertEqual(entry["inapplicable_retrieved_ids"], [])
+                # Was `== []` under ADR-0032. Three applicability queries now
+                # retrieve `optimization-distractor`, which is non-applicable
+                # and not in their gold set, so the precision metric cannot see
+                # it. Recorded, not absorbed.
+                self.assertEqual(
+                    tuple(entry["inapplicable_retrieved_ids"]),
+                    MEASURED_INAPPLICABLE_RETRIEVED_IDS[entry["id"]],
+                )
+        # ADR-0032 recorded that four of the six applicability queries had a
+        # fused candidate set no larger than top-k, which is why demotion could
+        # not have produced this result. ADR-0066 removes that condition
+        # entirely: the semantic signal names ten candidates for every query, so
+        # NO query is at or below its cutoff any more and the cutoff is live on
+        # all six. Exclusion is still what meets the gate -- every non-applicable
+        # relevant document is asserted excluded above -- but the ADR-0032
+        # argument from a small candidate set no longer applies and is recorded
+        # as retired rather than left standing.
         at_or_below_cutoff = sorted(
             entry["id"]
             for entry in applicability
             if len(entry["fused_candidate_ids"]) <= entry["top_k"]
         )
-        self.assertEqual(
-            at_or_below_cutoff,
-            [
-                "applicability-certificate",
-                "applicability-psd-cone",
-                "applicability-selfadjoint",
-                "applicability-spectral",
-            ],
-        )
+        self.assertEqual(at_or_below_cutoff, [])
+        for entry in applicability:
+            with self.subTest(query=entry["id"]):
+                self.assertGreater(
+                    len(entry["fused_candidate_ids"]), entry["top_k"]
+                )
         # The ADR-0031 residual is now excluded on its own query.
         self.assertIn(
             "unbounded-spectral-mismatch",
@@ -1994,8 +2257,10 @@ class Phase4CPinnedMeasurementTests(unittest.TestCase):
         )
 
     def test_schema_version_and_method_are_pinned(self) -> None:
-        # The report shape changed with ADR-0032, so the schema version moved.
-        self.assertEqual(SCHEMA_VERSION, "adaivy.phase4c-hybrid-retrieval.v2")
+        # The report shape changed again with ADR-0066 -- five semantic fields on
+        # every hit and two partition-identity fields on the report -- so the
+        # schema version moved from v2 to v3 rather than being extended in place.
+        self.assertEqual(SCHEMA_VERSION, "adaivy.phase4c-hybrid-retrieval.v3")
         self.assertEqual(frozen_report()["schema_version"], SCHEMA_VERSION)
         self.assertEqual(frozen_report()["method"], benchmark_module.METHOD)
         self.assertEqual(
@@ -2009,6 +2274,10 @@ class Phase4CPinnedMeasurementTests(unittest.TestCase):
         self.assertEqual(
             frozen_report()["declared_method"]["fusion"]["method"],
             benchmark_module.FUSION_METHOD,
+        )
+        self.assertEqual(
+            frozen_report()["declared_method"]["fusion"]["composition"],
+            "fused_score = (-bm25) + alias_points + semantic_points",
         )
 
 
@@ -2042,6 +2311,7 @@ class Phase4CCliTests(unittest.TestCase):
             FIXTURES,
             lexical_signal=EmptyLexicalIndex(),
             alias_signal=EmptyAliasSignal(),
+            semantic_signal=DisabledSemanticSignal(),
         )
         self.assertEqual(report["gate_summary"]["overall"], "not_pass")
         self.assertEqual(_summary(report)["queries_with_exclusions"], [])

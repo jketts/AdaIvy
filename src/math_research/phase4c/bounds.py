@@ -14,7 +14,10 @@ from dataclasses import dataclass
 from .serialization import canonical_bytes, sha256_bytes
 
 
-SCHEMA_VERSION = "adaivy.phase4c-hybrid-retrieval.v2"
+# ADR-0066 adds a fourth signal, so every hit gains semantic fields and the
+# report gains two partition-identity fields. That is a report-shape change,
+# and the shape is versioned rather than extended in place.
+SCHEMA_VERSION = "adaivy.phase4c-hybrid-retrieval.v3"
 CORPUS_SCHEMA_VERSION = "adaivy.phase4c-corpus.v1"
 GOLD_SCHEMA_VERSION = "adaivy.phase4c-gold-queries.v1"
 ALIAS_SCHEMA_VERSION = "adaivy.phase4c-name-aliases.v1"
@@ -50,6 +53,74 @@ APPLICABILITY_CLASSES = (
     "incompatible_hypotheses",
     "insufficient_evidence",
 )
+
+# --------------------------------------------------------------------------
+# ADR-0066: the semantic signal's declared partition and its frozen tiering.
+#
+# THESE CONSTANTS WERE FIXED BEFORE ANY GATE WAS MEASURED AND ARE NOT TO BE
+# ADJUSTED AFTER SEEING A GATE RESULT. If a gate regresses, the regression is
+# the finding. Retuning a threshold against the fixtures it is measured on
+# would make the whole benchmark worthless.
+# --------------------------------------------------------------------------
+
+#: The single declared partition. There is no default and no fallback: a
+#: manifest declaring anything else is a refusal, per
+#: `TECHNICAL_BLUEPRINT.md:1661-1663`.
+SEMANTIC_PARTITION_PROVIDER = "fixture_synthetic"
+SEMANTIC_PARTITION_MODEL_IDENTIFIER = "adaivy-cooccurrence-anchor-v1"
+SEMANTIC_PARTITION_DIMENSION = 32
+SEMANTIC_PARTITION_NORMALIZATION = "round_half_even_scale_2p30"
+#: Sibling of the Phase 4C fixture directory. Derived from the fixture root
+#: rather than read from the working directory, so a benchmark run from any
+#: directory reads the same partition or refuses.
+SEMANTIC_PARTITION_DIRNAME = "phase4c-semantic"
+SEMANTIC_PARTITION_MANIFEST_NAME = "manifest.json"
+#: The fixture manifest and every artifact state this rule. Phase 4C itself POPS
+#: the hash key (`serialization.py`); this partition SETS IT TO NULL, and mixing
+#: the two changes every hash, so the rule is read from the bytes and honoured
+#: rather than assumed.
+SEMANTIC_HASH_RULE = "content_hash_over_canonical_body_with_hash_field_set_to_null"
+SEMANTIC_MANIFEST_SCHEMA_VERSION = "adaivy.vector-partition-manifest.v1"
+SEMANTIC_ARTIFACT_SCHEMA_VERSION = "adaivy.vector-artifact.v1"
+SEMANTIC_CORPUS_PROVENANCE = "project_authored"
+
+#: Rank tiers, `(first_rank, last_rank, tier_credit)`, inclusive on both ends.
+#: Three points is deliberately below ADR-0031's smallest measured BM25 gold
+#: margin, so the signal can promote a document the lexical signal missed
+#: entirely and cannot on its own invert a lexical gold ordering.
+SEMANTIC_TIERS = (
+    (1, 2, 3),
+    (3, 5, 2),
+    (6, 10, 1),
+)
+#: The largest credit any rank can earn, derived from the tiers rather than
+#: restated, so a declared ceiling cannot drift from the enforced one.
+MAXIMUM_SEMANTIC_TIER_CREDIT = max(credit for _first, _last, credit in SEMANTIC_TIERS)
+
+
+def semantic_tier_credit(rank: int) -> int:
+    """Tier credit for a 1-based exact-cosine rank. Outside every tier: `0`."""
+
+    if isinstance(rank, bool) or not isinstance(rank, int):
+        raise Phase4CValidationError(
+            f"semantic rank must be an integer, got {type(rank).__name__}"
+        )
+    if rank < 1:
+        raise Phase4CValidationError(f"semantic rank must be at least 1, got {rank}")
+    for first, last, credit in SEMANTIC_TIERS:
+        if first <= rank <= last:
+            return credit
+    return 0
+
+
+def semantic_tier_rule() -> list[dict[str, int]]:
+    """The declared tiering, projected from the constants that enforce it."""
+
+    return [
+        {"first_rank": first, "last_rank": last, "tier_credit": credit}
+        for first, last, credit in SEMANTIC_TIERS
+    ]
+
 
 THRESHOLD_KEYS = (
     "necessary_lemma_recall_at_5",
@@ -90,6 +161,10 @@ class HybridRetrievalBounds:
     max_derived_db_bytes: int = 2_097_152
     max_elapsed_ms: int = 10_000
     duplicate_cutoff: int = 5
+    # ADR-0066, frozen before measurement. The semantic signal asks for ten
+    # candidates and each carries at most three points.
+    semantic_candidate_limit: int = 10
+    semantic_tier_points: int = 1
 
     def to_record(self) -> dict[str, int]:
         return {
@@ -101,6 +176,8 @@ class HybridRetrievalBounds:
             "max_query_bytes": self.max_query_bytes,
             "max_report_bytes": self.max_report_bytes,
             "query_count": self.query_count,
+            "semantic_candidate_limit": self.semantic_candidate_limit,
+            "semantic_tier_points": self.semantic_tier_points,
             "top_k_default": self.top_k_default,
             "top_k_renamed_control": self.top_k_renamed_control,
         }
@@ -124,9 +201,23 @@ __all__ = [
     "GATE_COMPARISONS",
     "GOLD_SCHEMA_VERSION",
     "HybridRetrievalBounds",
+    "MAXIMUM_SEMANTIC_TIER_CREDIT",
     "Phase4CValidationError",
     "SCHEMA_VERSION",
+    "SEMANTIC_ARTIFACT_SCHEMA_VERSION",
+    "SEMANTIC_CORPUS_PROVENANCE",
+    "SEMANTIC_HASH_RULE",
+    "SEMANTIC_MANIFEST_SCHEMA_VERSION",
+    "SEMANTIC_PARTITION_DIMENSION",
+    "SEMANTIC_PARTITION_DIRNAME",
+    "SEMANTIC_PARTITION_MANIFEST_NAME",
+    "SEMANTIC_PARTITION_MODEL_IDENTIFIER",
+    "SEMANTIC_PARTITION_NORMALIZATION",
+    "SEMANTIC_PARTITION_PROVIDER",
+    "SEMANTIC_TIERS",
     "SOURCE_CLASSES",
     "THRESHOLD_KEYS",
     "TOP_K_BY_CATEGORY",
+    "semantic_tier_credit",
+    "semantic_tier_rule",
 ]
