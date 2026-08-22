@@ -132,7 +132,7 @@ phase3a:
 
 # Separate from `check`: needs the exact ADR-0016 v5 container image. Without it
 # the adapter fails closed and this target reports a failed status by design.
-# The second step is ADR-0072's campaign boundary: the same sealed service is
+# The second step is ADR-0073's campaign boundary: the same sealed service is
 # reached through the isolated verifier router's formal-check route, and the
 # recorded finding must be kernel-checked, code-only (no wrapper source or
 # execution diagnostics), and warrant-free.

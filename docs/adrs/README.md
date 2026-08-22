@@ -27,9 +27,9 @@ capability is summarized separately in
 - ADR-0072: end-to-end campaign authority under one initial authorization;
   decision only, activates no code, supersedes named clauses of ADR-0047,
   ADR-0051, ADR-0055, ADR-0064, ADR-0067, ADR-0068, and ADR-0070
-- `0072-campaign-experiment-and-verifier-wiring.md`: historical parallel
-  Slice 6 decision whose duplicate number requires explicit reconciliation;
-  cite the complete filename until a superseding uniquely numbered ADR lands
+- ADR-0073: canonical identifier for the implemented campaign experiment and
+  verifier-router wiring; supersedes the identifier authority of the historical
+  parallel `0072-campaign-experiment-and-verifier-wiring.md`
 
 The end-to-end integration is documented in
 [`../END_TO_END_RESEARCH_RUNTIME_PLAN.md`](../END_TO_END_RESEARCH_RUNTIME_PLAN.md).
@@ -47,6 +47,6 @@ Do not cite bare “ADR-0038.” Cite the complete filename or descriptive title
 Renumbering either file would break historical references and recorded hashes.
 
 Two parallel 2026-08-22 branches also produced distinct ADR-0072 records. The
-end-to-end campaign-authority record is the current ADR-0072. The campaign
-experiment/verifier record is retained as decision history and must be cited by
-its complete filename until a new ADR explicitly supersedes its identifier.
+end-to-end campaign-authority record is the current ADR-0072. The historical
+campaign experiment/verifier record is retained under its original filename;
+ADR-0073 is its canonical successor.

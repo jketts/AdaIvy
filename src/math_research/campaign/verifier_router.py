@@ -1,4 +1,4 @@
-"""Isolated campaign verifier router (end-to-end runtime plan §3.6, ADR-0072).
+"""Isolated campaign verifier router (end-to-end runtime plan §3.6, ADR-0073).
 
 One selected candidate is dispatched to exactly one admitted verifier:
 
@@ -66,7 +66,7 @@ DIAGONAL_FIXTURE_SCHEMA = "adaivy.quantum-diagonal-fixture.v1"
 #: request schema_version is a bare "1.0.0" and cannot serve as a router
 #: dispatch key, so the campaign wraps the exact request object.  Whether
 #: formal checking should instead be a first-class campaign action with its own
-#: closed action schema is an open question recorded in ADR-0072; this envelope
+#: closed action schema is an open question recorded in ADR-0073; this envelope
 #: is the deliberate minimal stub.
 FORMAL_CHECK_ENVELOPE_SCHEMA = "adaivy.campaign-formal-check-request.v1"
 

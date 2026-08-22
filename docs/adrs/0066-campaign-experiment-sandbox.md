@@ -2,7 +2,7 @@
 
 - **Status:** accepted, implemented, and activated for the bounded exact-graph
   campaign experiment on 22 August 2026. The sandbox and verifier components
-  pass their dedicated gate; ADR-0072 wired both into the `campaign run`
+  pass their dedicated gate; ADR-0073 wired both into the `campaign run`
   entrypoint behind activation-record matching.
 - **Date:** 2026-08-22
 - **Blueprint requirement:** Section 2 C7 (reproducibility: code and dependency

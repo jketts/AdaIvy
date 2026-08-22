@@ -5,7 +5,7 @@ sequential runner, the live gateway planner, and strict replay were all accepted
 and implemented, and nothing could start them. This module is the front door and
 nothing more. It adds no record type, no action type, no provider, no network
 surface beyond the Phase 2 gateway, and no authority for a model or tool
-result. ADR-0072 later wired two existing verified components through this
+result. ADR-0073 later wired two existing verified components through this
 door: the activated ADR-0066 experiment sandbox (only behind strict
 activation-record matching) and the isolated campaign verifier router.
 
@@ -2376,7 +2376,7 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("schemas/model-campaign-action-v1.schema.json"),
     )
     run.add_argument("--execute", action="store_true")
-    # Slice 6 wiring (end-to-end runtime plan §3.6, ADR-0072). Without
+    # Slice 6 wiring (end-to-end runtime plan §3.6, ADR-0073). Without
     # `--experiment-activation` the pending runner remains and records why; an
     # activation record that does not strictly re-verify against the current
     # locks also keeps the pending runner, with the rejection reason recorded.

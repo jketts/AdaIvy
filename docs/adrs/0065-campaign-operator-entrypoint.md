@@ -2,7 +2,7 @@
 
 - **Status:** accepted and implemented for the entrypoint slice; the pending
   runner and absent verifier this ADR describes were the deliberate state at
-  acceptance. ADR-0072 later wired the activated ADR-0066 runner (behind
+  acceptance. ADR-0073 later wired the activated ADR-0066 runner (behind
   activation-record matching) and replaced `AbsentVerifier` with the isolated
   verifier router; the pending runner remains the recorded default when no
   matching activation is supplied.

@@ -13,8 +13,8 @@ operator path, and usable end to end.
 |---|---:|---:|---:|---|
 | Provider-neutral model gateway | Yes | Yes, explicit live opt-in | Yes | OpenAI, Azure OpenAI, Anthropic, Bedrock, DeepSeek, MiniMax, and Qwen/DashScope adapters under bounded configurations |
 | Central campaign loop | Yes | Yes | Yes | One sequential lead with a durable causal ledger and budget limits |
-| Generated-program OCI sandbox | Yes | Yes for one Linux/arm64 exact-graph target | Yes, behind activation matching (ADR-0072) | `campaign run --experiment-activation` wires the activated runner only when the record re-verifies against the current locks; otherwise the pending runner remains with the reason recorded |
-| Campaign verifier | Yes: verifier router | Yes | Yes (ADR-0072) | Routes exact-graph, Phase 5 diagonal, and Phase 5 noncommuting candidates plus formal-check envelopes; anything else is an explicit `unsupported` failure |
+| Generated-program OCI sandbox | Yes | Yes for one Linux/arm64 exact-graph target | Yes, behind activation matching (ADR-0073) | `campaign run --experiment-activation` wires the activated runner only when the record re-verifies against the current locks; otherwise the pending runner remains with the reason recorded |
+| Campaign verifier | Yes: verifier router | Yes | Yes (ADR-0073) | Routes exact-graph, Phase 5 diagonal, and Phase 5 noncommuting candidates plus formal-check envelopes; anything else is an explicit `unsupported` failure |
 | Lean checking | Yes | Separate sealed runtime | Port wired; sealed adapter is an explicit opt-in | The router's formal-check route defaults to a recorded missing-tool result; `--formal-check-adapter sealed` uses the Phase 3B Docker Lean service |
 | Crossref discovery | Yes | Explicit one-request live opt-in | **No** | Operator-supplied grounded terms, at most ten metadata candidates |
 | Discovery-result following | Decision accepted | No | No | ADR-0068 and ADR-0072 are accepted; nothing is implemented |

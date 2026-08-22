@@ -1,6 +1,8 @@
-# ADR-0072: Wire the activated experiment sandbox and a verifier router into `campaign run`
+# ADR-0072 (historical duplicate): Wire the activated experiment sandbox and a verifier router into `campaign run`
 
-- **Status:** accepted and implemented
+- **Status:** accepted and implemented on its parallel branch; superseded by
+  ADR-0073 solely to resolve the duplicate identifier. The decision substance
+  below is preserved unchanged.
 - **Date:** 2026-08-22
 - **Blueprint requirement:** ADR-0057 §1-2 (isolated experiment and verifier
   ports); ADR-0065 (the operator entrypoint that left both ports fail-closed);
