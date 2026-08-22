@@ -65,6 +65,8 @@ def main(argv: list[str] | None = None) -> int:
     publication.add_argument("publication_args", nargs=argparse.REMAINDER)
     runtime = subparsers.add_parser("runtime", help="ADR-0047 bounded iterative research runtime commands")
     runtime.add_argument("runtime_args", nargs=argparse.REMAINDER)
+    campaign = subparsers.add_parser("campaign", help="ADR-0057/ADR-0065 bounded research campaign commands")
+    campaign.add_argument("campaign_args", nargs=argparse.REMAINDER)
     synthesis = subparsers.add_parser("synthesis", help="bounded exploratory synthesis commands")
     synthesis.add_argument("synthesis_args", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
@@ -111,6 +113,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "runtime":
         from .runtime_cli import main as runtime_main
         return runtime_main(args.runtime_args)
+    if args.command == "campaign":
+        from .campaign_cli import main as campaign_main
+        return campaign_main(args.campaign_args)
     if args.command == "synthesis":
         from .synthesis_cli import main as synthesis_main
         return synthesis_main(args.synthesis_args)
