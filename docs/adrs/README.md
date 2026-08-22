@@ -9,7 +9,9 @@ capability is summarized separately in
 
 - ADR-0029: central research lead and selectively activated search complexity
 - ADR-0047: bounded central-lead runtime
-- ADR-0055: two human novelty checkpoints (current until superseded)
+- ADR-0055: two human novelty checkpoints; the `before_research` check is
+  superseded in part by ADR-0072 for campaign runs, the `before_announcement`
+  check stands
 - ADR-0057: provenance-closed research campaign
 - ADR-0064: processor-bound embedding rights
 - ADR-0065: campaign operator entrypoint
@@ -19,10 +21,14 @@ capability is summarized separately in
 - ADR-0069: embedding provider and immutable vector artifacts
 - ADR-0070: fixture-scoped semantic retrieval signal
 - ADR-0071: terminal campaign resume and automatic unapproved LaTeX draft
+- ADR-0072: end-to-end campaign authority under one initial authorization;
+  decision only, activates no code, supersedes named clauses of ADR-0047,
+  ADR-0051, ADR-0055, ADR-0067, ADR-0068, and ADR-0070
 
-The proposed end-to-end integration is documented in
+The end-to-end integration is documented in
 [`../END_TO_END_RESEARCH_RUNTIME_PLAN.md`](../END_TO_END_RESEARCH_RUNTIME_PLAN.md).
-It requires a new superseding ADR before implementation.
+ADR-0072 is the superseding decision that plan required before implementation;
+Slices 2–6 remain unimplemented until their own acceptance gates pass.
 
 ## Duplicate ADR number
 

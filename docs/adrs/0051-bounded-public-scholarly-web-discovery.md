@@ -1,6 +1,11 @@
 # ADR-0051: Bounded public scholarly web discovery
 
-- **Status:** accepted and implemented 21 August 2026
+- **Status:** accepted and implemented 21 August 2026. Superseded in part by
+  ADR-0068 (result following) and by ADR-0072 (one-request-per-invocation,
+  operator-grounded query terms, the per-request human acknowledgement, and
+  the query-generation/scheduling/model-call exclusions, for campaign runs);
+  the Crossref-only origin, untrusted-candidate status, transport controls,
+  and no-inference-from-rank rules stand.
 - **Date:** 2026-08-21
 - **Blueprint requirement:** Phase 4 terminology expansion and literature
   discovery; ADR-0050 revisit trigger

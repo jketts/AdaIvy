@@ -5,7 +5,12 @@
   The owner selected the bulk open-access snapshot and declined the
   batched-manifest intermediate step. Option B (following discovery results)
   was opened over a recorded recommendation against it and is carried into
-  ADR-0068 rather than here.
+  ADR-0068 rather than here. Superseded in part by ADR-0072: the
+  metadata/abstract-only ceiling and the individually human-authored
+  per-document rights mechanism are superseded (policy-derived per-document
+  rights with quarantine); option C, the bounded first tranche, licence
+  diligence before acquisition, human archive selection, and the manual
+  applicability ceiling stand.
 - **Date:** 2026-08-22
 - **Blueprint requirement:** Section 7.3 (retrieval strategy); Section 7.1
   (crawlers produce candidates, not trusted documents); ADR-0050 (public

@@ -1,6 +1,11 @@
 # ADR-0055: Two fresh novelty re-checks around every chosen problem
 
-- **Status:** accepted and implemented 21 August 2026
+- **Status:** accepted and implemented 21 August 2026. Superseded in part by
+  ADR-0072: the mandatory human `before_research` re-check (Decision clause 1
+  and its freshness sub-clause) is superseded for campaign runs, where the
+  campaign records its own non-authoritative search instead. The human
+  `before_announcement` re-check, its performer and freshness rules, and the
+  prior-art classification stand unchanged.
 - **Date:** 2026-08-21
 - **Blueprint requirement:** C15; Sections 6, 10.1, and 16.3; ADR-0036
   publication approval boundary
