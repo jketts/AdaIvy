@@ -1,21 +1,22 @@
 # End-to-End Research Runtime Plan
 
-> Implementation status (2026-08-22): Slices 1–7 have an offline acceptance
-> path. `campaign start` exercises the full fixture workflow and `campaign
-> resume` replays action checkpoints. Production network/provider/snapshot/OCI/
-> Lean effects remain controlled by their separate activation gates; the
-> offline result must not be read as activation of those capabilities. Slice 8
-> documentation reconciliation is reflected in `CAPABILITY_STATUS.md`.
+> Implementation status (2026-08-22): Slices 1–8 have an offline acceptance
+> path. `campaign start` exercises the 15-action fixture workflow, `campaign
+> resume` replays action checkpoints, and a second campaign proves corpus/vector
+> reuse. Production network/provider/snapshot/OCI/Lean effects remain controlled
+> by their separate activation gates; the offline result must not be read as
+> activation of those capabilities.
 
-**Status:** proposed implementation plan  
+**Status:** implemented offline; live capabilities remain separately activated
 **Date:** 2026-08-22  
 **Purpose:** turn AdaIvy's existing bounded components into one budgeted,
 resumable research runtime that can search literature, grow a persistent corpus,
 retrieve evidence for ideation, investigate candidates, and invoke formal or
 exact verification without routine human interruption.
 
-This plan does not itself activate a capability. Implementation begins with a
-new ADR that explicitly supersedes the narrower decisions identified below.
+This plan does not itself activate a capability. ADR-0072 supplied the required
+superseding authority; ADRs 0073–0076 record the implemented integration and
+hardening decisions.
 
 ## 1. Desired operator experience
 
@@ -344,12 +345,10 @@ applicable exact or Lean verifier without leaving AdaIvy.
 
 ### Slice 7 — One resumable operator command
 
-ADR-0071 delivers the first bounded part of this slice: terminal campaigns now
-produce a claim-free, unapproved LaTeX status bundle automatically, and
-`campaign resume ROOT` idempotently completes or verifies that finalization
-without paid calls. It intentionally does not claim mid-campaign continuation.
-The remaining work below requires action-level checkpoints, request-intent
-records, and optional automatic invocation of the pinned PDF typesetter.
+ADR-0071 delivered terminal finalization. ADR-0075 extends it with action-level
+intent/terminal checkpoints, a sealed resume configuration, explicit profile
+and budget arguments, and automatic invocation of the pinned PDF typesetter
+when its exact toolchain is present.
 
 - Provide one command that initializes or resumes the data root, validates
   provider profiles and budgets, freezes the target, and starts the campaign.
@@ -390,8 +389,9 @@ reader can distinguish implemented components from an activated, wired runtime.
 
 ## 5. End-to-end acceptance gate
 
-The work is complete only when a clean, live test demonstrates all of the
-following in one campaign:
+The offline implementation gate demonstrates the following in one fixture
+campaign (plus the second-campaign reuse run). Live variants use the same
+boundaries but retain their separate activation gates:
 
 1. The operator supplies a problem, one AdaIvy credential profile, and budgets.
 2. Every internal LLM and embedding request uses that profile and appears in

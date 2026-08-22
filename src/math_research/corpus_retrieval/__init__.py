@@ -15,6 +15,7 @@ from .service import (  # noqa: E402
     build_projection,
     embed_query,
     load_projection,
+    load_retrieval_result,
     retrieve_evidence,
 )
 
@@ -26,5 +27,6 @@ __all__ = [
     "build_projection",
     "embed_query",
     "load_projection",
+    "load_retrieval_result",
     "retrieve_evidence",
 ]

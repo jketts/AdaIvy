@@ -6,7 +6,7 @@
 - [`CAPABILITY_STATUS.md`](CAPABILITY_STATUS.md) — canonical current
   implementation and wiring status
 - [`END_TO_END_RESEARCH_RUNTIME_PLAN.md`](END_TO_END_RESEARCH_RUNTIME_PLAN.md) —
-  proposed integration roadmap
+  implemented offline integration roadmap and remaining live boundary
 - [`../TECHNICAL_BLUEPRINT.md`](../TECHNICAL_BLUEPRINT.md) — target architecture
   and correctness contract
 - [`TECHNICAL_DETAILS.md`](TECHNICAL_DETAILS.md) — current component commands

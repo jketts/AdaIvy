@@ -361,6 +361,25 @@ def record_takedown(
         )
     )
 
+    # Resolve vector artifacts through the retrieval service's strict loader
+    # while the dependent corpus generations are still active.  Raw projection
+    # JSON is never deletion authority: an attacker must not be able to place a
+    # self-consistent-looking file in ``generations/retrieval`` and cause an
+    # arbitrary object-store digest to be unlinked during takedown.
+    vector_hashes: set[str] = set()
+    retrieval_dir = generations_dir(root).joinpath("retrieval")
+    if retrieval_dir.exists():
+        from ..corpus_retrieval import CorpusRetrievalError, load_projection
+
+        for projection_path in sorted(retrieval_dir.glob("retrievalgen.*.json")):
+            try:
+                projection = load_projection(root, projection_path.stem)
+            except (CorpusRetrievalError, OSError, KeyError, TypeError, ValueError):
+                continue
+            for entry in projection.manifest["vectors"]:
+                if entry["document_id"] == document_id:
+                    vector_hashes.add(entry["artifact_object_hash"])
+
     from .derivation import source_id_for
     source_id = source_id_for(document_id)
     revocation_record_ids: list[str] = []
@@ -387,20 +406,6 @@ def record_takedown(
         and record["payload"]["document_id"] != document_id
         and record["payload"]["document_id"] not in tombstoned_document_ids(root)
     }
-    vector_hashes: set[str] = set()
-    retrieval_dir = generations_dir(root).joinpath("retrieval")
-    if retrieval_dir.exists():
-        for projection_path in retrieval_dir.glob("retrievalgen.*.json"):
-            try:
-                projection = strict_canonical_object(
-                    projection_path.read_bytes(), maximum=MAX_GENERATION_BYTES,
-                    label="retrieval projection", code=GenerationInvalidError.code,
-                )
-            except Exception:
-                continue
-            for entry in projection.get("vectors", []):
-                if entry.get("document_id") == document_id:
-                    vector_hashes.add(entry["artifact_object_hash"])
     for digest in (*source_hashes, *sorted(span_hashes), *sorted(vector_hashes)):
         if digest is None or digest in still_referenced:
             continue

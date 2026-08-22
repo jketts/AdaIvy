@@ -48,8 +48,9 @@ Related documents:
 
 ## What the system is designed to do
 
-The following is the target architecture. It is not yet one connected operator
-workflow; the exact implemented and wired state is maintained in
+The following is the target architecture. A bounded connected operator workflow
+exists offline; production integrations remain separately activated. The exact
+implemented and wired state is maintained in
 [`CAPABILITY_STATUS.md`](./CAPABILITY_STATUS.md).
 
 Given an informal research question, the system:
@@ -207,12 +208,16 @@ because their prerequisites are not publicly available.
 
 ## Current campaign boundary
 
-The bounded campaign entrypoint can run a live central model lead through the
-AdaIvy gateway and record its actions, usage, cost, and artifacts. It cannot
-currently perform the target product workflow:
+There are two bounded campaign contracts. The legacy `campaign run` path can
+run a live central model lead and retains the v1 action/recheck compatibility
+contract. The end-to-end `campaign start` path consumes the closed v2 action
+contract and records profile-bound planning, search, depth-one following,
+acquisition, parsing, embedding, explicit index refresh, retrieval, experiment,
+verification, formal-check disposition, and reporting as durable actions:
 
-- its action schema contains no literature search, acquisition, embedding,
-  index-refresh, or retrieval action;
+- v2 search must precede research; acquire/parse/embed/refresh/retrieve order is
+  structural, and result following requires depth one plus a pinned origin
+  allowlist;
 - `campaign run` wires the activated ADR-0066 OCI runner only when
   `--experiment-activation` supplies a record that re-verifies against the
   current image locks (ADR-0073); otherwise the pending runner remains with the
@@ -223,16 +228,20 @@ currently perform the target product workflow:
 - the sealed Phase 3B Lean adapter is an explicit opt-in
   (`--formal-check-adapter sealed`); the offline default records a
   machine-readable missing-tool outcome; and
-- a fresh human `before_research` novelty record is still required by ADR-0055.
+- ADR-0072 supersedes the routine human `before_research` novelty record for
+  `campaign start`; the legacy v1 path retains it, and human
+  `before_announcement` review remains unconditional.
 
-The end-to-end plan changes these boundaries through a superseding ADR. Until
-then, host Codex or Claude work remains an explicit external import rather than
-AdaIvy campaign discovery.
+The offline end-to-end acceptance performs two profile-bound fixture model
+calls, persists exact corpus-backed evidence, retains a refuted candidate, and
+independently verifies its replacement. Live external effects are not activated
+by that test. Host Codex or Claude work remains an explicit external import.
 
 ## Multiple model providers, embeddings, and retrieval
 
-Generation, embedding ingestion, and retrieval are separate boundaries. The
-separation is intentional, but they are not yet orchestrated by the campaign.
+Generation, embedding ingestion, and retrieval remain separate trust
+boundaries, but `campaign start` now orchestrates them at explicit checkpoint
+and refresh boundaries.
 
 What holds today:
 
@@ -249,10 +258,12 @@ What holds today:
   partitioned by `(provider, model_identifier, dimension, normalization)`. A
   rebuild replays those bytes and never re-calls the provider, so the read path
   has no provider, no credential, and no network surface.
-- ADR-0070 is implemented: Phase 4C consumes a replayed semantic partition and
-  its gates pass. It does not consume ADR-0067 corpus records or arbitrary live
-  embedding partitions. The only Phase 4C vectors are project-authored fixture
-  vectors and provide no evidence about real embedding quality. There is no
+- ADR-0070 remains the frozen 19-document Phase 4C benchmark. ADR-0074 adds the
+  separate arbitrary-corpus retrieval projection used by `campaign start`;
+  vectors are partitioned and immutable, query/result manifests are replayable,
+  and model-context rights are checked against the exact selected route before
+  evidence text enters planning. Fixture vectors provide no evidence about
+  real embedding quality. There is no
   approximate-nearest-neighbour index; similarity uses an exact linear scan.
 - Bounded multi-hop query expansion is deterministic. Terminology, notation,
   citation, and contrasting-approach queries in
@@ -545,8 +556,10 @@ PYTHONPATH=src python3 -m math_research.cli campaign resume CAMPAIGN_ROOT
 
 That command verifies an existing terminal campaign and finishes or verifies
 the deterministic draft with zero provider, network, tool, or subprocess work.
-It does not resume a partially executed paid campaign; safe mid-run continuation
-still needs append-only per-action checkpoints and paid-request intent records.
+For a `campaign start` root it instead verifies the sealed runtime configuration
+and frozen target, then resumes from append-only action checkpoints. Completed
+actions replay; an orphaned paid or irreversible intent stops unresolved rather
+than repeating the effect, while an idempotent local action may safely retry.
 
 ADR-0056 makes the record-to-paper path atomic for every reader-facing report
 that contains a solved mathematical claim. With the pinned typesetter installed,
@@ -578,12 +591,13 @@ digest-pinned Linux/arm64 OCI gate passes. Output remains an untrusted candidate
 until the isolated exact verifier re-derives it; the offline suite continues to
 use a zero-process scripted runner.
 
-Those component capabilities are not yet the behavior of the operator
-entrypoint. `campaign run` currently injects its earlier pending runner and
-absent verifier, so it cannot execute the ADR-0066 sandbox or complete a
-verification. This distinction is recorded in
-[`CAPABILITY_STATUS.md`](./CAPABILITY_STATUS.md) and is the subject of Slice 6
-of the end-to-end runtime plan.
+ADR-0073 wires these experiment and verifier ports into legacy `campaign run`:
+the OCI runner is selected only by a currently valid activation record, and the
+verifier router records applicable exact/formal outcomes or an explicit
+unsupported result. The separate v2 `campaign start` acceptance uses a bounded
+built-in exact experiment/verifier so the offline suite needs no container or
+Lean runtime. This distinction is recorded in
+[`CAPABILITY_STATUS.md`](./CAPABILITY_STATUS.md).
 
 For an AI-authored solved claim, `publication build` requires both campaign
 files. It re-verifies semantic and operational hashes, closes each claim and
@@ -841,13 +855,14 @@ possible without changing domain logic.
 
 ## Implemented end-to-end fixture boundary
 
-The ADR-0075 runtime provides a single-command offline acceptance path with
+The ADR-0075/0076 runtime provides a single-command offline acceptance path with
 action-level checkpoints. It uses an explicit profile selection and unified
 budget, a persistent corpus and ADR-0074 retrieval projection, exact-span
-evidence, a bounded fixture experiment, exact artifact verification, and an
-unapproved claim-free LaTeX status draft. This does not activate live search,
-provider, snapshot, OCI, Lean, or typesetting capabilities; those retain their
-named gates.
+evidence admitted to the exact model-context route, a bounded built-in
+experiment, retained refutation and repaired-candidate verification, and a
+provenance-closed unapproved LaTeX bundle. The pinned typesetter runs only when
+its exact toolchain is present. This does not activate live search, provider,
+snapshot, OCI, or Lean capabilities; those retain their named gates.
 
 ## Definition of done for the first vertical slice
 

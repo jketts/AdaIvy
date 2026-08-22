@@ -610,16 +610,28 @@ campaign:
 	  printf 'campaign ok (unwired sandbox refused with its reason recorded; exact-graph candidate verified through the router; a refuted candidate left the campaign continuing; replay MEASURED 0 model/tool/network/subprocess calls)\n'
 
 campaign-e2e:
-	@printf '\n== ADR-0072 end-to-end persistent campaign fixture ==\n'
+	@printf '\n== ADR-0076 end-to-end persistent campaign fixture ==\n'
 	@d=$$(mktemp -d "$(TMPROOT)/adaivy-campaign-e2e.XXXXXX") && \
 	  $(PY) -m math_research.cli campaign start "$$d/campaign" campaign.e2e.fixture.v1 \
-	    --data-root "$$d/data-root" --recorded-at $(CAMPAIGN_INSTANT) \
+	    --data-root "$$d/data-root" --data-root-id dataroot.make-check.e2e --recorded-at $(CAMPAIGN_INSTANT) \
+	    --profile-id adaivy --max-model-requests 8 --max-embedding-requests 8 \
+	    --max-network-requests 8 --max-tool-runs 8 --max-storage-bytes 100000000 \
+	    --max-wall-milliseconds 3600000 \
+	    --problem fixtures/problem-intake/sum-two-squares-mod-four-v1.json \
 	    --repository-root "$(CURDIR)" > "$$d/start.json" && \
 	  $(PY) -m math_research.cli campaign resume "$$d/campaign" > "$$d/resume.json" && \
-	  $(PY) -c 'import json,sys; a=json.load(open(sys.argv[1])); b=json.load(open(sys.argv[2])); s=a["summary"]; assert a["status"] == b["status"] == "completed"; assert s["completed_action_count"] == 13 and s["literature_search_recorded"] is True; assert s["before_research_human_checkpoint_required"] is False and s["before_announcement_human_checkpoint_required"] is True; assert s["charge_event_count"] == 3 and b["paid_work_repeated"] is False; assert s["epistemic_warrant_created"] is False' "$$d/start.json" "$$d/resume.json" && \
-	  $(PY) -c 'import json,sys,pathlib; p=pathlib.Path(sys.argv[1]); s=json.load(open(p/"status.json")); assert s["approval"] == "unapproved" and s["typeset_status"] == "not_typeset" and (p/"paper.tex").is_file()' "$$d/campaign/publication" && \
+	  $(PY) -m math_research.cli campaign start "$$d/campaign-2" campaign.e2e.fixture.v2 \
+	    --data-root "$$d/data-root" --data-root-id dataroot.make-check.e2e --recorded-at $(CAMPAIGN_INSTANT) \
+	    --profile-id adaivy --max-model-requests 8 --max-embedding-requests 8 \
+	    --max-network-requests 8 --max-tool-runs 8 --max-storage-bytes 100000000 \
+	    --max-wall-milliseconds 3600000 \
+	    --problem fixtures/problem-intake/sum-two-squares-mod-four-v1.json \
+	    --repository-root "$(CURDIR)" > "$$d/start-2.json" && \
+	  $(PY) -c 'import json,sys; a=json.load(open(sys.argv[1])); b=json.load(open(sys.argv[2])); c=json.load(open(sys.argv[3])); s=a["summary"]; t=c["summary"]; assert a["status"] == b["status"] == c["status"] == "completed"; assert s["completed_action_count"] == 15 and s["literature_search_recorded"] is True; assert s["before_research_human_checkpoint_required"] is False and s["before_announcement_human_checkpoint_required"] is True; assert s["charge_event_count"] == 8 and t["charge_event_count"] == 6 and b["paid_work_repeated"] is False; assert s["document_embedding_provider_calls"] == 2 and t["document_embedding_provider_calls"] == 0; assert s["initial_verification_status"] == "candidate_refuted" and s["final_verification_status"] == "candidate_verified"; assert s["retrieval_id"] and s["epistemic_warrant_created"] is False' "$$d/start.json" "$$d/resume.json" "$$d/start-2.json" && \
+	  $(PY) -c 'import collections,json,pathlib,sys; root=pathlib.Path(sys.argv[1]); events=[json.load(open(p)) for p in sorted((root/"budget-charges").glob("*.json"))]; assert {e["credential_profile_id"] for e in events} == {"adaivy"}; assert collections.Counter(e["capability"] for e in events) == {"model":2,"embedding":3,"tool":3}; retrieval=json.load(open(root/"action-checkpoints/000008.terminal.json"))["result"]; assert retrieval["retrieval_id"] and retrieval["retrieval_result_hash"] and len(retrieval["evidence_card_object_hashes"]) == 2' "$$d/campaign" && \
+	  $(PY) -c 'import json,sys,pathlib; from math_research.publication.bundle import verify_bundle; p=pathlib.Path(sys.argv[1]); m=verify_bundle(p); assert m["publication_approval"] == "unapproved" and m["typeset_status"] in {"not_typeset", "typeset"} and (p/"paper.tex").is_file() and (p/"records/ledger.json").is_file() and (p/"records/retrieval-result.json").is_file() and len(list((p/"records").glob("evidence-card-*.json"))) == 2' "$$d/campaign/publication" && \
 	  rm -rf "$$d" && \
-	  printf 'campaign e2e ok (13 checkpointed actions; persistent corpus/retrieval; profile budget; resume repeats 0 paid calls)\n'
+	  printf 'campaign e2e ok (15 checkpointed actions; evidence-guided refute/repair/verify; second campaign reuses corpus vectors; resume repeats 0 paid calls)\n'
 
 # ADR-0036: the publication projection renders the manuscript record set into a
 # content-addressed bundle and asserts the recorded outcome rather than the exit

@@ -2299,20 +2299,39 @@ def _export_measured(args: argparse.Namespace) -> int:
 
 
 def _resume(args: argparse.Namespace) -> int:
-    """Resume only deterministic terminal finalization; never repeat paid work."""
+    """Resume v2 action checkpoints or legacy terminal finalization safely."""
 
     with measure_effects():
         try:
             end_to_end_config = args.root / "end-to-end-runtime-config.json"
             if end_to_end_config.exists():
-                from .campaign.fixture_runtime import run_fixture_campaign
-                value = json.loads(end_to_end_config.read_text(encoding="utf-8"))
+                from .campaign.fixture_runtime import (
+                    load_fixture_runtime_config, run_fixture_campaign,
+                )
+                value = load_fixture_runtime_config(end_to_end_config)
+                target_value = json.loads((args.root / "campaign-target.json").read_text())
+                target_core = {
+                    key: item for key, item in target_value.items() if key != "content_hash"
+                }
+                if (
+                    target_value.get("content_hash") != canonical_hash(target_core)
+                    or value["target_hash"] != target_value.get("content_hash")
+                    or value["campaign_id"] != target_value.get("campaign_id")
+                ):
+                    raise ValueError("sealed runtime config does not bind the frozen target")
                 summary = run_fixture_campaign(
                     args.root, data_root=Path(value["data_root"]),
+                    data_root_id=value["data_root_id"],
                     campaign_id=value["campaign_id"], recorded_at=value["recorded_at"],
                     repository_root=Path(value["repository_root"]),
                     problem_bytes=None,
-                    max_embedding_requests=value.get("max_embedding_requests", 64),
+                    profile_id=value["profile_id"],
+                    max_model_requests=value["max_model_requests"],
+                    max_embedding_requests=value["max_embedding_requests"],
+                    max_network_requests=value["max_network_requests"],
+                    max_tool_runs=value["max_tool_runs"],
+                    max_storage_bytes=value["max_storage_bytes"],
+                    max_wall_milliseconds=value["max_wall_milliseconds"],
                 )
                 _print({
                     "status": summary["status"], "root": str(args.root),
@@ -2328,7 +2347,7 @@ def _resume(args: argparse.Namespace) -> int:
             )
         except (
             CampaignProvenanceError, CampaignConfigurationError, NoveltyRecheckError,
-            PublicationValidationError, OSError, KeyError, TypeError,
+            PublicationValidationError, OSError, KeyError, TypeError, ValueError,
         ) as error:
             return _refuse(
                 "campaign_terminal_resume_refused",
@@ -2357,10 +2376,17 @@ def _start(args: argparse.Namespace) -> int:
         from .campaign.fixture_runtime import run_fixture_campaign
         summary = run_fixture_campaign(
             args.root, data_root=args.data_root, campaign_id=args.campaign_id,
+            data_root_id=args.data_root_id,
             recorded_at=args.recorded_at,
             repository_root=args.repository_root,
             problem_bytes=None if args.problem is None else args.problem.read_bytes(),
+            profile_id=args.profile_id,
+            max_model_requests=args.max_model_requests,
             max_embedding_requests=args.max_embedding_requests,
+            max_network_requests=args.max_network_requests,
+            max_tool_runs=args.max_tool_runs,
+            max_storage_bytes=args.max_storage_bytes,
+            max_wall_milliseconds=args.max_wall_milliseconds,
         )
     except Exception as error:
         return _refuse(
@@ -2441,10 +2467,20 @@ def main(argv: list[str] | None = None) -> int:
     start.add_argument("root", type=Path)
     start.add_argument("campaign_id")
     start.add_argument("--data-root", type=Path, required=True)
+    start.add_argument("--data-root-id", required=True)
     start.add_argument("--recorded-at", required=True)
     start.add_argument("--repository-root", type=Path, default=Path("."))
     start.add_argument("--problem", type=Path)
-    start.add_argument("--max-embedding-requests", type=int, default=64)
+    start.add_argument(
+        "--profile-id", required=True, choices=("adaivy",),
+        help="explicit named profile for the offline fixture route",
+    )
+    start.add_argument("--max-model-requests", type=int, required=True)
+    start.add_argument("--max-embedding-requests", type=int, required=True)
+    start.add_argument("--max-network-requests", type=int, required=True)
+    start.add_argument("--max-tool-runs", type=int, required=True)
+    start.add_argument("--max-storage-bytes", type=int, required=True)
+    start.add_argument("--max-wall-milliseconds", type=int, required=True)
 
     inspect = commands.add_parser("inspect", help="verify and inspect a persisted campaign")
     inspect.add_argument("root", type=Path)

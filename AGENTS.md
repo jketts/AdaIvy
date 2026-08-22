@@ -20,31 +20,25 @@ integration decisions and the historical duplicate ADR-0038 identifiers.
 Historical phase plans, gate reports, threat models, and fixtures are evidence
 for their named slice. They are not global descriptions of current capability.
 
-## Current integration objective
+## Current integration boundary
 
-The repository contains working bounded components through ADR-0071, but it does
-not yet run the complete intended research workflow. In particular:
+ADRs 0072–0076 implement the bounded end-to-end runtime offline. `campaign
+start` freezes a target, explicit credential profile, persistent data-root
+identity, and multi-capability budgets; executes the v2 literature action path;
+persists and reuses corpus/vector artifacts; places rights-checked exact-span
+evidence into planning; runs a bounded built-in experiment; retains an exact
+verifier refutation; repairs and re-verifies the candidate; checkpoints every
+action; and writes a provenance-closed unapproved publication bundle. `campaign
+resume` replays completed checkpoints and never repeats an ambiguous paid or
+irreversible effect. An uncompleted local idempotent action may be retried.
 
-- the campaign has no search, acquisition, embedding, index-refresh, or
-  retrieval action;
-- the bounded corpus is not connected to Phase 4C retrieval;
-- semantic retrieval runs over the frozen 19-document fixture;
-- the campaign CLI still uses a pending experiment runner and absent verifier;
-- Lean checking is available only through the separate Phase 3B path; and
-- ADR-0055's human `before_research` novelty checkpoint remains active.
-
-ADR-0071 adds automatic claim-free LaTeX status drafts and idempotent terminal
-finalization through `campaign resume`. It does not resume a partially executed
-paid campaign; do not describe it as action-level or crash-safe continuation.
-
-The active proposed work is the end-to-end runtime plan. It aims to make one
-budgeted, resumable central campaign use explicit AdaIvy credential profiles,
-grow a persistent literature/embedding corpus, retrieve evidence during
-ideation, run bounded experiments, and invoke exact or Lean verification.
-
-The plan is not authority by itself. Before implementing it, create the
-superseding ADR identified in Slice 1. Until that ADR lands, current narrower
-runtime restrictions remain in force.
+The offline fixture is evidence of orchestration, not production activation or
+mathematical warrant. Live provider, Crossref, snapshot acquisition, embedding,
+OCI, Lean, and typesetting effects retain their explicit named gates. The
+legacy `campaign run` entrypoint remains for its v1 compatibility contract; its
+OCI and verifier routes are wired under ADR-0073, while `campaign start` is the
+v2 end-to-end operator path. Human `before_announcement` review remains
+mandatory. See `docs/CAPABILITY_STATUS.md` for the authoritative matrix.
 
 ## Mathematics-problem invocation
 

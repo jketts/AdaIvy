@@ -36,11 +36,15 @@ capability is summarized separately in
   query/evidence replay
 - ADR-0075: action-level checkpoints and the single-command offline end-to-end
   campaign runtime
+- ADR-0076: closes the end-to-end acceptance path with consumed v2 planner
+  actions, ordered refresh/retrieval, exact model-context rights, refute/repair/
+  verify continuation, safe takedown authority, sealed resume configuration,
+  cross-campaign vector reuse, and provenance-closed report generation
 
 The end-to-end integration is documented in
 [`../END_TO_END_RESEARCH_RUNTIME_PLAN.md`](../END_TO_END_RESEARCH_RUNTIME_PLAN.md).
 ADR-0072 is the superseding decision that plan required before implementation;
-Slices 2–7 now have offline acceptance coverage; live provider, snapshot,
+Slices 2–8 now have offline acceptance coverage; live provider, snapshot,
 container, and Lean execution retain their separate explicit gates.
 
 ## Duplicate ADR numbers

@@ -24,18 +24,19 @@ operator path, and usable end to end.
 | Persistent vector artifacts | Yes | Yes | Yes in offline end-to-end path | Immutable artifacts stored in the persistent data root and reused across generations |
 | Semantic retrieval | Yes | Offline fixture only | No | Fourth Phase 4C signal over 19 project-authored documents and 17 queries |
 | Retrieval over acquired corpus | Yes (ADR-0074) | Offline fixture | Yes | Immutable projection binds active corpus generation/hash and exact vector partition; query artifacts and exact-span evidence cards are replayable with zero provider calls |
-| Campaign literature/embedding actions | Yes | Offline fixture | Yes | Action schema v2 names search, depth-one follow, acquire, parse, embed, refresh, retrieve, and formal check |
+| Campaign literature/embedding actions | Yes | Offline fixture | Yes in `campaign start` | The v2 action contract is parsed on the operator path; search, depth-one follow, acquire, parse, embed, explicit refresh, retrieve, and formal-check boundaries are checkpointed |
 | Named credential profiles and unified budget | Yes | Offline fixture | Yes in `campaign start` | Selection and charge records are durable and secret-free; live resolution refuses ambient credentials and has no implicit fallback |
-| Action-level campaign resume | Yes (ADR-0075) | Yes | Yes in `campaign start` | Intent precedes every effect; completed actions replay; ambiguous effects stop unresolved without repetition |
-| Automatic campaign LaTeX draft | Yes | Yes | Yes | Every terminal run attempts a claim-free, unapproved `paper.tex` bundle; PDF typesetting remains an explicit gate |
-| End-to-end research run | Yes, offline fixture | Offline only | Yes through `campaign start` | One command executes 13 checkpointed actions from literature through report; live effects remain separately gated |
+| Action-level campaign resume | Yes (ADR-0075/0076) | Yes | Yes in `campaign start` | Intent precedes every effect; completed actions replay; orphaned paid/irreversible effects stop unresolved, while local idempotent effects retry under the same key |
+| Automatic campaign LaTeX draft | Yes | Yes | Yes | Every terminal end-to-end run writes a provenance-closed, claim-free, unapproved bundle and automatically invokes the pinned typesetter only when its exact toolchain is present |
+| End-to-end research run | Yes, offline fixture | Offline only | Yes through `campaign start` | One command executes 15 checkpointed actions, including profile-bound planning, literature, evidence-guided experiment, retained refutation, repair, exact verification, and report; live effects remain separately gated |
 
 ## What works today
 
 - `make check` exercises the complete offline acceptance suite without network,
   provider credentials, a container runtime, or third-party packages.
-- Live provider, acquisition, embedding, OCI, Lean, and typesetting paths are
-  separate named gates with explicit prerequisites.
+- Live provider, acquisition, embedding, OCI, and Lean paths are separate named
+  gates with explicit prerequisites. The end-to-end report checks the pinned
+  typesetter and compiles only when the exact declared toolchain is present.
 - Campaign model calls, actions, artifacts, usage, and costs can be recorded and
   replayed.
 - A terminal campaign automatically emits an unapproved LaTeX status bundle,
@@ -49,8 +50,9 @@ operator path, and usable end to end.
 AdaIvy now executes this complete path in the deterministic offline fixture:
 
 ```text
-literature search -> acquisition -> persistent embedding/indexing -> retrieval
--> iterative investigation and experiments -> exact or Lean verification
+profile-bound query planning -> literature search -> acquisition
+-> persistent embedding/indexing -> rights-checked retrieval
+-> evidence-guided experiment -> exact refutation -> repair -> exact verification
 ```
 
 `campaign start` records every stage and enforces search before research. Live
@@ -65,7 +67,8 @@ path remains available with its former novelty-check contract. Human
 - **Accepted:** authorized by an accepted ADR.
 - **Implemented:** code and acceptance tests exist.
 - **Activated:** production prerequisites or an activation record permit use.
-- **Campaign-wired:** the real `campaign run` path constructs and calls it.
+- **Campaign-wired:** an operator campaign entrypoint constructs and calls it;
+  the matrix names `campaign start` or legacy `campaign run` where they differ.
 - **End-to-end runnable:** the operator entrypoint exercises the complete causal
   path, not merely separate component gates.
 

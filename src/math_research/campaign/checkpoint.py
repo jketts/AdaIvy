@@ -1,24 +1,36 @@
 """Crash-safe, append-only action checkpoints for end-to-end campaigns.
 
 An intent is durable before an effect begins.  A terminal record is durable
-after it finishes.  Replaying a completed action returns its recorded result;
-an intent without a terminal record is ambiguous and is never executed again.
-The caller must either recover it by the same idempotency key or close the
-campaign with the unresolved effect recorded.
+after it finishes. Replaying a completed action returns its recorded result.
+An orphaned paid or irreversible intent is ambiguous and is never executed
+again automatically; an explicitly local, idempotent action may retry with the
+same key.
 """
 
 from __future__ import annotations
 
 import fcntl
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
-from .records import canonical_bytes, canonical_hash
+from .records import ActionType, canonical_bytes, canonical_hash
 from ..corpus_service.serialization import strict_canonical_object
 
 CHECKPOINT_SCHEMA_VERSION = "adaivy.campaign-action-checkpoint.v1"
+_IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]*$")
+_INTENT_FIELDS = frozenset({
+    "schema_version", "record_type", "campaign_id", "sequence", "action_type",
+    "request", "request_hash", "idempotency_key", "paid_or_irreversible",
+    "recorded_at", "content_hash",
+})
+_TERMINAL_FIELDS = frozenset({
+    "schema_version", "record_type", "campaign_id", "sequence", "action_type",
+    "intent_hash", "idempotency_key", "status", "result", "result_hash",
+    "recorded_at", "content_hash",
+})
 
 
 class CheckpointError(ValueError):
@@ -50,6 +62,10 @@ def _write_once(path: Path, value: Mapping[str, Any]) -> None:
 class ActionCheckpointStore:
     root: Path
     campaign_id: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.campaign_id, str) or not _IDENTIFIER.fullmatch(self.campaign_id):
+            raise CheckpointError("campaign_id must be a valid identifier")
 
     @property
     def directory(self) -> Path:
@@ -116,6 +132,9 @@ class ActionCheckpointStore:
     ) -> dict[str, Any]:
         if status not in {"completed", "failed", "incomplete"}:
             raise CheckpointError("terminal checkpoint status differs")
+        stored_intent = self.load(sequence, "intent")
+        if stored_intent is None or dict(intent) != stored_intent:
+            raise CheckpointError("terminal completion does not bind the stored intent")
         value = {
             "schema_version": CHECKPOINT_SCHEMA_VERSION,
             "record_type": "action_terminal",
@@ -139,6 +158,8 @@ class ActionCheckpointStore:
         return value
 
     def load(self, sequence: int, kind: str) -> dict[str, Any] | None:
+        if kind not in {"intent", "terminal"}:
+            raise CheckpointError("checkpoint kind differs")
         path = self._path(sequence, kind)
         if not path.exists():
             return None
@@ -150,6 +171,51 @@ class ActionCheckpointStore:
         core = {key: item for key, item in value.items() if key != "content_hash"}
         if supplied != canonical_hash(core):
             raise CheckpointError("campaign checkpoint content hash differs")
+        expected = _INTENT_FIELDS if kind == "intent" else _TERMINAL_FIELDS
+        if set(value) != expected:
+            raise CheckpointError("campaign checkpoint fields differ")
+        if value["schema_version"] != CHECKPOINT_SCHEMA_VERSION:
+            raise CheckpointError("campaign checkpoint schema differs")
+        if value["record_type"] != f"action_{kind}":
+            raise CheckpointError("campaign checkpoint record type differs")
+        if value["campaign_id"] != self.campaign_id or value["sequence"] != sequence:
+            raise CheckpointError("campaign checkpoint identity differs")
+        try:
+            ActionType(value["action_type"])
+        except (TypeError, ValueError) as error:
+            raise CheckpointError("campaign checkpoint action type differs") from error
+        if not isinstance(value["recorded_at"], str) or not value["recorded_at"]:
+            raise CheckpointError("campaign checkpoint recorded_at differs")
+        if kind == "intent":
+            if not isinstance(value["request"], dict):
+                raise CheckpointError("action intent request differs")
+            if value["request_hash"] != canonical_hash(value["request"]):
+                raise CheckpointError("action intent request hash differs")
+            expected_key = canonical_hash({
+                "campaign_id": self.campaign_id, "sequence": sequence,
+                "action_type": value["action_type"],
+                "request_hash": value["request_hash"],
+            })
+            if value["idempotency_key"] != expected_key:
+                raise CheckpointError("action intent idempotency key differs")
+            if not isinstance(value["paid_or_irreversible"], bool):
+                raise CheckpointError("action intent effect classification differs")
+        else:
+            if value["status"] not in {"completed", "failed", "incomplete"}:
+                raise CheckpointError("action terminal status differs")
+            if not isinstance(value["result"], dict):
+                raise CheckpointError("action terminal result differs")
+            if value["result_hash"] != canonical_hash(value["result"]):
+                raise CheckpointError("action terminal result hash differs")
+            intent = self.load(sequence, "intent")
+            if intent is None:
+                raise CheckpointError("action terminal has no intent")
+            if (
+                value["intent_hash"] != intent["content_hash"]
+                or value["idempotency_key"] != intent["idempotency_key"]
+                or value["action_type"] != intent["action_type"]
+            ):
+                raise CheckpointError("action terminal binding differs")
         return value
 
     def execute(
@@ -167,9 +233,10 @@ class ActionCheckpointStore:
             if terminal["intent_hash"] != intent["content_hash"]:
                 raise CheckpointError("terminal checkpoint binds another intent")
             return terminal
-        # A prior intent proves the process may already have crossed an effect
-        # boundary.  Never repeat it automatically.
-        if not created:
+        # A prior paid/irreversible intent proves the process may already have
+        # crossed an effect boundary. Never repeat that class automatically;
+        # local idempotent projections retry under the same key.
+        if not created and intent["paid_or_irreversible"]:
             raise AmbiguousEffectError("an action intent exists without a terminal record")
         try:
             result = effect(intent["idempotency_key"])

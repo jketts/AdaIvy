@@ -1,10 +1,10 @@
 # Technical Blueprint: Verification-First Mathematical Research System
 
 **Document status:** Target architecture and correctness contract, updated 22
-August 2026. Bounded components through ADR-0070 exist, but the complete
-literature-to-verification campaign is not yet wired. The canonical implemented
-state is [`docs/CAPABILITY_STATUS.md`](docs/CAPABILITY_STATUS.md); the proposed
-integration sequence is
+August 2026. ADRs 0072–0076 implement the bounded offline
+literature-to-verification campaign; live external effects retain their named
+activation gates. The canonical implemented state is
+[`docs/CAPABILITY_STATUS.md`](docs/CAPABILITY_STATUS.md); the integration record is
 [`docs/END_TO_END_RESEARCH_RUNTIME_PLAN.md`](docs/END_TO_END_RESEARCH_RUNTIME_PLAN.md).
 Historical phase and ADR scope remains authoritative for existing code until a
 later ADR explicitly supersedes it.
@@ -1012,10 +1012,11 @@ and interfaces are mature enough to encode; unstable conceptual exploration is
 not forced into Lean, and formal checking is not postponed until the end of the
 entire research run.
 
-Before this planner may act on an operator-chosen problem, ADR-0055 requires a
-fresh `before_research` novelty re-check as the immediately preceding durable
-event. The check is tied to the exact dossier hash and run/session identifier;
-it does not alter the planner's authority or the problem's epistemic state.
+ADR-0055 requires a fresh `before_research` novelty re-check for the legacy v1
+planner path. ADR-0072 supersedes that routine interruption for `campaign
+start`: the v2 path must instead record its own non-authoritative literature
+search before substantive research. The human `before_announcement` boundary
+is unchanged.
 
 ### 6.4 Branch policy
 
@@ -1676,11 +1677,11 @@ Therefore:
   input-token-only, which the general request/response cost shape does not
   express.
 
-ADR-0064 and ADR-0069 now implement processor-bound rights, the embedding
-provider port, and immutable exact vector artifacts. ADR-0070 implements an
-exact linear semantic signal over a frozen fixture partition. The rules above
-remain active: acquired corpus records are not yet connected to those vectors,
-and no persistent cross-campaign retrieval service or approximate index exists.
+ADR-0064 and ADR-0069 implement processor-bound rights, the embedding provider
+port, and immutable exact vector artifacts. ADR-0070 retains an exact linear
+semantic benchmark over a frozen fixture partition. ADR-0074 separately
+connects acquired corpus generations to persistent cross-campaign vector
+projections and replayable exact retrieval. No approximate index exists.
 
 Multi-provider configuration also has one benefit to retain deliberately:
 `different_provider` is a component of verifier independence, and a
@@ -2233,27 +2234,27 @@ Implemented cross-phase novelty checkpoint rule (ADR-0055):
 - no outcome creates novelty status, significance, applicability, graph
   admission, or mathematical warrant.
 
-Implemented but not campaign-integrated:
+Implemented integration boundary:
 
-- ADR-0064 processor-bound embedding rights;
-- ADR-0067 bounded arXiv metadata/abstract corpus replay, with production
-  activation still pending;
-- ADR-0069 live embedding ingestion and immutable exact vector artifacts; and
-- ADR-0070 four-signal Phase 4C retrieval over the frozen 19-document fixture.
+- ADR-0064/0072 processor-bound embedding and model-context rights;
+- ADR-0067 replay plus the persistent full-text corpus service, with production
+  snapshot acquisition still pending;
+- ADR-0069 immutable exact vectors and ADR-0074 persistent cross-campaign
+  corpus projections;
+- ADR-0068 depth-one allowlisted following; and
+- ADR-0075/0076 v2 search, acquisition, parsing, embedding, explicit refresh,
+  retrieval, experiment, verifier, checkpoint/resume, and report actions.
 
-ADR-0068 accepts bounded depth-one following of discovery results but has not
-been implemented. None of these decisions makes the acquired corpus available
-to the campaign or turns the fixture benchmark into a literature service.
+The 19-document ADR-0070 suite remains a frozen retrieval benchmark. The
+separate ADR-0074 service retrieves exact spans from arbitrary admitted corpus
+generations and checks the selected model-context route before disclosure.
 
-Remaining integration work:
+Remaining production activation and extension work:
 
-- durable licensed full-text corpus ingestion and bounded discovery-result
-  following;
-- persistent cross-campaign embedding storage and hybrid retrieval over real
-  corpus generations;
-- campaign actions for search, acquisition, parsing, embedding, index refresh,
-  and retrieval;
-- evidence cards and source-applicability review;
+- live licensed snapshot acquisition and live v2 campaign workers;
+- richer hybrid lexical/formula/citation/claim projections over corpus
+  generations;
+- source-applicability review beyond the current unresolved evidence cards;
 - durable material partial-result surfacing, append-only steering, and
   evidence-lifecycle projection over exactly bound verified work, activated
   only after its principal/capability, applicability, and replay boundary is
@@ -2530,14 +2531,17 @@ than guessing.
 
 ### 21.4 Implemented end-to-end runtime boundary (2026-08-22)
 
-ADRs 0072–0075 add an offline accepted vertical path without changing the
+ADRs 0072–0076 add an offline accepted vertical path without changing the
 trust lattice above. `campaign start` freezes a target, selects a named profile,
 opens one unified budget, records a search before research, ingests the
 persistent corpus, constructs a generation-bound vector projection, retrieves
-exact-span evidence, performs bounded fixture experimentation and exact
-artifact verification, and emits an unapproved claim-free draft. Every action
-has a durable intent and terminal checkpoint. Live network, provider, OCI,
-Lean, and typesetting effects remain separately activated boundaries.
+exact-span evidence after model-context rights checks, retains an exact
+refutation, repairs and verifies the replacement candidate, and emits a
+provenance-closed unapproved claim-free draft. Every action has a durable intent
+and terminal checkpoint; a second campaign reuses unchanged vectors. Live
+network, provider, OCI, and Lean effects remain separately activated
+boundaries. The pinned typesetter is invoked automatically only when its exact
+toolchain is present.
 
 The persistent projection is deliberately not a mutation of the corpus
 generation: source generations remain primary evidence and state

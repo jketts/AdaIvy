@@ -11,7 +11,7 @@
       "enum": [
         "search_literature", "follow_discovery_results", "acquire_source",
         "parse_source", "embed_sources", "refresh_retrieval_index",
-        "retrieve_evidence", "write_program", "run_program", "inspect_result",
+        "retrieve_evidence", "experiment", "write_program", "run_program", "inspect_result",
         "derive", "falsify", "verify", "formal_check", "suspend_branch", "report"
       ]
     },

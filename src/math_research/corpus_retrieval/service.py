@@ -53,6 +53,7 @@ class CorpusRetrievalError(ValueError):
 
 
 _QUERY_EMBEDDING_ID = re.compile(r"^queryembedding\.[0-9a-f]{24}$")
+_RETRIEVAL_ID = re.compile(r"^retrieval\.[0-9a-f]{24}$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -452,6 +453,24 @@ def _load_query(root: Path, query_embedding_id: str) -> tuple[dict[str, Any], Ve
         "creates_warrant", "content_hash",
     } or manifest["schema_version"] != "adaivy.corpus-retrieval-query.v1":
         raise CorpusRetrievalError("query embedding fields differ")
+    if manifest["ranking_policy"] != "exact_cosine_desc_then_document_id_asc_v1":
+        raise CorpusRetrievalError("query embedding ranking policy differs")
+    if manifest["creates_warrant"] is not False:
+        raise CorpusRetrievalError("query embedding cannot create warrant")
+    partition = manifest["partition_key"]
+    if not isinstance(partition, Mapping) or set(partition) != {
+        "provider", "model_identifier", "dimension", "normalization",
+    }:
+        raise CorpusRetrievalError("query embedding partition fields differ")
+    try:
+        PartitionKey(
+            provider=partition["provider"],
+            model_identifier=partition["model_identifier"],
+            dimension=partition["dimension"],
+            normalization=partition["normalization"],
+        )
+    except (TypeError, ValueError) as error:
+        raise CorpusRetrievalError("query embedding partition differs") from error
     expected_id = "queryembedding." + sha256_bytes(canonical_bytes({
         "projection_id": manifest["projection_id"],
         "partition_key": manifest["partition_key"],
@@ -511,7 +530,9 @@ def _best_span(body: bytes, spans_doc: Mapping[str, Any], query: str) -> tuple[d
 
 def retrieve_evidence(
     root: Path, *, query_embedding_id: str, limit: int = 5,
-) -> tuple[dict[str, Any], ...]:
+    include_result: bool = False,
+    model_context_route: Mapping[str, str] | None = None,
+) -> tuple[dict[str, Any], ...] | dict[str, Any]:
     """Replay a projection and return exact source passages; no gateway exists."""
 
     if not isinstance(limit, int) or isinstance(limit, bool) or limit < 1 or limit > 100:
@@ -544,6 +565,48 @@ def retrieve_evidence(
     cards: list[dict[str, Any]] = []
     for rank, (document_id, cosine) in enumerate(ranked[:limit], start=1):
         document = documents[document_id]
+        if model_context_route is not None:
+            if set(model_context_route) != {
+                "processor_id", "provider", "model_identifier", "at",
+            }:
+                raise CorpusRetrievalError("model-context route fields differ")
+            decision = next((
+                item["payload"]["decision"]
+                for item in reversed(read_ledger(root, "rights"))
+                if item["kind"] == "rights_derived"
+                and item["payload"]["decision"]["document_id"] == document_id
+            ), None)
+            context = None if decision is None else decision["uses"]["model_context"]
+            processor = None if context is None else context["processor"]
+            if (
+                context is None or context["value"] != "allowed" or processor is None
+                or processor["processor_id"] != model_context_route["processor_id"]
+                or processor["provider"] != model_context_route["provider"]
+                or processor["model_identifier"] != model_context_route["model_identifier"]
+            ):
+                raise CorpusRetrievalError(
+                    f"model-context rights for {document_id} refuse the selected route"
+                )
+            writer = PolicyDerivedRightsWriter(
+                root, actor_id=decision["authored_by"]["actor_id"],
+                valid_from=model_context_route["at"], valid_until=None,
+            )
+            shard = writer.locate(document["source_id"])
+            if shard is None:
+                raise CorpusRetrievalError("no current model-context rights record exists")
+            try:
+                with Phase4Workspace(writer.shard_root(shard)) as workspace:
+                    Phase4Service(workspace).require_rights(
+                        document["source_id"], RightsUse.MODEL_CONTEXT,
+                        at=model_context_route["at"],
+                        processor_id=model_context_route["processor_id"],
+                        provider=model_context_route["provider"],
+                        model_identifier=model_context_route["model_identifier"],
+                    )
+            except RightsBlocked as error:
+                raise CorpusRetrievalError(
+                    "current model-context rights refuse disclosure"
+                ) from error
         body = read_object(root, document["source_sha256"])
         spans_doc = verify_spans(json.loads(
             read_object(root, document["spans_sha256"]).decode("utf-8")
@@ -577,6 +640,9 @@ def retrieve_evidence(
             "query_embedding_id": query_embedding_id,
             "limit": limit,
             "evidence_card_hashes": [card["content_hash"] for card in cards],
+            "model_context_route": (
+                None if model_context_route is None else dict(model_context_route)
+            ),
         })).removeprefix("sha256:")[:24],
         "query_embedding_id": query_embedding_id,
         "projection_id": projection_id,
@@ -585,6 +651,9 @@ def retrieve_evidence(
         "evidence_card_hashes": [card["content_hash"] for card in cards],
         "evidence_card_object_hashes": card_object_hashes,
         "provider_calls": 0,
+        "model_context_route": (
+            None if model_context_route is None else dict(model_context_route)
+        ),
         "creates_warrant": False,
         "content_hash": None,
     })
@@ -595,10 +664,100 @@ def retrieve_evidence(
     if not result_path.exists():
         result_path.parent.mkdir(parents=True, exist_ok=True)
         result_path.write_bytes(rendered)
+    result = load_retrieval_result(root, result["retrieval_id"])
+    if include_result:
+        return {"manifest": result, "cards": tuple(cards)}
     return tuple(cards)
+
+
+def load_retrieval_result(root: Path, retrieval_id: str) -> dict[str, Any]:
+    """Verify a persisted retrieval result and every cited evidence-card object."""
+
+    if not isinstance(retrieval_id, str) or _RETRIEVAL_ID.fullmatch(retrieval_id) is None:
+        raise CorpusRetrievalError("invalid retrieval result identifier")
+    result = verify_sealed(
+        strict_canonical_object(
+            _result_dir(root).joinpath(retrieval_id + ".json").read_bytes(),
+            maximum=16_777_216, label="retrieval result",
+            code="retrieval_result_invalid",
+        ),
+        label="retrieval result", code="retrieval_result_invalid",
+    )
+    if set(result) != {
+        "schema_version", "retrieval_id", "query_embedding_id", "projection_id",
+        "ranking_policy", "limit", "evidence_card_hashes",
+        "evidence_card_object_hashes", "provider_calls", "model_context_route",
+        "creates_warrant", "content_hash",
+    } or result["schema_version"] != "adaivy.corpus-retrieval-result.v1":
+        raise CorpusRetrievalError("retrieval result fields differ")
+    if (
+        result["ranking_policy"] != "exact_cosine_desc_then_document_id_asc_v1"
+        or result["provider_calls"] != 0 or result["creates_warrant"] is not False
+    ):
+        raise CorpusRetrievalError("retrieval result policy differs")
+    if (
+        not isinstance(result["limit"], int) or isinstance(result["limit"], bool)
+        or not 1 <= result["limit"] <= 100
+        or not isinstance(result["evidence_card_hashes"], list)
+        or not isinstance(result["evidence_card_object_hashes"], list)
+        or len(result["evidence_card_hashes"]) != len(result["evidence_card_object_hashes"])
+        or len(result["evidence_card_hashes"]) > result["limit"]
+    ):
+        raise CorpusRetrievalError("retrieval result cardinality differs")
+    expected_id = "retrieval." + sha256_bytes(canonical_bytes({
+        "query_embedding_id": result["query_embedding_id"],
+        "limit": result["limit"],
+        "evidence_card_hashes": result["evidence_card_hashes"],
+        "model_context_route": result["model_context_route"],
+    })).removeprefix("sha256:")[:24]
+    if result["retrieval_id"] != retrieval_id or expected_id != retrieval_id:
+        raise CorpusRetrievalError("retrieval result identity differs")
+    query, _, _ = _load_query(root, result["query_embedding_id"])
+    if query["projection_id"] != result["projection_id"]:
+        raise CorpusRetrievalError("retrieval result projection differs")
+    projection = load_projection(root, result["projection_id"])
+    generation = require_active_generation(root, projection.manifest["corpus_generation_id"])
+    documents = {item["document_id"]: item for item in generation["entries"]}
+    card_fields = {
+        "schema_version", "projection_id", "rank", "document_id", "source_id",
+        "source_content_hash", "span_index", "start_offset", "end_offset",
+        "exact_text", "exact_text_hash", "cosine_terms", "trust_status",
+        "applicability_status", "creates_warrant", "content_hash",
+    }
+    for rank, (expected_hash, object_hash) in enumerate(zip(
+        result["evidence_card_hashes"], result["evidence_card_object_hashes"], strict=True,
+    ), start=1):
+        card = verify_sealed(
+            strict_canonical_object(
+                read_object(root, object_hash), maximum=16_777_216,
+                label="retrieval evidence card", code="retrieval_result_invalid",
+            ), label="retrieval evidence card", code="retrieval_result_invalid",
+        )
+        if set(card) != card_fields or card.get("schema_version") != EVIDENCE_CARD_SCHEMA_VERSION:
+            raise CorpusRetrievalError("retrieval evidence-card fields differ")
+        if (
+            card.get("content_hash") != expected_hash
+            or card.get("projection_id") != result["projection_id"]
+            or card.get("rank") != rank
+            or card.get("trust_status") != "untrusted_inspiration_candidate"
+            or card.get("applicability_status") != "unresolved"
+            or card.get("creates_warrant") is not False
+        ):
+            raise CorpusRetrievalError("retrieval evidence-card binding differs")
+        document = documents.get(card["document_id"])
+        if (
+            document is None or document["source_id"] != card["source_id"]
+            or document["source_sha256"] != card["source_content_hash"]
+        ):
+            raise CorpusRetrievalError("retrieval evidence-card source differs")
+        source = read_object(root, document["source_sha256"]).decode("utf-8", "strict")
+        exact = source[card["start_offset"]:card["end_offset"]]
+        if exact != card["exact_text"] or sha256_bytes(exact.encode()) != card["exact_text_hash"]:
+            raise CorpusRetrievalError("retrieval evidence-card exact span differs")
+    return result
 
 
 __all__ = [
     "CorpusRetrievalError", "Projection", "build_projection", "embed_query",
-    "load_projection", "retrieve_evidence",
+    "load_projection", "load_retrieval_result", "retrieve_evidence",
 ]

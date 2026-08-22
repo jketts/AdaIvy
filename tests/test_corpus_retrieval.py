@@ -13,13 +13,14 @@ from math_research.corpus_retrieval import (
     load_projection,
     retrieve_evidence,
 )
-from math_research.corpus_service.dataroot import initialize_data_root
+from math_research.corpus_service.dataroot import initialize_data_root, object_path, write_object
 from math_research.corpus_service.generation import record_takedown
 from math_research.corpus_service.policy import load_policy
 from math_research.corpus_service.ports import DirectoryArchiveSource
 from math_research.corpus_service.rightsstore import PolicyDerivedRightsWriter
 from math_research.corpus_service.service import ingest_tranche
 from math_research.corpus_service.snapshot import load_tranche_config
+from math_research.corpus_service.serialization import canonical_bytes, sealed
 from math_research.embedding.gateways import ScriptedEmbeddingGateway
 from math_research.embedding.partition import PartitionKey
 
@@ -109,6 +110,14 @@ class CorpusRetrievalTests(unittest.TestCase):
             self.assertFalse(cards[0]["creates_warrant"])
             self.assertTrue(cards[0]["exact_text"])
             self.assertEqual(first.key, load_projection(root, first.projection_id).key)
+            with self.assertRaises(CorpusRetrievalError):
+                retrieve_evidence(
+                    root, query_embedding_id=query["query_embedding_id"], limit=2,
+                    model_context_route={
+                        "processor_id": "processor.wrong", "provider": "openai",
+                        "model_identifier": "wrong", "at": T2,
+                    },
+                )
 
     def test_partition_and_processor_mismatch_fail_closed(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -134,6 +143,36 @@ class CorpusRetrievalTests(unittest.TestCase):
                     max_input_tokens=4096, timeout_milliseconds=1000, recorded_at=T2,
                 )
 
+    def test_query_manifest_refuses_resealed_policy_or_warrant_change(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            report = self._corpus(root)
+            projection = build_projection(
+                root, generation_id=report["generation_id"], key=self._key(),
+                gateway=self._gateway(), processor_id=PROCESSOR,
+                max_input_tokens=4096, timeout_milliseconds=1000, recorded_at=T2,
+            )
+            query_gateway = ScriptedEmbeddingGateway(
+                provider="openai", model_identifier=MODEL,
+                vectors={"query.e86498e1af2133bad22f88dc": (1.0, 0.0, 0.0)},
+            )
+            query = embed_query(
+                root, projection_id=projection.projection_id, query="alpha theorem",
+                gateway=query_gateway, processor_id=PROCESSOR,
+                max_input_tokens=4096, timeout_milliseconds=1000,
+            )
+            path = root / "generations" / "retrieval" / "queries" / (
+                query["query_embedding_id"] + ".json"
+            )
+            forged = dict(query)
+            forged["ranking_policy"] = "attacker_policy"
+            forged["content_hash"] = None
+            path.write_bytes(canonical_bytes(sealed(forged)) + b"\n")
+            with self.assertRaises(CorpusRetrievalError):
+                retrieve_evidence(
+                    root, query_embedding_id=query["query_embedding_id"], limit=2,
+                )
+
     def test_takedown_invalidates_projection_for_active_use(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -154,6 +193,28 @@ class CorpusRetrievalTests(unittest.TestCase):
             )
             with self.assertRaises(Exception):
                 load_projection(root, projection.projection_id)
+
+    def test_forged_projection_cannot_authorize_object_deletion(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._corpus(root)
+            sentinel = write_object(root, b"must survive forged projection")
+            directory = root / "generations" / "retrieval"
+            directory.mkdir(parents=True, exist_ok=True)
+            (directory / "retrievalgen.forged.json").write_text(
+                '{"vectors":[{"document_id":"doc-open-beta",'
+                f'"artifact_object_hash":"{sentinel}"}}]}}', encoding="utf-8",
+            )
+            writer = PolicyDerivedRightsWriter(
+                root, actor_id="human.repository-owner", valid_from=T2,
+                valid_until=None,
+            )
+            record_takedown(
+                root, document_id="doc-open-beta", actor_id="human.repository-owner",
+                reason_detail="forged deletion authority drill", recorded_at=T2,
+                rights_writer=writer,
+            )
+            self.assertTrue(object_path(root, sentinel).is_file())
 
 
 if __name__ == "__main__":

@@ -20,7 +20,7 @@ That complete path is now exercised by an offline, deterministic acceptance
 runtime; live effects remain separately activated. See
 [Capability Status](docs/CAPABILITY_STATUS.md) for the precise current state and
 [End-to-End Research Runtime Plan](docs/END_TO_END_RESEARCH_RUNTIME_PLAN.md) for
-the proposed direction of work.
+the delivered slices and remaining live-activation boundary.
 
 ## Current status
 
@@ -58,12 +58,14 @@ separately gated or pending:
 - the legacy `campaign run` command retains its compatibility contract,
   including a human novelty re-check; the new end-to-end path structurally
   records search before research and does not require that checkpoint; and
-- the offline fixture experiment is explicitly not a production sandbox run.
+- the offline fixture uses the bounded built-in exact experiment/verifier; the
+  generated-program OCI route remains a separately activated campaign path.
 
 `campaign resume ROOT` detects end-to-end campaign roots and replays completed
 action checkpoints without repeating paid work. It still performs the original
-terminal-finalization behavior for legacy campaign roots. An ambiguous intent
-is retained as unresolved rather than retried.
+terminal-finalization behavior for legacy campaign roots. An orphaned paid or
+irreversible intent is retained as unresolved rather than retried; an
+idempotent local projection may retry under the same key.
 
 Passing `make check` includes the complete offline fixture campaign. It does not
 activate or claim success for any live external capability.
@@ -73,6 +75,10 @@ Run that path directly with an external persistent data root:
 ```sh
 python3 -m math_research.cli campaign start work/campaign campaign.example \
   --data-root /path/outside/the/git/tree/adaivy-data \
+  --data-root-id dataroot.adaivy.primary --profile-id adaivy \
+  --max-model-requests 64 --max-embedding-requests 256 \
+  --max-network-requests 64 --max-tool-runs 64 \
+  --max-storage-bytes 1000000000 --max-wall-milliseconds 3600000 \
   --recorded-at 2026-08-22T00:10:00Z --problem problem.txt
 python3 -m math_research.cli campaign resume work/campaign
 ```
