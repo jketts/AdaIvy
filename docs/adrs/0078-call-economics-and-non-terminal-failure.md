@@ -56,9 +56,13 @@ provenance closure, bounds, and the human publication gate are unchanged.
 When a planner payload would exceed `max_context_bytes`, the gateway adapter
 collapses `previous_actions` entries oldest-first into deterministic
 summaries — `{collapsed: true, action_hash, action_type, branch_id, bounded
-rationale, recoverable_via: "read_artifact"}` — until the payload fits. Only
-if the payload still exceeds the bound with every entry collapsed does the
-call refuse, and that refusal is the recorded terminal
+rationale, full_action_retained_by_planner: true}` — until the payload fits.
+The hash commits to the canonical full action retained in the planner's
+bounded in-memory transcript; it is not presented as an artifact hash because
+actions whose substantive output is separately stored do not necessarily
+store their raw JSON in the artifact store. Only if the payload still exceeds
+the bound with every entry collapsed does the call refuse, and that refusal is
+the recorded terminal
 `context_bound_exhausted` (Slice 9), not a discarded run. Collapse is a pure
 function of the same inputs, so identical campaigns still produce identical
 requests.

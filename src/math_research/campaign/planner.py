@@ -215,8 +215,10 @@ class GatewayCampaignPlanner:
 
         When the payload would exceed the byte bound, `previous_actions`
         entries collapse OLDEST FIRST into hash + bounded-rationale summaries.
-        Only a payload that exceeds the bound with every entry collapsed
-        refuses, and that refusal is the
+        The hash commits to the canonical full action; it does not falsely
+        claim that every raw planner action is independently retrievable from
+        the artifact store. Only a payload that exceeds the bound with every
+        entry collapsed refuses, and that refusal is the
         recorded terminal `context_bound_exhausted`, never a discarded run.
         Collapse is a pure function of the same inputs, so identical
         campaigns still serialize identical requests.
