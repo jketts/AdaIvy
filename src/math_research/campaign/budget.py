@@ -19,6 +19,7 @@ from dataclasses import dataclass, replace
 from enum import Enum
 from typing import Callable
 
+from .credentials import CampaignRoutePolicy
 from .records import (
     CampaignProvenanceError,
     RecordStatus,
@@ -278,6 +279,9 @@ class BudgetCloseout:
     status: str
     exceeded_bounds: tuple[str, ...]
     capabilities: tuple[CapabilityCloseout, ...]
+    #: Closing totals for the authorized fallback model route, present exactly
+    #: when the budget carries a dedicated ``fallback_model`` sub-budget.
+    fallback_model: CapabilityCloseout | None
     total_cost_microusd: int
     remaining_total_cost_microusd: int
     wall_milliseconds_used: int
@@ -292,7 +296,8 @@ class BudgetCloseout:
     operational_hash: str = ""
 
     OPERATIONAL_FIELDS = frozenset({
-        "status", "exceeded_bounds", "capabilities", "total_cost_microusd",
+        "status", "exceeded_bounds", "capabilities", "fallback_model",
+        "total_cost_microusd",
         "remaining_total_cost_microusd", "wall_milliseconds_used",
         "remaining_wall_milliseconds", "charge_event_count",
         "failure_event_sequences", "rate_limit_event_sequences", "recorded_at",
@@ -322,17 +327,64 @@ class CampaignBudgetLedger:
     breached the ledger admits nothing further.
     """
 
-    def __init__(self, budget: CampaignBudget, *, recorded_at: Callable[[], str]) -> None:
+    def __init__(
+        self,
+        budget: CampaignBudget,
+        *,
+        recorded_at: Callable[[], str],
+        route_policy: CampaignRoutePolicy | None = None,
+    ) -> None:
         budget.verify_hashes()
+        if route_policy is not None and route_policy.fallback_profile_id is not None:
+            if budget.fallback_model is None:
+                raise CampaignBudgetError(
+                    "the route policy names a fallback profile but the campaign "
+                    "budget carries no dedicated fallback_model sub-budget; a "
+                    "fallback route may charge nothing without its own budget"
+                )
         self.budget = budget
         self.recorded_at = recorded_at
+        self.route_policy = route_policy
+        self._fallback_profile_id = (
+            route_policy.fallback_profile_id if route_policy is not None else None
+        )
         self._events: list[ChargeEvent] = []
         self._totals: dict[BudgetCapability, dict[str, int]] = {
             capability: {field: 0 for field in _QUANTITY_FIELDS}
             for capability in BudgetCapability
         }
+        self._fallback_totals: dict[str, int] = {
+            field: 0 for field in _QUANTITY_FIELDS
+        }
         self._exceeded: list[str] = []
         self._closed = False
+
+    def _model_bucket(
+        self, credential_profile_id: str | None,
+    ) -> tuple[str, SubBudget, dict[str, int]]:
+        """Which sub-budget a MODEL request charges, keyed by its profile.
+
+        With a route policy, a model request must name the primary or the
+        authorized fallback profile; anything else is an unauthorized route
+        and fails closed.  Without a policy (or a profile) everything is the
+        primary route, preserving the pre-fallback behaviour.
+        """
+
+        if credential_profile_id is None or self.route_policy is None:
+            return "model", self.budget.model, self._totals[BudgetCapability.MODEL]
+        if credential_profile_id == self.route_policy.primary_profile_id:
+            return "model", self.budget.model, self._totals[BudgetCapability.MODEL]
+        if credential_profile_id == self._fallback_profile_id:
+            if self.budget.fallback_model is None:
+                raise CampaignBudgetError(
+                    "the fallback route has no dedicated fallback_model "
+                    "sub-budget and may therefore charge nothing"
+                )
+            return "fallback_model", self.budget.fallback_model, self._fallback_totals
+        raise CampaignBudgetError(
+            f"profile {credential_profile_id!r} is neither the primary nor the "
+            "authorized fallback route of this campaign's frozen route policy"
+        )
 
     @property
     def events(self) -> tuple[ChargeEvent, ...]:
@@ -342,6 +394,7 @@ class CampaignBudgetLedger:
         self,
         capability: BudgetCapability,
         *,
+        credential_profile_id: str | None = None,
         requests: int = 1,
         input_tokens: int = 0,
         output_tokens: int = 0,
@@ -359,8 +412,11 @@ class CampaignBudgetLedger:
                 "request: " + ", ".join(sorted(set(self._exceeded)))
             )
         _positive(requests, "requests")
-        sub = self.budget.sub_budget(capability)
-        totals = self._totals[capability]
+        if capability is BudgetCapability.MODEL:
+            _, sub, totals = self._model_bucket(credential_profile_id)
+        else:
+            sub = self.budget.sub_budget(capability)
+            totals = self._totals[capability]
         reserved = {
             "requests": requests, "input_tokens": input_tokens,
             "output_tokens": output_tokens, "cost_microusd": cost_microusd,
@@ -401,6 +457,14 @@ class CampaignBudgetLedger:
     ) -> ChargeEvent:
         if self._closed:
             raise CampaignBudgetError("a closed budget accepts no further charge")
+        if capability is BudgetCapability.MODEL:
+            # Resolve the bucket BEFORE constructing the event: a fallback
+            # profile without its own sub-budget, or a profile outside the
+            # frozen route policy, is an unauthorized route and fails closed.
+            bucket_name, _, totals = self._model_bucket(credential_profile_id)
+        else:
+            bucket_name = capability.value
+            totals = self._totals[capability]
         event = ChargeEvent(
             sequence=len(self._events) + 1,
             campaign_id=self.budget.campaign_id,
@@ -421,18 +485,25 @@ class CampaignBudgetLedger:
             recorded_at=self.recorded_at(),
         ).finalized()
         self._events.append(event)
-        totals = self._totals[capability]
         for field in _QUANTITY_FIELDS:
             totals[field] += getattr(event, field)
-        self._note_breaches(capability)
+        self._note_breaches(bucket_name, totals)
         return event
 
     def _total_cost(self) -> int:
-        return sum(totals["cost_microusd"] for totals in self._totals.values())
+        return (
+            sum(totals["cost_microusd"] for totals in self._totals.values())
+            + self._fallback_totals["cost_microusd"]
+        )
 
-    def _note_breaches(self, capability: BudgetCapability) -> None:
-        sub = self.budget.sub_budget(capability)
-        totals = self._totals[capability]
+    def _bucket_limits(self, bucket_name: str) -> SubBudget:
+        if bucket_name == "fallback_model":
+            assert self.budget.fallback_model is not None
+            return self.budget.fallback_model
+        return self.budget.sub_budget(BudgetCapability(bucket_name))
+
+    def _note_breaches(self, bucket_name: str, totals: dict[str, int]) -> None:
+        sub = self._bucket_limits(bucket_name)
         checks = (
             ("requests", sub.max_requests),
             ("input_tokens", sub.max_input_tokens),
@@ -443,7 +514,7 @@ class CampaignBudgetLedger:
         )
         for field, limit in checks:
             if totals[field] > limit:
-                self._exceeded.append(f"{capability.value}.{field}")
+                self._exceeded.append(f"{bucket_name}.{field}")
         if self._total_cost() > self.budget.max_total_cost_microusd:
             self._exceeded.append("total.cost_microusd")
 
@@ -455,12 +526,11 @@ class CampaignBudgetLedger:
         exceeded = list(self._exceeded)
         if wall_milliseconds_used > self.budget.max_wall_milliseconds:
             exceeded.append("total.wall_milliseconds")
-        capabilities = []
-        for capability in BudgetCapability:
-            sub = self.budget.sub_budget(capability)
-            totals = self._totals[capability]
-            events = [item for item in self._events if item.capability is capability]
-            capabilities.append(CapabilityCloseout(
+        def _closeout(
+            capability: BudgetCapability, sub: SubBudget,
+            totals: dict[str, int], events: list[ChargeEvent],
+        ) -> CapabilityCloseout:
+            return CapabilityCloseout(
                 capability=capability,
                 requests_attempted=totals["requests"],
                 requests_completed=sum(
@@ -486,7 +556,32 @@ class CampaignBudgetLedger:
                 remaining_cost_microusd=sub.max_cost_microusd - totals["cost_microusd"],
                 remaining_bytes=sub.max_bytes - totals["bytes_transferred"],
                 remaining_documents=sub.max_documents - totals["documents"],
+            )
+
+        def _is_fallback(event: ChargeEvent) -> bool:
+            return (
+                event.capability is BudgetCapability.MODEL
+                and self._fallback_profile_id is not None
+                and event.credential_profile_id == self._fallback_profile_id
+            )
+
+        capabilities = []
+        for capability in BudgetCapability:
+            events = [
+                item for item in self._events
+                if item.capability is capability and not _is_fallback(item)
+            ]
+            capabilities.append(_closeout(
+                capability, self.budget.sub_budget(capability),
+                self._totals[capability], events,
             ))
+        fallback_closeout = None
+        if self.budget.fallback_model is not None:
+            fallback_closeout = _closeout(
+                BudgetCapability.MODEL, self.budget.fallback_model,
+                self._fallback_totals,
+                [item for item in self._events if _is_fallback(item)],
+            )
         return BudgetCloseout(
             campaign_id=self.budget.campaign_id,
             budget_content_hash=self.budget.content_hash,
@@ -494,6 +589,7 @@ class CampaignBudgetLedger:
             status="within_bounds" if not exceeded else "exceeded",
             exceeded_bounds=tuple(sorted(set(exceeded))),
             capabilities=tuple(capabilities),
+            fallback_model=fallback_closeout,
             total_cost_microusd=self._total_cost(),
             remaining_total_cost_microusd=(
                 self.budget.max_total_cost_microusd - self._total_cost()
@@ -569,7 +665,11 @@ def next_retry_delay_milliseconds(
 
     A provider-observed ``Retry-After`` can lengthen a wait (never shorten it
     below the schedule) and is itself capped by the policy ceiling; it never
-    grants an extra retry.
+    grants an extra retry.  Note the deliberate consequence: a Retry-After
+    ABOVE ``max_delay_milliseconds`` is truncated to the ceiling, so the next
+    attempt may fire before the provider asked -- the bounded-wall-time bound
+    wins over the provider hint, and the 429 that follows is preserved as
+    another recorded observation rather than looped on.
     """
 
     _nonnegative(retries_performed, "retries_performed")

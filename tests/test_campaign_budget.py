@@ -22,6 +22,7 @@ from math_research.campaign.budget import (
     backoff_delays_milliseconds,
     next_retry_delay_milliseconds,
 )
+from math_research.campaign.credentials import CampaignRoutePolicy
 from math_research.campaign.records import RecordStatus, UsageSource
 
 PRICING_HASH = "sha256:" + "a" * 64
@@ -257,6 +258,96 @@ class LedgerTests(unittest.TestCase):
                 recorded_at="2026-08-22T00:00:00Z",
                 schema_version="adaivy.campaign-budget.v2",
             )
+
+
+class FallbackBudgetTests(unittest.TestCase):
+    """ADR-0072 §1: a named fallback route needs its own dedicated budget."""
+
+    def policy(self):
+        return CampaignRoutePolicy(
+            primary_profile_id="adaivy",
+            fallback_profile_id="adaivy-fallback",
+            fallback_authorized_reason="operator authorized one named fallback",
+        ).finalized()
+
+    def test_a_named_fallback_without_a_dedicated_sub_budget_cannot_open(self):
+        with self.assertRaises(CampaignBudgetError):
+            CampaignBudgetLedger(
+                budget(), recorded_at=clock(), route_policy=self.policy(),
+            )
+
+    def test_a_zero_fallback_budget_admits_no_fallback_call(self):
+        ledger = CampaignBudgetLedger(
+            budget(fallback_model=sub(max_requests=0)),
+            recorded_at=clock(), route_policy=self.policy(),
+        )
+        # The primary route is unaffected...
+        ledger.admit(BudgetCapability.MODEL, credential_profile_id="adaivy")
+        # ...and the fallback route charges its OWN budget, which admits nothing.
+        with self.assertRaises(BudgetExhaustedError):
+            ledger.admit(
+                BudgetCapability.MODEL, credential_profile_id="adaivy-fallback",
+            )
+        # A charge that nevertheless arrives (the effect already happened) is
+        # preserved against the fallback bucket and breaches it by name.
+        charge(ledger, credential_profile_id="adaivy-fallback")
+        with self.assertRaises(BudgetExhaustedError):
+            ledger.admit(BudgetCapability.MODEL, credential_profile_id="adaivy")
+        closeout = ledger.close(wall_milliseconds_used=1)
+        self.assertEqual(closeout.status, "exceeded")
+        self.assertIn("fallback_model.requests", closeout.exceeded_bounds)
+
+    def test_fallback_charges_close_against_the_fallback_sub_budget(self):
+        ledger = CampaignBudgetLedger(
+            budget(fallback_model=sub(max_requests=2, max_cost_microusd=500)),
+            recorded_at=clock(), route_policy=self.policy(),
+        )
+        charge(ledger, credential_profile_id="adaivy", cost_microusd=200)
+        charge(ledger, credential_profile_id="adaivy-fallback", cost_microusd=300)
+        closeout = ledger.close(wall_milliseconds_used=1)
+        model = {item.capability: item for item in closeout.capabilities}[
+            BudgetCapability.MODEL
+        ]
+        self.assertEqual(model.requests_attempted, 1)
+        self.assertEqual(model.cost_microusd, 200)
+        self.assertIsNotNone(closeout.fallback_model)
+        self.assertEqual(closeout.fallback_model.requests_attempted, 1)
+        self.assertEqual(closeout.fallback_model.cost_microusd, 300)
+        self.assertEqual(closeout.fallback_model.remaining_requests, 1)
+        self.assertEqual(closeout.fallback_model.remaining_cost_microusd, 200)
+        # Both routes still close under the ONE campaign cost bound.
+        self.assertEqual(closeout.total_cost_microusd, 500)
+        self.assertEqual(closeout.status, "within_bounds")
+
+    def test_a_fallback_overshoot_names_the_fallback_bound(self):
+        ledger = CampaignBudgetLedger(
+            budget(fallback_model=sub(max_cost_microusd=100)),
+            recorded_at=clock(), route_policy=self.policy(),
+        )
+        charge(ledger, credential_profile_id="adaivy-fallback", cost_microusd=150)
+        closeout = ledger.close(wall_milliseconds_used=1)
+        self.assertEqual(closeout.status, "exceeded")
+        self.assertEqual(closeout.exceeded_bounds, ("fallback_model.cost_microusd",))
+
+    def test_a_profile_outside_the_route_policy_charges_nothing(self):
+        ledger = CampaignBudgetLedger(
+            budget(fallback_model=sub()), recorded_at=clock(),
+            route_policy=self.policy(),
+        )
+        with self.assertRaises(CampaignBudgetError):
+            ledger.admit(
+                BudgetCapability.MODEL, credential_profile_id="host-claude",
+            )
+        with self.assertRaises(CampaignBudgetError):
+            charge(ledger, credential_profile_id="host-claude")
+        self.assertEqual(ledger.events, ())
+
+    def test_without_a_route_policy_the_ledger_behaves_as_before(self):
+        ledger = CampaignBudgetLedger(budget(), recorded_at=clock())
+        ledger.admit(BudgetCapability.MODEL, credential_profile_id="adaivy")
+        charge(ledger)
+        closeout = ledger.close(wall_milliseconds_used=1)
+        self.assertIsNone(closeout.fallback_model)
 
 
 class BackoffTests(unittest.TestCase):

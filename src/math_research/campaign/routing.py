@@ -42,7 +42,9 @@ class ProfileRoutingError(CredentialProfileError):
 
 
 def _require_matching_selection(
-    profile: CredentialProfile, selection: ProfileSelectionRecord,
+    profile: CredentialProfile,
+    selection: ProfileSelectionRecord,
+    ledger: CampaignBudgetLedger,
 ) -> None:
     profile.verify_hashes()
     selection.verify_hashes()
@@ -53,6 +55,11 @@ def _require_matching_selection(
     ):
         raise ProfileRoutingError(
             "the recorded profile selection does not match the supplied profile"
+        )
+    if selection.campaign_id != ledger.budget.campaign_id:
+        raise ProfileRoutingError(
+            "the profile selection was recorded for a different campaign than "
+            "the budget it would charge"
         )
 
 
@@ -86,7 +93,7 @@ class ProfileBoundModelGateway:
         ledger: CampaignBudgetLedger,
         secret_values: tuple[str, ...] = (),
     ) -> None:
-        _require_matching_selection(profile, selection)
+        _require_matching_selection(profile, selection, ledger)
         _require_matching_pricing(
             profile, pricing, model_identifier=profile.model_identifier,
         )
@@ -122,14 +129,32 @@ class ProfileBoundModelGateway:
             "max_output_tokens": request.max_output_tokens,
         })
         # Fail closed BEFORE the effect: an exhausted budget performs no call.
-        self.ledger.admit(BudgetCapability.MODEL, requests=1)
-        result = self.gateway.complete(request, preparation)
+        self.ledger.admit(
+            BudgetCapability.MODEL,
+            credential_profile_id=self.profile.profile_id,
+            requests=1,
+        )
+        try:
+            result = self.gateway.complete(request, preparation)
+        except Exception as error:
+            # The attempt happened and may have been billable: preserve it as
+            # a FAILED charge before re-raising.  Only the exception CLASS is
+            # recorded -- a provider exception message can carry a credential,
+            # so the message is deliberately absent from the event.
+            self._record_exception(request.purpose, request_hash, error)
+            raise
 
         identity_matches = (
             result.provider == self.profile.provider
             and result.model_identifier == self.profile.model_identifier
         )
         status = _model_status(result.status)
+        # Only provider-reported usage is counted here.  A LOCALLY_MEASURED
+        # usage source from an adapter is mapped to UNAVAILABLE by this
+        # wrapper: the campaign boundary has no verifier for locally measured
+        # token claims yet, and recording them as measured would make an
+        # unverified number look authoritative.  Documented gap for the
+        # wiring slice.
         usage_reported = result.usage.usage_source == "api_reported"
         cost = (
             estimate_cost_microusd(
@@ -140,6 +165,10 @@ class ProfileBoundModelGateway:
             if usage_reported else 0
         )
         failure = result.provider_failure
+        # A 429 is preserved as a rate-limit observation.  The diagnostic does
+        # not carry the Retry-After header, so the magnitude is recorded as 0
+        # ("observed, magnitude unknown"); surfacing the real header value is
+        # a documented gap for the Phase 2 diagnostic, not for this ledger.
         rate_limited = failure is not None and failure.http_status_code == 429
         classification: str | None = None
         if not identity_matches:
@@ -171,6 +200,20 @@ class ProfileBoundModelGateway:
             )
         return result
 
+    def _record_exception(
+        self, purpose: str, request_hash: str, error: Exception,
+    ) -> None:
+        event = self.ledger.charge(
+            capability=BudgetCapability.MODEL,
+            credential_profile_id=self.profile.profile_id,
+            purpose=purpose,
+            status=RecordStatus.FAILED,
+            request_hash=request_hash,
+            usage_source=UsageSource.UNAVAILABLE,
+            failure_classification=f"gateway_exception:{type(error).__name__}",
+        )
+        assert_no_secret_values(event, self.secret_values)
+
 
 class ProfileBoundEmbeddingGateway:
     """Wrap an ADR-0069 embedding gateway inside the same selected profile."""
@@ -186,7 +229,7 @@ class ProfileBoundEmbeddingGateway:
         purpose: str,
         secret_values: tuple[str, ...] = (),
     ) -> None:
-        _require_matching_selection(profile, selection)
+        _require_matching_selection(profile, selection, ledger)
         if profile.embedding_model_identifier is None:
             raise ProfileRoutingError(
                 f"profile {profile.profile_id!r} names no embedding model; an "
@@ -220,12 +263,33 @@ class ProfileBoundEmbeddingGateway:
             "max_input_tokens": request.max_input_tokens,
         })
         self.ledger.admit(BudgetCapability.EMBEDDING, requests=1, documents=1)
-        result = self.gateway.embed(request)
+        try:
+            result = self.gateway.embed(request)
+        except Exception as error:
+            # Preserve the attempt: the text may already have been disclosed
+            # to the processor, so the document counts against the budget.
+            # Only the exception class is recorded; a provider exception
+            # message can carry a credential.
+            event = self.ledger.charge(
+                capability=BudgetCapability.EMBEDDING,
+                credential_profile_id=self.profile.profile_id,
+                purpose=self.purpose,
+                status=RecordStatus.FAILED,
+                request_hash=request_hash,
+                usage_source=UsageSource.UNAVAILABLE,
+                documents=1,
+                failure_classification=f"gateway_exception:{type(error).__name__}",
+            )
+            assert_no_secret_values(event, self.secret_values)
+            raise
 
         identity_matches = (
             result.provider == self.profile.provider
             and result.model_identifier == self.profile.embedding_model_identifier
         )
+        # As on the model route: anything other than provider-reported usage
+        # (fixture, locally measured) is recorded as UNAVAILABLE with zero
+        # tokens rather than as an unverified measurement.  Documented gap.
         usage_reported = result.usage.usage_source == "api_reported"
         cost = (
             estimate_cost_microusd(

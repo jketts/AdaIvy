@@ -26,6 +26,7 @@ from math_research.campaign.budget import (
 )
 from math_research.campaign.credentials import (
     DEFAULT_LIVE_PROFILE_ID,
+    CampaignRoutePolicy,
     CredentialProfile,
     CredentialProfileError,
     select_credential_profile,
@@ -492,6 +493,115 @@ class RoutingRefusalTests(unittest.TestCase):
                 profile=built, selection=selection,
                 gateway=ScriptedProviderGateway([]),
                 pricing=embedding_pricing(), ledger=ledger,
+            )
+
+    def test_a_raising_model_gateway_leaves_one_failed_event_and_propagates(self):
+        class Exploding:
+            def __init__(self):
+                self.calls = 0
+
+            def prepare(self, request):
+                return None
+
+            def complete(self, request, preparation=None):
+                self.calls += 1
+                raise ValueError("transport exploded; message never recorded")
+
+        inner = Exploding()
+        model_gateway, _, ledger = bound_gateways(inner=inner)
+        with self.assertRaises(ValueError):
+            model_gateway.complete(model_request())
+        self.assertEqual(inner.calls, 1)
+        self.assertEqual(len(ledger.events), 1)
+        event = ledger.events[0]
+        self.assertIs(event.status, RecordStatus.FAILED)
+        self.assertEqual(event.failure_classification, "gateway_exception:ValueError")
+        self.assertIs(event.usage_source, UsageSource.UNAVAILABLE)
+        self.assertEqual((event.input_tokens, event.output_tokens,
+                          event.cost_microusd), (0, 0, 0))
+        self.assertNotIn("message never recorded", event.failure_classification)
+
+    def test_a_raising_embedding_gateway_leaves_one_failed_event_and_propagates(self):
+        class ExplodingEmbedder:
+            def embed(self, request):
+                raise RuntimeError("embedding transport exploded")
+
+        _, embedding_gateway, ledger = bound_gateways(embedder=ExplodingEmbedder())
+        with self.assertRaises(RuntimeError):
+            embedding_gateway.embed(embedding_request())
+        self.assertEqual(len(ledger.events), 1)
+        event = ledger.events[0]
+        self.assertIs(event.status, RecordStatus.FAILED)
+        self.assertEqual(event.failure_classification, "gateway_exception:RuntimeError")
+        self.assertEqual(event.documents, 1)
+        self.assertIs(event.usage_source, UsageSource.UNAVAILABLE)
+
+    def test_a_fallback_route_without_its_own_budget_admits_no_call(self):
+        # ADR-0072 audit repro: a gateway bound to the authorized fallback
+        # profile must charge the DEDICATED fallback sub-budget, never the
+        # primary model sub-budget.
+        fallback = CredentialProfile(
+            profile_id="adaivy-fallback", provider="azure_openai",
+            model_identifier="gpt-5.6-sol",
+            embedding_model_identifier="text-embedding-3-large",
+            endpoint_settings=profile().endpoint_settings,
+            credential_source="env-file.adaivy-fallback",
+        ).finalized()
+        _, selection = select_credential_profile(
+            {fallback.profile_id: fallback}, fallback.profile_id,
+            campaign_id="campaign.slice2.exit",
+            selected_at="2026-08-22T00:00:00Z",
+            alternate_selection_reason="named fallback route after provider failure",
+        )
+        policy = CampaignRoutePolicy(
+            primary_profile_id=DEFAULT_LIVE_PROFILE_ID,
+            fallback_profile_id="adaivy-fallback",
+            fallback_authorized_reason="operator authorized one named fallback",
+        ).finalized()
+        ledger = CampaignBudgetLedger(
+            campaign_budget(fallback_model=SubBudget(
+                max_requests=0, max_input_tokens=0, max_output_tokens=0,
+                max_cost_microusd=0, max_bytes=0, max_documents=0,
+            )),
+            recorded_at=clock(), route_policy=policy,
+        )
+        inner = ScriptedProviderGateway([
+            (action("derive", artifact_text="x"), ModelResultStatus.SUCCEEDED),
+        ])
+        gateway = ProfileBoundModelGateway(
+            profile=fallback, selection=selection, gateway=inner,
+            pricing=model_pricing(), ledger=ledger,
+        )
+        with self.assertRaises(BudgetExhaustedError):
+            gateway.complete(model_request())
+        # Refused BEFORE the provider adapter; nothing hit the primary budget.
+        self.assertEqual(inner.requests, [])
+        self.assertEqual(ledger.events, ())
+        ledger.admit(
+            BudgetCapability.MODEL,
+            credential_profile_id=DEFAULT_LIVE_PROFILE_ID,
+        )
+
+    def test_a_selection_for_another_campaign_cannot_charge_this_budget(self):
+        built = profile()
+        _, selection = select_credential_profile(
+            {built.profile_id: built}, built.profile_id,
+            campaign_id="campaign.other",
+            selected_at="2026-08-22T00:00:00Z",
+        )
+        ledger = CampaignBudgetLedger(campaign_budget(), recorded_at=clock())
+        with self.assertRaises(ProfileRoutingError):
+            ProfileBoundModelGateway(
+                profile=built, selection=selection,
+                gateway=ScriptedProviderGateway([]),
+                pricing=model_pricing(), ledger=ledger,
+            )
+        with self.assertRaises(ProfileRoutingError):
+            ProfileBoundEmbeddingGateway(
+                profile=built, selection=selection,
+                gateway=ScriptedEmbeddingProvider(),
+                pricing=embedding_pricing(), ledger=ledger,
+                purpose="corpus_embedding",
             )
 
     def test_a_secret_value_in_a_charge_record_is_refused(self):

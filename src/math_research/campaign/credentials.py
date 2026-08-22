@@ -17,6 +17,7 @@ records carry identifiers, sources, and hashes only.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 from dataclasses import dataclass, fields, replace
@@ -359,9 +360,11 @@ class CampaignRoutePolicy:
     """The route authorization frozen at campaign start.
 
     Provider failure is terminal for a route unless this policy names a
-    fallback profile.  The fallback carries no implicit budget: the budget
-    module requires a dedicated sub-budget before a fallback route may charge
-    anything, and there is never an implicit fallback to the host agent.
+    fallback profile.  The fallback carries no implicit budget: a
+    `CampaignBudgetLedger` constructed with this policy refuses to open when
+    the budget lacks a dedicated ``fallback_model`` sub-budget, and refuses
+    any fallback-profile model charge against the primary sub-budget.  There
+    is never an implicit fallback to the host agent.
     """
 
     primary_profile_id: str
@@ -418,12 +421,39 @@ class CampaignRoutePolicy:
         return self.fallback_profile_id
 
 
-def assert_no_secret_values(payload: Any, secrets: Iterable[str]) -> None:
-    """Refuse a record whose serialized form contains configured secret bytes."""
+def _walk_strings(value: Any) -> Iterable[str]:
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, Mapping):
+        for key, item in value.items():
+            yield str(key)
+            yield from _walk_strings(item)
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            yield from _walk_strings(item)
 
-    blob = canonical_bytes(public_value(payload)).decode("utf-8")
+
+def assert_no_secret_values(payload: Any, secrets: Iterable[str]) -> None:
+    """Refuse a record that contains configured secret material anywhere.
+
+    The scan walks the DECODED structure's strings rather than only grepping
+    the serialized blob: a secret containing ``"`` or ``\\`` is JSON-escaped
+    in the canonical bytes and a raw substring comparison would miss it.  The
+    escaped form is additionally checked against the blob as belt and braces.
+    """
+
+    decoded = public_value(payload)
+    blob = canonical_bytes(decoded).decode("utf-8")
+    strings = tuple(_walk_strings(decoded))
     for secret in secrets:
-        if secret and secret in blob:
+        if not secret:
+            continue
+        escaped = json.dumps(secret, ensure_ascii=False)[1:-1]
+        if (
+            any(secret in item for item in strings)
+            or secret in blob
+            or escaped in blob
+        ):
             raise CredentialProfileError(
                 "a campaign record contains secret credential material"
             )

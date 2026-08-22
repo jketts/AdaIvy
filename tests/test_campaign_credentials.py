@@ -299,6 +299,25 @@ class SecretScanTests(unittest.TestCase):
     def test_empty_secrets_scan_nothing(self):
         assert_no_secret_values({"note": "clean"}, ("",))
 
+    def test_a_json_escaped_secret_cannot_slip_past_the_scan(self):
+        # A secret containing a quote or backslash is escaped in canonical
+        # JSON; a raw substring comparison against the blob would miss it.
+        for secret in ('sk-abc"def', "sk-abc\\def", 'sk-a"b\\c\nd'):
+            with self.assertRaises(CredentialProfileError):
+                assert_no_secret_values(
+                    {"purpose": f"leak {secret} here"}, (secret,),
+                )
+            with self.assertRaises(CredentialProfileError):
+                assert_no_secret_values(
+                    {f"key {secret}": "value"}, (secret,),
+                )
+
+    def test_nested_structures_are_scanned(self):
+        with self.assertRaises(CredentialProfileError):
+            assert_no_secret_values(
+                {"outer": [{"inner": ('x', f'held {SECRET}')}]}, (SECRET,),
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
