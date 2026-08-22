@@ -529,7 +529,12 @@ Stopping rules:
 
 **Covered by existing AdaIvy capabilities.** Declarative problem intake and its
 canonical hashing, which produce the dossier this file accompanies. Exact
-integer arithmetic in the standard library, which is all the slice needs.
+integer arithmetic in the standard library, which is all the slice needs, as
+repository-authored code under `src/` exercised by the offline suite — ad-hoc
+exact arithmetic written and run by the driving agent in a scratch workspace is
+NOT this capability, but an unmet AdaIvy capability and an external-origin
+contribution under ADR-0057 section 5, imported with an `external_codex` or
+`human` root and never relabelled as AdaIvy work.
 Deterministic serialization, content hashing, and the append-only record path
 used to retain certificates and failures. The bounded offline harness under
 `make check`, which runs with no network, no model provider, and no container

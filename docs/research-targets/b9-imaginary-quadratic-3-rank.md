@@ -460,12 +460,17 @@ Stopping rules:
 
 - Phase 1 declarative problem intake and trust policy; the intake file validates
   and creates no warrant, novelty, or significance.
-- Exact integer arithmetic with the Python standard library. Discriminants,
-  Hessians, form reduction, squarefree sieving, rational-root irreducibility
-  tests, Gauss composition of quadratic forms, and Gaussian elimination over
-  `F_3` are all integer computations, so nothing here needs a third-party
-  numeric package. This matches the engineering rule preferring the standard
-  library for the harness.
+- Exact integer arithmetic with the Python standard library, as
+  repository-authored code under `src/` exercised by the offline suite.
+  Discriminants, Hessians, form reduction, squarefree sieving, rational-root
+  irreducibility tests, Gauss composition of quadratic forms, and Gaussian
+  elimination over `F_3` are all integer computations, so nothing here needs a
+  third-party numeric package. This matches the engineering rule preferring the
+  standard library for the harness. Ad-hoc exact arithmetic written and run by
+  the driving agent in a scratch workspace is NOT this capability: it is an
+  unmet AdaIvy capability and an external-origin contribution under ADR-0057
+  section 5, imported with an `external_codex` or `human` root and never
+  relabelled as AdaIvy work.
 - Deterministic serialization, explicit schema versions, and content hashing for
   form lists, frontier tables, and certificates.
 - Bounded subprocess execution with captured stdout and stderr, no network, for

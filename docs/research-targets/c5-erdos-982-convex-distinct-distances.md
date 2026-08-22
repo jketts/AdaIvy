@@ -690,8 +690,13 @@ intake file's `evaluation_protocol`.
 - The entire rational-grid slice: integer arithmetic and `fractions` from the
   standard library, deterministic serialization, explicit schema versions,
   content hashes, and bounded no-network subprocesses with captured
-  stdout/stderr. No third-party package is needed, which matches the standing
-  preference for the standard library in the harness.
+  stdout/stderr, as repository-authored code under `src/` exercised by the
+  offline suite. No third-party package is needed, which matches the standing
+  preference for the standard library in the harness. Ad-hoc exact arithmetic
+  written and run by the driving agent in a scratch workspace is NOT this
+  capability: it is an unmet AdaIvy capability and an external-origin
+  contribution under ADR-0057 section 5, imported with an `external_codex` or
+  `human` root and never relabelled as AdaIvy work.
 - Machine-readable preservation of failed attempts and unresolved outcomes,
   which is what section 9 consists of.
 - ADR-0055 pre-research novelty re-check, the mechanism that consumes section 6

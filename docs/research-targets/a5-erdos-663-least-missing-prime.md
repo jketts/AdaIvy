@@ -469,7 +469,11 @@ Stopping rules:
   warrants.
 - Exact arbitrary-precision integer arithmetic, CRT reconstruction, and exact
   rational arithmetic as project-authored standard-library code under `src/`,
-  with deterministic serialization, content hashes, and captured output.
+  with deterministic serialization, content hashes, and captured output. Ad-hoc
+  exact arithmetic written and run by the driving agent in a scratch workspace is
+  NOT this capability: it is an unmet AdaIvy capability and an external-origin
+  contribution under ADR-0057 section 5, imported with an `external_codex` or
+  `human` root and never relabelled as AdaIvy work.
 - Rational interval enclosures with rational endpoints used for exclusion only —
   the exact-arithmetic replacement named in the authoring spec for a numerical
   comparison.

@@ -425,7 +425,12 @@ Stopping rules:
 
 **Covered by existing AdaIvy capabilities.** Exact unbounded integer arithmetic
 and exact integer square root from the standard library, which is everything
-sections 7 and 8 need. Declarative problem intake and the Phase 1 trust policy.
+sections 7 and 8 need, as repository-authored code under `src/` exercised by the
+offline suite — ad-hoc exact arithmetic written and run by the driving agent in a
+scratch workspace is NOT this capability, but an unmet AdaIvy capability and an
+external-origin contribution under ADR-0057 section 5, imported with an
+`external_codex` or `human` root and never relabelled as AdaIvy work.
+Declarative problem intake and the Phase 1 trust policy.
 Deterministic serialization, content hashing, and canonical records for the R2
 envelope. The falsifiability-probe pattern already used by the Phase 6
 generality suite and the publication projection, which is what section 7.1's

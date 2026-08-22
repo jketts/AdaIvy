@@ -474,7 +474,12 @@ rather than declared, which ADR-0035 already implements for the noncommuting
 Phase 5 slice and which is exactly the arithmetic sections 1.2, 7, and 8 need.
 The verifier-not-solver separation, also from ADR-0035: a certificate is checked
 against the frozen predicate and its origin does not create trust. Exact
-rational arithmetic. Declarative problem intake and the Phase 1 trust policy.
+rational arithmetic, as repository-authored code under `src/` exercised by the
+offline suite — ad-hoc exact arithmetic written and run by the driving agent in a
+scratch workspace is NOT this capability, but an unmet AdaIvy capability and an
+external-origin contribution under ADR-0057 section 5, imported with an
+`external_codex` or `human` root and never relabelled as AdaIvy work.
+Declarative problem intake and the Phase 1 trust policy.
 Deterministic serialization, content hashing, canonical records, and the
 falsifiability-probe pattern from the Phase 6 generality suite, which sections
 7.1 and 7.4 reuse. Machine-readable preservation of failed and incomplete

@@ -437,7 +437,11 @@ Stopping rules:
   novelty, or significance, as measured in the validation step.
 - Exact finite-domain combinatorial computation implemented as project-authored
   standard-library code under `src/`, with deterministic serialization, content
-  hashes, and captured output, per the repository engineering rules.
+  hashes, and captured output, per the repository engineering rules. Ad-hoc
+  exact arithmetic written and run by the driving agent in a scratch workspace is
+  NOT this capability: it is an unmet AdaIvy capability and an external-origin
+  contribution under ADR-0057 section 5, imported with an `external_codex` or
+  `human` root and never relabelled as AdaIvy work.
 - Preservation of failed attempts and unresolved outcomes in machine-readable
   form, which section 9 relies on.
 - Publication projection under ADR-0036 if any result is ever rendered, with a

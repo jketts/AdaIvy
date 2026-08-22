@@ -467,7 +467,12 @@ Stopping rules:
 ## 12. Capability check
 
 **Covered by existing AdaIvy capabilities.** Exact unbounded integer arithmetic
-from the standard library, which is all sections 7 and 8 require. Declarative
+from the standard library, which is all sections 7 and 8 require, as
+repository-authored code under `src/` exercised by the offline suite — ad-hoc
+exact arithmetic written and run by the driving agent in a scratch workspace is
+NOT this capability, but an unmet AdaIvy capability and an external-origin
+contribution under ADR-0057 section 5, imported with an `external_codex` or
+`human` root and never relabelled as AdaIvy work. Declarative
 problem intake and the Phase 1 trust policy, which is what the accompanying JSON
 enters. Deterministic serialization, content hashing, and canonical records for
 the R2 exclusion records. Machine-readable preservation of failed attempts,

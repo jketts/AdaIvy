@@ -477,8 +477,13 @@ Stopping rules:
 - Phase 1 declarative problem intake and trust policy; the intake file validates
   and creates no warrant, novelty, or significance.
 - Exact integer and exact rational arithmetic from the Python standard library,
-  including `fractions` for the normalization step. No third-party numeric
-  package is needed, matching the standard-library preference for the harness.
+  including `fractions` for the normalization step, as repository-authored code
+  under `src/` exercised by the offline suite. No third-party numeric package is
+  needed, matching the standard-library preference for the harness. Ad-hoc exact
+  arithmetic written and run by the driving agent in a scratch workspace is NOT
+  this capability: it is an unmet AdaIvy capability and an external-origin
+  contribution under ADR-0057 section 5, imported with an `external_codex` or
+  `human` root and never relabelled as AdaIvy work.
 - Deterministic serialization, explicit schema versions, and content hashing for
   instances, violation tables, and the exhaustion record.
 - Bounded subprocess execution with captured stdout and stderr, no network, for

@@ -424,9 +424,16 @@ Stopping rules:
   that artifact, and `problem validate` plus `problem demo` confirm it creates
   no trust (`logical_status unknown`, novelty and significance `not_assessed`,
   zero warrants).
-- Exact integer and rational arithmetic with the standard library only, as used
-  by the Graffiti-322 precedent in `work/graffiti-322-20260821-round2/`. The
+- Exact integer and rational arithmetic with the standard library only, as
+  repository-authored code under `src/` exercised by the offline suite. The
   whole slice needs nothing beyond `int`, `Fraction`, and bit operations.
+  Ad-hoc exact arithmetic written and run by the driving agent in a scratch
+  workspace, which is the shape the `work/graffiti-322-20260821-round2/`
+  precedent actually took, is NOT this capability. It is an unmet AdaIvy
+  capability, because the ADR-0057 campaign has no operator entrypoint to
+  record a program and its run against, and anything produced that way is an
+  external-origin contribution under ADR-0057 section 5 — imported with an
+  `external_codex` or `human` root and never relabelled as AdaIvy work.
 - ADR-0055 two-fresh-novelty-rechecks: the mechanism that gates C1 and C2
   before research starts, and the mechanism that would gate any announcement.
 - Phase 3A research memory for machine-readable retention of the frontier,

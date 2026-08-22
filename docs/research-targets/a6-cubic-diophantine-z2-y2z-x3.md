@@ -419,7 +419,11 @@ Stopping rules:
   Pollard rho, divisor enumeration, exact integer square roots, and polynomial
   coefficient comparison over `Z` — all project-authored standard-library work
   under `src/`, with deterministic serialization, content hashes, and captured
-  output. The sweep reported in section 7 is exactly this.
+  output. The sweep reported in section 7 is exactly this. Ad-hoc exact
+  arithmetic written and run by the driving agent in a scratch workspace is NOT
+  this capability: it is an unmet AdaIvy capability and an external-origin
+  contribution under ADR-0057 section 5, imported with an `external_codex` or
+  `human` root and never relabelled as AdaIvy work.
 - Machine-readable preservation of failed routes, which the refuted-family
   ledger in section 9 depends on.
 - ADR-0055 pre-research novelty re-check, required by section 6.

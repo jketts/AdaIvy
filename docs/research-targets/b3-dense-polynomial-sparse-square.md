@@ -505,7 +505,12 @@ Stopping rules:
 **Covered by existing AdaIvy capabilities.** Declarative problem intake with
 canonical hashing. Exact arbitrary-precision integer arithmetic from the
 standard library, which is all that convolution, the symmetry quotient, and both
-verifiers need. Deterministic serialization, content hashing, and the
+verifiers need, as repository-authored code under `src/` exercised by the offline
+suite — ad-hoc exact arithmetic written and run by the driving agent in a scratch
+workspace is NOT this capability, but an unmet AdaIvy capability and an
+external-origin contribution under ADR-0057 section 5, imported with an
+`external_codex` or `human` root and never relabelled as AdaIvy work.
+Deterministic serialization, content hashing, and the
 append-only record path for certificates and preserved failures. The offline
 `make check` harness, with no network, model provider, or container runtime. The
 ADR-0047 bounded central-lead runtime for the construction-route stage, as

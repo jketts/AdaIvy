@@ -581,7 +581,12 @@ intake file's `evaluation_protocol`.
 - Deterministic serialization, explicit schema versions, content hashes, and
   bounded subprocesses with captured stdout/stderr and no network, per the
   standing engineering rules. The whole slice is integer arithmetic in the
-  standard library and needs no third-party package.
+  standard library and needs no third-party package, as repository-authored code
+  under `src/` exercised by the offline suite. Ad-hoc exact arithmetic written
+  and run by the driving agent in a scratch workspace is NOT this capability: it
+  is an unmet AdaIvy capability and an external-origin contribution under
+  ADR-0057 section 5, imported with an `external_codex` or `human` root and
+  never relabelled as AdaIvy work.
 - Machine-readable preservation of failed attempts, which is what section 9's
   exclusion set is.
 - ADR-0055 pre-research novelty re-check, which is the mechanism that consumes

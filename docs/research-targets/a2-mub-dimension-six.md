@@ -565,7 +565,14 @@ Stopping rules:
   complete finite computations needing no certificate supplier; stage 3 does,
   and that is the boundary.
 - Exhaustive finite search with exact arithmetic and a replayable node log, as
-  in the Graffiti-322 precedent.
+  repository-authored code under `src/` exercised by the offline suite. Ad-hoc
+  exact search written and run by the driving agent in a scratch workspace,
+  which is the shape the `work/graffiti-322-20260821-round2/` precedent actually
+  took, is NOT this capability. It is an unmet AdaIvy capability, because the
+  ADR-0057 campaign has no operator entrypoint to record a program and its run
+  against, and anything produced that way is an external-origin contribution
+  under ADR-0057 section 5 — imported with an `external_codex` or `human` root
+  and never relabelled as AdaIvy work.
 - ADR-0055 two-fresh-novelty-rechecks: the gate for R1 to R7.
 - Phase 3A memory for machine-readable retention of the matrix list, the class
   partition, the exclusion set, the frontier, and route refutations.

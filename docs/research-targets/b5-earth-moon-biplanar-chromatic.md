@@ -432,9 +432,14 @@ Stopping rules.
 
 Covered by existing capabilities.
 
-- Exact integer and combinatorial computation from the standard library:
+- Exact integer and combinatorial computation from the standard library, as
+  repository-authored code under `src/` exercised by the offline suite:
   rotation systems, face tracing, Euler counts, edge-list canonicalization,
-  clique checking. No third-party package and no floating point.
+  clique checking. No third-party package and no floating point. Ad-hoc exact
+  arithmetic written and run by the driving agent in a scratch workspace is NOT
+  this capability: it is an unmet AdaIvy capability and an external-origin
+  contribution under ADR-0057 section 5, imported with an `external_codex` or
+  `human` root and never relabelled as AdaIvy work.
 - Deterministic serialization, content hashing, bounded subprocesses, captured
   output, no-network execution, and durable machine-readable retention of
   failures under `make report`.

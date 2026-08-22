@@ -450,9 +450,14 @@ Stopping rules.
 Covered by existing capabilities.
 
 - Exact integer and rational arithmetic with unbounded integers from the
-  standard library: the Chebyshev recurrence, integer polynomial arithmetic,
+  standard library, as repository-authored code under `src/` exercised by the
+  offline suite: the Chebyshev recurrence, integer polynomial arithmetic,
   Sturm sequences over `Q`, exact evaluation at rationals, exact rational
-  bisection on `B`. No third-party package and no floating point.
+  bisection on `B`. No third-party package and no floating point. Ad-hoc exact
+  arithmetic written and run by the driving agent in a scratch workspace is NOT
+  this capability: it is an unmet AdaIvy capability and an external-origin
+  contribution under ADR-0057 section 5, imported with an `external_codex` or
+  `human` root and never relabelled as AdaIvy work.
 - Deterministic serialization, content hashing, bounded subprocesses, captured
   output, no-network execution, and durable machine-readable retention of
   failures and unresolved outcomes under `make report`.

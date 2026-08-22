@@ -457,9 +457,15 @@ Stopping rules:
 - Phase 1 declarative problem intake and trust policy: the intake file
   validates against `schemas/problem-definition-v1.schema.json` and creates no
   warrant, novelty, or significance.
-- Exact integer arithmetic with the Python standard library. The whole slice is
-  integer set manipulation; nothing needs a third-party numeric package, which
-  matches the engineering rule preferring the standard library for the harness.
+- Exact integer arithmetic with the Python standard library, as
+  repository-authored code under `src/` exercised by the offline suite. The
+  whole slice is integer set manipulation; nothing needs a third-party numeric
+  package, which matches the engineering rule preferring the standard library
+  for the harness. Ad-hoc exact arithmetic written and run by the driving agent
+  in a scratch workspace is NOT this capability: it is an unmet AdaIvy
+  capability and an external-origin contribution under ADR-0057 section 5,
+  imported with an `external_codex` or `human` root and never relabelled as
+  AdaIvy work.
 - Deterministic serialization, explicit schema versions, and content hashing
   for the canonical family records and the exhaustion record.
 - Bounded subprocess execution with captured stdout and stderr, no network, for

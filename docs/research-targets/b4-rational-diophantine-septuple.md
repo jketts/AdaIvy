@@ -382,7 +382,12 @@ Covered by existing capabilities.
 
 - Exact integer and rational arithmetic with unbounded integers, from the
   standard library, consistent with the repository's standard-library-first rule
-  and with the owner's rejection of floating-point solvers.
+  and with the owner's rejection of floating-point solvers, as
+  repository-authored code under `src/` exercised by the offline suite. Ad-hoc
+  exact arithmetic written and run by the driving agent in a scratch workspace is
+  NOT this capability: it is an unmet AdaIvy capability and an external-origin
+  contribution under ADR-0057 section 5, imported with an `external_codex` or
+  `human` root and never relabelled as AdaIvy work.
 - Declarative problem intake against
   `schemas/problem-definition-v1.schema.json`, validated offline, which creates
   no trust: the intake demo reports `logical_status unknown`,
