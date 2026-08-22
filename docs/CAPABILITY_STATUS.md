@@ -24,6 +24,7 @@ operator path, and usable end to end.
 | Semantic retrieval | Yes | Offline fixture only | No | Fourth Phase 4C signal over 19 project-authored documents and 17 queries |
 | Retrieval over acquired corpus | **No** | No | No | Corpus records are deliberately marked `retrieval_indexed: false` |
 | Campaign literature/embedding actions | **No** | No | No | The campaign action schema has no search, acquire, embed, index, or retrieve action |
+| Named credential profiles and unified budget | Yes | No | **No** | Slice 2 boundary: profile selection/resolution refuses ambient credentials, profile-bound model/embedding gateway wrappers, one append-only multi-capability budget ledger, and deterministic bounded backoff; `campaign run` does not construct them yet and the Slice 1 activation ADR has not landed |
 | Terminal campaign resume | Yes | Yes | Yes | Idempotently verifies a complete terminal ledger and finishes its draft; it does not yet resume a partial paid run |
 | Automatic campaign LaTeX draft | Yes | Yes | Yes | Every terminal run attempts a claim-free, unapproved `paper.tex` bundle; PDF typesetting remains an explicit gate |
 | End-to-end autonomous research run | **No** | No | No | Components remain separate; no single command performs the complete loop |
