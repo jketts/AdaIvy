@@ -1,6 +1,6 @@
 # B6. Chowla's cosine problem — scoped research dossier
 
-**Compiled:** 21 August 2026
+**Compiled:** 22 August 2026
 **Planning source:** RESEARCH_TARGET_DOSSIER_2026-08.md, item B6 (tier B)
 **Declared domain:** harmonic-analysis
 **Intake file:** docs/research-targets/intake/b6-chowla-cosine-negative-excursion-v1.json
@@ -181,8 +181,8 @@ Assumption delta.
   source are instead authored locally, because no source is acquired. This is
   recorded as the reason `approval_status` is `needs_clarification`.
 - The Chebyshev reduction is added so that the target is an exact statement
-  about integer polynomials on `[-1, 1]` rather than an analytic statement requiring
-  evaluation of transcendental functions.
+  about integer polynomials on `[-1, 1]` rather than an analytic statement
+  requiring evaluation of transcendental functions.
 - The constants `1` and `1/20` from the notes are excluded from the target
   entirely rather than reinterpreted as thresholds.
 - A computable threshold function `K` is required, which is stronger than an
@@ -367,10 +367,10 @@ Refused as a certificate, without exception:
 ## 9. Useful negative outcomes
 
 - **Certified ratio table.** For every set examined, the exact certified
-  rational upper bound on `m(A)` and the exact refuted rational lower bracket, with both
-  certificates. This is a durable exact record independent of whether the family
-  target is ever reached, and it is the only honest form in which "how small can
-  the ratio get" can be recorded.
+  rational upper bound on `m(A)` and the exact refuted rational lower bracket,
+  with both certificates. This is a durable exact record independent of whether
+  the family target is ever reached, and it is the only honest form in which
+  "how small can the ratio get" can be recorded.
 - **Refuted families.** A defined candidate family with an exact algebraic-point
   refutation showing its excursion does not shrink as claimed. Retained with the
   refuting point in exact form, so the family is not retried blind.
@@ -379,8 +379,8 @@ Refused as a certificate, without exception:
   exact rational arithmetic and removes any need for a floating-point path.
   Building it is progress even with no family found.
 - **Cost frontier.** The measured coefficient growth and Sturm cost as a
-  function of `max(A)`, which is the real constraint on how far the method reaches. A
-  measured wall is a result; a guessed one is not.
+  function of `max(A)`, which is the real constraint on how far the method
+  reaches. A measured wall is a result; a guessed one is not.
 - **Refused route.** Every numerically appealing family that the exact verifier
   rejected, with the rejection reason, so the same route is not re-run.
 - **Blocking obligation.** If §6.3 resolves against the target, the slice's
@@ -470,8 +470,8 @@ Would require a new ADR.
   third-party algebra dependency with a recorded license and a declared gated
   boundary. Either way it is a new decision; Route 1 does not need it.
 - **Any interval-arithmetic global bound.** Admitting a rigorous
-  branch-and-bound covering as a positive certificate contradicts the current exclusion-only
-  restriction and needs its own ADR. Not requested here.
+  branch-and-bound covering as a positive certificate contradicts the current
+  exclusion-only restriction and needs its own ADR. Not requested here.
 - **Any numerical or SDP solver.** Rejected outright by repository doctrine, not
   merely gated. If a numerical exploration lane is wanted it is a separate
   decision and its output is exploration-only by construction.

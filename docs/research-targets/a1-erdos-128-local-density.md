@@ -1,6 +1,6 @@
 # A1. Erdos #128 — scoped research dossier
 
-**Compiled:** 21 August 2026
+**Compiled:** 22 August 2026
 **Planning source:** RESEARCH_TARGET_DOSSIER_2026-08.md, item A1 (tier A)
 **Declared domain:** extremal-graph-theory
 **Intake file:** docs/research-targets/intake/a1-erdos-128-local-density-v1.json
@@ -104,7 +104,8 @@ Quantifier order, exactly as in the intake file:
 3. `forall S` a subset of `V(G)` with `|S| >= floor(n/2)` — inside the
    hypothesis, so a single admissible `S` with `50 * e(G[S]) <= n^2` discharges
    the whole implication for that `G`.
-4. `exists u, v, w` three distinct pairwise adjacent vertices — the conclusion.
+4. `exists u, v, w` three distinct pairwise adjacent vertices: the
+   conclusion.
 
 `formal_language` is `typed_informal_math`, `version` 1, `approval_status`
 `proposed`. Human approval of the semantic alignment is still required and is
@@ -210,7 +211,7 @@ admission, or warrant.
   `n`, for sufficiently large `n`, or with a different threshold is unknown.
 - **C5 — enumeration counts.** The reported numbers of isomorphism classes of
   triangle-free simple graphs for orders 1 to 12 — `1, 2, 3, 7, 14, 38, 107,
-  410, 1897, 12172, 105071, 1262180` — are untrusted. The sweep recomputes each
+  410, 1897, 12172, 105071, 1262180` are untrusted. The sweep recomputes each
   and treats disagreement as a generator fault that halts the run.
 
 The acquisition plan in section 5 names, per row, which of C1 to C5 that row

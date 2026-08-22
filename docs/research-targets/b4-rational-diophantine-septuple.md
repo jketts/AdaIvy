@@ -1,6 +1,6 @@
 # B4. Rational Diophantine septuple — scoped research dossier
 
-**Compiled:** 21 August 2026
+**Compiled:** 22 August 2026
 **Planning source:** RESEARCH_TARGET_DOSSIER_2026-08.md, item B4 (tier B)
 **Declared domain:** number-theory
 **Intake file:** docs/research-targets/intake/b4-rational-diophantine-septuple-v1.json

@@ -1,0 +1,223 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "b1-graceful-tree-conjecture-v1",
+  "declared_domain": "graph-labelling",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "Graceful Tree Conjecture: every finite tree with m edges admits a graceful labelling",
+    "informal_statement": "Decide whether every finite tree T with m edges admits a graceful labelling: a bijection from V(T) onto {0,...,m} whose induced absolute edge differences are exactly {1,...,m}.\n\nThe target is the conjecture itself, quantified over every finite tree, with no subclass, diameter, matching, parity, or vertex-count hypothesis. The narrowing lives in the bounded first slice, which attempts one exactly defined waypoint class as progress toward the conjecture: trees having a path subgraph, possibly a single vertex, with every vertex within graph distance 2 of it. That class strictly contains the classically graceful caterpillars and is strictly contained in the class of all trees, so a theorem for it would be progress with a named residual and never the target. Extending an exhaustive verification frontier by one vertex count is a capability result. A bounded exhaustion is bounded evidence; one certified non-graceful tree would refute the target, and the slice structurally cannot produce that certificate without a new ADR.",
+    "problem_type": "explore",
+    "tags": [
+      "graceful-labelling",
+      "graph-labelling",
+      "trees",
+      "graceful-tree-conjecture",
+      "waypoint-class-slice",
+      "exact-integer-certificate",
+      "bounded-enumeration"
+    ]
+  },
+  "target_claim": {
+    "local_id": "every_finite_tree_is_graceful",
+    "kind": "conjecture",
+    "statement": "For every integer m >= 0 and every finite simple tree T with exactly m edges, there exists a bijection phi from V(T) onto {0,1,...,m} whose induced edge labelling psi(uv) = abs(phi(u) - phi(v)) satisfies the set equality {psi(e) : e in E(T)} = {1,2,...,m}.",
+    "scope": "unrestricted_universal"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "tree_definition",
+      "kind": "definition",
+      "statement": "A tree is a finite simple connected acyclic undirected graph with at least one vertex. For a tree T, m = card(E(T)) and card(V(T)) = m + 1. Distance d_T(u,v) is the number of edges on the unique T-path from u to v, and d_T(v,v) = 0. Infinite trees, forests, multigraphs, and rooted, plane, or edge-weighted trees are outside the definition.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "graceful_labelling_definition",
+      "kind": "definition",
+      "statement": "A graceful labelling of a tree T with m edges is a bijection phi from V(T) onto {0,1,...,m} such that {abs(phi(u) - phi(v)) : uv in E(T)} = {1,2,...,m} as sets; since card(E(T)) = m this is equivalent to the induced edge labelling being a bijection onto {1,...,m}. T is graceful iff at least one such phi exists. Rejected readings: vertex labels drawn from {1,...,m+1}; edge labels merely injective without covering {1,...,m}; signed or modular differences; an alpha-labelling, which additionally requires a boundary value separating the bipartition classes and is strictly stronger; k-graceful and near-graceful variants that shift the edge-label range.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "target_has_no_subclass_hypothesis",
+      "kind": "definition",
+      "statement": "The target quantifies over all m >= 0 and all trees with exactly m edges, with no further hypothesis. No subclass, diameter bound, matching condition, parity condition, or vertex-count bound restricts it, and the waypoint class defined below contributes no quantifier and no antecedent to the target. Rejected readings: the target restricted to the waypoint class; a single m; only m >= 1; only trees up to some vertex count.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "waypoint_class_definition",
+      "kind": "definition",
+      "statement": "The bounded first slice attempts one waypoint class X, which is a slice device and no part of the target. A tree T belongs to X iff there exists a subgraph P of T isomorphic to a path on k >= 1 vertices, so a single vertex and no edges is allowed, such that every v in V(T) satisfies d_T(v,w) <= 2 for some w in V(P). P is called a spine and need not be unique, longest, or diametral. The class is commonly called the class of lobsters; that name is used nowhere in the target claim and nowhere in the membership test, because published definitions differ on degenerate cases while the distance form does not. Rejected readings: X as a hypothesis of the target; deleting every leaf of T yields a caterpillar, which agrees for large trees but is undefined for the one-vertex and one-edge trees where the leaf-deleted graph is empty, whereas the distance form admits both by taking P to be a single vertex; diameter at most 5; and the formally stronger requirement that some longest path of T meet every vertex within distance 2, whose equivalence to the frozen condition is unproved here and is not assumed. The caterpillars are the distance-1 case of this definition, where some path subgraph has every vertex within distance 1 of it, so they form a subclass of X and the containment is strict with an exactly checkable witness: the seven-vertex tree obtained from K_{1,3} by subdividing every edge once lies in X, taking the spine through two legs and the centre, but deleting its leaves leaves K_{1,3}, which is not a path, so it is not a caterpillar. X is also strictly contained in the class of all trees, witnessed by the tree obtained from K_{1,3} by subdividing every edge twice, which has a vertex at distance 3 from every path. A theorem for X is therefore progress with that residual named and is never the target.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "exact_arithmetic_requirement",
+      "kind": "requirement",
+      "statement": "Every quantity on the trust path is an exact arbitrary-precision integer or an exact finite set of such integers. Permitted operations are integer subtraction, absolute value, integer comparison, set and multiset equality, and byte comparison of canonical-form strings. No floating-point value, tolerance, statistical estimate, or heuristic score may appear in a certificate or in any verifier decision; such output is exploration-only and is labelled as such. Tree counts used in coverage checks are recomputed from an exact integer recurrence inside the run and are never taken from a table, a published figure, or recollection.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "unique_tree_path",
+      "kind": "lemma",
+      "statement": "In a tree, any two vertices are joined by exactly one path, so graph distance is well defined, and deleting all leaves of a finite tree with at least two vertices yields a tree or the empty graph. Iterating leaf deletion terminates in a single vertex or a single edge, which defines the centroid or bicentroid used by the canonical form.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "caterpillars_are_graceful",
+      "kind": "lemma",
+      "statement": "Every caterpillar is graceful. This is treated as a standard textbook fact about graceful labellings, and it is the reason the waypoint class was chosen strictly larger than the caterpillars: a waypoint that is already a classical theorem is not a waypoint. Its usual attribution and date are a separate untrusted claim and are not used.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "complement_labelling_symmetry",
+      "kind": "lemma",
+      "statement": "If phi is a graceful labelling of a tree with m edges then the map v -> m - phi(v) is also a graceful labelling, since it is a bijection onto {0,...,m} and preserves every absolute difference. This symmetry may halve a labelling search by fixing one orientation; it never justifies skipping a tree.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "conjecture_open_status_report",
+      "kind": "untrusted_source_report",
+      "statement": "That the Graceful Tree Conjecture is open is inherited from the planning dossier's inclusion of B1 as a candidate and is untrusted. It is now a claim about the frozen target itself rather than about a subclass, so the ADR-0055 pre-research novelty re-check is load-bearing for the target: if the conjecture has been settled, this dossier is superseded rather than repaired. Also untrusted is the fidelity claim that the conjecture is exactly the statement the planning dossier renders; the label range, the absolute-difference convention, and whether m counts edges or vertices are the places where a rendering can drift from the original.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "exhaustive_frontier_report",
+      "kind": "untrusted_source_report",
+      "statement": "The operator notes, by way of the planning dossier, report exhaustive verification of the Graceful Tree Conjecture through 35 vertices as of July 2026. Untrusted and additionally ambiguous: it is not recorded whether 35 counts vertices or edges, whether all trees or a subclass were covered, whether labellings were retained as certificates, or whether the computation has been independently replayed. The exact source is unidentified. Since the target quantifies over all trees, this claim bounds only what a bounded slice can add and settles nothing about the target. The ADR-0055 re-check must cover it.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "waypoint_class_status_report",
+      "kind": "untrusted_source_report",
+      "statement": "That the gracefulness of the waypoint class X is unsettled, and that the corresponding conjecture is attributed to Bermond in 1979, are untrusted claims resting on common terminology and on the absence of a known classical theorem of the caterpillar type covering X. Neither has been checked against an acquired source. This claim does not affect the target; it decides whether the waypoint is worth attempting, since a waypoint that is already a theorem is not a waypoint, and in that case the waypoint is replaced while the target is untouched. An acquired source's status statement may be transferred only after its class definition has been mapped row by row against the waypoint definition.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "perfect_matching_subcase_report",
+      "kind": "untrusted_source_report",
+      "statement": "Members of the waypoint class that admit a perfect matching are reported, from recollection and without an acquired source, to be graceful. Untrusted, and important: if true it covers a large proper part of X, so certificates produced there would be correct and worthless. The re-check must name this subcase explicitly, and any fitted labelling scheme must report whether it only covers that part.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "frontier_extension_and_waypoint_promotion_trap",
+      "kind": "known_trap",
+      "statement": "Two promotions are forbidden. Extending an exhaustive verification frontier by one vertex count is a capability result and must never be recorded as progress on the target; the planning dossier says so explicitly. Separately, a proved theorem for the waypoint class is progress toward the conjecture and is never the conjecture: it leaves open exactly the trees having a vertex at distance 3 or more from every path, and that residual must be named whenever the waypoint result is reported. A bounded exhaustion supports only that every enumerated tree inside the measured envelope is graceful, each with a replayed certificate.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "unsound_pruning_trap",
+      "kind": "known_trap",
+      "statement": "A backtracking search for graceful labellings is easy to make incomplete by an unjustified pruning rule, and an incomplete search reports a non-graceful tree, which would be a refutation of the frozen target itself. Do not repeat that route blind: every pruning rule needs a stated soundness lemma, the pruned search must be cross-checked against unpruned enumeration for m <= 12, and a not-graceful verdict requires a second methodologically independent exhaustion whose proof log a checker replays. That second route needs a new ADR, so the slice as scoped structurally cannot emit a refutation.",
+      "scope": "particular"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "forall m : N, forall T : Tree, edge_count(T) = m -> exists phi : V(T) -> {0..m}, Bijective(phi) and { abs(phi(u) - phi(v)) : (u,v) in E(T) } = {1..m}",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "forall m an integer with m >= 0",
+      "forall T a finite simple tree with exactly m edges and m + 1 vertices, with no further hypothesis",
+      "exists phi a bijection from V(T) onto {0,...,m}",
+      "forall e in E(T) the induced label abs(phi(u) - phi(v)) lies in {1,...,m}, and forall j in {1,...,m} some edge induces j"
+    ],
+    "assumption_local_ids": [
+      "tree_definition",
+      "graceful_labelling_definition",
+      "target_has_no_subclass_hypothesis",
+      "waypoint_class_definition",
+      "exact_arithmetic_requirement",
+      "unique_tree_path",
+      "caterpillars_are_graceful",
+      "complement_labelling_symmetry",
+      "conjecture_open_status_report",
+      "exhaustive_frontier_report",
+      "waypoint_class_status_report",
+      "perfect_matching_subcase_report",
+      "frontier_extension_and_waypoint_promotion_trap",
+      "unsound_pruning_trap"
+    ],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      [
+        "m",
+        "non-negative integer edge count, unchanged from the source statement"
+      ],
+      [
+        "T",
+        "every finite simple tree with exactly m edges, unchanged and unnarrowed"
+      ],
+      [
+        "phi",
+        "existential labelling, unchanged from the source statement"
+      ],
+      [
+        "waypoint class X",
+        "no quantifier in the target: X appears only in the bounded first slice"
+      ]
+    ],
+    "definition_mapping": [
+      [
+        "bijection from its vertices to {0,...,m}",
+        "phi bijective from V(T) onto the exact integer range {0,...,m}"
+      ],
+      [
+        "absolute differences across its edges are exactly {1,...,m}",
+        "set equality of the induced edge labels abs(phi(u) - phi(v)) with {1,...,m}"
+      ],
+      [
+        "tree with m edges",
+        "finite simple connected acyclic graph with at least one vertex and exactly m edges, hence m + 1 vertices"
+      ],
+      [
+        "waypoint class X",
+        "no counterpart in the source statement and no counterpart in the target; a slice device only"
+      ]
+    ],
+    "assumption_delta": [
+      "The frozen target adds no hypothesis and removes none; it is the conjecture as rendered, unnarrowed.",
+      "It pins the conventions of section 2: what a tree is, that m counts edges, that the label range is {0,...,m}, that the induced label is an absolute difference, and that gracefulness is existential in the labelling.",
+      "No matching, diameter, parity, vertex-count, or subclass hypothesis is imposed anywhere in the target.",
+      "The waypoint class is a property of the bounded first slice and is not an assumption of the target claim."
+    ],
+    "edge_case_delta": [
+      "m = 0, the one-vertex tree, is inside the claim: the unique labelling induces the empty edge-label set, which equals the empty range {1,...,0}.",
+      "m = 1, the single edge, is inside the claim, with phi taking the values 0 and 1.",
+      "The degenerate-case discipline about the waypoint class, namely that its leaf-deletion reading is undefined on the one-vertex and one-edge trees while the distance form admits both, bears on slice coverage reporting and not on the target.",
+      "No closure property under reduction is assumed; a reduction rule is not presumed to keep a tree inside the waypoint class."
+    ],
+    "strength_relation": "unresolved"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "trees_enumerated",
+      "waypoint_class_members_enumerated",
+      "graceful_labellings_certified",
+      "independent_verifier_replays_passed",
+      "canonical_form_collisions_detected",
+      "generator_disagreements_recorded",
+      "pruning_rules_refuted",
+      "candidate_schemes_refuted",
+      "proof_obligations_opened",
+      "proof_obligations_closed",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "a proof that every finite tree is graceful, with every lemma discharged symbolically rather than by table",
+      "an exact non-graceful finite tree, certified under shape S4 including its independent second exhaustion, which refutes the conjecture",
+      "a proof that every tree in the section 7 waypoint class is graceful, recorded as progress toward the conjecture and explicitly not as the target, with the residual class named",
+      "a proved reduction rule that maps a finite tree to a strictly smaller tree and preserves gracefulness",
+      "an explicit unresolved outcome that names the smallest remaining obligation, which is the realistic outcome for a bounded slice against a conjecture of this size, together with the retained exclusion set and every refuted route"
+    ],
+    "stopping_rules": [
+      "stop on an exact certificate of either direction and open no further search",
+      "stop when fresh model spend reaches USD 20",
+      "stop when two consecutive review points close no proof obligation and refute no route",
+      "stop when retained trees exceed 5 * 10^6 or cumulative search nodes exceed 10^11",
+      "emit no refutation without the independent second exhaustion of shape S4; that route needs a new ADR, so this slice structurally cannot refute the conjecture",
+      "never promote a bounded exhaustion to the conjecture; a frontier extension is a capability result, and a waypoint class theorem is progress with a named residual and never the target"
+    ]
+  }
+}

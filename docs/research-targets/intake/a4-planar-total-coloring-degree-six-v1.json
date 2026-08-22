@@ -4,23 +4,23 @@
   "declared_domain": "graph-coloring",
   "originating_principal": "actor.repository_owner",
   "problem": {
-    "title": "Total 8-colouring of planar graphs with maximum degree exactly six and no triangle at a degree-six vertex",
-    "informal_statement": "Prove that every finite simple planar graph G whose maximum degree is exactly 6, and in which no vertex of degree 6 lies on a 3-cycle, satisfies chi''(G) <= 8.\n\nThis is one frozen subclass of the degree-six planar total-colouring question, not that question. The subclass condition is the single forbidden configuration 'a vertex of degree 6 together with two adjacent neighbours'. Whether the subclass is already settled in the literature is not verifiable without acquisition and is recorded as an untrusted status claim.",
+    "title": "Total 8-colouring of planar graphs with maximum degree exactly six",
+    "informal_statement": "Prove that every finite simple planar graph G with maximum degree Delta(G) = 6 satisfies chi''(G) <= Delta(G) + 2 = 8.\n\nThe target is the full degree-six planar case and is not narrowed. The first bounded slice is narrower than the target on purpose: it attempts reducible configurations and, as a waypoint, the same bound for graphs in the class that additionally have no 3-cycle through a degree-6 vertex. That waypoint is a step on the route, never a substitute for the target. Whether the degree-six case is currently open is not verifiable without acquisition and is recorded as the load-bearing untrusted status claim.",
     "problem_type": "prove",
     "tags": [
       "total-coloring",
       "planar-graphs",
       "maximum-degree-six",
+      "total-coloring-conjecture",
       "reducible-configuration",
       "discharging",
-      "forbidden-configuration",
       "exact-coloring-extension"
     ]
   },
   "target_claim": {
-    "local_id": "planar_delta_six_no_triangle_at_six_vertex",
+    "local_id": "planar_delta_six_total_eight",
     "kind": "conjecture",
-    "statement": "For every finite simple planar graph G with Delta(G) = 6 such that no vertex of degree 6 is contained in a 3-cycle of G, the total chromatic number satisfies chi''(G) <= 8, where a total k-colouring is a map c from V(G) union E(G) to a set of k colours such that c(u) != c(v) for every edge uv, c(e) != c(f) for every two distinct edges sharing an endpoint, and c(v) != c(e) for every vertex v incident with an edge e.",
+    "statement": "For every finite simple planar graph G with Delta(G) = 6, the total chromatic number satisfies chi''(G) <= Delta(G) + 2 = 8, where a total k-colouring is a map c from V(G) union E(G) to a set of k colours such that c(u) != c(v) for every edge uv, c(e) != c(f) for every two distinct edges sharing an endpoint, and c(v) != c(e) for every vertex v incident with an edge e.",
     "scope": "unrestricted_universal"
   },
   "assumption_claims": [
@@ -49,12 +49,6 @@
       "scope": "definitional"
     },
     {
-      "local_id": "forbidden_configuration_t6",
-      "kind": "definition",
-      "statement": "The frozen subclass condition is: there is no triple of vertices v, u, w with deg_G(v) = 6 and with uv, vw, uw all edges of G. Equivalently, no 3-cycle of G contains a vertex of degree 6. The condition is on the abstract graph, not on faces of an embedding, so a triangle that bounds no face is still forbidden. Membership is decidable in polynomial time by enumerating the neighbourhood of each degree-6 vertex.",
-      "scope": "definitional"
-    },
-    {
       "local_id": "simple_finite_graph",
       "kind": "definition",
       "statement": "G is finite, simple, loopless, and has no parallel edges. Connectivity is not assumed and disconnected graphs are inside the class. Multigraphs and graphs with loops are outside it, because incidence conflicts would then be ill defined.",
@@ -73,21 +67,27 @@
       "scope": "unrestricted_universal"
     },
     {
-      "local_id": "degree_six_planar_exceptional_case_untrusted",
+      "local_id": "waypoint_configuration_t6",
+      "kind": "definition",
+      "statement": "Condition T6 on a graph G is: there is no triple of vertices v, u, w with deg_G(v) = 6 and with uv, vw, uw all edges of G, equivalently no 3-cycle of G contains a vertex of degree 6. T6 is NOT a hypothesis of the target claim. It defines the waypoint of the bounded first slice: the same bound restricted to graphs of the target class that additionally satisfy T6. The waypoint is a step on the route to the target and is never a substitute for it. Membership in the waypoint class is decidable in polynomial time by enumerating the neighbour pairs of each degree-6 vertex.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "degree_six_open_status_untrusted",
       "kind": "untrusted_source_report",
-      "statement": "The operator-supplied planning notes report that chi'' <= Delta + 2 is settled for planar graphs of every maximum degree except 6, leaving Delta = 6 as the exceptional case. This is an untrusted report: it has not been acquired, quoted from a primary source, or reviewed, and it must be covered by the ADR-0055 pre-research novelty re-check.",
+      "statement": "The operator-supplied planning notes report that chi'' <= Delta + 2 is settled for planar graphs of every maximum degree except 6, leaving Delta = 6 as the exceptional and currently unproved case. This is the load-bearing untrusted claim of this dossier: it has not been acquired, quoted from a primary source, or reviewed, and nothing in this package asserts that the frozen target is open, novel, or unproved. It must be covered by the ADR-0055 pre-research novelty re-check before work starts.",
       "scope": "particular"
     },
     {
-      "local_id": "subclass_open_status_untrusted",
+      "local_id": "waypoint_subclass_status_untrusted",
       "kind": "untrusted_source_report",
-      "statement": "Whether the frozen subclass, planar with Delta exactly 6 and no 3-cycle through a degree-6 vertex, is already settled in the literature is unknown here and cannot be checked offline. This is the load-bearing untrusted status claim of this dossier: the target is frozen as a statement, and nothing in this package asserts that it is open, novel, or unproved.",
+      "statement": "Whether the waypoint class, planar with Delta exactly 6 and no 3-cycle through a degree-6 vertex, is already settled in the literature is unknown here and cannot be checked offline. If it is already settled, the waypoint loses its value as a route and the slice must be re-planned; the target claim is unaffected either way, because the waypoint was never part of it.",
       "scope": "particular"
     },
     {
       "local_id": "stronger_hypotheses_untrusted",
       "kind": "untrusted_source_report",
-      "statement": "The planning notes report partial results for planar graphs with Delta = 6 under stronger hypotheses of girth and cycle type, such as girth at least 5, absence of 4-cycles, or absence of adjacent triangles. The exact hypotheses, bounds, and attributions are untrusted and unacquired. The frozen condition is weaker than triangle-freeness as a matter of definition; that it is weaker than any published hypothesis is not claimed.",
+      "statement": "The planning notes report partial results for planar graphs with Delta = 6 under stronger hypotheses of girth and cycle type, such as girth at least 5, absence of 4-cycles, or absence of adjacent triangles. The exact hypotheses, bounds, and attributions are untrusted and unacquired. No such result may be assumed as an input, and any of them reused in a proof becomes an acquisition item and an open obligation until acquired.",
       "scope": "particular"
     },
     {
@@ -99,7 +99,7 @@
     {
       "local_id": "reducibility_is_not_the_theorem",
       "kind": "route_constraint",
-      "statement": "A verified set of reducible configurations does not establish the target. The global argument, a discharging computation over a plane embedding using Euler's formula to show that every graph in the class contains one of the configurations, is a separate obligation that this slice does not discharge. Computer-checked reducibility constrains a minimal counterexample and nothing more, and must never be reported as a proof of the universal statement.",
+      "statement": "A verified set of reducible configurations does not establish the target, and under the full degree-six target this is the single most load-bearing constraint in the package. The global argument, a discharging computation over a plane embedding using Euler's formula to show that every graph in the class contains one of the configurations, is a separate obligation that the first slice does not discharge and does not possess. Computer-checked reducibility constrains a minimal counterexample and nothing more, and must never be reported as a proof of the target. Proving the waypoint does not discharge it either.",
       "scope": "particular"
     },
     {
@@ -111,11 +111,10 @@
   ],
   "formalization": {
     "version": 1,
-    "statement": "forall G, (G finite and simple and planar and Delta(G) = 6 and not exists v,u,w in V(G) with deg_G(v) = 6 and uv in E(G) and vw in E(G) and uw in E(G)) implies exists c : V(G) union E(G) -> {1,...,8} such that (forall uv in E(G), c(u) != c(v)) and (forall distinct e,f in E(G) sharing an endpoint, c(e) != c(f)) and (forall v in V(G), forall e in E(G) incident with v, c(v) != c(e))",
+    "statement": "forall G, (G finite and simple and planar and Delta(G) = 6) implies exists c : V(G) union E(G) -> {1,...,8} such that (forall uv in E(G), c(u) != c(v)) and (forall distinct e,f in E(G) sharing an endpoint, c(e) != c(f)) and (forall v in V(G), forall e in E(G) incident with v, c(v) != c(e))",
     "formal_language": "typed_informal_math",
     "quantifiers": [
       "forall G a finite simple planar graph with Delta(G) = 6",
-      "forall v in V(G) with deg_G(v) = 6 and forall u,w in V(G): not (uv, vw, uw all in E(G))",
       "exists c a map from V(G) union E(G) to {1,...,8}"
     ],
     "assumption_local_ids": [
@@ -123,12 +122,12 @@
       "total_chromatic_number_definition",
       "planarity_convention",
       "maximum_degree_exactly_six",
-      "forbidden_configuration_t6",
       "simple_finite_graph",
       "trivial_lower_bound",
       "disjoint_union_reduction",
-      "degree_six_planar_exceptional_case_untrusted",
-      "subclass_open_status_untrusted",
+      "waypoint_configuration_t6",
+      "degree_six_open_status_untrusted",
+      "waypoint_subclass_status_untrusted",
       "stronger_hypotheses_untrusted",
       "exact_arithmetic_requirement",
       "reducibility_is_not_the_theorem",
@@ -138,32 +137,34 @@
   },
   "semantic_alignment": {
     "quantifier_mapping": [
-      ["every finite simple planar graph G with Delta(G) = 6", "the same class intersected with the frozen condition that no degree-6 vertex lies on a 3-cycle; the frozen class is a proper subclass"],
+      ["every finite simple planar graph G with Delta(G) = 6", "the same class, with no additional hypothesis; the frozen class is the full degree-six planar class"],
       ["Delta(G) = 6", "some vertex has degree exactly 6 and no vertex has degree above 6; Delta(G) <= 5 is excluded, not covered"],
       ["chi''(G) <= Delta(G) + 2 = 8", "there exists a total colouring c with values in the fixed set {1,...,8}"],
-      ["the subclass condition", "for all v with deg_G(v) = 6 and all u,w in V(G), not all three of uv, vw, uw are edges"]
+      ["the condition T6 of the first slice", "not a quantifier of the target; it restricts only the waypoint proved en route, namely that for all v with deg_G(v) = 6 and all u,w in V(G), not all three of uv, vw, uw are edges"]
     ],
     "definition_mapping": [
       ["total coloring", "proper colouring of V(G) union E(G) where adjacency of vertices, sharing of an endpoint by edges, and vertex-edge incidence all conflict"],
       ["chi''(G)", "least size of a colour set admitting a total colouring; the target fixes that set to {1,...,8}"],
       ["planar", "admits an embedding in the plane; embeddability, not a supplied embedding"],
-      ["3-cycle", "three pairwise adjacent vertices of the abstract graph; facial or non-facial makes no difference to the condition"],
-      ["reducible configuration", "a subgraph H with a frozen interface such that every total 8-colouring of the interface extends to H, so that H cannot occur in a minimal counterexample"]
+      ["3-cycle", "three pairwise adjacent vertices of the abstract graph; facial or non-facial makes no difference"],
+      ["reducible configuration", "a subgraph H with a frozen interface such that every total 8-colouring of the interface extends to H, so that H cannot occur in a minimal counterexample"],
+      ["waypoint", "a strictly weaker statement proved en route to the target, recorded as progress and never as the target"]
     ],
     "assumption_delta": [
-      "The headline problem quantifies over all planar graphs with Delta(G) = 6; the frozen target adds the forbidden configuration and is therefore strictly weaker than the headline problem.",
+      "The frozen target adds no hypothesis to the planning dossier's candidate statement: it is the full class of finite simple planar graphs with Delta(G) = 6, with no girth, cycle-type, connectivity, or forbidden-configuration condition attached.",
       "Delta(G) = 6 is read as exact equality rather than as an upper bound, so the Delta <= 5 planar cases are outside the claim.",
       "No embedding, no connectivity, no 2-connectivity, and no minimum-degree hypothesis is assumed.",
-      "No published bound, reducible configuration, or discharging rule is assumed as an input; anything reused from the literature becomes an acquisition item and an open obligation until acquired."
+      "No published bound, reducible configuration, or discharging rule is assumed as an input; anything reused from the literature becomes an acquisition item and an open obligation until acquired.",
+      "The condition T6 is not part of the target. It scopes the first slice's waypoint only, and the delta between waypoint and target is itself recorded as an open obligation."
     ],
     "edge_case_delta": [
       "chi''(G) >= 7 holds on the whole class, so the target closes a gap of one colour rather than an unbounded gap.",
       "Every graph in the class has at least 7 vertices, since a degree-6 vertex needs six distinct neighbours.",
       "Disjoint unions stay in scope but a component may have maximum degree below 6, so any component reduction moves the hypothesis from Delta = 6 to Delta <= 6 and must be restated when used.",
-      "Triangles among vertices of degree at most 5 are permitted; the condition restricts only triangles containing a vertex of degree 6.",
-      "A degree-6 vertex whose two neighbours are adjacent is forbidden even when the resulting triangle bounds no face in a given embedding."
+      "Triangles are permitted anywhere in the target class, including triangles through vertices of degree 6; those are exactly the graphs the waypoint excludes and the target must still cover.",
+      "A vertex of degree 6 together with its six incident edges already occupies 7 of the 8 available colours, so the hardest instances of the target are precisely the ones the waypoint sets aside."
     ],
-    "strength_relation": "weaker"
+    "strength_relation": "unresolved"
   },
   "evaluation_protocol": {
     "version": 1,
@@ -174,21 +175,23 @@
       "configurations_refuted_reducible",
       "interface_precolourings_checked",
       "unsat_proof_logs_replayed",
+      "waypoint_obligations_closed",
       "discharging_obligations_open",
       "failed_routes_preserved",
       "model_cost_usd"
     ],
     "success_criteria": [
-      "one configuration proved reducible for total 8-colouring under the frozen interface convention, with a replayable extension table covering every canonical interface precolouring",
-      "one published hypothesis for planar graphs with Delta = 6 weakened to the frozen condition on an exactly identified subfamily, with the weakened hypothesis and the surviving hypotheses both stated",
-      "or an explicit unresolved outcome recording the smallest remaining obligation, namely the exact list of configurations whose reducibility is undecided together with the discharging obligation that stays open"
+      "one configuration proved reducible for total 8-colouring under the frozen interface convention, with a replayable extension table covering every canonical interface precolouring, recorded as progress toward the target and never as the target",
+      "the waypoint proved in full, namely chi''(G) <= 8 for every graph of the target class that additionally satisfies T6, with every reducibility step carrying a replayable certificate and the discharging step written out and reviewed",
+      "or, and this is the realistic outcome for a first slice against a full open case, an explicit unresolved outcome recording the smallest remaining obligation: the exact list of configurations proved reducible, the exact list still undecided, the waypoint-to-target delta, and the discharging obligation for the full class, which stays entirely open"
     ],
     "stopping_rules": [
       "stop when one configuration is proved reducible with an independently replayed extension certificate",
       "stop when a claimed reducibility is refuted by a checked UNSAT proof log replayed by an independent proof checker",
       "stop when the fresh model spend reaches USD 20",
       "stop when no configuration has changed status for two consecutive review points",
-      "never promote an exhausted configuration list into the universal statement: a bounded enumeration constrains a minimal counterexample and supplies no discharging argument"
+      "never promote an exhausted configuration list into the target statement: a bounded enumeration constrains a minimal counterexample and supplies no discharging argument",
+      "never present the waypoint as the target: proving chi'' <= 8 under T6 leaves the target untouched on exactly the graphs that make it hard"
     ]
   }
 }

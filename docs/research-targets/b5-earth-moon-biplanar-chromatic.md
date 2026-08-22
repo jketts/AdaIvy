@@ -1,6 +1,6 @@
 # B5. Earth-Moon problem — scoped research dossier
 
-**Compiled:** 21 August 2026
+**Compiled:** 22 August 2026
 **Planning source:** RESEARCH_TARGET_DOSSIER_2026-08.md, item B5 (tier B)
 **Declared domain:** graph-theory
 **Intake file:** docs/research-targets/intake/b5-earth-moon-biplanar-chromatic-v1.json

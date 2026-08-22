@@ -1,0 +1,203 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "c5-erdos-982-convex-distinct-distances-v1",
+  "declared_domain": "discrete-geometry",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "Erdos 982: some vertex of a convex polygon has at least floor(n/2) distinct distances",
+    "informal_statement": "Decide the universal statement: for every integer n >= 3 and every set P of n distinct points of the plane in strictly convex position (every point a vertex of the convex hull, no three points collinear), there is a point p in P whose set of Euclidean distances to the other n - 1 points has at least floor(n/2) distinct values.\n\nBoth a proof and an exact counterexample are acceptable outcomes of this one frozen statement, so the problem type is explore. A counterexample must make every vertex deficient simultaneously; a single deficient vertex is not a counterexample. The regular n-gon attains equality with exactly floor(n/2) distinct distances at every vertex, verified independently from the chord lengths 2R sin(pi k / n) and the strict monotonicity of sin on (0, pi/2], so the bound cannot be raised.\n\nDistinct distances equal distinct squared distances because squaring is injective on nonnegative reals, so the whole predicate is exact without square roots: integer arithmetic for rational coordinates, normal-form equality in Q[x]/(m(x)) for algebraic ones. The bounded first slice classifies strictly convex n-subsets of the lattice box {0,...,5}^2 for n in {4,5,6,7}, 10731369 subsets in all, up to plane similarity including reflections. That family provably omits the regular n-gon for n = 3, 5, 6, 7, so its exhaustion is classification data and is never evidence for the universal statement.",
+    "problem_type": "explore",
+    "tags": [
+      "discrete-geometry",
+      "distinct-distances",
+      "convex-position",
+      "erdos-982",
+      "exact-rational-arithmetic",
+      "similarity-classification",
+      "bounded-search-boundary"
+    ]
+  },
+  "target_claim": {
+    "local_id": "convex_polygon_vertex_distinct_distances",
+    "kind": "conjecture",
+    "statement": "For every integer n >= 3 and every set P of n distinct points of R^2 in strictly convex position, there exists p in P such that the set { dist(p,q) : q in P, q != p } has at least floor(n/2) distinct elements; equivalently max over p in P of the number of distinct squared distances from p to the other n - 1 points is at least floor(n/2).",
+    "scope": "unrestricted_universal"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "convex_position_and_minimum_n",
+      "kind": "definition",
+      "statement": "A set P of n distinct points of R^2 is in strictly convex position iff every point of P is a vertex of the convex hull of P and no three points of P are collinear; equivalently P is exactly the vertex set of a convex n-gon. Collinear triples are excluded because a point interior to a hull edge is a boundary point and not a vertex. The frozen n range is n >= 3. This reading quantifies over fewer configurations than a collinear-admitting reading, so the frozen statement is implied by that reading and is the weaker of the two; a counterexample containing a collinear triple therefore does not refute the frozen target.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "distinct_distance_count",
+      "kind": "definition",
+      "statement": "For p in P, D(P,p) = { dist(p,q) : q in P, q != p } is a set of positive reals, so |D(P,p)| counts distinct values and not multiplicities, and 1 <= |D(P,p)| <= n - 1. The count is over all n - 1 other points of P, adjacent and non-adjacent alike; it is not a diagonals-only count, not the multiset size n - 1, and not the number of distinct distances among all pairs of P.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "existential_over_vertices_reading",
+      "kind": "definition",
+      "statement": "The quantifier over vertices is existential: some p in P attains the bound, i.e. max over p of |D(P,p)| >= floor(n/2). The universal reading, that every vertex attains it, is strictly stronger and is false. An exact witness at n = 6 is the integer hexagon (0,0), (5,0), (12,5), (5,12), (0,13), (-3,4) taken in that cyclic order: its consecutive orientation determinants are 25, 84, 28, 48, 39, 20, all strictly positive, all 20 orientation determinants are nonzero, and the squared distances from (0,0) are 25, 169, 169, 169, 25, so that vertex has exactly 2 distinct distances while floor(6/2) = 3. Its per-vertex counts are 2, 5, 5, 5, 5, 5, so the frozen existential statement holds for it. Also frozen: floor is the integer floor, not ceiling, and the inequality is >= and not >, since the regular n-gon attains equality.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "exact_coordinate_representation",
+      "kind": "definition",
+      "statement": "A configuration is exactly represented iff its coordinates lie in Q^2, given as integer numerator/denominator pairs, or in K^2 for a number field K = Q(alpha) with alpha given by an exact minimal polynomial and an isolating rational interval, each coordinate a polynomial in alpha of degree below deg(alpha) with rational coefficients. Decimal coordinates, floating-point coordinates, and coordinates given to a stated precision are not configurations for this problem. The frozen classification equivalence is plane similarity, the maps x -> c Q x + t with c > 0 real, Q real orthogonal of determinant +1 or -1 so reflections are included, and t in R^2. Affine equivalence is rejected because it does not preserve distance ratios and so does not preserve |D(P,p)|: the unit square and a 1-by-2 rectangle are affinely equivalent with per-vertex counts 2 and 3. Isometry alone is rejected because it splits similar configurations without distinguishing any invariant.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "squared_distance_equality",
+      "kind": "lemma",
+      "statement": "For nonnegative reals a and b, a = b iff a^2 = b^2, so squaring is injective on distances and the number of distinct distances from p equals the number of distinct squared distances from p. Consequently no square root appears on the trust path: for rational coordinates the squared distances are rationals, hence integers after clearing denominators, and equality is integer comparison; for coordinates in Q(alpha) equality is comparison of normal forms in Q[x]/(m(x)). The distinct-distance count needs only equality decisions and never order decisions; order and sign decisions are needed only for the convex-position orientation determinants.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "regular_ngon_distinct_distance_count",
+      "kind": "lemma",
+      "statement": "In the regular n-gon with vertices at angles 2 pi k / n on a circle of radius R, the distance from one vertex to the vertex k steps away is 2 R sin(pi k / n) for k = 1,...,n-1. Since sin(pi k / n) = sin(pi (n-k) / n), every distance is realized by some k in {1,...,floor(n/2)}; and since pi k / n lies in (0, pi/2] for those k and sin is strictly increasing on [0, pi/2], those floor(n/2) values are pairwise distinct. Hence every vertex of the regular n-gon has exactly floor(n/2) distinct distances, the multiplicities close exactly (2 floor(n/2) = n - 1 for odd n, and 1 + 2(n/2 - 1) = n - 1 for even n), the frozen statement holds there with equality, and no bound above floor(n/2) is true in general.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "similarity_invariance_of_counts",
+      "kind": "lemma",
+      "statement": "A plane similarity of ratio c > 0 multiplies every distance by c, so it preserves the equality pattern of distances, hence every per-vertex distinct-distance count, hence max over p of |D(P,p)|; it also preserves strict convex position and non-collinearity. Reflections are isometries and so are included. Therefore the frozen statement and the classification in the bounded slice are both well defined on similarity classes.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "distance_ratio_similarity_criterion",
+      "kind": "lemma",
+      "statement": "For finite planar point sets P and P' of equal size n >= 3 and not all collinear, P and P' are similar iff there exist a bijection f from P to P' and a single constant r > 0 with dist(f(a),f(b))^2 = r dist(a,b)^2 for all a, b in P; such an f extends to a plane similarity of ratio sqrt r. When both sets have rational coordinates r is forced rational, being a quotient of two rational squared distances, so the test is a finite sequence of exact rational equality checks over at most n! bijections and needs neither sqrt r nor any coordinate normalization. Note sqrt r need not be rational even for two rational sets: (x,y) -> (x - y, x + y) is a similarity of ratio sqrt 2 carrying Z^2 into Z^2, which is why the test is stated on squared distances and ratios. The gcd-normalized sorted multiset of squared distances is a similarity invariant but is not complete, since homometric non-similar sets exist, so it may be used only as a bucket key resolved by this test.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "rational_sets_omit_regular_polygons",
+      "kind": "lemma",
+      "statement": "If P is similar to a set of rational points then every ratio of squared distances of P is rational. For the regular pentagon diagonal^2 / side^2 = phi^2 = (3 + sqrt 5)/2 is irrational, so no rational configuration is similar to a regular pentagon. For n = 7 the ratio sin^2(2 pi/7) / sin^2(pi/7) = 4 cos^2(pi/7) = 2(1 + cos(2 pi/7)) is irrational because cos(2 pi/7) has degree 3 over Q with minimal polynomial 8 x^3 + 4 x^2 - 4 x - 1, so no rational configuration is similar to a regular 7-gon. For the equilateral triangle all ratios are 1, so instead: a rational triangle has rational area, while an equilateral triangle of rational squared side s^2 > 0 has area (sqrt 3 / 4) s^2, irrational; hence no rational configuration is similar to an equilateral triangle, and none is similar to a regular hexagon either, since alternate vertices of a regular hexagon form an equilateral triangle. The single exception in the frozen slice range is n = 4, where the unit square is rational. Therefore the rational-coordinate family provably omits the sharpness example for n = 3, 5, 6, and 7.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "catalogue_falsifiable_and_claimed_proof",
+      "kind": "untrusted_source_report",
+      "statement": "The planning dossier reports that the Erdos Problems catalogue labels problem 982 FALSIFIABLE rather than OPEN and lists a claimed proof. Untrusted, and this is the load-bearing status claim of this definition: if the claimed proof is correct and settles the per-vertex statement, this target is void and must not be worked. Settling it requires, in order: acquire the catalogue entry for its exact reference; acquire the claimed proof; determine whether it addresses the frozen per-vertex statement or only the classical total statement; determine whether it is published, refereed, retracted, or a preprint with recorded objections; and determine whether it covers all n >= 3 or only a restricted family, since a restricted-family proof leaves the frozen target standing. The post-2025 literature review must cover the claim thread and any response, because a claim made after the planning dossier's compilation date would not appear in the inherited note at all.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "known_lower_bounds_unnamed",
+      "kind": "untrusted_source_report",
+      "statement": "The planning dossier's first bounded slice says to reproduce the known lower bounds but names none: no value, no locator, and no attribution is inherited. Untrusted and, as inherited, not a well-formed obligation. The bounded slice therefore does not depend on it, and the obligation becomes actionable only after the acquisition rows for the catalogue entry and the original source are resolved.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "altman_convex_total_distances_report",
+      "kind": "untrusted_source_report",
+      "statement": "It is reported classically, attributed to Altman, that a convex n-gon determines at least floor(n/2) distinct distances in total. Untrusted as to attribution and exact form. That total statement is strictly weaker than the frozen target, which concentrates the floor(n/2) distances at a single vertex. This is the dossier's main overclaiming risk: a citation or a proof of the total statement must never be reported as progress on the per-vertex statement.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "exact_arithmetic_no_floating_point",
+      "kind": "method_constraint",
+      "statement": "No floating-point arithmetic appears anywhere on the trust path, and approximate equality of distances under any tolerance is refused outright, because distance coincidence is the entire content of a counterexample and a tolerance would manufacture the result being sought. Convex position is decided by exact integer or exact-field orientation determinants compared against zero; distinctness is decided by integer comparison or normal-form equality; sign decisions on algebraic quantities use exact real algebraic sign determination, refining rational isolating intervals, with interval arithmetic used only to exclude and never to conclude equality. Numerical optimizers, SDP solvers, continuation methods, and floating-point geometry libraries are excluded, and their output can be exploration-only at most and never a certificate.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "forbidden_inference_rational_null_sweep",
+      "kind": "forbidden_route",
+      "statement": "The single most important honesty constraint: a search over rational-coordinate convex polygons can refute the universal statement only by exhibiting an exact object, and its failure to find one entails nothing at all. If the search returns a configuration with exact rational or exactly represented algebraic coordinates in which every vertex is deficient, that object is a genuine real configuration and is a refutation; exactness of the object is what carries it, and a floating-point near-miss carries nothing. In the other direction, absence of such a configuration in a rational family is not evidence for the universal statement over the reals: the family is countable and box-bounded while the target ranges over an uncountable set for each of infinitely many n, and worse, by rational_sets_omit_regular_polygons the family provably omits the sharpness example for n = 3, 5, 6, and 7. Structurally, a counterexample is a conjunction of distance equalities, so counterexamples lie in a proper algebraic subset of the configuration space R^(2n), and a lattice-box sweep meets its rational points only by coincidence. Therefore: random rational sampling of convex position, floating-point near-coincidence search, and any presentation of a null sweep as support for the universal statement are forbidden routes; the route that could bear on the target is to solve the equality systems exactly rather than to sample around them.",
+      "scope": "definitional"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "forall n : Z, n >= 3 -> forall P : FiniteSet(R^2), Card(P) = n and StrictlyConvexPosition(P) -> exists p in P, Card({ SquaredDist(p,q) : q in P, q != p }) >= floor(n/2), where SquaredDist(p,q) = (p_x - q_x)^2 + (p_y - q_y)^2 and StrictlyConvexPosition(P) means every point of P is a vertex of the convex hull of P and no three points of P are collinear",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "forall n an integer with n >= 3, unbounded, which is why no finite computation settles the target",
+      "forall P a set of n distinct points of R^2 in strictly convex position, unbounded and uncountable for each n",
+      "exists p in P, a single vertex chosen after P",
+      "the inner cardinality is a finite count of distinct squared distances over the n - 1 other points of P"
+    ],
+    "assumption_local_ids": [
+      "convex_position_and_minimum_n",
+      "distinct_distance_count",
+      "existential_over_vertices_reading",
+      "exact_coordinate_representation",
+      "squared_distance_equality",
+      "regular_ngon_distinct_distance_count",
+      "similarity_invariance_of_counts",
+      "distance_ratio_similarity_criterion",
+      "rational_sets_omit_regular_polygons",
+      "catalogue_falsifiable_and_claimed_proof",
+      "known_lower_bounds_unnamed",
+      "altman_convex_total_distances_report",
+      "exact_arithmetic_no_floating_point",
+      "forbidden_inference_rational_null_sweep"
+    ],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      ["n", "an integer with n >= 3, universally quantified and unbounded"],
+      ["P", "a set of n distinct points of R^2 in strictly convex position, universally quantified"],
+      ["p", "a single point of P, existentially quantified after P"],
+      ["planning phrase 'any n distinct points in the plane that form a convex polygon'", "forall n >= 3, forall P with |P| = n in strictly convex position"],
+      ["planning phrase 'is there a vertex'", "exists p in P, existential over vertices, chosen after P"],
+      ["planning phrase 'having at least floor(n/2) distinct distances to the other vertices'", "the number of distinct squared distances from p to the other n - 1 points is at least floor(n/2)"]
+    ],
+    "definition_mapping": [
+      ["form a convex polygon", "P is exactly the vertex set of a convex n-gon: strictly convex position with no three points collinear"],
+      ["distinct distances", "the cardinality of the set of distance values, not the multiset size"],
+      ["the other vertices", "all n - 1 points of P other than p, polygon-adjacent and non-adjacent alike"],
+      ["distinct distances, computed exactly", "the cardinality of the set of squared distances, equal to the previous count because squaring is injective on nonnegative reals"],
+      ["the regular polygon shows floor(n/2) would be best possible", "the regular n-gon has exactly floor(n/2) distinct distances at every vertex, verified from the chord lengths 2R sin(pi k / n) and the strict monotonicity of sin on (0, pi/2]"],
+      ["classify extremal small configurations up to an exact equivalence", "classify up to plane similarity including reflections, tested exactly by the distance-ratio bijection criterion"]
+    ],
+    "assumption_delta": [
+      "The planning item is a question with a three-way result shape; this definition freezes the universal statement itself and admits both a proof and an exact counterexample as outcomes of that one statement.",
+      "The third planning result shape, an improved guaranteed distance bound, is a different statement and is not frozen here.",
+      "Strict convexity with no three collinear points is imposed as a frozen decision, justified but not quoted, because the source text has not been acquired.",
+      "The threshold n >= 3 is imposed; the source's threshold is unknown until acquisition.",
+      "The count is over all n - 1 other vertices; no source text fixes this here.",
+      "Nothing about the catalogue's FALSIFIABLE label or the claimed proof is assumed as a premise; both enter only as untrusted source reports."
+    ],
+    "edge_case_delta": [
+      "n = 3 admits no counterexample: floor(3/2) - 1 = 0 while every vertex has at least one distance.",
+      "n = 4 admits no counterexample: it would require every vertex equidistant from the other three, forcing all six pairwise distances equal, which four points of the plane cannot do.",
+      "Equality is attained by the regular n-gon for every n >= 3, so the bound is tight and 'at least' cannot be strengthened to 'more than'.",
+      "A counterexample must make every vertex deficient simultaneously; the exact integer hexagon (0,0), (5,0), (12,5), (5,12), (0,13), (-3,4) has one vertex with only 2 distinct distances at n = 6 yet max over vertices is 5, so it is not a counterexample.",
+      "A configuration with a collinear triple is outside scope, and since the frozen reading is the weaker one, such a configuration cannot refute the frozen target.",
+      "Similar configurations have identical per-vertex counts, so the bounded slice's classification is well defined on similarity classes."
+    ],
+    "strength_relation": "unresolved"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "convex_configurations_exactly_enumerated",
+      "similarity_classes_canonicalized",
+      "per_vertex_distinct_distance_counts_recorded",
+      "counterexample_candidates_exactly_refuted",
+      "coincidence_patterns_exactly_excluded",
+      "failed_routes_preserved",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "an exact counterexample: a configuration of n points in strictly convex position with exactly represented rational or algebraic coordinates in which every vertex has at most floor(n/2) - 1 distinct distances to the other n - 1 vertices, verified by exact equality tests in its own coordinate field",
+      "a rigorous proof of the frozen universal statement for every n >= 3 under the frozen conventions",
+      "a rigorous proof of the frozen universal statement for one frozen value of n, recorded as a statement about that n alone and never generalized",
+      "an exact exclusion certificate for a frozen finite set of distance-coincidence patterns, showing that no strictly convex real configuration realizes any of them",
+      "or an explicit unresolved outcome that records the smallest remaining obligation together with the exact family exhausted and what its exhaustion does not entail"
+    ],
+    "stopping_rules": [
+      "stop on an exact counterexample verified in its own coordinate field by exact equality tests",
+      "stop on a rigorous derivation covering every configuration in scope for the frozen n",
+      "stop when the frozen rational-grid family is exhausted, recording the per-vertex distinct-distance counts and the similarity-class census",
+      "stop when the fresh model spend reaches USD 20",
+      "stop when no new lemma, reduction, exclusion, or extremal class has been recorded for two consecutive review points",
+      "never promote exhaustion of the rational-grid family into evidence for the universal statement over the reals; that family provably omits the regular n-gon for n = 3, 5, 6, and 7"
+    ]
+  }
+}

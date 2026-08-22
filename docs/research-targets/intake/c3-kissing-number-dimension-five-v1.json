@@ -1,0 +1,194 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "c3-kissing-number-dimension-five-v1",
+  "declared_domain": "discrete-geometry",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "Forty-one exact vectors of squared norm four in R^5 with pairwise squared distances at least four",
+    "informal_statement": "Exhibit 41 unit spheres, pairwise non-overlapping, all tangent to a central unit sphere in R^5: equivalently 41 points on the sphere of radius 2 with pairwise distances at least 2. The exact formulation frozen here is 41 vectors of exact Euclidean norm 2, that is exact squared norm 4, with all pairwise squared distances at least 4, and with coordinates that are exact algebraic numbers over one named real quadratic field K = Q(sqrt(d)) whose squarefree radicand d is measured from the exhibited coordinates rather than declared.\n\nOnly the lower-bound direction is frozen. The tau_5 <= 43 upper-bound route is explicitly rejected for this slice: its natural certificate is a floating-point SDP or LP bound, which under this repository's rules is evidence and not a theorem, and converting it into an exact rational certificate with a verified dual would need a new ADR. The reported interval 40 <= tau_5 <= 44 is untrusted and needs revalidation; if the true known lower bound is already 41 or higher the frozen target is void and this definition must be re-frozen rather than run.",
+    "problem_type": "explore",
+    "tags": [
+      "discrete-geometry",
+      "exact-quadratic-field-arithmetic",
+      "existential-target",
+      "kissing-number",
+      "lower-bound-route-frozen",
+      "no-floating-point",
+      "pool-restricted-exclusion",
+      "sphere-packing"
+    ]
+  },
+  "target_claim": {
+    "local_id": "dimension_five_forty_one_point_configuration",
+    "kind": "conjecture",
+    "statement": "There exist a positive squarefree integer d and vectors v_1, ..., v_41 in K^5, where K = Q(sqrt(d)) is viewed as a subfield of R through the real embedding sending sqrt(d) to the positive real square root and d = 1 means K = Q, such that inner(v_i, v_i) = 4 exactly for every i, and inner(v_i - v_j, v_i - v_j) >= 4 in the order of K for every i != j. Here inner(u, w) = sum over t in 1..5 of u_t * w_t computed in K. Since inner(v_i, v_i) = inner(v_j, v_j) = 4, the identity inner(v_i - v_j, v_i - v_j) = 8 - 2*inner(v_i, v_j) makes the second condition exactly equivalent to inner(v_i, v_j) <= 2 for all i != j. Geometrically this is a kissing configuration of size 41 in R^5: 41 unit balls each externally tangent to a central unit ball, with pairwise disjoint interiors, whose centres have coordinates in one real quadratic field.",
+    "scope": "existential"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "kissing_configuration_definition",
+      "kind": "definition",
+      "statement": "A kissing configuration of size N in R^5 is a set of N unit balls, each externally tangent to the central unit ball and with pairwise disjoint interiors. Externally tangent means the centre is at Euclidean distance exactly 2 from the origin; pairwise disjoint interiors means any two centres are at Euclidean distance at least 2. Rejected readings: centres on a sphere of radius 1 with angular separation at least 60 degrees, which is a different normalization and a different threshold; and a configuration required to be pairwise tangent rather than merely non-overlapping.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "gram_form_equivalence",
+      "kind": "derived_equivalence",
+      "statement": "For vectors u, w over an ordered field with inner(u,u) = inner(w,w) = 4, bilinear expansion gives inner(u - w, u - w) = inner(u,u) - 2*inner(u,w) + inner(w,w) = 8 - 2*inner(u,w), so inner(u - w, u - w) >= 4 if and only if inner(u,w) <= 2. Both steps are equivalences over an ordered field, so nothing is weakened in either direction. A consequence is that distinctness need not be assumed: v_i = v_j would give inner(v_i, v_j) = 4 > 2.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "certificate_field_frozen",
+      "kind": "definition",
+      "statement": "Coordinates lie in one real quadratic field K = Q(sqrt(d)) with d a positive squarefree integer, d = 1 meaning K = Q, and d is measured from the exhibited coordinates rather than declared in advance, following the ADR-0035 rule that the radicand is measured from the case values. Order in K is the induced real order and is decided exactly: for a + b*sqrt(d) with a, b rational, the sign follows from the signs of a and b and, when they differ, from comparing a^2 with b^2 * d in exact rational arithmetic. Rejected readings: unrestricted real coordinates; unrestricted real algebraic coordinates, whose order and equality would need exact real-root isolation this repository does not have; two distinct surds in one configuration; any extension of degree greater than 2; floating-point coordinates.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "frozen_direction_definition",
+      "kind": "definition",
+      "statement": "Exactly one direction of the planning dossier's disjunction is frozen: the lower-bound route that exhibits 41 vectors. Rejected readings: the upper-bound route tau_5 <= 43; the disjunction of the two directions, which names no single statement; and the informal instruction to improve the interval. Restricting coordinates to one real quadratic field folds a certificate-language restriction into the target, so a configuration realizable only over a higher-degree or transcendental extension does not satisfy the frozen target, and a negative result over the restricted class settles nothing about tau_5.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "exact_arithmetic_requirement",
+      "kind": "exact_arithmetic_requirement",
+      "statement": "Every step on a trust path uses exact rational arithmetic in one measured Q(sqrt(d)). No floating-point coordinate, Gram entry, distance, or tolerance of any size may enter a verdict, a certificate, or an exclusion record. Exact interval arithmetic with rational endpoints would be admissible for exclusion only and is not used to certify a configuration. The checker is probed with deliberately invalid inputs, a vector of squared norm 4 + 1/10^6, a pair at squared distance 4 - 1/10^6, and a duplicated vector, each of which must be rejected, because a checker that cannot be made to reject proves nothing.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "certificate_is_coordinates_definition",
+      "kind": "definition",
+      "statement": "The certificate is the measured squarefree d together with 41 vectors each given as five pairs of exact rationals (a_t, b_t) denoting a_t + b_t*sqrt(d), and nothing else. The verifier recomputes all 41 squared norms and all C(41,2) = 820 squared distances in K and confirms the measured d matches the coordinates. A Gram matrix alone is rejected because it carries a further obligation, an exact positive-semidefiniteness certificate and an exact rank-at-most-5 certificate; coordinates are required precisely so realizability is not an extra obligation. Because the check is self-verifying against the frozen predicate, the origin of a configuration does not affect its acceptance and a wrong configuration fails the exact check rather than passing quietly.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "baseline_and_pool_definition",
+      "kind": "definition",
+      "statement": "The frozen 40-vector baseline is B, the scaled D_5 minimal-vector set consisting of sqrt(2)*(e_i + s*e_j) for 1 <= i < j <= 5 and s in {+1,-1} together with the negatives of those vectors, which has 4*C(5,2) = 40 elements each of squared norm 4 over Q(sqrt(2)). The frozen finite candidate pool is P = P_1 union P_2 over Q(sqrt(2)), where P_1 is the 90 vectors of Z^5 with squared norm 4, namely the ten vectors plus or minus 2*e_i and the eighty sign-and-position variants of (1,1,1,1,0), and P_2 = B; so P has 130 elements and all C(130,2) = 8385 adjacency decisions for the condition inner(v,w) <= 2 are exact integer comparisons.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "reported_interval_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "The reported interval 40 <= tau_5 <= 44 is an untrusted planning-note candidate in both endpoints. The upper endpoint does not affect the frozen target and is recorded only for context. That the lower bound 40 is realized by the D_5 minimal vectors is likewise untrusted; the slice reproduces and exactly verifies that configuration from first principles instead of citing it, so a wrong attribution costs only a corrected note.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "known_lower_bound_blocking_check",
+      "kind": "untrusted_source_report",
+      "statement": "Blocking pre-intake check. The claim that the best known lower bound for tau_5 is 40 is untrusted and must be settled by acquisition and by the ADR-0055 pre-research re-check before intake, not during a run. If the current best known lower bound is already 41 or higher, the frozen target is void, this definition must be re-frozen at a higher count or on a different question, and no run may start. This is the one claim whose failure invalidates the definition rather than merely correcting it. That the problem is open is separately untrusted and unassessed.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "sdp_upper_bound_route_rejected",
+      "kind": "route_trap",
+      "statement": "The tau_5 <= 43 upper-bound route is rejected for this slice and must not be attempted, partially attempted, or used as guidance. Its natural certificate is a Delsarte-style linear-programming bound or a Bachoc-Vallentin-style semidefinite-programming bound, both produced by floating-point solvers; under this repository's rules such output is evidence and not a theorem, and the repository owner rejects floating-point solvers outright. An exact version would require a rational feasible dual solution plus a verified exact duality argument and a checker for it, and no such checker exists here, so it is a new capability needing its own ADR and acceptance suite.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "numerical_configuration_trap",
+      "kind": "route_trap",
+      "statement": "Do not repeat the route that obtains a 41-point configuration from a floating-point optimizer and rounds it to exact coordinates. Any numerical or gradient-based configuration search, any randomized placement heuristic, and any SDP or LP is exploration-only and excluded from this slice. If such output were ever used as a hint, the resulting exact coordinates would have to satisfy the frozen checker from scratch, and a near-miss under rounding is not a witness. An unreplayed third-party lattice, geometry, or clique library result is likewise refused as a certificate.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "lattice_pool_ceiling",
+      "kind": "bounded_search_boundary",
+      "statement": "A candidate pool that is the minimal-vector set of a single lattice cannot contain a configuration larger than that lattice's kissing number, so an exhaustive search over such a pool is guaranteed to fail and its exclusion is near-vacuous. The frozen pool is deliberately a union of two structures for that reason. This ceiling is recorded so future pool choices do not repeat a guaranteed-failure search.",
+      "scope": "bounded"
+    },
+    {
+      "local_id": "incomplete_search_is_not_exclusion",
+      "kind": "bounded_search_boundary",
+      "statement": "Maximum clique over 130 vertices is not guaranteed to complete within a frozen node budget, so only a completed search yields a certified maximum. A search that exhausts its budget is recorded as search_incomplete with its node budget, nodes consumed, and best configuration found, and that record is never presented as a maximum, an exclusion, or a bound. Failure of a search is never evidence for the negation of the target.",
+      "scope": "bounded"
+    },
+    {
+      "local_id": "pool_exhaustion_boundary",
+      "kind": "bounded_search_boundary",
+      "statement": "A completed search establishing that the maximum configuration inside the frozen pool P has size M establishes exactly that no subset of P larger than M satisfies the frozen conditions. It entails nothing about vectors outside P, nothing about other fields, and nothing about tau_5. No pool exhaustion may be promoted into a claim about tau_5 or about configurations outside the pool.",
+      "scope": "bounded"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "exists d : N, d >= 1 and squarefree(d) and exists v_1 ... v_41 : (Q(sqrt(d)))^5, (forall i in [1..41], inner(v_i, v_i) = 4) and (forall i j in [1..41], i != j -> inner(v_i - v_j, v_i - v_j) >= 4), where inner(u, w) = sum over t in [1..5] of u_t * w_t in Q(sqrt(d)) and >= is the order of the real embedding of Q(sqrt(d)), decided exactly by comparing a^2 with b^2*d for a + b*sqrt(d)",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "exists d in N with d >= 1 and d squarefree, measured from the exhibited coordinates",
+      "exists a 41-tuple of vectors v_1, ..., v_41 in K^5 with K = Q(sqrt(d))",
+      "forall i in [1..41] for the 41 exact squared-norm conditions inner(v_i, v_i) = 4",
+      "forall i, j in [1..41] with i != j for the C(41,2) = 820 squared-distance conditions inner(v_i - v_j, v_i - v_j) >= 4",
+      "no asymptotic quantifier and no implicit epsilon: every inner quantifier is finite and every condition is exactly decidable in K"
+    ],
+    "assumption_local_ids": [
+      "kissing_configuration_definition",
+      "gram_form_equivalence",
+      "certificate_field_frozen",
+      "frozen_direction_definition",
+      "exact_arithmetic_requirement",
+      "certificate_is_coordinates_definition",
+      "baseline_and_pool_definition",
+      "reported_interval_untrusted",
+      "known_lower_bound_blocking_check",
+      "sdp_upper_bound_route_rejected",
+      "numerical_configuration_trap",
+      "lattice_pool_ceiling",
+      "incomplete_search_is_not_exclusion",
+      "pool_exhaustion_boundary"
+    ],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      ["v_1, ..., v_41", "the centres of the 41 unit spheres tangent to the central unit sphere"],
+      ["d", "introduced by this definition; it has no counterpart in the source line"],
+      ["i, j", "indices over the 41 spheres, giving 41 tangency conditions and 820 non-overlap conditions"]
+    ],
+    "definition_mapping": [
+      ["unit sphere tangent to a central unit sphere in R^5", "inner(v_i, v_i) = 4, that is exact Euclidean norm 2"],
+      ["41 unit spheres with pairwise disjoint interiors", "inner(v_i - v_j, v_i - v_j) >= 4 for i != j, equivalently inner(v_i, v_j) <= 2"],
+      ["exact or certified algebraic coordinates and pairwise-distance checks", "coordinates in one measured Q(sqrt(d)) with exact field arithmetic and exact order decision"],
+      ["tau_5", "the maximum size of a kissing configuration in R^5 over all real configurations; the frozen target bounds it below only if satisfied"]
+    ],
+    "assumption_delta": [
+      "The source line is a disjunction over two directions and this definition keeps exactly one, the lower-bound route.",
+      "The source line places no restriction on coordinates; this definition restricts them to one real quadratic field and thereby weakens the target.",
+      "The tau_5 <= 43 half of the source line is explicitly out of scope because its natural certificate is a floating-point LP or SDP bound.",
+      "The distance condition is non-strict, so mutual tangency between two of the 41 spheres is permitted."
+    ],
+    "edge_case_delta": [
+      "v_i = v_j for i != j is impossible under the frozen conditions, so distinctness need not be assumed separately.",
+      "d = 1 is admitted and means rational coordinates.",
+      "A configuration whose coordinates require two distinct surds, or an extension of degree greater than 2, does not satisfy the frozen target even though it may satisfy the geometric one.",
+      "A proof that the frozen target is false would not settle tau_5, because the field restriction is part of the frozen target."
+    ],
+    "strength_relation": "weaker"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "exact_squared_norm_checks_verified",
+      "exact_pairwise_distance_checks_verified",
+      "configurations_of_size_41_exhibited",
+      "pool_restricted_maximum_sizes_certified",
+      "extension_infeasibility_arguments_replayed",
+      "incomplete_searches_recorded_as_incomplete",
+      "failed_routes_preserved",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "41 exhibited vectors over one measured real quadratic field K = Q(sqrt(d)) with every squared norm exactly 4 and every pairwise squared distance verified to be at least 4 by exact field arithmetic",
+      "a rigorous proof that no such 41 vectors exist over any real quadratic field",
+      "or an explicit unresolved outcome recording every certified pool-restricted maximum, every incomplete search with its node budget, and the smallest remaining obligation"
+    ],
+    "stopping_rules": [
+      "stop on an exact certificate: 41 vectors passing every exact squared-norm and pairwise-distance check",
+      "stop when the fresh model spend reaches USD 25",
+      "stop when two consecutive review points certify no new pool-restricted maximum and close no obligation",
+      "never promote exhaustion of a frozen finite candidate pool into a claim about tau_5 or about configurations outside the pool, and never record an incomplete branch-and-bound search as an exclusion or a bound",
+      "refuse any floating-point, linear-programming, or semidefinite-programming output as a certificate, and do not pursue the tau_5 <= 43 upper-bound route inside this slice"
+    ]
+  }
+}

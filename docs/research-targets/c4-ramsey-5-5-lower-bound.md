@@ -1,6 +1,6 @@
 # C4. Ramsey number `R(5,5)`, lower-bound route — scoped research dossier
 
-**Compiled:** 21 August 2026
+**Compiled:** 22 August 2026
 **Planning source:** RESEARCH_TARGET_DOSSIER_2026-08.md, item C4 (tier C)
 **Declared domain:** ramsey-theory
 **Intake file:** docs/research-targets/intake/c4-ramsey-5-5-lower-bound-v1.json
@@ -267,7 +267,8 @@ file as an `untrusted_source_report` assumption with scope `particular`.
   attributed to a 2024 preprint. Untrusted. Not a premise. It matters only for
   section 12's account of why the upper-bound route is out of scope.
 - **S4 — `(5,5,42)` graphs exist and are numerous.** Implied by S1 and by the
-  existence of published Ramsey-graph data files. Untrusted, including any count.
+  existence of published Ramsey-graph data files. Untrusted, including any
+  count.
   The extension route in section 7 depends on it and is labelled accordingly.
 - **S5 — `R(4,5) = 25`.** A computational determination from the literature.
   Untrusted. It implies the degree window `18 <= deg(v) <= 24` for every vertex
@@ -534,9 +535,10 @@ intake file's `evaluation_protocol`.
 - an exhibited 43-vertex graph, given as a canonical hashed edge list, whose
   exhaustive exact check of all 962598 five-subsets finds no clique of size 5
   and no independent set of size 5
-- an exact exclusion certificate covering every one of the 49940 multiplier-and-
-  complement classes of circulant graphs on Z_43, each class carrying a witness
-  five-subset, which settles the circulant family and settles nothing else
+- an exact exclusion certificate covering every one of the 49940
+  multiplier-and-complement classes of circulant graphs on Z_43, each class
+  carrying a witness five-subset, which settles the circulant family and settles
+  nothing else
 - or an explicit unresolved outcome that records the smallest remaining
   obligation, the exclusion set reached, and the exact frontier of the
   enumerated family

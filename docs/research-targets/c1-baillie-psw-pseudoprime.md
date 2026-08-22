@@ -1,12 +1,12 @@
 # C1. Baillie-PSW pseudoprime — scoped research dossier
 
-**Compiled:** 21 August 2026
+**Compiled:** 22 August 2026
 **Planning source:** RESEARCH_TARGET_DOSSIER_2026-08.md, item C1 (tier C)
 **Declared domain:** computational-number-theory
 **Intake file:** docs/research-targets/intake/c1-baillie-psw-pseudoprime-v1.json
 **Frozen in one line:** There exists a composite positive integer `n` on which
-the single frozen probable-prime procedure `BPSW-SL-1000`, specified step by step
-in section 1, returns the verdict `PROBABLE_PRIME`.
+the single frozen probable-prime procedure `BPSW-SL-1000`, specified step by
+step in section 1, returns the verdict `PROBABLE_PRIME`.
 
 This is a scoped intake package. It does not approve a formalization, establish
 that the problem is open, authorize source acquisition, assess novelty or
@@ -81,8 +81,8 @@ Define the Lucas sequences by `U_0 = 0`, `U_1 = 1`, `V_0 = 2`, `V_1 = P` and,
 for `t >= 1`, `U_(t+1) = P*U_t - Q*U_(t-1)` and `V_(t+1) = P*V_t - Q*V_(t-1)`.
 Write `n + 1 = 2^k * m` with `m` odd and `k >= 1`; `k >= 1` because `n` is odd.
 Compute `U_m mod n` and `V_m mod n` by the exact doubling recurrences
-`U_(2t) = U_t * V_t`, `V_(2t) = V_t^2 - 2*Q^t`, together with the index-increment
-step `U_(t+1) = (P*U_t + V_t) * inv2 mod n` and
+`U_(2t) = U_t * V_t`, `V_(2t) = V_t^2 - 2*Q^t`, together with the
+index-increment step `U_(t+1) = (P*U_t + V_t) * inv2 mod n` and
 `V_(t+1) = (D*U_t + P*V_t) * inv2 mod n`, where `inv2 = (n + 1) / 2` is the
 exact inverse of `2` modulo the odd `n`.
 
@@ -129,7 +129,7 @@ different problem, not a worse phrasing of the same one.
 | the BPSW test | exactly the seven-step procedure `BPSW-SL-1000` of section 1.1 | any procedure differing in trial-division bound, base, discriminant rule, or Lucas variant; "the BPSW test" as an unqualified name |
 | trial-division bound | every prime `p < 1000`, all 168 of them, before any other step | no trial division; bound `50`; bound `256`; bound `65536`; trial division by all integers rather than primes; trial division applied after step 3 |
 | base-2 test | the strong probable-prime test to the single base `2`, as written in step 3 | the Fermat test `2^(n-1) = 1 (mod n)`; base `3`; a random base; several bases; the Miller-Rabin test with a fixed base set |
-| discriminant rule | Selfridge Method A: least `i >= 0` with `(D_i/n) = -1` where `D_i = (-1)^i (2i+5)`, then `P = 1`, `Q = (1-D)/4` | Method A* (retry with `D = 5` handled specially); a rule stepping `|D|` by `4`; the extra-strong rule choosing `P` with `((P^2-4)/n) = -1` and `Q = 1`; choosing `D` by smallest `|D|` rather than by the signed sequence |
+| discriminant rule | Selfridge Method A: least `i >= 0` with `(D_i/n) = -1` where `D_i = (-1)^i (2i+5)`, then `P = 1`, `Q = (1-D)/4` | Method A* (retry with `D = 5` handled specially); a rule stepping `\|D\|` by `4`; the extra-strong rule choosing `P` with `((P^2-4)/n) = -1` and `Q = 1`; choosing `D` by smallest `\|D\|` rather than by the signed sequence |
 | perfect-square exclusion | exact `isqrt` test placed before the discriminant search, step 4 | omitting it, which makes the step-5 search nonterminating on squares; performing it inside the search loop after a bounded number of trials; testing squareness by a floating-point square root |
 | Lucas test strength | strong: `U_m = 0` or some `V_(m 2^j) = 0`, `0 <= j <= k-1`, with `n+1 = 2^k m` | standard: `U_(n+1) = 0 (mod n)`; extra-strong, which additionally requires `V_m = +-2`; the Lucas-Lehmer test, which is a different test entirely |
 | Jacobi symbol | the Kronecker-extended Jacobi symbol for odd `n > 0` and any integer `D`, computed exactly by reciprocity | the Legendre symbol, which is undefined for composite modulus; a symbol convention that leaves `(D/n)` undefined for `D < 0` |
@@ -156,11 +156,11 @@ Quantifiers, explicitly:
 
 - `exists n` ranging over the positive integers, unbounded above;
 - `exists a, b` witnessing compositeness, both strictly between `1` and `n`;
-- inside `BPSW_SL_1000`, all quantifiers are bounded and constructive: `forall p`
-  over the 168 primes below `1000`; `exists j` with `1 <= j <= s-1` in step 3;
-  `exists i >= 0` least with `(D_i/n) = -1` in step 5, whose termination for
-  non-squares is the reason step 4 precedes it; `exists j` with
-  `0 <= j <= k-1` in step 7.
+- inside `BPSW_SL_1000`, all quantifiers are bounded and constructive:
+  `forall p` over the 168 primes below `1000`; `exists j` with
+  `1 <= j <= s-1` in step 3; `exists i >= 0` least with `(D_i/n) = -1` in
+  step 5, whose termination for non-squares is the reason step 4 precedes it;
+  and `exists j` with `0 <= j <= k-1` in step 7.
 
 There is no asymptotic content and therefore no implicit epsilon to make
 explicit. The single non-constructive quantifier is the outer `exists n`.
@@ -350,8 +350,8 @@ filter would silently turn an exhaustive exclusion into a sampled one.
 ### 8.1 Result shape R1 — a witness is found
 
 Certificate: the triple `(n, F, T)` where `n` is the integer in exact decimal;
-`F` is a list of pairs `(p_i, e_i)` with `prod p_i^e_i` intended to equal `n` and
-at least two factors counted with multiplicity; and `T` is the complete
+`F` is a list of pairs `(p_i, e_i)` with `prod p_i^e_i` intended to equal `n`
+and at least two factors counted with multiplicity; and `T` is the complete
 transcript of `BPSW-SL-1000(n)` recording, in order, every prime tried in step
 2, the pair `(s, d)`, every residue `x_j` of step 3, the value `isqrt(n)` and
 its square from step 4, every trial discriminant `D_i` with its Jacobi symbol
@@ -470,8 +470,8 @@ Stopping rules:
 from the standard library, which is all sections 7 and 8 require. Declarative
 problem intake and the Phase 1 trust policy, which is what the accompanying JSON
 enters. Deterministic serialization, content hashing, and canonical records for
-the R2 exclusion records. Machine-readable preservation of failed attempts, which
-is what section 9 relies on. Bounded subprocess execution with captured
+the R2 exclusion records. Machine-readable preservation of failed attempts,
+which is what section 9 relies on. Bounded subprocess execution with captured
 stdout/stderr and no network. The ADR-0055 pre-research novelty re-check, which
 is the mechanism that must cover every claim in section 6 before a run. The
 report homes of `make report` and `reports/`, which is where R2 records belong.

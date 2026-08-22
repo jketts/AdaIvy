@@ -1,0 +1,199 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "b3-dense-polynomial-sparse-square-v1",
+  "declared_domain": "polynomial-algebra",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "An explicit infinite family of dense integer polynomials with sparse squares",
+    "informal_statement": "Exhibit an explicit infinite family of integer polynomials p_k of strictly increasing degree n_k, every one of the n_k + 1 coefficients nonzero, whose squares satisfy the exact integer inequality nnz(p_k^2)^5 <= 32 * n_k^4, where nnz counts nonzero coefficients. That is the exact form of nnz(p_k^2) <= 2 * n_k^(4/5) with exponent 4/5 and constant 2 frozen, and it is tested only as an integer comparison so that no logarithm, root, or floating-point value touches the trust path.\n\nThe extremal function is defined locally and completely as Q(n) = min over dense integer polynomials p of degree n of nnz(p^2). The supplied rendering of the original statement loses part of its one-instance threshold. That threshold was not reconstructed here and the reported comparison value 0.811 is used nowhere, so no claim is made that the frozen exponent improves anything. The approval status is needs_clarification for exactly that reason.",
+    "problem_type": "prove",
+    "tags": [
+      "polynomial-algebra",
+      "sparse-squares",
+      "dense-coefficients",
+      "explicit-construction",
+      "exact-integer-convolution",
+      "missing-source-threshold"
+    ]
+  },
+  "target_claim": {
+    "local_id": "explicit_sparse_square_family",
+    "kind": "conjecture",
+    "statement": "There exist a strictly increasing sequence of positive integers n_1 < n_2 < n_3 < ... and an algorithm that on input k >= 1 outputs, in finitely many exact integer operations, the full coefficient vector of a polynomial p_k in Z[x] with degree exactly n_k and all n_k + 1 coefficients nonzero, such that for every k >= 1 the exact integer inequality nnz(p_k^2)^5 <= 32 * (n_k)^4 holds, where nnz(q) is the number of indices whose coefficient in the fully expanded q is nonzero.",
+    "scope": "existential"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "dense_polynomial_definition",
+      "kind": "definition",
+      "statement": "For an integer n >= 0, D(n) is the set of p in Z[x] with deg p = n such that every one of the n + 1 coefficients a_0, ..., a_n is a nonzero integer; such p is called dense of degree n. D(n) is nonempty because 1 + x + ... + x^n lies in it. Rejected readings: deg p <= n; only a positive proportion of coefficients nonzero; all coefficients positive; coefficients bounded; coefficients in Q, R, or a finite field; Laurent or multivariate polynomials.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "nnz_definition",
+      "kind": "definition",
+      "statement": "For q in Z[x], nnz(q) is the number of indices j >= 0 whose coefficient in the fully expanded and collected q is nonzero, with nnz(0) = 0. The square p^2 is the ordinary square in Z[x], fully expanded; no modular reduction of any kind is applied, because cancellation must be observed in Z. Rejected readings: counting terms before collection; the degree; counting only coefficients of absolute value greater than one.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "extremal_function_definition",
+      "kind": "definition",
+      "statement": "The extremal function is defined locally and completely by Q(n) = min { nnz(p^2) : p in D(n) } for n >= 0. The minimum exists because D(n) is nonempty and nnz(p^2) lies in the finite set {1, ..., 2n + 1}. This definition is this dossier's own and is not claimed to be the definition used by any source. Rejected readings: a minimum over deg p <= n; a minimum restricted to primitive p, which yields the same value but is a different definition; a minimum over rational coefficients.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "exponent_variant_definition",
+      "kind": "definition",
+      "statement": "Two exponents attach to Q. theta_inf is the infimum of positive rationals t for which some positive rational C gives Q(n) <= C n^t for infinitely many n. theta_all is the same infimum with for all n >= 1 in place of for infinitely many n. Then theta_inf <= theta_all. The frozen target entails theta_inf <= 4/5 and does not entail theta_all <= 4/5, because a family bounds Q only at the degrees it covers and Q is not known here to be controlled between them. The all-n version is a strictly stronger target and is not claimed.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "frozen_exponent_and_constant",
+      "kind": "definition",
+      "statement": "The exponent is frozen at the exact rational theta = 4/5 and the constant at C = 2, so the target inequality is nnz(p_k^2) <= 2 * n_k^(4/5), stated and tested only in the exact integer form nnz(p_k^2)^5 <= 32 * n_k^4. Rejected readings: any exponent merely strictly below 0.811; an unspecified epsilon improvement; 0.811 itself; a value reverse-engineered from 0.811; an unspecified absolute constant; a constant allowed to depend on k; an ineffective constant; a floating-point evaluation of n^(4/5) or of a ratio of logarithms.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "explicit_family_requirement",
+      "kind": "definition",
+      "statement": "The family must be explicit: an algorithm takes k and outputs the full coefficient vector of p_k in finitely many exact integer operations. The inequality is required for every k >= 1 rather than for large k; a construction satisfying it only beyond some k_0 may be re-indexed to start there, so nothing is lost. Rejected readings: a non-constructive existence proof; a family defined by an unbounded search; a family whose coefficients are pinned only up to an unproved cancellation pattern.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "exact_arithmetic_requirement",
+      "kind": "requirement",
+      "statement": "Every quantity on the trust path is an exact integer. Squares are computed by exact integer convolution over dense lists or over sparse exponent-to-integer maps, and every comparison is integer equality or integer inequality. The exponent criteria are frozen in integer form, s^5 <= (d+1)^4 for a base and nnz^5 <= 32 n^4 for a family member, and are never evaluated as log s / log(d+1) or as a floating-point power. No floating-point value, tolerance, fitted exponent, or statistical estimate may appear in a certificate or in any verifier decision; such output is exploration-only and is labelled as such.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "square_prefix_dependency",
+      "kind": "lemma",
+      "statement": "The coefficient of x^i in p^2 equals the sum of a_u a_v over u + v = i, so it depends only on a_0, ..., a_i. A prefix a_0, ..., a_j therefore determines the coefficients of x^0 through x^j in p^2 exactly, which makes prefix-budget pruning of a coefficient search sound.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "base_representation_uniqueness",
+      "kind": "lemma",
+      "statement": "For an integer b >= 1 every integer in [0, (b+1)^k - 1] has exactly one representation as a sum of e_j (b+1)^j for j = 0 to k-1 with digits e_j in {0, ..., b}. Applied with b = d, the support of the product of p(x^{(d+1)^j}) over j = 0 to k-1 is exactly the integers from 0 to (d+1)^k - 1, each arising from one digit tuple.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "integral_domain_density",
+      "kind": "lemma",
+      "statement": "A product of finitely many nonzero integers is nonzero. Combined with the uniqueness of base representation, each coefficient of the product of p(x^{(d+1)^j}) is a single product of k nonzero base coefficients, so the product is dense of degree (d+1)^k - 1 with no cancellation. The support of its square is contained in the set of digit sums drawn from the support of p^2, giving at most s^k nonzero coefficients where s = nnz(p^2); merging and cancellation can only reduce that count, so no cancellation lemma is needed in this direction.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "minimum_square_support_lower_bound",
+      "kind": "lemma",
+      "statement": "For n >= 2 the coefficients of x^0, x^1, x^{2n-1}, x^{2n} in p^2 are a_0^2, 2 a_0 a_1, 2 a_{n-1} a_n, a_n^2, all nonzero for dense p, and the four indices are distinct, so Q(n) >= 4. The bound is attained at n = 2 by p = 1 + 2x - 2x^2, whose square is 1 + 4x - 8x^3 + 4x^4, so Q(2) = 4. Consequently the base criterion s^5 <= (d+1)^4 forces 1024 <= (d+1)^4 and hence d >= 5: no base of degree below five can reach the frozen exponent by the product construction, whatever its coefficients.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "missing_threshold_report",
+      "kind": "untrusted_source_report",
+      "statement": "The planning dossier records that the supplied rendering loses part of the one-instance threshold of the original FrontierMath statement and instructs that the threshold not be inferred from the damaged typography. This dossier did not reconstruct it. In particular a numerical coincidence was noticed and deliberately not used: the product-construction exponent has the form log s / log (d+1) for small integers s and d, and integer pairs exist whose ratio rounds to 0.811, so guessing the mechanism from a rounded number and adopting the guessed value would be exactly the forbidden inference. Nothing in this dossier depends on it. The exact missing threshold is named as an operator question and is the reason the approval status is needs_clarification.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "reported_exponent_report",
+      "kind": "untrusted_source_report",
+      "statement": "The planning dossier reports 0.811 as the upper exponent for the associated extremal function, without defining that function, and reports that a construction attaining it exists. Both are untrusted, and the first is additionally unusable as stated. The value 0.811 is used nowhere in this dossier. Whether 4/5 improves on it cannot be decided without the source's definition, the quantifier shape of its exponent, and its threshold, so no improvement is asserted and the semantic alignment relation is unresolved. A base polynomial found by the bounded search may be the published one; the retained deliverable is therefore the frontier table and the exclusion statement, which are informative either way.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "table_is_not_family_trap",
+      "kind": "known_trap",
+      "statement": "Do not repeat blind the route of presenting verified small cases as the family result. Exhaustively verifying nnz(P_k^2)^5 <= 32 n_k^4 for every k inside a bounded lift range is a consistency check on the construction lemmas and is never the family theorem, which quantifies over all k. Symmetrically, failure of the bounded coefficient search is never a lower bound on Q: the search exhausts a coefficient box, not D(d), so every recorded value carries that caveat and bounds Q only from above.",
+      "scope": "particular"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "exists (n : N -> N) (p : N -> Z[x]) (A : Algorithm), StrictlyIncreasing(n) and forall k >= 1, A(k) = coefficient_vector(p k) and degree(p k) = n k and (forall i in {0..n k}, coefficient(p k, i) != 0) and nnz((p k)^2)^5 <= 32 * (n k)^4, where nnz(q) is the number of indices with nonzero coefficient in the fully expanded q",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "exists n a strictly increasing function from positive integers to positive integers, giving the degree sequence",
+      "exists p assigning to each k >= 1 a polynomial in Z[x]",
+      "exists A an algorithm producing the coefficient vector of p_k from k in finitely many exact integer operations",
+      "forall k an integer with k >= 1",
+      "forall i in {0, ..., n_k} the coefficient of x^i in p_k is nonzero"
+    ],
+    "assumption_local_ids": [
+      "dense_polynomial_definition",
+      "nnz_definition",
+      "extremal_function_definition",
+      "exponent_variant_definition",
+      "frozen_exponent_and_constant",
+      "explicit_family_requirement",
+      "exact_arithmetic_requirement",
+      "square_prefix_dependency",
+      "base_representation_uniqueness",
+      "integral_domain_density",
+      "minimum_square_support_lower_bound",
+      "missing_threshold_report",
+      "reported_exponent_report",
+      "table_is_not_family_trap"
+    ],
+    "approval_status": "needs_clarification"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      ["construct such polynomials", "exists a strictly increasing degree sequence together with an algorithm producing each p_k, so the family is explicit rather than merely existent"],
+      ["asymptotically few nonzero coefficients", "forall k >= 1, the exact integer inequality nnz(p_k^2)^5 <= 32 * n_k^4"],
+      ["p(x) = a_0 + ... + a_n x^n with nonzero integer coefficients", "forall i in {0,...,n_k}, the coefficient of x^i in p_k is a nonzero integer"],
+      ["improving the reported upper exponent", "no counterpart: the frozen claim contains no comparison to any reported value"]
+    ],
+    "definition_mapping": [
+      ["nonzero integer coefficients", "p_k in D(n_k), all n_k + 1 coefficients nonzero integers"],
+      ["squares", "p_k^2 in Z[x], fully expanded and collected, with no modular reduction"],
+      ["few nonzero coefficients", "nnz, the count of indices with nonzero coefficient"],
+      ["the associated extremal function", "the locally defined Q(n) = min over p in D(n) of nnz(p^2), which is this dossier's definition and is not claimed to be the source's"],
+      ["the reported upper exponent 0.811", "an untrusted comparison value of unknown definition, used nowhere"]
+    ],
+    "assumption_delta": [
+      "The frozen target adds an exact exponent 4/5 and an exact constant C = 2 where the source rendering leaves both implicit.",
+      "It requires the inequality for every k rather than eventually, which is stronger and loses nothing since a family may be re-indexed.",
+      "It requires the family to be algorithmically explicit, which may be stronger than the source asks.",
+      "It removes any comparison to the reported value 0.811 and any claim about the source's extremal function.",
+      "It leaves undetermined, by construction, whether the frozen exponent bears on the source's missing threshold at all."
+    ],
+    "edge_case_delta": [
+      "The family bounds theta_inf and not theta_all; the all-n version is strictly stronger and is not claimed.",
+      "n_k must be strictly increasing but need not cover every degree, so nothing is claimed about degrees outside the family.",
+      "Degree 1 is inadmissible under the frozen constants, since Q(1) = 3 and 3^5 <= 32 * 1^4 is false, so the family must start at a higher degree; this is a property of the frozen constants and is recorded rather than patched.",
+      "Q(0) = 1 and Q(2) = 4, the latter attained by 1 + 2x - 2x^2, so the small cases are pinned exactly rather than left to convention."
+    ],
+    "strength_relation": "unresolved"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "coefficient_boxes_exhausted",
+      "minimal_square_supports_certified",
+      "bases_meeting_exact_criterion",
+      "lift_degrees_verified_exactly",
+      "construction_routes_refuted",
+      "independent_verifier_replays_passed",
+      "proof_obligations_opened",
+      "proof_obligations_closed",
+      "operator_questions_outstanding",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "an explicit family with all three lemmas discharged symbolically, satisfying nnz(p_k^2)^5 <= 32 n_k^4 for every k",
+      "a base polynomial certified to satisfy the exact criterion s^5 <= (d+1)^4, with the family lemmas left as named open obligations",
+      "an exact bounded exclusion stating that no base inside the reached envelope reaches the frozen exponent by the product construction",
+      "an explicit unresolved outcome that names the smallest remaining obligation, together with the retained frontier table and every refuted construction route"
+    ],
+    "stopping_rules": [
+      "stop on a certified base meeting the exact criterion and move the budget to the family lemmas rather than to a larger envelope",
+      "stop when fresh model spend reaches USD 20",
+      "stop when two consecutive review points close no proof obligation and refute no route",
+      "stop when visited search nodes exceed 10^11 or a lift would exceed degree 10^6",
+      "never promote a finite table of verified k to the family theorem, and never promote failure of the bounded search to a lower bound on the extremal function",
+      "do not run the family stage while the missing one-instance threshold remains an outstanding operator question, because the exponent it aims at may change"
+    ]
+  }
+}

@@ -13,6 +13,15 @@ statement, definitions, open status, source rights, evaluation protocol, and
 stopping rules must be frozen in a separate declarative problem definition and
 reviewed under the existing trust policy.
 
+**Expanded 22 August 2026.** All twenty candidates below have been expanded into
+individually scoped dossiers with validated declarative intake files; see
+[docs/research-targets/INDEX.md](research-targets/INDEX.md). Those dossiers
+freeze one exact target each and supersede the candidate descriptions here where
+the two differ -- six targets were escalated from a subclass or single parameter
+to their full statements, and A2 was re-frozen after the pair it named was shown
+to be extendible. This planning dossier is unchanged otherwise and remains the
+record of the original tiering. Expansion authorizes nothing.
+
 The ranking and most candidate descriptions below come from the operator's
 supplied notes. The five numbered Erdős statements were checked against the
 Erdős Problems catalogue on the compilation date. The MUB subproblem was checked

@@ -1,6 +1,6 @@
 # C2. Hall-ratio record — scoped research dossier
 
-**Compiled:** 21 August 2026
+**Compiled:** 22 August 2026
 **Planning source:** RESEARCH_TARGET_DOSSIER_2026-08.md, item C2 (tier C)
 **Declared domain:** diophantine-approximation
 **Intake file:** docs/research-targets/intake/c2-hall-ratio-record-v1.json
@@ -135,8 +135,9 @@ forall x : N, 1 <= x <= X ->
     not (x > 10000 * (y^2 - x^3)^2)
 ```
 
-which is proved for a frozen `X` by checking only `y in {isqrt(x^3),
-isqrt(x^3)+1}` for each `x`. That derived statement is bounded in `x` and
+which is proved for a frozen `X` by checking only
+`y in {isqrt(x^3), isqrt(x^3)+1}` for each `x`. That derived statement is
+bounded in `x` and
 universal in `y`, and it is not the target.
 
 ## 4. Semantic alignment to the source statement
@@ -171,8 +172,9 @@ recorded as claim 6.2.
 
 **Edge-case delta.** `h = 0` is excluded by hypothesis and is not a vacuous
 witness. No witness has `x <= 10000`, a consequence of `|h| >= 1`. `y = r` is
-skipped exactly when `x^3` is a perfect square. `x = 1` gives `x^3 = 1`, `r = 1`,
-and the only candidate `y = 2` gives `h = 3`, failing the inequality.
+skipped exactly when `x^3` is a perfect square. For `x = 1` we get `x^3 = 1`
+and `r = 1`, and the only candidate `y = 2` gives `h = 3`, failing the
+inequality.
 
 **Strength relation:** `unresolved`. The frozen target is a faithful
 transcription of the planning line, but the planning line's own fidelity to the
@@ -264,21 +266,22 @@ of `10^9` big-integer operations at `80`-bit width. Throughput is measured and
 recorded rather than assumed; the record carries the measured rate so the
 extrapolation below is arithmetic on a measured number.
 
-The extrapolation matters and is stated plainly: the reported record in claim 6.3
-sits near `x` of order `10^15` to `10^16`. Reaching `10^16` by this sweep would
-require `10^8` times the frozen work. Direct sweeping therefore cannot approach
-the reported frontier, and no amount of budget inside this slice changes that.
-The value of the slice is the exact verifier, the falsifiability probe on the
-reduction, and a certified exclusion envelope that is universal in `y`.
+The extrapolation matters and is stated plainly: the reported record in claim
+6.3 sits near `x` of order `10^15` to `10^16`. Reaching `10^16` by this sweep
+would require `10^8` times the frozen work. Direct sweeping therefore cannot
+approach the reported frontier, and no amount of budget inside this slice
+changes that. The value of the slice is the exact verifier, the falsifiability
+probe on the reduction, and a certified exclusion envelope that is universal
+in `y`.
 
 ### 7.3 What is enumerated exhaustively versus sampled
 
 Exhaustive: every integer `x` in `[1, X]`, and, by the reduction, every positive
 integer `y` whatsoever. Sampled: only the falsifiability probe of section 7.1,
 which is a check on the reduction and never a substitute for it. No
-canonicalization or symmetry quotient applies, because the target has no symmetry
-to quotient by: the pair `(x, y)` is ordered and both coordinates carry different
-roles.
+canonicalization or symmetry quotient applies, because the target has no
+symmetry to quotient by: the pair `(x, y)` is ordered and both coordinates carry
+different roles.
 
 ### 7.4 Rejected search strategies, and why
 
@@ -363,8 +366,8 @@ partial route, and it closes strata rather than the target.
   statement and not a sampled one, which is unusual for a bounded search and is
   the main retained asset.
 - **The reduction, with its falsifiability probe.** A proved statement that only
-  `y in {isqrt(x^3), isqrt(x^3)+1}` can matter, with a probe demonstrating that a
-  mis-stated version of it fails. This is reusable for any future Hall-type
+  `y in {isqrt(x^3), isqrt(x^3)+1}` can matter, with a probe demonstrating that
+  a mis-stated version of it fails. This is reusable for any future Hall-type
   target and is independent of the frozen threshold `100`.
 - **A measured distance-to-frontier record.** The minimum observed value of
   `10000 h^2 - x` per `|h|` stratum, which is a machine-readable measure of how
@@ -424,12 +427,12 @@ Stopping rules:
 and exact integer square root from the standard library, which is everything
 sections 7 and 8 need. Declarative problem intake and the Phase 1 trust policy.
 Deterministic serialization, content hashing, and canonical records for the R2
-envelope. The falsifiability-probe pattern already used by the Phase 6 generality
-suite and the publication projection, which is what section 7.1's probe on the
-reduction imitates: a rule that cannot be made to fail proves nothing.
-Machine-readable preservation of failed routes. Bounded, no-network subprocess
-execution with captured output. The ADR-0055 pre-research novelty re-check, which
-must cover every claim in section 6.
+envelope. The falsifiability-probe pattern already used by the Phase 6
+generality suite and the publication projection, which is what section 7.1's
+probe on the reduction imitates: a rule that cannot be made to fail proves
+nothing. Machine-readable preservation of failed routes. Bounded, no-network
+subprocess execution with captured output. The ADR-0055 pre-research novelty
+re-check, which must cover every claim in section 6.
 
 **Would require a new ADR.**
 

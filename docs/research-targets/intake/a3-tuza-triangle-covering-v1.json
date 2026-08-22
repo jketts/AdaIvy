@@ -1,0 +1,202 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "a3-tuza-triangle-covering-v1",
+  "declared_domain": "graph-packing-and-covering",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "Erdos 167, Tuza's triangle problem: edge covering at most twice edge-disjoint packing",
+    "informal_statement": "Decide the frozen universal inequality tau_3(G) <= 2*nu_3(G) for every finite simple graph G, where nu_3(G) is the maximum number of pairwise edge-disjoint triangles of G and tau_3(G) is the minimum number of edges whose deletion leaves G triangle-free. Edge-disjoint packing and edge deletion are both frozen; the vertex-disjoint and vertex-deletion variants are rejected readings. The constant 2 is pinned, so an improved covering bound is a different target. Both a proof and an exact counterexample are acceptable outcomes. All packing and covering bounds are exact: exact integer or rational LP duality with rational certificates, or exhaustive branch and bound with a replayable node log. No floating-point linear programming appears on any trust path. A finite sweep to a given order remains bounded evidence and never becomes the universal statement.",
+    "problem_type": "explore",
+    "tags": [
+      "erdos-167",
+      "tuza-conjecture",
+      "triangle-packing",
+      "triangle-edge-cover",
+      "packing-covering-duality",
+      "exact-rational-lp-duality",
+      "bounded-canonical-sweep",
+      "graph-packing-and-covering"
+    ]
+  },
+  "target_claim": {
+    "local_id": "tuza_edge_covering_at_most_twice_packing",
+    "kind": "conjecture",
+    "statement": "For every finite simple undirected graph G, tau_3(G) <= 2*nu_3(G), where a triangle of G is a set of three distinct pairwise adjacent vertices together with its three edges, nu_3(G) is the maximum cardinality of a collection of triangles of G that are pairwise edge-disjoint, and tau_3(G) is the minimum cardinality of a set D of edges of G such that the spanning subgraph G - D contains no triangle.",
+    "scope": "unrestricted_universal"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "graph_conventions",
+      "kind": "definition",
+      "statement": "A graph means a finite simple undirected graph: no loops, no multiple edges, no edge or vertex weights, no orientation. The graph on zero vertices is included, with tau_3 = nu_3 = 0, so the inequality holds trivially there. Multigraphs are excluded, and the exclusion is load-bearing because parallel edges change which triangles are edge-disjoint. Infinite graphs, digraphs, and the 3-uniform hypergraph analogue are outside the frozen target.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "triangle_definition",
+      "kind": "definition",
+      "statement": "A triangle of G is a set of three distinct pairwise adjacent vertices, identified with its set of three edges. Because K_3 has no non-adjacent pair, induced and non-induced readings coincide. Closed walks of length three, 3-cycles of a multigraph, triangles of the complement, and subdivisions of K_3 are rejected readings.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "nu_three_definition",
+      "kind": "definition",
+      "statement": "nu_3(G) is the maximum cardinality of a collection of triangles of G that are pairwise EDGE-disjoint, meaning no two chosen triangles share an edge. Sharing a vertex is explicitly permitted. Rejected readings: the vertex-disjoint triangle packing number, in which no two chosen triangles share a vertex; a packing forbidding both shared edges and shared vertices; the fractional packing number nu_3*; the total number of triangles of G; the number of triangles in an edge-disjoint decomposition of the whole edge set; the size of an arbitrary maximal rather than maximum packing.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "tau_three_definition",
+      "kind": "definition",
+      "statement": "tau_3(G) is the minimum cardinality of a set D of EDGES of G such that the spanning subgraph G - D, on all of V(G) with edge set E(G) minus D, contains no triangle. The equivalent phrasing 'minimum number of edges meeting every triangle' names the same object, because a triangle survives the deletion if and only if none of its three edges is deleted. Rejected readings: the minimum number of VERTICES whose deletion destroys every triangle; the fractional cover number tau_3*; deletion of edges from an induced rather than spanning subgraph.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "k_phrasing_and_constant_frozen",
+      "kind": "definition",
+      "statement": "The planning dossier's first phrasing, that a graph with at most k edge-disjoint triangles can be made triangle-free by deleting at most 2k edges, is the same object as the frozen ratio form: taking k = nu_3(G) gives the ratio form, and conversely the ratio form applied to any graph with nu_3(G) <= k gives tau_3(G) <= 2*nu_3(G) <= 2k. Reading k as 'exactly k' or as the size of some maximal but non-maximum packing are rejected readings. The constant 2 is likewise pinned and is not a parameter: the planning dossier's improved-covering-bound result shape, some c < 2 in place of 2, is a distinct frozen target requiring its own problem definition.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "packing_covering_sandwich",
+      "kind": "lemma",
+      "statement": "For every finite simple graph G, nu_3(G) <= tau_3(G) <= 3*nu_3(G). The lower bound holds because any edge set meeting every triangle must contain an edge of each triangle of a pairwise edge-disjoint packing, and those edges are distinct. The upper bound holds because deleting all 3*nu_3(G) edges of a maximum edge-disjoint packing leaves no triangle: a surviving triangle would be edge-disjoint from every packed triangle, contradicting maximality. The frozen target asks whether the factor 3 can be replaced by 2.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "mantel_turan_tau_of_complete_graphs",
+      "kind": "lemma",
+      "statement": "A triangle-free subgraph of K_n has at most floor(n^2/4) edges, attained by the balanced complete bipartite graph, which is a subgraph of K_n. Hence tau_3(K_n) = binomial(n,2) - floor(n^2/4) exactly. In particular tau_3(K_4) = 6 - 4 = 2 and tau_3(K_5) = 10 - 6 = 4.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "exact_lp_duality_bounds",
+      "kind": "lemma",
+      "statement": "Let nu_3* and tau_3* be the optima of the fractional triangle packing and fractional triangle edge cover linear programs over the rationals. Then nu_3(G) <= nu_3*(G) = tau_3*(G) <= tau_3(G), the middle equality by linear programming duality over Q. Consequently an exact rational fractional cover of value v certifies nu_3(G) <= floor(v), and an exact rational fractional packing of value w certifies tau_3(G) >= ceil(w). Both certificates are finite lists of rationals and are replayable by exact arithmetic alone.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "one_sided_certificate_suffices",
+      "kind": "lemma",
+      "statement": "For a single graph G, exhibiting any collection P of pairwise edge-disjoint triangles and any edge set D with G - D triangle-free and card(D) <= 2*card(P) certifies tau_3(G) <= 2*nu_3(G) for that G, because tau_3(G) <= card(D) <= 2*card(P) <= 2*nu_3(G). Neither P nor D need be optimal, so most graphs in a sweep are dispatched without computing either optimum. Refuting the inequality for a graph is not symmetric: it requires an exact upper bound on nu_3 and an exact lower bound on tau_3.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "exact_arithmetic_requirement",
+      "kind": "exactness_requirement",
+      "statement": "Every quantity on a trust path is an exact integer or an exact rational. Packing and covering optima are integers computed by exhaustive branch and bound with a replayable node log, or bounded by exact rational linear-programming duality certificates given as explicit lists of rationals. Observed ratios tau_3/nu_3 are reduced fractions. No floating-point value exists on any trust path, and a bound carrying one is discarded rather than rounded.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "no_floating_point_linear_programming",
+      "kind": "refused_route",
+      "statement": "Floating-point linear and integer programming solvers are rejected outright by repository-owner rule, and ADR-0035 adopts no solver. A simplex or interior-point number, a branch-and-cut bound from a floating-point solver, and any tolerance-based optimality claim are exploration-only, must be labelled as such, and must never be replayed as a packing or covering bound. Every bound reaching a certificate is either an exact rational duality certificate or a replayable exhaustive search log.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "fractional_route_cannot_certify_a_counterexample",
+      "kind": "refused_route",
+      "statement": "Because nu_3* = tau_3*, exact rational linear-programming certificates alone cannot in general certify tau_3(G) > 2*nu_3(G): a counterexample requires an integrality gap on at least one side, and the fractional optima are equal. Rounding through floor and ceil helps only when the gap is already large. Do not replay a purely fractional route expecting a counterexample certificate; integral bounds must come from a replayable exhaustive branch and bound or a checked unsatisfiability proof log.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "well_studied_rediscovery_report",
+      "kind": "untrusted_source_report",
+      "statement": "The planning notes report that the problem is broad and well studied, that it has mature linear-programming and combinatorial formulations and natural reductions, that K_4 and K_5 show the factor 2 would be best possible, and that best general bounds exist. None of this is acquired. The slice recomputes the K_4 and K_5 values exactly rather than relying on the report, and treats a mismatch as a source discrepancy. The ADR-0055 pre-research novelty re-check must cover terminology variants, at minimum Tuza's conjecture, triangle edge cover, triangle packing and covering, and the fractional and vertex-deletion variants, together with equivalent formulations.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "reported_unlabeled_graph_counts",
+      "kind": "untrusted_source_report",
+      "statement": "The numbers of isomorphism classes of finite simple graphs reported for orders 1 through 10 are 1, 2, 4, 11, 34, 156, 1044, 12346, 274668, 12005168, with order 11 reported as 1018997864. Untrusted and unacquired. The sweep recomputes each per-order class count and treats any disagreement as a candidate-generator fault that halts the sweep, rather than as a correction to either number.",
+      "scope": "particular"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "forall G a finite simple undirected graph, tau_3(G) <= 2 * nu_3(G), where nu_3(G) = max { card(P) : P a set of triangles of G, pairwise edge-disjoint } and tau_3(G) = min { card(D) : D subset of E(G), the spanning subgraph (V(G), E(G) \\ D) contains no triangle }, and a triangle of G is a set of three distinct pairwise adjacent vertices identified with its three edges",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "forall G a finite simple undirected graph",
+      "max over P a set of pairwise edge-disjoint triangles of G, defining nu_3(G)",
+      "min over D a subset of E(G) whose deletion leaves no triangle, defining tau_3(G)"
+    ],
+    "assumption_local_ids": [
+      "graph_conventions",
+      "triangle_definition",
+      "nu_three_definition",
+      "tau_three_definition",
+      "k_phrasing_and_constant_frozen",
+      "packing_covering_sandwich",
+      "mantel_turan_tau_of_complete_graphs",
+      "exact_lp_duality_bounds",
+      "one_sided_certificate_suffices",
+      "exact_arithmetic_requirement",
+      "no_floating_point_linear_programming",
+      "fractional_route_cannot_certify_a_counterexample",
+      "well_studied_rediscovery_report",
+      "reported_unlabeled_graph_counts"
+    ],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      ["G", "finite simple undirected graph, universally quantified with no order bound"],
+      ["k in the planning dossier's first phrasing", "instantiated at k = nu_3(G), which makes that phrasing and the frozen ratio form the same object"],
+      ["the packing achieving nu_3", "maximum over collections of pairwise edge-disjoint triangles"],
+      ["the deletion set achieving tau_3", "minimum over edge subsets whose removal leaves the spanning subgraph triangle-free"],
+      ["the question mark in the planning statement", "frozen as the universal inequality in the affirmative direction; problem_type explore keeps a counterexample an acceptable outcome without making the target a disjunction"]
+    ],
+    "definition_mapping": [
+      ["at most k edge-disjoint triangles", "nu_3(G) <= k, with edge-disjoint meaning no shared edge and shared vertices permitted"],
+      ["made triangle-free by deleting at most 2k edges", "tau_3(G) <= 2k, deletion of edges from the spanning subgraph"],
+      ["nu_3(G)", "maximum number of pairwise edge-disjoint triangles; not the vertex-disjoint number and not the fractional relaxation"],
+      ["tau_3(G)", "minimum number of edges meeting every triangle, equivalently minimum edge deletion leaving no triangle; not vertex deletion and not the fractional relaxation"],
+      ["K_4 and K_5 show the factor 2 would be best possible", "the exact integer values nu_3(K_4) = 1, tau_3(K_4) = 2, nu_3(K_5) = 2, tau_3(K_5) = 4, each recomputed by the slice's exact checkers rather than assumed"],
+      ["every finite graph", "every finite simple graph; multigraphs excluded because parallel edges change edge-disjointness"]
+    ],
+    "assumption_delta": [
+      "The planning statement is a question and gives two phrasings; the frozen target is the ratio form, and the equivalence of the two phrasings at k = nu_3(G) is recorded as a definitional assumption rather than assumed silently.",
+      "The improved-covering-bound disjunct of the planning result shape is removed, because a disjunction of possible wins is not a target under cross-cutting rule 1.",
+      "Simplicity is made explicit. The planning dossier says 'every finite graph'; multigraphs are excluded here because parallel edges change which triangles count as edge-disjoint.",
+      "The planning slice says to reproduce best general bounds. Those bounds are unacquired, so the slice reproduces only the K_4 and K_5 sharpness values, which it can compute exactly from the definitions.",
+      "Mature linear-programming formulations are admitted only in exact rational form; a floating-point solver is refused rather than merely discouraged, and the fractional route is recorded as unable to certify a counterexample on its own."
+    ],
+    "edge_case_delta": [
+      "A triangle-free graph has nu_3 = tau_3 = 0 and satisfies the inequality with equality; the order-zero and order-one graphs are the degenerate instances of this.",
+      "Every triangle is 2-connected, so it lies inside a single block of G; both nu_3 and tau_3 are therefore additive over blocks, and a minimal counterexample is 2-connected.",
+      "An edge lying in no triangle belongs to no packing and to no minimum cover, so deleting it changes neither parameter; a minimal counterexample has every edge in a triangle, and likewise every vertex in a triangle.",
+      "Triangles may share vertices freely, so nu_3 can exceed the vertex-disjoint packing number; K_5 separates the two readings, having two pairwise edge-disjoint triangles but only one vertex-disjoint triangle, so confusing them changes the value of the left-hand quantity.",
+      "The inequality is invariant under isomorphism, so a sweep over one representative per isomorphism class loses nothing."
+    ],
+    "strength_relation": "unresolved"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "unlabeled_graphs_surveyed",
+      "graphs_surviving_exact_reductions",
+      "graphs_certified_by_one_sided_certificate",
+      "exact_optima_computed",
+      "equality_cases_recorded",
+      "candidate_reductions_proved",
+      "candidate_reductions_refuted",
+      "generator_count_mismatches",
+      "failed_routes_preserved",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "an exact counterexample graph carrying a certified exact upper bound on nu_3 and a certified exact lower bound on tau_3 with tau_3 > 2*nu_3",
+      "a rigorous proof of tau_3(G) <= 2*nu_3(G) for every finite simple graph",
+      "or an explicit unresolved outcome recording the highest exhausted order, the exact maximum observed ratio tau_3/nu_3 as a reduced fraction with its argmax graph, the proved minimal-counterexample structural constraints, and the smallest remaining obligation"
+    ],
+    "stopping_rules": [
+      "stop on an exact counterexample whose nu_3 upper bound and tau_3 lower bound certificates have both been replayed independently",
+      "stop on a rigorous derivation covering every finite simple graph in scope",
+      "stop when fresh model spend reaches USD 20",
+      "stop when two consecutive review points close no obligation, raise no exhausted order, and prove no new reduction",
+      "never promote a completed finite sweep to the universal inequality; record the exhausted order and the surviving reduced class counts instead",
+      "discard rather than round any packing or covering bound produced by floating-point linear programming",
+      "halt and report a generator fault if any recomputed isomorphism-class count disagrees with the recorded count"
+    ]
+  }
+}

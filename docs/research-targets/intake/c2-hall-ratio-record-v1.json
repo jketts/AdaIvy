@@ -1,0 +1,184 @@
+{
+  "schema_version": "1.0.0",
+  "problem_definition_id": "c2-hall-ratio-record-v1",
+  "declared_domain": "diophantine-approximation",
+  "originating_principal": "actor.repository_owner",
+  "problem": {
+    "title": "Positive integers with sqrt(x) exceeding 100 times the absolute value of y^2 - x^3",
+    "informal_statement": "Find positive integers x and y with y^2 != x^3 such that x > 10000 * (y^2 - x^3)^2. That integer inequality is the frozen form and is equivalent, on this domain, to the ratio form sqrt(x)/abs(y^2 - x^3) > 100; the equivalence is verified in the dossier rather than assumed, and the integer form is the only form that appears on a trust path, so no square root is ever computed.\n\nThe certificate is the cleanest in the portfolio: two integers, four exact multiplications, one subtraction, one comparison. The frozen target is a needle-in-a-haystack existential and the expected outcome is a certified exclusion envelope over a frozen range of x that is universal in y, obtained from a proved reduction showing only the two values y = isqrt(x^3) and y = isqrt(x^3) + 1 can matter for any given x. The reported record of about 46.6 and the exact sign and normalization of the ratio are untrusted and must be checked against the primary benchmark statement before activation; if the benchmark normalizes the ratio differently, the frozen target changes and becomes a new dossier.",
+    "problem_type": "explore",
+    "tags": [
+      "certified-exclusion-envelope",
+      "diophantine-approximation",
+      "exact-integer-arithmetic",
+      "existential-target",
+      "hall-conjecture",
+      "integer-square-root",
+      "no-floating-point"
+    ]
+  },
+  "target_claim": {
+    "local_id": "hall_ratio_above_one_hundred_witness",
+    "kind": "conjecture",
+    "statement": "There exist positive integers x and y with y^2 != x^3 such that x > 10000 * (y^2 - x^3)^2. Equivalently, on this domain, sqrt(x) / abs(y^2 - x^3) > 100. The integer form is the frozen form: both of its sides are integers, so the comparison is an exact integer comparison and no square root occurs on any trust path.",
+    "scope": "existential"
+  },
+  "assumption_claims": [
+    {
+      "local_id": "frozen_ratio_definition",
+      "kind": "definition",
+      "statement": "The ratio is sqrt(x) / abs(y^2 - x^3), with the nonnegative real square root of x in the numerator and the absolute value of the integer y^2 - x^3 in the denominator, and the threshold is strict, greater than 100. Rejected readings, each a different problem: the reciprocal abs(y^2 - x^3) / sqrt(x), under which the target inverts; any logarithmic normalization; a non-strict threshold admitting x = 10000*(y^2-x^3)^2; a threshold read off a reported record value rather than fixed at 100; a signed convention requiring y^2 - x^3 > 0 or requiring x^3 - y^2 > 0, each of which halves the search space.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "domain_and_nondegeneracy_definition",
+      "kind": "definition",
+      "statement": "x and y range over the positive integers, x >= 1 and y >= 1; readings admitting zero, negative, or rational values are rejected. The hypothesis y^2 != x^3 excludes exactly the pairs with h = y^2 - x^3 equal to zero, for which the ratio is undefined and for which the frozen integer inequality would degenerate to x > 0 and admit a spurious witness whenever x^3 is a perfect square. Omitting that hypothesis is a rejected reading.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "squaring_monotone_on_nonnegatives",
+      "kind": "lemma",
+      "statement": "For real a >= 0 and b >= 0, a > b if and only if a^2 > b^2, because t -> t^2 is strictly increasing on the nonnegative reals. Also abs(h)^2 = h^2 for every integer h.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "frozen_inequality_equivalence",
+      "kind": "derived_equivalence",
+      "statement": "For positive integers x and y with y^2 != x^3 and h = y^2 - x^3, so that h is a nonzero integer with abs(h) >= 1: sqrt(x)/abs(h) > 100 iff sqrt(x) > 100*abs(h), because abs(h) > 0 and multiplication by a positive quantity preserves a strict inequality in both directions; and sqrt(x) > 100*abs(h) iff x > 10000*h^2, because both sides are nonnegative, squaring is strictly increasing there, (sqrt(x))^2 = x, and (100*abs(h))^2 = 10000*abs(h)^2 = 10000*h^2. Both directions hold and nothing is weakened. Two consequences: sqrt(x) is never computed on any trust path, and since abs(h) >= 1 the inequality forces x > 10000, so no witness has x <= 10000.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "nearest_square_reduction",
+      "kind": "derived_equivalence",
+      "statement": "Fix an integer x >= 1 and let r = isqrt(x^3), so r^2 <= x^3 < (r+1)^2. Then r >= x, because x^2 <= x^3 and isqrt is nondecreasing. Let y >= 1 be an integer with y^2 != x^3 and h = y^2 - x^3. If y <= r-1 then y^2 <= r^2 - 2r + 1 <= x^3 - 2r + 1, so abs(h) >= 2r - 1 >= 2x - 1 >= x. If y >= r+2 then y^2 >= r^2 + 4r + 4 while x^3 < r^2 + 2r + 1, so abs(h) > 2r + 3 > x. In either case abs(h) >= x, hence 10000*h^2 >= 10000*x^2 >= 10000*x > x and the frozen inequality fails. Therefore every witness has y in {r, r+1}. A sweep over 1 <= x <= X therefore examines exactly two values of y per x and its exclusion is universal in y rather than truncated.",
+      "scope": "unrestricted_universal"
+    },
+    {
+      "local_id": "exact_arithmetic_requirement",
+      "kind": "exact_arithmetic_requirement",
+      "statement": "Every step on a trust path uses exact integer arithmetic only: integer multiplication, subtraction, exact integer square root, and integer comparison. No floating-point square root, no rational or interval approximation of sqrt(x), and no decimal ratio value may enter a verdict, a certificate, or an exclusion record. A displayed ratio value is presentation and never evidence, so the records store x, y, and h and not a decimal ratio. Where the exact integer square root is computed by a warm-started Newton iteration, the invariant r^2 <= x^3 < (r+1)^2 is verified on every step so that a wrong seed is a hard failure rather than a wrong verdict.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "witness_and_certificate_definition",
+      "kind": "definition",
+      "statement": "A witness is one ordered pair (x, y) of positive integers with y^2 != x^3 satisfying the frozen integer inequality, and the certificate is exactly that pair. The verifier confirms x >= 1 and y >= 1, computes c = x^3 and s = y^2 by exact big-integer arithmetic, confirms s != c, sets h = s - c, and confirms x > 10000*h*h. Rejected as a witness: a pair whose ratio merely exceeds the reported record; a pair produced by a floating-point search and not re-checked exactly; a pair reported with a decimal ratio in place of the integers.",
+      "scope": "definitional"
+    },
+    {
+      "local_id": "ratio_normalization_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "That the benchmark normalizes the ratio as sqrt(x)/abs(y^2 - x^3), uses absolute value rather than a fixed sign, and sets the threshold at 100 is an untrusted planning-note report and the highest-impact unchecked claim here. It must be revalidated against the primary benchmark statement by the ADR-0055 pre-research re-check before any run. If the benchmark normalizes differently, the frozen target changes and the result is a new dossier rather than an edit of this one.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "record_value_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "The reported record ratio of about 46.6, attributed to Elkies's 1998 example, and the report that no pair with ratio above 100 is known, are untrusted candidates as to value, attribution, and open status. They are recorded only because they calibrate how far a bounded sweep is from the reported frontier, and they are used in no computation. This dossier does not establish that the target is open.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "mordell_strata_route_untrusted",
+      "kind": "untrusted_source_report",
+      "statement": "The report that small abs(h) reduces to Mordell equations y^2 = x^3 + h whose integral points are tabulated for small abs(h) is untrusted. If it survives acquisition it would close the abs(h) = 1, 2, 3 strata by citation instead of by sweeping, but only as far as those tables' own certified range reaches. It is route guidance and never a premise.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "float_prefilter_trap",
+      "kind": "route_trap",
+      "statement": "Do not repeat the route that pre-screens candidates with a floating-point sqrt(x) and then re-checks survivors, because it puts a float on the path from candidate generation to the exclusion record and can silently drop candidates near the boundary. The exact isqrt reduction is both exact and cheaper. Likewise, a pair whose ratio exceeds the reported record but not the frozen threshold is a distinct recorded near-miss and must never be reported as meeting the frozen target.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "lattice_route_not_authorized",
+      "kind": "route_trap",
+      "statement": "Lattice-reduction accelerated search is the only route plausibly reaching the reported frontier and is therefore constantly tempting, but no exact-integer lattice-reduction capability exists here. It is exploration-only guidance in this slice; adopting it is a new capability decision requiring its own ADR and acceptance suite. Direct sweeping cannot approach the reported frontier: reaching x of order 10^16 would need about 10^8 times the frozen envelope, and that arithmetic is recorded so the route is not re-attempted.",
+      "scope": "particular"
+    },
+    {
+      "local_id": "bounded_sweep_boundary",
+      "kind": "bounded_search_boundary",
+      "statement": "Exhausting 1 <= x <= X establishes exactly that no positive integer y pairs with any x in that range to satisfy the frozen inequality, and nothing whatsoever about any x greater than X. The exclusion is universal in y only because of the proved nearest-square reduction, which the run re-derives and probes rather than inheriting; a mis-stated reduction must be demonstrated to fail, since a rule that cannot be made to fail proves nothing. No exhaustion may be promoted into a claim about all positive integers, and failure of the sweep is never evidence for the negation of the target.",
+      "scope": "bounded"
+    }
+  ],
+  "formalization": {
+    "version": 1,
+    "statement": "exists x y : N, x >= 1 and y >= 1 and y^2 != x^3 and x > 10000 * (y^2 - x^3)^2. The derived statement a bounded run can establish is different and is not the target: forall x : N with 1 <= x <= X, forall y : N with y >= 1 and y^2 != x^3, not (x > 10000 * (y^2 - x^3)^2), proved by checking only y in {isqrt(x^3), isqrt(x^3)+1} for each x.",
+    "formal_language": "typed_informal_math",
+    "quantifiers": [
+      "exists x in N with x >= 1, unbounded above",
+      "exists y in N with y >= 1, unbounded above",
+      "no asymptotic quantifier and no implicit epsilon: the body is a polynomial comparison over Z, decidable exactly",
+      "in the derived bounded statement only: forall x with 1 <= x <= X and forall y >= 1, the latter discharged by the nearest-square reduction"
+    ],
+    "assumption_local_ids": [
+      "frozen_ratio_definition",
+      "domain_and_nondegeneracy_definition",
+      "squaring_monotone_on_nonnegatives",
+      "frozen_inequality_equivalence",
+      "nearest_square_reduction",
+      "exact_arithmetic_requirement",
+      "witness_and_certificate_definition",
+      "ratio_normalization_untrusted",
+      "record_value_untrusted",
+      "mordell_strata_route_untrusted",
+      "float_prefilter_trap",
+      "lattice_route_not_authorized",
+      "bounded_sweep_boundary"
+    ],
+    "approval_status": "proposed"
+  },
+  "semantic_alignment": {
+    "quantifier_mapping": [
+      ["x", "positive integer x, unbounded above"],
+      ["y", "positive integer y, unbounded above"],
+      ["X", "the frozen sweep bound of the bounded slice; it appears in no part of the target"]
+    ],
+    "definition_mapping": [
+      ["sqrt(x)/abs(y^2 - x^3) > 100", "the integer inequality x > 10000 * (y^2 - x^3)^2, by the verified equivalence"],
+      ["checked without floating point", "only integer multiplication, subtraction, exact integer square root, and integer comparison appear on the trust path"],
+      ["10000 * abs(y^2 - x^3)^2", "10000 * (y^2 - x^3)^2, the same integer because abs(h)^2 = h^2"],
+      ["the two integers and direct big-integer arithmetic", "the certificate is the ordered pair (x, y) and the verifier performs four exact multiplications, one subtraction, and one comparison"]
+    ],
+    "assumption_delta": [
+      "The frozen target uses absolute value and is therefore the union of the two signed variants; the benchmark statement may fix a sign instead.",
+      "The threshold is strict and is fixed at 100 rather than read off any reported record value.",
+      "The domain is positive integers in both coordinates.",
+      "If the primary benchmark statement normalizes the ratio differently, whether reciprocal, signed, logarithmic, or with a different exponent on x, this is a different target and the result is a new dossier rather than an edit of this one."
+    ],
+    "edge_case_delta": [
+      "h = 0 is excluded by the hypothesis y^2 != x^3 and is not a vacuous witness.",
+      "No witness has x <= 10000, because abs(h) >= 1 forces x > 10000.",
+      "The candidate y = isqrt(x^3) is skipped exactly when x^3 is a perfect square, leaving only y = isqrt(x^3) + 1 for that x.",
+      "x = 1 gives r = 1 and the single candidate y = 2 with h = 3, which fails the inequality."
+    ],
+    "strength_relation": "unresolved"
+  },
+  "evaluation_protocol": {
+    "version": 1,
+    "phase": "exploratory",
+    "metrics": [
+      "x_values_swept_exhaustively",
+      "exact_integer_square_roots_verified",
+      "candidate_pairs_meeting_frozen_inequality",
+      "certified_exclusion_ranges_recorded",
+      "reduction_falsifiability_probes_flipped",
+      "failed_routes_preserved",
+      "model_cost_usd"
+    ],
+    "success_criteria": [
+      "an exhibited pair of positive integers (x, y) with y^2 != x^3 for which x > 10000 * (y^2 - x^3)^2 is confirmed by independent big-integer arithmetic",
+      "a rigorous proof that no such pair of positive integers exists",
+      "or an explicit unresolved outcome recording the certified exclusion range 1 <= x <= X, universal in y, and the smallest remaining obligation"
+    ],
+    "stopping_rules": [
+      "stop on an exact certificate: a pair (x, y) confirmed by the independent big-integer verifier",
+      "stop when the fresh model spend reaches USD 25",
+      "stop when two consecutive review points extend the certified exclusion range by nothing and close no obligation",
+      "never promote the certified exclusion range 1 <= x <= X into a claim about any x greater than X",
+      "refuse any floating-point square root or ratio value as evidence and halt rather than record one"
+    ]
+  }
+}
