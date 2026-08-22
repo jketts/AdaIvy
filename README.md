@@ -88,8 +88,10 @@ another model agrees with it.
   candidate to an isolated verifier. Every model attempt, program, tool result,
   selection, usage record, and estimated cost is causally linked. Failed calls
   remain visible; external Codex or human work is importable but cannot be
-  relabelled as AdaIvy discovery. Live generated-code execution remains off
-  until its digest-pinned OCI sandbox passes the separately named gate.
+  relabelled as AdaIvy discovery. ADR-0066 activates generated-code execution
+  only for one exact-graph campaign target through the separately named,
+  digest-pinned Linux/arm64 OCI gate; output remains an untrusted candidate
+  until the isolated exact verifier re-derives it.
 - **Phase 4C** covers benchmark-scoped hybrid retrieval only: a frozen
   19-document, 17-query fixture set, an FTS5/BM25 lexical signal, a
   content-keyed alias table, and an exclusion-only evidentiary self-disclaimer
@@ -167,12 +169,14 @@ they need:
 | `make check-sealed` | the ADR-0016 v5 container image (Phase 3B Lean checking) |
 | `make check-gate PY=…` | a disposable pinned Draft 2020-12 validator environment |
 | `make check-phase4b-oci` | Docker plus the exact pinned Phase 4B parser image |
+| `make check-campaign-experiment-oci` | Docker plus the exact pinned ADR-0066 campaign experiment image |
 | `make setup-typeset` | explicit networked acquisition of hash-pinned BasicTeX under `work/toolchains/` |
 | `make check-typeset` | the locally installed BasicTeX toolchain; two clean offline pdfLaTeX compiles |
 | `make check-all` | `check` + `check-sealed` |
 
-`make check-sealed`, `make check-gate`, and `make check-phase4b-oci` are
-local/owner-run because their prerequisites are not publicly available.
+`make check-sealed`, `make check-gate`, `make check-phase4b-oci`, and
+`make check-campaign-experiment-oci` are local/owner-run because their
+prerequisites are not publicly available.
 Continuous integration runs the offline check only.
 
 The publication PDF is compiled from classic LaTeX, not drawn by an alternate

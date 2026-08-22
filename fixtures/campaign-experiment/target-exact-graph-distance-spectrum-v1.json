@@ -1,0 +1,14 @@
+{
+  "schema_version": "adaivy.campaign-experiment-target.v1",
+  "target_id": "target.exact-graph-distance-spectrum-v1",
+  "engine": "exact_graph_distance_and_invariant_space_v2",
+  "statement": "Exhibit a connected triangle-free graph of order 10 with exactly 15 edges whose graph-distance matrix has exactly 3 distinct eigenvalues and whose Inverse Even value under the even_excludes_v reading is exactly 5/3.",
+  "order": 10,
+  "edge_count": 15,
+  "require_connected": true,
+  "require_triangle_free": true,
+  "distinct_distance_eigenvalues": 3,
+  "inverse_even_reading": "even_excludes_v",
+  "inverse_even_numerator": 5,
+  "inverse_even_denominator": 3
+}

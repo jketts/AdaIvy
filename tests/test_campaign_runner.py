@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import replace
 from pathlib import Path
 import unittest
 
@@ -214,6 +215,31 @@ class CampaignRunnerTests(unittest.TestCase):
             configuration_hash=CONFIGURATION, actions=completed.actions,
             model_calls=completed.model_calls, tool_runs=completed.tool_runs,
         )
+
+    def test_failed_sandbox_run_is_terminal_and_not_fed_back_to_planner(self):
+        events = []
+        artifacts = MemoryArtifacts(events)
+        program_hash = digest(PROGRAM)
+        planner = ScriptedPlanner([
+            action("write_program", program_source=PROGRAM),
+            lambda context: run_action(context.recorded_program_hashes[0]),
+            action("report", report_text="must never be requested"),
+        ])
+
+        class FailedExperiment(RecordingExperiment):
+            def __call__(self, request):
+                result = tool_result()
+                return replace(
+                    result, status=RecordStatus.FAILED,
+                    result=b'{"refusal_code":"program_nonzero_exit"}',
+                )
+
+        completed = runner(
+            planner, FailedExperiment(events), artifacts, RecordingVerifier(),
+        ).run()
+        self.assertEqual("experiment_failed", completed.terminal_reason)
+        self.assertEqual(2, len(planner.contexts))
+        self.assertEqual(RecordStatus.FAILED, completed.tool_runs[0].status)
 
     def test_plan_write_run_inspect_select_verify_and_report(self):
         events = []
@@ -442,14 +468,23 @@ class CampaignRunnerTests(unittest.TestCase):
             "resource_limits fields differ",
         )
 
-    def test_excess_resource_request_is_rejected_before_executor(self):
-        requested = limits(memory_bytes=999_999)
-        self._assert_run_rejected_before_executor(
-            lambda context: run_action(
-                context.recorded_program_hashes[0], resource_limits=requested,
-            ),
-            "memory_bytes exceeds",
-        )
+    def test_each_excess_resource_request_is_rejected_before_executor(self):
+        maxima = {
+            "cpu_milliseconds": 500,
+            "wall_milliseconds": 1_000,
+            "memory_bytes": 8_192,
+            "output_bytes": 4_096,
+            "process_count": 2,
+        }
+        for field, maximum in maxima.items():
+            with self.subTest(field=field):
+                requested = limits(**{field: maximum + 1})
+                self._assert_run_rejected_before_executor(
+                    lambda context, requested=requested: run_action(
+                        context.recorded_program_hashes[0], resource_limits=requested,
+                    ),
+                    f"{field} exceeds",
+                )
 
     def test_verify_cannot_add_unselected_tool_artifact(self):
         events = []

@@ -1,395 +1,241 @@
-# ADR-0066: A distinct digest-pinned sandbox for model-authored experiment code
+# ADR-0066: Campaign experiment sandbox for model-generated exact computation
 
-- **Status:** accepted for the fail-closed request-admission and refusal slice;
-  live generated-code execution remains DISABLED pending the owner's image
-  digest pin and the container-runtime probe run
+- **Status:** accepted and implemented for the bounded exact-graph campaign
+  experiment on 22 August 2026. This is the gate ADR-0057 fail-closes on and
+  ADR-0065 names as the critical path: the slice after which AdaIvy can execute
+  one admitted Python program it wrote and attribute the resulting computation
+  to itself.
 - **Date:** 2026-08-22
-- **Blueprint requirement:** ADR-0057 section 2 ("Model-authored research code
-  runs only through a separate sandbox port"); ADR-0028 Phase 4B OCI precedent;
-  ADR-0026 acceptance-suite and falsifiability rules; Sections 8, 11, 15.3, 23
+- **Blueprint requirement:** Section 2 C7 (reproducibility: code and dependency
+  version, input content hashes, parameters, runtime image identity, stdout,
+  stderr, exit status); Section 15 (`:1801` prompt injection, `:1817-1818` treat
+  retrieved content as untrusted data); ADR-0057 (campaign provenance);
+  ADR-0018 and ADR-0028 (the Phase 4B digest-pinned OCI gate this reuses);
+  ADR-0016 (bounded stdin runtime precedent); ADR-0065 (the entrypoint)
 - **Decision owners:** repository owner and researcher
 
 ## Context
 
-ADR-0057 activated a campaign control plane with a `run_program` action, but
-left it unable to execute. Its status line reads "live generated-code execution
-pending its OCI gate" and its Consequences say the capability "remains
-fail-closed until the separate OCI sandbox gate named above passes." No
-production implementation of the `CampaignExperimentRunner` protocol declared in
-`src/math_research/campaign/runner.py` existed; the only implementations were
-scripted test doubles.
+ADR-0065 makes the campaign loop reachable with its experiment runner
+fail-closed, so a campaign can propose a program and not run it. That is the
+single reason material mathematics cannot cross an AdaIvy boundary: the loop can
+derive a route and record a program, then must stop.
 
-The consequence is measured, not hypothetical. `work/erdos-128-20260822/core.py`
-is a 318-line exact search program written directly into a scratch directory by
-the driving session: no campaign action, no program artifact hash, no tool-run
-record, no sandbox. Because `run_program` cannot execute, the mathematics
-happens outside the ledger, and ADR-0057's whole provenance argument -- that
-"every material AI invocation, declared rationale, program, tool execution,
-candidate selection, and verifier result used to claim AdaIvy authorship must
-cross an AdaIvy boundary" -- is unenforceable in exactly the step where the
-mathematics is.
+The isolation machinery already exists and is demonstrated. Phase 4B's
+digest-pinned OCI parser gate reproduces twelve parser fixtures with zero false
+admissions and its activation probes demonstrate kernel-enforced memory, CPU,
+process, file, network-none, read-only-root, noexec-temp, and ambient-secret
+controls. `oci_parser_sandbox.py:497-519` is the invocation: `--network=none`,
+`--read-only`, `--memory`/`--memory-swap`, `--pids-limit`, `nofile`/`fsize`/`cpu`
+ulimits, `--cpus=1.0`, `--cap-drop=ALL`,
+`--security-opt=no-new-privileges=true`, `--user=65534:65534`, a
+`rw,noexec,nosuid,nodev` tmpfs, and `--pull=never` against a digest-pinned
+image carrying Python 3.14.7 with `production_python_dependencies: []`.
 
-This ADR is the gate ADR-0057 section 2 defers to.
+**The threat model is nonetheless different, and this is the whole reason this
+needs its own ADR rather than a flag on the parser gate.** The parser gate runs
+*our* pinned code on untrusted input. This sandbox runs *untrusted code*. The
+program is written by a model that may have read retrieved documents, so a
+prompt injection upstream becomes an adversarial program here — the threat
+`:1801` names, arriving as executable rather than as text.
 
-Three facts constrain what can be delivered now.
-
-1. Pulling or building an image requires network access and repository-owner
-   authorization that has not been given. No image has been pulled, built, or
-   run for this role.
-2. Therefore no kernel-enforcement claim can be measured yet. The Phase 4B
-   parser gate reproduces twelve fixtures with zero false admissions and
-   demonstrates kernel memory, CPU, process, file, network-none,
-   read-only-root, noexec-temp and ambient-secret controls; that evidence is
-   about the parser image and the parser profile, and does not transfer.
-3. ADR-0057 section 2 warns explicitly: "The Phase 4B parser image is a
-   precedent, not authorization to reuse a parser-specific sandbox for
-   generated code." A parser worker is a fixed, project-authored program that
-   reads one document. Generated code is arbitrary, model-authored, and
-   adversarial-by-construction with respect to its own bounds. Reusing the
-   parser image would silently reuse a threat model derived for the wrong
-   input.
-
-So the deliverable is the refusal semantics, proven; not the execution.
+One consequence governs the design. A sandbox bounds what a program can *do*; it
+cannot make what a program *says* true. A program that prints "I found a
+counterexample" has produced a string, and no amount of kernel isolation makes
+that string a result.
 
 ## Options considered
 
-| Option | Evidence | Benefits | Costs/risks | Hard gates |
+| Option | Evidence | Benefit | Cost/risk | Decision |
 |---|---|---|---|---|
-| Adopt: reuse the Phase 4B parser image and profile | ADR-0028 gate is green on twelve parser fixtures | zero new pin, immediate execution | forbidden by ADR-0057 section 2; parser bounds were derived for a fixed project-authored worker, not for adversarial generated code; a shared image makes one role's widening the other's | rejected |
-| Wrap: host `subprocess` with `rlimit`/`sandbox-exec` | Phase 4B's Darwin probe records `parent_sampled_rss_tripwire_not_strict` | no container needed | memory is a sampled tripwire rather than a kernel ceiling; no network namespace; no read-only root; ADR-0057 section 2 names hard limits | rejected |
-| Interoperate: run generated code in the ADR-0016 Lean image | image already pinned and reviewed | reuse | same category error as the parser image; a formal-checking profile is not an experiment profile | rejected |
-| **Build/defer (chosen): a distinct digest-pinned experiment image and profile, with the digest left unresolved and every call refusing until the owner pins it** | this ADR's probe suite runs offline today | the request-admission surface -- the only part the model can influence -- is enforced and falsifiable now; the digest is one line the owner adds later | the kernel claims stay unproven until the owner pins and the runtime probe runs; a reader could mistake a green `make check` for a proven sandbox | the pin, then `make check-campaign-experiment-oci` |
+| Keep it fail-closed | ADR-0057 status quo | zero risk | AdaIvy can never compute; every target ends at the same blocker; the system stays a bookkeeping layer | Rejected |
+| `subprocess` with `resource` rlimits | stdlib only, no image | cheap; no container runtime needed | no network namespace, so `--network=none` is unavailable and exfiltration is possible; no filesystem isolation; rlimits are per-process and a fork evades several; the host's environment and secrets are inherited | Rejected: not an isolation boundary at all |
+| Reuse the Phase 4B parser sandbox directly | it exists and is proven | no new gate | its authorization record is role-scoped `phase4b_parser_sandbox_only`, and silently widening a role is exactly how an authorization stops meaning anything; also its entrypoint runs our worker, not an arbitrary program | Rejected as written; reused with its own role below |
+| Own digest-pinned OCI sandbox, same image, distinct role, program on bounded stdin, output treated as an untrusted candidate re-derived by an in-repo exact verifier | ADR-0018/0028 controls; ADR-0016 bounded-stdin precedent; ADR-0035's self-verifying-certificate containment | the loop computes; the result is trustworthy for a *mathematical* reason rather than a procedural one | a container runtime becomes a prerequisite for the research path, so the offline suite must stay meaningful without it | **Selected** |
 
 ## Decision
 
-Add `src/math_research/campaign/experiment_sandbox.py`: the single production
-`CampaignExperimentRunner`. It is fail-closed and its refusals are a closed,
-machine-readable vocabulary.
+Add a digest-pinned OCI experiment sandbox and wire it as ADR-0065's
+`CampaignExperimentRunner`. Reuse the Phase 4B image digest and control set;
+authorize it under its **own** role.
 
-### 1. This is a distinct image and a distinct profile
+### Trust framing, which is the load-bearing part
 
-The pin lives in `config/campaign-experiment-oci-image-linux-arm64-v1.json`
-under its own schema `adaivy.campaign-experiment-oci-image-lock.v1`, with
-`runtime_role: campaign_experiment_generated_code_only`. A lock whose
-`runtime_role` differs is refused with `image_role_not_generated_code`.
+**A sandboxed program's output is an untrusted candidate, exactly like a
+retrieved document.** It gets no warrant, no premise status, and no graph
+admission. What makes a campaign result trustworthy is that the candidate is
+re-derived by an isolated in-repository exact verifier which reads the candidate
+alone — not the program, not its stdout, not the planner's description of it.
 
-The lock additionally carries `forbidden_reuse_digests`, which must list the
-Phase 4B parser image digest. Pinning that digest as the experiment image is
-itself a refusal, `parser_image_reuse_forbidden`, at both lock-parse time and
-runtime-identity construction. `PHASE4B_PARSER_IMAGE_DIGEST` in the module is
-cross-checked against `config/phase4b-oci-image-linux-arm64-v1.json` by the
-acceptance suite, so the exclusion cannot drift away from the image it excludes.
+This is the ADR-0035 containment argument transplanted: a zero-gap certificate is
+self-verifying against its ensemble, so a wrong certificate fails the exact check
+rather than passing quietly. Here, a candidate graph is self-verifying against
+the frozen target: the verifier rebuilds it from its edge list and recomputes the
+property exactly. A malicious or simply buggy program cannot manufacture a false
+result, because it does not get to do the checking. **The sandbox contains what
+the program can do; the verifier is what makes its output mean anything.**
 
-### 2. The digest is unresolved and that is a refusal, not a fallback
+### Authorization
 
-The shipped lock carries `digest_status: unresolved`, `image_digest: null`,
-`image_reference: null`, and `authorization_status:
-unresolved_pending_owner_pin`. Every `CampaignExperimentSandbox` call refuses
-with `image_digest_unresolved`. There is no default image, no `:latest`, no
-pull, and no host-Python fallback path anywhere in the module. A `pinned` lock
-whose `image_reference` is not exactly `<image_repository>@<image_digest>`
-refuses with `image_digest_mismatch`; so does a local image whose measured
-descriptor digest differs from the pin. `pull_policy` must be `never` and
-`network_default` must be `none` in the lock itself.
+A new `config/campaign-experiment-oci-image-v1.json` lock, same
+`image_reference` digest and `platform_manifest_digest` as Phase 4B, with
+`runtime_role: campaign_experiment_sandbox_only` and its own `authorization`
+block. Sharing a digest across two roles is a deliberate, recorded reuse; the
+Phase 4B lock is not edited and its role is not widened.
 
-### 3. Request admission is pure, first, and complete
+Activation reuses the Phase 4B probe suite and adds probes for the risks specific
+to untrusted code. Every probe must pass before the runner will execute anything,
+and the activation record is content-hashed.
 
-`validate_experiment_request` is a pure function that opens nothing. It is
-evaluated FIRST -- before the digest gate, before activation -- so a
-model-chosen violation is always named precisely, and so the entire
-model-influenced surface is provable offline. The gate order is:
+### Invocation
 
-1. request admission;
-2. the bounded JSON stdin envelope;
-3. the image digest pin;
-4. the owner activation record;
-5. an injected container-engine launcher;
-6. the measured runtime identity; and only then
-7. one bounded container launch.
+The Phase 4B flag set, plus:
 
-Admission enforces, each with its own named refusal reason:
+- **The program arrives on bounded stdin**, following ADR-0016 rather than a
+  writable mount, so there is no path by which a program can be modified between
+  hashing and execution. Its `program_artifact_hash` is computed over the exact
+  bytes written to stdin.
+- **`--env=PYTHONHASHSEED=0`** and no other host-derived environment. Untrusted
+  code that iterates a set must not produce run-dependent output, or the
+  campaign export stops being replayable.
+- **Input artifacts are read-only** and content-hashed; the program receives
+  their hashes and their bytes, and can reach nothing else.
+- **stdout, stderr, and the result artifact are each independently bounded.** An
+  unbounded print is a resource attack; truncation is recorded as truncation and
+  never as a complete result.
+- **Resource measurement comes from outside the program, never the program.**
+  The current adapter records host-observed wall time and output byte counts.
+  It deliberately records CPU and peak-memory observations as unavailable:
+  Docker Desktop does not expose trustworthy per-run values to this host-side
+  adapter, while an in-container value is program-influenceable. A
+  program-asserted measurement is refused rather than recorded.
+- **No clock, no network, no randomness on the trust path.** Wall time is
+  measured outside the container. A program that needs entropy to produce its
+  result is producing a result that cannot be replayed, and the campaign refuses
+  it rather than seeding it.
 
-- **adapter**: `tool_id` must match a closed grammar and be a member of
-  `ADMITTED_TOOL_IDS` (`exact_python_search`). An identifier whose tokens
-  intersect a closed shell/process/network vocabulary is refused separately as
-  `shell_adapter_forbidden`, so a shell adapter is distinguishable from an
-  unknown one.
-- **network**: `network` must be exactly `none`.
-- **host path and command**: every argument must match
-  `^[a-z][a-z0-9_]{0,31}=[A-Za-z0-9_.:+,-]{1,64}$`. A `/`, `\`, `~`, `..` or NUL
-  is `host_path_forbidden`; anything else off-grammar, including a leading `-`
-  that would inject a client flag, is `argument_forbidden`.
-- **environment variable**: `ExperimentRequest` has no environment field, the
-  planner action schema in `runner.py` is a closed field set, and the stdin
-  envelope refuses `env`/`environ`/`environment`/`environment_variables` under
-  `environment_field_forbidden` and any other unknown key under
-  `envelope_unknown_field`. The container environment is the fixed eight-entry
-  `CONTAINER_ENVIRONMENT`; nothing model-supplied reaches it.
-- **content addressing**: the program bytes must hash to
-  `program_artifact_hash` and every input artifact's bytes to its declared
-  hash, or `program_hash_mismatch` / `input_hash_mismatch`. Duplicate input
-  hashes are refused.
-- **resource limits**: the model may *declare* the five `ResourceLimits`
-  fields, and a declaration may only tighten. A declared value above the
-  profile ceiling is `resource_limit_exceeds_profile`; below the profile floor
-  it is `resource_limit_below_profile_floor`; a non-integer or `bool` is
-  `resource_limit_malformed`. Every other bound -- open files, tmpfs inodes,
-  file size, tmpfs size, stdin envelope bytes, program bytes, input counts and
-  sizes, argument count -- is profile-fixed and is not expressible in a request
-  at all.
+### Named boundaries
 
-### 4. The language and package set is bounded and narrow
+- **The verifier never runs in the sandbox.** It runs in-repository, in the host
+  process, over exact integers and `Fraction`, and holds no reference to the
+  planner or the program. If it ran in the sandbox, an adversarial program could
+  influence its own verification.
+- **A non-zero exit is a recorded outcome, not a retry.** No model may iterate on
+  a sandbox error, for the same reason ADR-0040 forbids feeding a validator
+  diagnostic back to a proposer: it teaches evasion rather than correctness.
+- **Determinism is a gate, not an aspiration.** The same program and inputs must
+  produce a byte-identical result artifact across repeated runs and a fresh
+  container. A program whose output varies is rejected as unusable, not averaged.
+- **The offline suite stays meaningful without a container runtime.** `make check`
+  exercises the scripted runner and the refusal paths; the sandbox itself is a
+  separate named target, as `check-sealed` already is. An absent runtime is a
+  recorded blocker and never a skip that reads as a pass.
+- **No credential ever enters the sandbox.** Not the provider keys, not the
+  Phase 4A workspace, not the acquisition store. The ambient-secret probe is a
+  release condition.
+- **Exact arithmetic still binds inside the sandbox.** The image carries no
+  third-party package, so there is no numerical solver to reach for. A program
+  that produces a float on the trust path is refused by the verifier, which is
+  where the rule was always enforced.
 
-A generated program is parsed with `ast` and admitted only if every import is
-in `ALLOWED_IMPORT_MODULES`, an eighteen-entry standard-library set with no
-filesystem, process, or network surface: `array`, `bisect`, `collections`,
-`collections.abc`, `dataclasses`, `enum`, `fractions`, `functools`, `heapq`,
-`itertools`, `json`, `math`, `numbers`, `operator`, `string`, `sys`, `textwrap`,
-`typing`. Importing a network module is refused separately as
-`program_network_import_forbidden`; any other import as
-`program_import_forbidden`. Relative and star imports are refused.
-`eval`, `exec`, `compile`, `__import__` are `program_dynamic_execution_forbidden`;
-`open` is `program_filesystem_access_forbidden`; a closed set of escape
-attributes (`__class__`, `__globals__`, `__subclasses__`, `__builtins__`, ...)
-and the remaining introspection builtins are `program_reflection_forbidden`.
+## What this decision does not license
 
-**This static check is defence in depth and is not a security boundary.**
-Python reflection cannot be statically excluded in general; a determined
-generated program can reach the interpreter's internals. The container is the
-containment. The check exists to make the ordinary case obvious, to keep the
-declared surface honest, and to make widening it a visible edit.
-
-ADR-0057's revisit trigger fires before this set widens, before network or
-credentials are allowed in the sandbox, and before parallel workers are
-admitted. `max_process_count` has an ADR ceiling of 4 tasks precisely so a
-generated program cannot build a useful worker pool inside a single container.
-
-### 5. Every ADR-0057 section 2 control, its mechanism, and its proof
-
-`CONTAINER_CONTROLS` is a machine-readable table of fifteen controls. Each
-carries the ADR-0057 clause it implements, its enforcement mechanism, the
-command-line evidence that must be present, and a `proof` string that says
-honestly whether it is proven offline or is pending the container gate.
-
-| Control | Mechanism | Proof today |
-|---|---|---|
-| digest-pinned image | `repository@sha256` only, `--pull=never`, measured descriptor digest compared to the pin | offline: lock probes + command construction |
-| no network | `--network=none` (OCI network namespace) | command construction only; kernel claim PENDING |
-| read-only root | `--read-only`, no `--mount`/`--volume`/`-v` anywhere in the argv | command construction only; kernel claim PENDING |
-| empty noexec temporary filesystem | fresh `--tmpfs=/tmp:rw,noexec,nosuid,nodev,size=...,nr_inodes=...,mode=0700,uid=65534,gid=65534` | command construction only; kernel claim PENDING |
-| no inherited credentials | closed four-entry engine-client environment, closed eight-entry container environment, `--cap-drop=ALL`, `--security-opt=no-new-privileges=true`, `--user=65534:65534` | offline: the argv carries no credential-bearing name and the client environment is a closed mapping; kernel claim PENDING |
-| fresh work directory | per-container `--tmpfs=/work:...` plus `--workdir=/work` | command construction only; kernel claim PENDING |
-| bounded JSON stdin/stdout/stderr | closed stdin envelope under `max_stdin_envelope_bytes`; non-blocking reads truncated and the client killed at the output bound | offline: envelope closure and byte bound; stream truncation PENDING |
-| hard wall limit | monotonic parent deadline then kill | PENDING |
-| hard CPU limit | `--ulimit=cpu` (RLIMIT_CPU) plus `--cpus=1.0` | command construction only; kernel claim PENDING |
-| hard memory limit | `--memory` and `--memory-swap` cgroup ceiling, `OOMKilled` read from container state | command construction only; kernel claim PENDING |
-| hard process limit | `--pids-limit` cgroup | command construction only; kernel claim PENDING |
-| hard file-count limit | `--ulimit=nofile` plus tmpfs `nr_inodes` | command construction only; kernel claim PENDING |
-| hard file-size limit | `--ulimit=fsize` plus bounded tmpfs `size` | command construction only; kernel claim PENDING |
-| content-addressed inputs and outputs | sha256 of program and every input checked before launch; the response's `result_sha256` recomputed after | offline |
-| no model-chosen host path, command, image, environment variable, network target, or resource limit | closed adapter allowlist, closed argument grammar, fixed image and argv, fixed environment, `network=none` only, declared limits validated against a fixed profile | offline |
-
-The evidence record `ExperimentSandboxEvidence` carries one boolean per control
-plus `epistemic_warrant_created: False` and
-`trust_effect: "untrusted_observation"`. On every refusal path all ten kernel
-booleans are `False`, and the acceptance suite asserts that. They are set `True`
-only in the post-launch branch, which no offline test reaches.
-
-### 6. Bounds, derived before the fixtures
-
-Every number below was fixed in this ADR before any fixture was written, and
-`ExperimentSandboxProfile.__post_init__` refuses any profile outside them with
-`profile_outside_adr_envelope`.
-
-Ceilings: wall 120,000 ms and CPU 120,000 ms (two minutes -- an interactive
-research step, not a batch job); memory 1 GiB; each of stdout/stderr/result
-1 MiB; processes 4 tasks (interpreter plus its own service threads, no useful
-fork); open files 64; tmpfs inodes 64; file size 8 MiB; tmpfs size 8 MiB for
-each of `/tmp` and `/work`; stdin envelope 4 MiB; program 262,144 bytes (the
-same bound `runner.py` already applies to a `write_program` action); at most 8
-input artifacts, 1 MiB each and 4 MiB in total; at most 16 arguments.
-
-Floors, because a container cannot honour an arbitrarily small declaration:
-wall 1,000 ms and CPU 1,000 ms (a container start alone costs hundreds of
-milliseconds); memory 67,108,864 bytes (the engine's own documented 6 MiB
-minimum plus a CPython baseline, rounded to 64 MiB); output 1,024 bytes (one
-response envelope); processes 1.
-
-### 7. The engine boundary is injected and lives outside the campaign package
-
-`src/math_research/campaign/` contains no process, socket, or engine code at
-all -- an invariant `tests/test_campaign_provenance.py` already asserts
-textually for the whole package. The sandbox therefore declares an
-`ExperimentLauncher` port and the production implementation lives in
-`src/math_research/experiment_oci_launcher.py`, named for what it needs.
-
-The split is not cosmetic. The launcher is mechanism only: the sandbox builds
-the complete argv and the bounds, and the launcher runs exactly what it is
-given, so a substituted launcher cannot relax a control. The digest comparison
-in `ExperimentRuntimeIdentity.measure` stays in the campaign package for the
-same reason. `selectors` is network-capable in the repository's structural scan
-and loads lazily inside the launcher's execution call, per
-`tests/test_repository_invariants.py`.
-
-A sandbox constructed without a launcher refuses with `launcher_unavailable`.
-The default construction from the shipped pin has no activation, no runtime and
-no launcher, so it refuses three times over.
-
-### 8. Failures are retained, not raised away
-
-A refusal returns a `FAILED` `ExperimentResult` whose `result` bytes are the
-canonical refusal record, rather than raising out of
-`SequentialCampaignRunner.run` and discarding the campaign. The refusal is
-therefore recorded as a `ToolRunRecord` inside the campaign export and survives
-replay. Refusal bytes are deterministic: the record contains no timestamp and
-no elapsed measurement, so two identical calls produce byte-identical results.
-A refusal reports `measurement_source: unavailable` with every observation
-`null`, because it measured nothing and `ToolRunRecord` correctly refuses an
-`unavailable` measurement that still carries an observation.
-
-### 9. Tool output is an untrusted observation
-
-Nothing in this slice creates an `EpistemicWarrant`, discharges a proof
-obligation, approves semantic alignment, asserts source applicability, sets
-novelty or significance, or admits anything to the trusted graph. A completed
-sandbox run produces bytes with a content hash and a `trust_effect` of
-`untrusted_observation`; only the existing exact, formal, and human-review paths
-can create their respective warrants. The `cpu_milliseconds` and
-`peak_memory_kib` values in the response envelope are reported by the sandboxed
-process's own `getrusage` and are untrusted observations like everything else it
-emits.
-
-### 10. `make check` stays free of a container runtime
-
-The offline probes live in `tests/test_campaign_experiment_sandbox.py` and run
-under `make check` with no runtime, no image, no network, no subprocess and no
-socket. The container-dependent assertions live in a single `ContainerGateTests`
-class that SKIPS unless three `ADAIVY_CAMPAIGN_EXPERIMENT_OCI_*` variables are
-set. `make check-campaign-experiment-oci` is a separate target named for what
-it needs and is NOT in the `check` aggregate. With the shipped unresolved pin
-that target FAILS loudly rather than skipping, because an unpinned digest is a
-refusal.
+It does not grant warrant: `epistemic_warrant_created` stays `False`
+unconditionally, and only the existing Phase 3B kernel-checked path reaches
+`Theorem`. It does not enable search tiers 2-4, parallel or evolutionary
+specialists, or any autonomous scheduling. It does not let a program acquire,
+retrieve, embed, or call a model. It does not assess novelty or significance. It
+does not make a campaign's output publishable — that still needs the ADR-0055
+announcement re-check and the ADR-0036 projection. And it does not make a
+program's claim about its own output true, ever.
 
 ## Consequences
 
-Operationally, `run_program` still cannot execute, and that is now a named,
-recorded, machine-readable refusal instead of a missing implementation. A
-campaign that attempts an experiment gets `image_digest_unresolved` in its
-ledger, which is a truthful artifact: it says the work was requested, admitted,
-and then refused for want of an owner decision. ADR-0065's campaign entrypoint
-depends on exactly this: it makes `run_program` fail closed with a named reason
-citing this ADR.
-
-Security: the model-influenced surface is enforced today. The kernel surface is
-not. Anyone reading a green `make check` must read it as "no model-chosen host
-path, command, image, environment variable, network target, or resource limit
-can reach a launch", NOT as "generated code is contained". Containment is
-unproven until the owner pins the digest and the probe run executes.
-
-Reproducibility: the pin, profile, policy, envelope, bootstrap and refusal
-records are canonically serialized with sorted keys and explicit schema
-versions, and the profile and the admitted import set are declared in the config
-and cross-checked against the module, so a drift between the documented surface
-and the enforced surface fails the suite.
-
-Licensing: nothing new is vendored. The image will be an upstream
-digest-pinned distribution image; its licence inventory is recorded when the
-owner pins it, following the Phase 4B `inventory` precedent. The lock schema
-does not yet carry an `inventory` block; adding one at pin time is expected and
-is a schema-version bump, not a silent addition, because the parser fails closed
-on unknown fields.
-
-Negative consequences, stated plainly:
-
-- The static language check could give false comfort. It is labelled as defence
-  in depth here, in the module docstring, and in the test docstrings, and it is
-  not counted as a containment control in `CONTAINER_CONTROLS`.
-- The offline suite proves the argv carries every control flag. It cannot prove
-  the kernel honoured any of them. A flag present in a string is not a cgroup.
-- `ContainerGateTests` has never executed. A skip is not a pass, and the class
-  docstring says so.
-- The floors mean a campaign that declares a 100 ms wall gets a refusal rather
-  than a fast failure. That is deliberate: a bound the runtime cannot honour is
-  not a bound.
-- `--cidfile` puts one host path on the command line. It is written by the
-  engine client on the host, not mounted into the container, and the acceptance
-  suite asserts that it and the client binary are the only absolute paths in the
-  argv.
+- A container runtime becomes a prerequisite for the research path, which is a
+  real narrowing of where AdaIvy can do work. Named honestly: `make check` stays
+  runtime-free, and the research capability does not.
+- The first genuinely AdaIvy-attributed computation becomes possible. So does the
+  first genuinely AdaIvy-attributed *wrong* computation, which is why the
+  verifier is separate and why the candidate is re-derived rather than trusted.
+- Sandbox execution is reviewable in host-observed wall-clock and bytes; every
+  run closes into the campaign export with its image digest, program hash,
+  input hashes, limits, available host observations, and exit status. CPU and
+  peak memory remain null rather than being guessed from program-controlled
+  reports.
 
 ## Blueprint deviation
 
-Two, both stated rather than hidden.
+None. This implements C7's reproducibility record and keeps `:1817-1818`'s
+untrusted-data posture by treating program output as data rather than as
+finding. It relaxes no ADR-0057 bound other than the one it exists to open, and
+opens that one behind its own activation gate.
 
-1. The production container-engine adapter is `src/math_research/experiment_oci_launcher.py`,
-   outside `src/math_research/campaign/`, whereas Phase 4B keeps its engine
-   adapter inside its phase package. **Necessity:** the campaign package carries
-   a stronger invariant than Phase 4B -- `tests/test_campaign_provenance.py`
-   forbids the *text* `import subprocess` anywhere under
-   `src/math_research/campaign/`, which makes ADR-0057's "the ordinary offline
-   suite ... opens no subprocess or socket" a structural property of the package
-   rather than a property of a test's mocking. Preserving that is worth one
-   extra module. **Revisit trigger:** if the campaign package ever legitimately
-   needs a host process for another reason, reconcile that invariant explicitly
-   in an ADR rather than by deleting the check.
-2. The image digest is shipped unresolved, so this ADR is accepted for the
-   refusal slice only and its execution half is deferred. **Necessity:** pulling
-   an image needs network access and owner authorization. **Revisit trigger:**
-   the owner pins the digest, records the image inventory, and
-   `make check-campaign-experiment-oci` passes; only then may the status line
-   claim live execution.
+## Falsifiability probes
+
+`probes_flipped == probes_total` gates the slice.
+
+- `pr.sandbox-network-refused` — a program opening a socket must fail with the
+  network unavailable, not succeed.
+- `pr.sandbox-write-outside-tmpfs-refused` — a write to any path outside the
+  bounded tmpfs and creation beyond its fixed inode count must both fail.
+- `pr.sandbox-noexec-tmpfs` — a binary dropped in the tmpfs must not execute.
+- `pr.sandbox-fork-bomb-bounded` — exceeding `--pids-limit` must terminate the
+  run, not the host.
+- `pr.sandbox-memory-bounded` — an allocation above `--memory` must be killed.
+- `pr.sandbox-cpu-bounded` — a spin loop must be terminated by the CPU ulimit.
+- `pr.sandbox-no-ambient-secret` — no host environment variable, and specifically
+  no provider credential, may be readable inside.
+- `pr.sandbox-stdout-truncation-recorded` — an unbounded print must be recorded
+  as truncated and must not read as a complete result.
+- `pr.sandbox-program-measurement-refused` — a program-asserted CPU or memory
+  measurement must be refused, not recorded.
+- `pr.sandbox-nondeterministic-program-refused` — a program whose result differs
+  across two runs must be refused rather than averaged or retried.
+- `pr.sandbox-image-digest-pinned` — a mismatched image digest must refuse, and
+  `--pull=never` must hold.
+- `pr.sandbox-role-not-widened` — the Phase 4B lock's role must still read
+  `phase4b_parser_sandbox_only`, asserted so reuse cannot become widening.
+- `pr.sandbox-verifier-not-in-container` — the verifier must be structurally
+  unable to run inside the sandbox.
+- `pr.sandbox-output-creates-no-warrant` — no sandbox result may set
+  `epistemic_warrant_created`, assert applicability, or admit to the graph.
+- `pr.sandbox-lying-program-caught` — a program that prints a false claim while
+  emitting a candidate that fails the exact check must produce a refutation of
+  its own claim. **This is the probe that tests the actual security argument.**
+- `pr.sandbox-absent-runtime-is-a-blocker` — with no container runtime, the run
+  must record a blocker and must not report success.
 
 ## Validation and revisit trigger
 
-This decision remains valid while all of the following hold.
+The recorded activation is
+`reports/campaign-experiment-sandbox/v1/activation.json`, content hash
+`sha256:9b5b46afa7a2d0d6bb34507fb588bf9b35e62293c5d613da09dfdd6610d5a32c`.
+Two independent executions against the exact locally installed Linux/arm64
+image produced byte-identical records with all sixteen probes flipped. The
+ordinary offline suite verifies admission, exact verification, replay,
+tamper-refusal, deterministic failure records, and the no-runtime path without
+launching a process. `make check-campaign-experiment-oci` is the separate live
+kernel gate and fails rather than skips when the runtime or pinned image is
+absent.
 
-- `make check` passes with no container runtime, no image, no network, no
-  subprocess and no socket, and `tests/test_campaign_experiment_sandbox.py`'s
-  audit-hook observer records zero `subprocess.Popen`/`socket.*` events on every
-  offline path.
-- Every named control in `CONTAINER_CONTROLS` carries at least one single-field
-  falsifiability probe, and every probe table asserts `flipped == total` so an
-  emptied table fails. The probes are:
+Valid while: the image stays digest-pinned with `--pull=never`; every control
+probe passes; the verifier stays outside the container and holds no planner
+reference; program output stays an untrusted candidate; no credential enters; and
+determinism is enforced rather than assumed.
 
-  - 48 request-admission probes, each a one-field mutation of one
-    `ExperimentRequest` fixture that must produce one named refusal reason and
-    field;
-  - 8 stdin-envelope probes plus separate duplicate-key, malformed-JSON,
-    non-object, non-UTF-8, missing-field and byte-bound refusals;
-  - 17 image-lock probes covering digest mismatch, unresolved digest, parser
-    reuse, role, unknown field, duplicate key, schema version, digest-status
-    vocabulary, network default, pull policy, platform, profile declaration,
-    language-surface declaration, forbidden-reuse declaration, authorization
-    status, unresolved-with-digest, and a missing field;
-  - 7 bootstrap tamper probes, one per named in-container exit code 91-97;
-  - 11 command-evidence probes, each deleting exactly one control's flag from
-    the argv and requiring the coverage check to reject it, plus 4 declared-bound
-    and 3 profile-bound probes that move exactly one flag; and
-  - 10 profile-ceiling probes and 1 profile-floor probe.
+Reconsider if a legitimate research program ever genuinely needs entropy or wall
+time — that is a real tension with replayability and deserves its own decision
+rather than a seeded workaround.
 
-  Two mechanisms have NO offline probe and are labelled accordingly:
-  `wall_limit` and the stream-truncation half of `bounded_json_streams` are
-  parent-side, are not argv-visible, and are measurable only on the container
-  gate. `tests/test_campaign_experiment_sandbox.py` asserts that fact rather
-  than implying coverage.
-- The shipped pin stays unresolved until the owner resolves it, and
-  `image_digest_unresolved`, `image_digest_mismatch`,
-  `parser_image_reuse_forbidden`, `activation_not_authorized`,
-  `launcher_unavailable` and `runtime_unavailable` remain refusals with no
-  fallback.
-- `PHASE4B_PARSER_IMAGE_DIGEST` still equals the digest in
-  `config/phase4b-oci-image-linux-arm64-v1.json`, and the two runtime roles
-  still differ.
-- The declared `resource_profile` and `allowed_import_modules` in the config
-  still equal the module's frozen profile and import set.
-- No sandbox result creates a warrant, discharges an obligation, approves
-  applicability, or sets novelty or significance.
+Revisit with a new ADR before: allowing network from a sandbox for any reason;
+mounting anything writable; running the verifier inside; permitting a
+third-party package in the image; letting a model iterate on a sandbox error; or
+raising a limit without moving the activation record.
 
-Revisit this decision before: widening `ALLOWED_IMPORT_MODULES` or admitting a
-third-party package into the image; allowing network or any credential in the
-sandbox; admitting a second concurrent experiment worker or raising
-`max_process_count`; loosening any ADR ceiling in
-`ExperimentSandboxProfile`; adding a second admitted tool adapter; permitting a
-host bind mount for inputs instead of the content-addressed stdin envelope;
-treating a sandbox observation as anything but an untrusted proposal; or
-claiming this gate has passed on the strength of a skipped
-`ContainerGateTests`.
+## Explicit deferrals
+
+- Parallel sandbox execution: one run at a time, so a resource-exhaustion
+  interaction between concurrent runs cannot exist yet.
+- Non-Python programs, and any compiled toolchain.
+- Sandboxes on a non-Linux host: the controls are kernel-enforced and this is
+  `linux/arm64` only, matching the Phase 4B lock.

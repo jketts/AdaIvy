@@ -249,10 +249,12 @@ campaign export with semantic and operational hashes. The live activation probe
 uses the same gateway and budget; a failed probe is terminal and recorded.
 External Codex or human work remains an explicit import and cannot be called an
 AdaIvy discovery. Reader-facing AI-authored publication builds derive origin
-and disclosure from the verified campaign/link pair. Production generated-code
-execution remains disabled until its distinct digest-pinned OCI sandbox gate
-passes; the offline suite uses only injected scripted ports. This activates no
-parallel specialist, evolutionary, or higher search tier.
+and disclosure from the verified campaign/link pair. ADR-0066 activates
+generated-code execution only for one bounded exact-graph campaign target,
+through a distinct digest-pinned Linux/arm64 OCI sandbox whose sixteen probes
+pass. Its output remains an untrusted candidate until the isolated exact
+verifier re-derives it; the offline suite uses only injected scripted ports.
+This activates no parallel specialist, evolutionary, or higher search tier.
 
 ADR-0058, ADR-0059, and ADR-0060 move the trust boundary UPSTREAM of the
 proposition. Every earlier boundary governs whether reasoning about a fixed

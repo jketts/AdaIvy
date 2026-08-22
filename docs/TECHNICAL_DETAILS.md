@@ -537,9 +537,11 @@ program, inspect the byte-exact result, select, verify, suspend, ask, or report.
 The orchestrator rejects unknown tools, host paths, network, environment fields,
 and excessive resources before calling the injected experiment runner. The
 provider activation request uses the same gateway and counts against the same
-attempt/token/cost budget. Production model-authored program execution remains
-disabled until the dedicated digest-pinned OCI image and enforcement probes
-pass; the offline suite uses a zero-process scripted runner.
+attempt/token/cost budget. ADR-0066 activates model-authored program execution
+only for the bounded exact-graph campaign target after its dedicated
+digest-pinned Linux/arm64 OCI gate passes. Output remains an untrusted candidate
+until the isolated exact verifier re-derives it; the offline suite continues to
+use a zero-process scripted runner.
 
 For an AI-authored solved claim, `publication build` requires both campaign
 files. It re-verifies semantic and operational hashes, closes each claim and

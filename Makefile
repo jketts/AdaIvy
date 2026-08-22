@@ -44,7 +44,7 @@ REPORT_INSTANT ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 OUT ?= reports/local/run-$(REPORT_STAMP)
 WORK ?= work/$(REPORT_STAMP)
 
-.PHONY: check check-all check-sealed check-gate setup-typeset check-typeset publication-build check-phase4b-oci \
+.PHONY: check check-all check-sealed check-gate setup-typeset check-typeset publication-build check-phase4b-oci check-campaign-experiment-oci \
         check-embedding-live spike-phase5-sdp test phase0 phase1 problem-intake phase2 phase3a phase3b phase4a phase4b \
         phase4c phase4d phase5 phase6 embedding corpus synthesis campaign publication report clean help
 
@@ -58,6 +58,7 @@ help:
 	@printf '  check-typeset publication PDF build (requires the pinned TeX Live engine)\n'
 	@printf '  publication-build automatically emit a complete TeX/Lean/PDF bundle\n'
 	@printf '  check-phase4b-oci strict Phase 4B parser gate (requires exact pinned image)\n'
+	@printf '  check-campaign-experiment-oci ADR-0066 generated-program sandbox gate (requires exact pinned image)\n'
 	@printf '  spike-phase5-sdp  ADR-0045 noncommuting-SDP comparison (engines optional)\n'
 	@printf '  check-all     check + check-sealed\n'
 	@printf '  report        write every readable artifact and compile its publication PDF\n'
@@ -723,29 +724,18 @@ check-phase4b-oci:
 	  ADAIVY_PHASE4B_OCI_IMAGE='docker.io/library/python@sha256:6b8f06d04d5305c1d1288435388df9165ab41e681fae6439d6349d8053cc3f83' \
 	  $(PY) -m unittest tests.test_phase4b_oci_parser_sandbox
 
-# ADR-0066 campaign experiment sandbox for model-authored code.
-#
-# Deliberately NOT part of `check`. The offline probes in the same test module
-# already run under `make check` and need no runtime; this target adds only the
-# KERNEL enforcement claims, which require both a container runtime and an
-# owner-pinned digest in config/campaign-experiment-oci-image-*.json.
-#
-# The shipped pin carries `digest_status: unresolved`, so this target FAILS
-# loudly today rather than skipping: an unpinned digest is a refusal, never a
-# fallback. It turns green only after the owner resolves the digest.
-#
-# It is a distinct image and a distinct profile from check-phase4b-oci; ADR-0057
-# section 2 forbids reusing the parser sandbox for generated code, and pinning
-# the parser digest here is itself a refusal.
-.PHONY: check-campaign-experiment-oci
+# Separate from `check`: executes model-authored-program probes in the reviewed
+# image. The activation record is written only to a temporary gate directory.
 check-campaign-experiment-oci:
-	@printf '\n== ADR-0066 campaign experiment sandbox (needs the owner-pinned image) ==\n'
-	@docker_bin=$$(command -v docker) && \
-	  docker_host=$$(docker context inspect --format '{{.Endpoints.docker.Host}}') && \
-	  ADAIVY_CAMPAIGN_EXPERIMENT_OCI_DOCKER="$$docker_bin" \
-	  ADAIVY_CAMPAIGN_EXPERIMENT_OCI_DAEMON="$$docker_host" \
-	  ADAIVY_CAMPAIGN_EXPERIMENT_OCI_LOCK='config/campaign-experiment-oci-image-linux-arm64-v1.json' \
-	  $(PY) -m unittest tests.test_campaign_experiment_sandbox
+	@printf '\n== ADR-0066 campaign experiment OCI gate ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-campaign-oci.XXXXXX") && \
+	  $(PY) -m math_research.campaign.experiment_sandbox.gate . \
+	    --phase4b-evidence reports/phase-4b-activation/oci-sandbox-gate.json \
+	    --output "$$d/activation.json" > "$$d/summary.json" && \
+	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["status"] == "activated"; assert r["probes_flipped"] == r["probes_total"] == 16' \
+	    "$$d/activation.json" && \
+	  rm -rf "$$d" && \
+	  printf 'campaign experiment OCI gate ok (16/16 probes flipped)\n'
 
 clean:
 	find . -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true

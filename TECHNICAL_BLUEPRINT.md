@@ -2115,9 +2115,10 @@ Publication consumes that export rather than trusting authored usage totals or
 generator labels. An external Codex, human, or external-system root remains
 typed as external even when AdaIvy later verifies and packages the result. A
 closed internal campaign may claim AdaIvy discovery only when its operational
-accounting is complete. Generated-code execution is still gated on a dedicated
-digest-pinned OCI enforcement suite; an injected scripted runner supplies the
-ordinary offline acceptance path.
+accounting is complete. ADR-0066 activates generated-code execution only for
+the bounded exact-graph campaign target through a dedicated digest-pinned
+Linux/arm64 OCI enforcement suite. The ordinary offline acceptance path still
+uses injected scripted ports and requires no container runtime.
 
 ### Phase 3A — Bounded manually supplied research memory
 

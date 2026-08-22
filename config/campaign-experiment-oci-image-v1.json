@@ -1,0 +1,39 @@
+{
+  "schema_version": "adaivy.campaign-experiment-oci-image-lock.v1",
+  "image_reference": "docker.io/library/python@sha256:6b8f06d04d5305c1d1288435388df9165ab41e681fae6439d6349d8053cc3f83",
+  "oci_index_digest": "sha256:6b8f06d04d5305c1d1288435388df9165ab41e681fae6439d6349d8053cc3f83",
+  "platform": "linux/arm64",
+  "platform_manifest_digest": "sha256:753f2ef3ad540b98b87064279a6be282f06f1013755c6576235bcd5b35b79b57",
+  "upstream": {
+    "base_image_digest": "sha256:d858bb5442632a31bd4bca6c5e601dbe6b536fd7942092ea6a08a0a95805693c",
+    "base_image_name": "alpine:3.23",
+    "python_version": "3.14.7",
+    "repository": "https://github.com/docker-library/python",
+    "revision": "228f71e70a42ba9f9a092321b971031603bb88ff"
+  },
+  "offline_archive": {
+    "byte_length": 18829824,
+    "load_command": "docker load --input adaivy-phase4b-python-3.14.7-arm64.oci.tar",
+    "sha256": "sha256:c1b1b8cbc18768a08de61e5b1b63378d026cbb85cfb27c2a7149ba63888d2797"
+  },
+  "inventory": {
+    "installed_database_sha256": "sha256:8ebc165acfae86a1d1a10d1e120ddb16b01bb2454841e9de8ecc74386f0720e8",
+    "python_license_sha256": "sha256:b0e25a78cffb43f4d92de8b61ccfa1f1f98ecbc22330b54b5251e7b6ba010231",
+    "production_python_dependencies": [],
+    "package_count": 29
+  },
+  "digest_reuse": {
+    "recorded_reuse": true,
+    "reused_from_lock": "config/phase4b-oci-image-linux-arm64-v1.json",
+    "reused_from_role": "phase4b_parser_sandbox_only",
+    "rationale": "ADR-0062 reuses the reviewed Phase 4B image bytes under a distinct role. The Phase 4B lock is not edited and its role is not widened; the two roles authorize different entrypoints over identical bytes."
+  },
+  "authorization": {
+    "network_default": "none",
+    "pull_policy": "never",
+    "runtime_role": "campaign_experiment_sandbox_only",
+    "status": "accepted_for_bounded_campaign_experiment_activation",
+    "executes_untrusted_program": true,
+    "credentials_admitted": false
+  }
+}

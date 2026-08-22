@@ -680,6 +680,14 @@ class SequentialCampaignRunner:
                 ).finalized()
                 actions.append(record)
                 available.update(record.output_artifact_hashes)
+                if (
+                    action.action_type is ActionType.RUN_PROGRAM
+                    and action_status is not RecordStatus.COMPLETED
+                ):
+                    # ADR-0066: a sandbox failure is terminal. Its diagnostic
+                    # is retained but never fed back as repair guidance.
+                    terminal = "experiment_failed"
+                    break
                 if action.action_type in {ActionType.ASK_USER, ActionType.REPORT}:
                     break
             except CampaignRunnerError as rejection:

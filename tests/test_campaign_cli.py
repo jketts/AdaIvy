@@ -439,7 +439,7 @@ class CampaignEntrypointFixtureTests(unittest.TestCase):
         self.assertEqual(0, code, payload)
         facts = payload["facts"]
         self.assertEqual(
-            ["derive", "write_program", "run_program", "report"], facts["action_types"],
+            ["derive", "write_program", "run_program"], facts["action_types"],
         )
         self.assertEqual({
             "status": "pending_gate",
