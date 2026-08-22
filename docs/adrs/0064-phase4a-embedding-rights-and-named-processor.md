@@ -2,7 +2,13 @@
 
 - **Status:** accepted and implemented; the first of three slices activating
   embedding-backed semantic retrieval, and a hard prerequisite for ADR-0069
-  and ADR-0070
+  and ADR-0070. Superseded in part by ADR-0072: the human-authorship mechanism
+  for per-document rights decisions, the
+  `pr.nonhuman-embedding-decision-refused` probe, and the
+  non-human-author revisit item are superseded (per-document decisions may be
+  deterministically derived from an operator-approved content-hashed
+  source-and-rights policy; a model still may not author one); the named
+  processor, one-decision-one-processor rule, and every other clause stand.
 - **Date:** 2026-08-22
 - **Blueprint requirement:** Section 12.2.1 (provider binding for vector
   projections); Section 2 C1 (provenance completeness), C12 (citation

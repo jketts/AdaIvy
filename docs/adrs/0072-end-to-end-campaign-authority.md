@@ -18,7 +18,8 @@
 AdaIvy's components each work inside a deliberately narrow ADR: one Crossref
 request per human acknowledgement (ADR-0051), one human-planned URL per
 acquisition, a human `before_research` novelty re-check before every campaign
-(ADR-0055), a metadata/abstract-only ingestion slice (ADR-0067), a ban on
+(ADR-0055), an individually human-authored rights decision for every document
+(ADR-0064), a metadata/abstract-only ingestion slice (ADR-0067), a ban on
 machine-generated queries (ADR-0068), and a 19-document retrieval fixture
 (ADR-0070). Those bounds were correct for their slices, and each recorded a
 revisit trigger requiring a new ADR before widening.
@@ -27,7 +28,7 @@ The owner now wants the behavior described in
 `docs/END_TO_END_RESEARCH_RUNTIME_PLAN.md`: supply a problem, an AdaIvy
 credential profile, and budgets; authorize once; and receive either a verified
 result or an honest unresolved report without routine approval pauses. Read
-together, the six ADRs above silently block that runtime even after every
+together, the ADRs above silently block that runtime even after every
 component is implemented. This ADR is the explicit decision the revisit
 triggers demanded. It supersedes the exact clauses named below, keeps
 everything else in force, and states plainly that a decision is not a
@@ -151,8 +152,11 @@ The campaign may generate terminology and equivalent-formulation queries
 against Crossref and the ADR-0067 open-access snapshot source, and may follow
 results depth-one under all six ADR-0068 controls (pinned scholarly-origin
 allowlist, absolute depth one, no credentials, no redirects or query strings,
-pinned fan-out, machine selection recorded as such). Query generation grants
-discovery authority only: a discovered document remains an
+pinned fan-out, machine selection recorded as such). Querying the snapshot
+source is local search over already-acquired, content-hashed snapshot bytes,
+not a second network discovery origin: Crossref remains the only pinned
+network discovery origin, exactly as ADR-0051 provides. Query generation
+grants discovery authority only: a discovered document remains an
 `untrusted_inspiration_candidate`, and no search rank, retrieval hit, or model
 preference becomes relevance, applicability, novelty, significance, or
 warrant. Every generated query is recorded with its generating action, budget
@@ -173,8 +177,9 @@ admitted. This is recorded as a **replacement** for the human-authored
 per-document rights requirement, not a bypass: every document still carries a
 per-document rights record; what changes is that a human authored the policy
 once instead of each record. ADR-0064's requirement that an embedded document
-carry a processor-bound rights decision naming the processor stands; this ADR
-permits that decision to be policy-derived. Licence diligence still precedes
+carry a processor-bound rights decision naming the processor stands; its
+human-authorship mechanism for per-document decisions is explicitly superseded
+below so that decision may be policy-derived. Licence diligence still precedes
 acquisition, archive and tranche selection remain human acts, and the bounded
 first tranche of ADR-0067 remains mandatory.
 
@@ -207,7 +212,9 @@ this record rather than any edit to its substance.
 - Decision bullet: "one operator-initiated request per invocation, at most ten
   returned candidates" — superseded in its *one operator-initiated request*
   part. Campaign literature actions may issue multiple requests under pinned
-  per-campaign query and fan-out budgets. Per-request byte, term-count, and
+  per-campaign query and fan-out budgets. The at-most-ten-candidates cap
+  remains in force **per request**; total fan-out across requests is governed
+  by the campaign literature budget. Per-request byte, term-count, and
   deadline bounds remain, now pinned in the campaign policy.
 - Decision bullet: "every query term must be an NFKC-normalized, case-folded
   exact substring of a supplied local problem or research-context file" —
@@ -254,6 +261,36 @@ this record rather than any edit to its substance.
   absence of a `novel` outcome, and the rule that no automated search is a
   novelty authority. Human review before a public novelty claim or
   publication approval is a hard boundary this ADR does not touch.
+
+### ADR-0064 (Phase 4A embedding rights bind a named processor)
+
+- The named boundary "**Human authority is unchanged and unweakened.** Rights
+  decisions stay pinned to `(ActorKind.HUMAN, Authority.HUMAN_FINAL)` ... No
+  model, automation, or campaign may author one." and the validity condition
+  "rights decisions stay human-authored" are superseded **only in the
+  authorship mechanism for per-document decisions**: under Decision §7, a
+  per-document `embedding` or `model_context` rights decision may be
+  deterministically derived from the operator-approved, content-hashed
+  source-and-rights policy, with quarantine for any record the policy cannot
+  classify. Human authority moves to the policy; it does not disappear. A
+  human authors and approves the policy once, the derivation is a
+  deterministic function of the archive manifest and per-document licence
+  metadata, and no model output ever becomes a rights decision.
+- The falsifiability probe `pr.nonhuman-embedding-decision-refused` ("a
+  decision authored with `ActorKind.MODEL` or `Authority.PROPOSAL` must
+  refuse") is retired and replaced by a recording obligation, mirroring the
+  ADR-0068 probe replacement below: a policy-derived decision that does not
+  record the policy content hash, the deriving rule identifier, and the exact
+  per-document licence inputs must refuse — and a decision authored by a
+  model, or carrying `Authority.PROPOSAL`, still refuses.
+- The revisit-trigger item "letting a non-human author a rights decision" is
+  discharged by this ADR for deterministic policy derivation only.
+- **Not superseded:** the required named `processor` for the two disclosing
+  uses and its prohibition for every other use; one decision authorizes one
+  processor, with no wildcard, no `any`, and no cross-provider inheritance; a
+  second provider is a second decision; recorded `disclosure_kind`; unchanged
+  expiry, revocation, and takedown semantics; the closed `processor` field
+  set; and every other falsifiability probe of ADR-0064.
 
 ### ADR-0067 (corpus ingestion at volume)
 
@@ -338,7 +375,7 @@ Retrieval rank, model agreement, and experimental success remain non-proof.
 - Slices 2–6 of the plan are decision-authorized and no narrower ADR can be
   read as silently still blocking them; each still needs its own
   implementation, falsifiability probes, and gate.
-- Six ADRs gain a status-line supersession pointer; their substance is
+- Seven ADRs gain a status-line supersession pointer; their substance is
   unedited, per the append-only history rule.
 - The recorded prompt-injection exposure accepted in ADR-0068 grows: machine
   queries choose what discovery returns, and discovery chooses (within the
