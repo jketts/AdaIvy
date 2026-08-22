@@ -50,11 +50,17 @@ exact acknowledgement string, and the human operator identity.
   `ObjectStoreArchiveSource` then serves ingestion with zero network access —
   ingestion cannot tell fetched bytes from locally supplied bytes.
 - **Resumable, delta-only.** Documents whose exact bytes are already stored
-  are skipped without a request; an interrupted tranche resumes where it
-  stopped and a repeat fetch makes zero requests.
+  are verified and skipped without a request.  Before every network effect an
+  append-only request intent binds the operator, manifest, document, origin,
+  URL, expected byte count, and expected hash.  A matching terminal record
+  closes that intent.  If a process stops after the request begins, a restart
+  either verifies the expected stored object and records `recovered_stored`,
+  or refuses to repeat the ambiguous effect.  A terminally recorded failure
+  may be retried under a fresh intent.
 - **Everything recorded.** A new append-only `fetches` ledger records every
   request's origin, URL, byte count, and outcome (closed vocabulary:
-  `fetched`, `hash_mismatch`, `refused_off_allowlist`, `transport_error`),
+  `fetched`, `recovered_stored`, `hash_mismatch`,
+  `refused_off_allowlist`, `transport_error`),
   plus a per-run summary. Failures are retained, never discarded.
 - The live transport is stdlib `urllib` with redirects refused, https only,
   and a bounded read; it is constructed only on the gated CLI path. All tests
@@ -76,8 +82,10 @@ types in, extracted UTF-8 text out, with a closed identity
   explicit operator opt-in naming the binary path, its expected sha256, and
   its expected version; absent, differently hashed, or differently versioned
   binaries are coded refusals (`extractor_not_pinned`), following the pinned
-  LaTeX-typesetter pattern. Execution is bounded (timeout, output cap) and
-  never part of the default registry.
+  LaTeX-typesetter pattern. Execution is bounded by timeout and kernel-enforced
+  output-file limits; stdout and diagnostics are then read through explicit
+  byte caps, so a hostile extractor cannot grow an in-memory capture or an
+  unbounded temporary file. It is never part of the default registry.
 - **Fixture** — a deterministic mapping for offline tests.
 
 Spans remain `utf8_exact_char_spans_v1` — exact character offsets carried with

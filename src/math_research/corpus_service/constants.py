@@ -68,6 +68,7 @@ FETCH_TIMEOUT_MILLISECONDS = 30_000
 #: Closed vocabulary of per-request fetch outcomes recorded in the run ledger.
 FETCH_OUTCOMES = (
     "fetched",
+    "recovered_stored",
     "hash_mismatch",
     "refused_off_allowlist",
     "transport_error",

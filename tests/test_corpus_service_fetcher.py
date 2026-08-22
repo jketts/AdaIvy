@@ -26,7 +26,7 @@ from math_research.corpus_service.constants import (
     MAX_TRANCHE_TOTAL_BYTES,
     PROVIDER,
 )
-from math_research.corpus_service.dataroot import initialize_data_root
+from math_research.corpus_service.dataroot import initialize_data_root, write_object
 from math_research.corpus_service.errors import (
     SnapshotAcquisitionNotActiveError,
     SnapshotFetchBoundExceededError,
@@ -38,8 +38,8 @@ from math_research.corpus_service.fetcher import (
     ObjectStoreArchiveSource,
     fetch_snapshot,
 )
-from math_research.corpus_service.ledger import read_ledger
-from math_research.corpus_service.serialization import sealed, sha256_bytes
+from math_research.corpus_service.ledger import append_ledger, read_ledger
+from math_research.corpus_service.serialization import canonical_bytes, sealed, sha256_bytes
 from math_research.corpus_service.service import ingest_tranche
 from math_research.corpus_service.snapshot import validate_tranche_config
 from math_research.corpus_service.policy import validate_policy
@@ -217,12 +217,28 @@ def _fetch(root: Path, manifest: dict, transport: FakeTransport, *,
         root, manifest=manifest, origin=origin,
         activation=activation or _active_activation(),
         acknowledgement=acknowledgement, transport=transport,
+        operator_id=HUMAN["actor_id"],
         run_id=run_id, recorded_at=recorded_at,
         monotonic=clock.monotonic, sleep=clock.sleep,
     )
 
 
 class FetcherGateTests(unittest.TestCase):
+    def test_operator_must_match_activation_actor(self) -> None:
+        manifest, bodies = _synthetic_archive(1)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            initialize_data_root(root, data_root_id="dataroot.fetch", initialized_at=T0)
+            with self.assertRaises(SnapshotFetchFailedError):
+                fetch_snapshot(
+                    root, manifest=manifest, origin=ORIGIN,
+                    activation=_active_activation(),
+                    acknowledgement=LIVE_SNAPSHOT_ACKNOWLEDGEMENT,
+                    transport=FakeTransport(manifest, bodies),
+                    operator_id="human.someone-else", run_id="run.actor",
+                    recorded_at=T1,
+                )
+
     def test_pending_record_and_wrong_acknowledgement_refuse(self) -> None:
         manifest, bodies = _synthetic_archive(3)
         with tempfile.TemporaryDirectory() as temporary:
@@ -277,7 +293,8 @@ class FetcherPacingTests(unittest.TestCase):
                 root, manifest=manifest, origin=ORIGIN,
                 activation=_active_activation(),
                 acknowledgement=LIVE_SNAPSHOT_ACKNOWLEDGEMENT,
-                transport=transport, run_id="run.paced", recorded_at=T1,
+                transport=transport, operator_id=HUMAN["actor_id"],
+                run_id="run.paced", recorded_at=T1,
                 monotonic=clock.monotonic, sleep=clock.sleep,
             )
             self.assertEqual(3, report["documents_fetched"])
@@ -296,6 +313,65 @@ class FetcherPacingTests(unittest.TestCase):
                 self.assertEqual("fetched", payload["outcome"])
                 self.assertTrue(payload["url"].startswith(ORIGIN + "/documents/"))
                 self.assertGreater(payload["byte_count"], 0)
+
+    def test_ambiguous_network_intent_is_not_repeated(self) -> None:
+        manifest, bodies = _synthetic_archive(1)
+        document = manifest["documents"][0]
+        url = ORIGIN + "/" + document["relative_path"]
+        request_key = sha256_bytes(canonical_bytes({
+            "archive_manifest_hash": manifest["content_hash"],
+            "document_id": document["document_id"], "origin": ORIGIN,
+            "url": url,
+        }))
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            initialize_data_root(root, data_root_id="dataroot.fetch", initialized_at=T0)
+            append_ledger(root, "fetches", kind="snapshot_request_intent",
+                          recorded_at=T1, payload={
+                "run_id": "run.crashed", "operator_id": HUMAN["actor_id"],
+                "origin": ORIGIN, "url": url,
+                "document_id": document["document_id"],
+                "expected_byte_count": document["byte_count"],
+                "expected_sha256": document["sha256"],
+                "archive_manifest_hash": manifest["content_hash"],
+                "request_key": request_key,
+            })
+            transport = FakeTransport(manifest, bodies)
+            with self.assertRaisesRegex(SnapshotFetchFailedError, "ambiguous"):
+                _fetch(root, manifest, transport, run_id="run.resume", recorded_at=T2)
+            self.assertEqual([], transport.calls)
+
+    def test_stored_bytes_close_an_ambiguous_intent_without_refetch(self) -> None:
+        manifest, bodies = _synthetic_archive(1)
+        document = manifest["documents"][0]
+        url = ORIGIN + "/" + document["relative_path"]
+        request_key = sha256_bytes(canonical_bytes({
+            "archive_manifest_hash": manifest["content_hash"],
+            "document_id": document["document_id"], "origin": ORIGIN,
+            "url": url,
+        }))
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            initialize_data_root(root, data_root_id="dataroot.fetch", initialized_at=T0)
+            intent = append_ledger(root, "fetches", kind="snapshot_request_intent",
+                                   recorded_at=T1, payload={
+                "run_id": "run.crashed", "operator_id": HUMAN["actor_id"],
+                "origin": ORIGIN, "url": url,
+                "document_id": document["document_id"],
+                "expected_byte_count": document["byte_count"],
+                "expected_sha256": document["sha256"],
+                "archive_manifest_hash": manifest["content_hash"],
+                "request_key": request_key,
+            })
+            write_object(root, bodies[document["relative_path"]])
+            transport = FakeTransport(manifest, bodies)
+            report = _fetch(root, manifest, transport, run_id="run.resume", recorded_at=T2)
+            self.assertEqual([], transport.calls)
+            self.assertEqual(1, report["documents_already_stored"])
+            terminal = [item for item in read_ledger(root, "fetches")
+                        if item["kind"] == "snapshot_request"][-1]
+            self.assertEqual("recovered_stored", terminal["payload"]["outcome"])
+            self.assertEqual(intent["content_hash"], terminal["payload"]["intent_content_hash"])
 
 
 class MultiHundredDocumentAcceptanceTests(unittest.TestCase):

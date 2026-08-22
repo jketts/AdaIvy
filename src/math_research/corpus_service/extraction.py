@@ -29,7 +29,9 @@ ever silently admitted or approximated.
 from __future__ import annotations
 
 import hashlib
+import resource
 import subprocess
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping, Protocol, runtime_checkable
@@ -48,6 +50,32 @@ _IDENTITY_FIELDS = frozenset({"tool", "version", "binary_sha256"})
 
 #: Bounded external-tool execution: never unbounded subprocesses.
 PINNED_TOOL_TIMEOUT_SECONDS = 120
+PINNED_TOOL_DIAGNOSTIC_BYTES = 65_536
+
+
+def _bounded_subprocess(
+    argv: list[str], *, input_bytes: bytes | None, timeout: int,
+    output_limit: int,
+) -> tuple[int, bytes, bytes]:
+    """Run a pinned extractor without unbounded capture_output buffers."""
+
+    def limit_files() -> None:
+        # Applied in the child only. Each redirected regular file is bounded
+        # by the kernel before a hostile/broken extractor can fill host disk.
+        resource.setrlimit(resource.RLIMIT_FSIZE, (output_limit + 1, output_limit + 1))
+
+    with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
+        completed = subprocess.run(
+            argv, input=input_bytes, stdout=stdout, stderr=stderr,
+            timeout=timeout, check=False, preexec_fn=limit_files,
+        )
+        stdout.seek(0)
+        stderr.seek(0)
+        return (
+            completed.returncode,
+            stdout.read(output_limit + 1),
+            stderr.read(PINNED_TOOL_DIAGNOSTIC_BYTES + 1),
+        )
 
 
 class ExtractionFailure(Exception):
@@ -286,11 +314,22 @@ class PinnedBinaryExtractor:
         return self.accepted_media_types
 
     def _check_version(self, path: Path) -> None:
-        completed = subprocess.run(
-            [str(path), *self.version_arguments],
-            capture_output=True, timeout=self.timeout_seconds, check=False,
-        )
-        reported = (completed.stdout + completed.stderr).decode("utf-8", "replace")
+        try:
+            returncode, stdout, stderr = _bounded_subprocess(
+                [str(path), *self.version_arguments], input_bytes=None,
+                timeout=self.timeout_seconds,
+                output_limit=PINNED_TOOL_DIAGNOSTIC_BYTES,
+            )
+        except (OSError, subprocess.TimeoutExpired) as error:
+            raise ExtractorNotPinnedError(
+                f"pinned extractor version probe failed: {error}"
+            ) from error
+        if returncode != 0 or len(stdout) > PINNED_TOOL_DIAGNOSTIC_BYTES \
+                or len(stderr) > PINNED_TOOL_DIAGNOSTIC_BYTES:
+            raise ExtractorNotPinnedError(
+                "pinned extractor version probe failed or exceeded its output bound"
+            )
+        reported = (stdout + stderr).decode("utf-8", "replace")
         if self.expected_version not in reported:
             raise ExtractorNotPinnedError(
                 f"pinned extraction tool reports {reported.strip()!r}; the pin "
@@ -305,21 +344,21 @@ class PinnedBinaryExtractor:
         path = self._pinned_binary()
         self._check_version(path)
         try:
-            completed = subprocess.run(
-                [str(path), *self.arguments], input=body, capture_output=True,
-                timeout=self.timeout_seconds, check=False,
+            returncode, stdout, stderr = _bounded_subprocess(
+                [str(path), *self.arguments], input_bytes=body,
+                timeout=self.timeout_seconds, output_limit=MAX_DOCUMENT_BYTES,
             )
         except (OSError, subprocess.TimeoutExpired) as error:
             raise ExtractionFailure(f"pinned tool execution failed: {error}") from error
-        if completed.returncode != 0:
+        if returncode != 0:
             raise ExtractionFailure(
-                f"pinned tool exited {completed.returncode}: "
-                f"{completed.stderr[:512].decode('utf-8', 'replace')}"
+                f"pinned tool exited {returncode}: "
+                f"{stderr[:512].decode('utf-8', 'replace')}"
             )
-        if len(completed.stdout) > MAX_DOCUMENT_BYTES:
+        if len(stdout) > MAX_DOCUMENT_BYTES:
             raise ExtractionFailure("pinned tool output exceeds the byte bound")
         try:
-            return _bounded_text(completed.stdout.decode("utf-8", "strict"))
+            return _bounded_text(stdout.decode("utf-8", "strict"))
         except UnicodeDecodeError as error:
             raise ExtractionFailure(f"pinned tool output is not UTF-8: {error}") from error
 

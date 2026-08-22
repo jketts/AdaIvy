@@ -78,6 +78,7 @@ def main(argv: list[str] | None = None) -> int:
     acquire.add_argument("--origin", required=True)
     acquire.add_argument("--run-id", required=True)
     acquire.add_argument("--recorded-at", required=True)
+    acquire.add_argument("--operator-id", required=True)
     acquire.add_argument("--output", type=Path)
 
     bridge = commands.add_parser(
@@ -172,6 +173,7 @@ def main(argv: list[str] | None = None) -> int:
             activation=activation,
             acknowledgement=args.confirm_live_network,
             transport=UrllibSnapshotTransport(),
+            operator_id=args.operator_id,
             run_id=args.run_id,
             recorded_at=args.recorded_at,
         )

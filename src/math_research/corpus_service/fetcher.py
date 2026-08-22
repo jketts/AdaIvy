@@ -32,7 +32,6 @@ no test touches the network.
 from __future__ import annotations
 
 import time
-import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping, Protocol
@@ -57,7 +56,7 @@ from .errors import (
     SnapshotFetchFailedError,
     SnapshotOriginNotAllowlistedError,
 )
-from .ledger import append_ledger
+from .ledger import append_ledger, read_ledger
 from .serialization import canonical_bytes, sealed, sha256_bytes
 from .snapshot import validate_archive_manifest
 
@@ -69,14 +68,6 @@ class SnapshotTransport(Protocol):
         """The exact response body bytes, or an exception."""
 
 
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: D102
-        raise SnapshotFetchFailedError(
-            f"redirect refused: {req.full_url} -> {newurl}; a snapshot fetch "
-            "follows nothing"
-        )
-
-
 @dataclass(frozen=True, slots=True)
 class UrllibSnapshotTransport:
     """The live stdlib transport. Construct only behind the activation gate."""
@@ -84,9 +75,21 @@ class UrllibSnapshotTransport:
     timeout_milliseconds: int = FETCH_TIMEOUT_MILLISECONDS
 
     def get(self, url: str) -> bytes:
+        # The offline import graph must remain free of network modules. The
+        # live transport is constructed only after the activation gate, and
+        # imports its network dependency at the effect boundary.
+        import urllib.request
+
+        class NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, req, fp, code, msg, headers, newurl):
+                raise SnapshotFetchFailedError(
+                    f"redirect refused: {req.full_url} -> {newurl}; a snapshot "
+                    "fetch follows nothing"
+                )
+
         if not url.startswith("https://"):
             raise SnapshotFetchFailedError(f"only https is fetched: {url!r}")
-        opener = urllib.request.build_opener(_NoRedirect())
+        opener = urllib.request.build_opener(NoRedirect())
         request = urllib.request.Request(url, method="GET")
         try:
             with opener.open(request, timeout=self.timeout_milliseconds / 1000) as response:
@@ -169,6 +172,7 @@ def fetch_snapshot(
     activation: Mapping[str, Any],
     acknowledgement: str | None,
     transport: SnapshotTransport,
+    operator_id: str,
     run_id: str,
     recorded_at: str,
     monotonic: Callable[[], float] = time.monotonic,
@@ -190,6 +194,15 @@ def fetch_snapshot(
             "clock read"
         )
     record = require_active(activation, acknowledgement=acknowledgement)
+    if (
+        not isinstance(operator_id, str)
+        or IDENTIFIER_PATTERN.fullmatch(operator_id) is None
+        or operator_id != record["authorized_by"]["actor_id"]
+    ):
+        raise SnapshotFetchFailedError(
+            "snapshot acquisition operator does not match the human-final "
+            "activation actor"
+        )
     validated = validate_archive_manifest(manifest)
     if not isinstance(origin, str) or origin not in ALLOWLISTED_SNAPSHOT_ORIGINS:
         # The refusal is itself evidence: record it before failing closed.
@@ -218,21 +231,89 @@ def fetch_snapshot(
             f"activation record pins {record['max_tranche_total_bytes']}"
         )
 
+    # Index prior request intents once. A terminal failure is safe to retry;
+    # an intent with neither a terminal record nor the exact stored object is
+    # ambiguous and is never repeated automatically.
+    prior: dict[str, dict[str, Any]] = {}
+    for item in read_ledger(root, "fetches"):
+        payload = item["payload"]
+        key = payload.get("request_key")
+        if not isinstance(key, str):
+            continue
+        state = prior.setdefault(key, {})
+        if item["kind"] == "snapshot_request_intent":
+            state["intent"] = item
+            state["terminal"] = None
+        elif item["kind"] == "snapshot_request":
+            intent_hash = payload.get("intent_content_hash")
+            if (
+                state.get("intent") is not None
+                and intent_hash == state["intent"]["content_hash"]
+            ):
+                state["terminal"] = item
+
     pacer = RatePacer(monotonic=monotonic, sleep=sleep)
     documents_fetched = 0
     documents_already_stored = 0
     bytes_fetched = 0
     for document in validated["documents"]:
+        url = _document_url(origin, document["relative_path"])
+        request_key = sha256_bytes(canonical_bytes({
+            "archive_manifest_hash": validated["content_hash"],
+            "document_id": document["document_id"],
+            "origin": origin,
+            "url": url,
+        }))
+        state = prior.get(request_key, {})
         if object_exists(root, document["sha256"]):
+            # Existence alone is not replay evidence; verify the stored bytes.
+            read_object(root, document["sha256"])
+            if state.get("intent") is not None and state.get("terminal") is None:
+                intent = state["intent"]
+                append_ledger(
+                    root, "fetches", kind="snapshot_request",
+                    recorded_at=recorded_at, payload={
+                        "run_id": run_id,
+                        "operator_id": operator_id,
+                        "origin": origin,
+                        "url": url,
+                        "document_id": document["document_id"],
+                        "byte_count": document["byte_count"],
+                        "outcome": "recovered_stored",
+                        "sha256": document["sha256"],
+                        "archive_manifest_hash": validated["content_hash"],
+                        "request_key": request_key,
+                        "intent_content_hash": intent["content_hash"],
+                    },
+                )
             documents_already_stored += 1
             continue
-        url = _document_url(origin, document["relative_path"])
+        if state.get("intent") is not None and state.get("terminal") is None:
+            raise SnapshotFetchFailedError(
+                f"fetch of {document['document_id']} has an ambiguous prior "
+                "network intent without stored bytes; automatic repetition refused"
+            )
+        intent = append_ledger(
+            root, "fetches", kind="snapshot_request_intent",
+            recorded_at=recorded_at, payload={
+                "run_id": run_id,
+                "operator_id": operator_id,
+                "origin": origin,
+                "url": url,
+                "document_id": document["document_id"],
+                "expected_byte_count": document["byte_count"],
+                "expected_sha256": document["sha256"],
+                "archive_manifest_hash": validated["content_hash"],
+                "request_key": request_key,
+            },
+        )
         pacer.before_request()
         try:
             body = transport.get(url)
         except Exception as error:  # noqa: BLE001 -- recorded, then re-raised
             append_ledger(root, "fetches", kind="snapshot_request", recorded_at=recorded_at, payload={
                 "run_id": run_id,
+                "operator_id": operator_id,
                 "origin": origin,
                 "url": url,
                 "document_id": document["document_id"],
@@ -240,6 +321,8 @@ def fetch_snapshot(
                 "outcome": "transport_error",
                 "detail": str(error)[:512],
                 "archive_manifest_hash": validated["content_hash"],
+                "request_key": request_key,
+                "intent_content_hash": intent["content_hash"],
             })
             raise SnapshotFetchFailedError(
                 f"fetch of {document['document_id']} failed and was recorded; "
@@ -251,12 +334,15 @@ def fetch_snapshot(
         ):
             append_ledger(root, "fetches", kind="snapshot_request", recorded_at=recorded_at, payload={
                 "run_id": run_id,
+                "operator_id": operator_id,
                 "origin": origin,
                 "url": url,
                 "document_id": document["document_id"],
                 "byte_count": len(body),
                 "outcome": "hash_mismatch",
                 "archive_manifest_hash": validated["content_hash"],
+                "request_key": request_key,
+                "intent_content_hash": intent["content_hash"],
             })
             raise ArchiveDocumentMismatchError(
                 f"fetched bytes for {document['document_id']} do not match the "
@@ -265,6 +351,7 @@ def fetch_snapshot(
         write_object(root, body)
         append_ledger(root, "fetches", kind="snapshot_request", recorded_at=recorded_at, payload={
             "run_id": run_id,
+            "operator_id": operator_id,
             "origin": origin,
             "url": url,
             "document_id": document["document_id"],
@@ -272,6 +359,8 @@ def fetch_snapshot(
             "outcome": "fetched",
             "sha256": document["sha256"],
             "archive_manifest_hash": validated["content_hash"],
+            "request_key": request_key,
+            "intent_content_hash": intent["content_hash"],
         })
         documents_fetched += 1
         bytes_fetched += len(body)
@@ -279,6 +368,7 @@ def fetch_snapshot(
     report = sealed({
         "schema_version": FETCH_REPORT_SCHEMA_VERSION,
         "run_id": run_id,
+        "operator_id": operator_id,
         "origin": origin,
         "archive_id": validated["archive_id"],
         "archive_version": validated["archive_version"],
@@ -294,6 +384,7 @@ def fetch_snapshot(
     })
     append_ledger(root, "fetches", kind="snapshot_fetch_run", recorded_at=recorded_at, payload={
         "run_id": run_id,
+        "operator_id": operator_id,
         "origin": origin,
         "archive_manifest_hash": validated["content_hash"],
         "documents_fetched": documents_fetched,
