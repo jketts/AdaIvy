@@ -24,6 +24,7 @@ operator path, and usable end to end.
 | Semantic retrieval | Yes | Offline fixture only | No | Fourth Phase 4C signal over 19 project-authored documents and 17 queries |
 | Retrieval over acquired corpus | **No** | No | No | Accepted by ADR-0072 (Slice 4); corpus records remain marked `retrieval_indexed: false` |
 | Campaign literature/embedding actions | **No** | No | No | Accepted by ADR-0072 (Slice 5); the campaign action schema still has no search, acquire, embed, index, or retrieve action |
+| Named credential profiles and unified budget | Yes, per ADR-0072 §1 | No | **No** | Profile selection/resolution refuses ambient credentials, profile-bound model/embedding gateway wrappers, one append-only multi-capability budget ledger with a dedicated fallback sub-budget, and deterministic bounded backoff; `campaign run` does not construct them yet |
 | Terminal campaign resume | Yes | Yes | Yes | Idempotently verifies a complete terminal ledger and finishes its draft; it does not yet resume a partial paid run |
 | Automatic campaign LaTeX draft | Yes | Yes | Yes | Every terminal run attempts a claim-free, unapproved `paper.tex` bundle; PDF typesetting remains an explicit gate |
 | End-to-end autonomous research run | **No** | No | No | Decision-authorized by ADR-0072; components remain separate and no single command performs the complete loop |

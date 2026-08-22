@@ -20,6 +20,36 @@ from .replay import (
     verify_campaign_export,
 )
 from .planner import CAMPAIGN_PROMPT, CAMPAIGN_PROMPT_VERSION, GatewayCampaignPlanner
+from .budget import (
+    BackoffPolicy,
+    BudgetCapability,
+    BudgetCloseout,
+    BudgetExhaustedError,
+    CampaignBudget,
+    CampaignBudgetError,
+    CampaignBudgetLedger,
+    CapabilityCloseout,
+    ChargeEvent,
+    SubBudget,
+    backoff_delays_milliseconds,
+    next_retry_delay_milliseconds,
+)
+from .credentials import (
+    DEFAULT_LIVE_PROFILE_ID,
+    CampaignRoutePolicy,
+    CredentialProfile,
+    CredentialProfileError,
+    ProfileSelectionRecord,
+    ResolvedProfileCredentials,
+    assert_no_secret_values,
+    resolve_credential_profile,
+    select_credential_profile,
+)
+from .routing import (
+    ProfileBoundEmbeddingGateway,
+    ProfileBoundModelGateway,
+    ProfileRoutingError,
+)
 from .runner import (
     ACTION_SCHEMA_VERSION,
     ArtifactStore,
@@ -52,4 +82,13 @@ __all__ = [
     "ExperimentResult", "GatewayCampaignPlanner", "PlannerContext", "PlannerPort",
     "PlannerResponse", "ResourceLimits", "SequentialCampaignRunner", "ToolRequest",
     "VerificationRequest", "VerifierPort", "parse_campaign_action",
+    "BackoffPolicy", "BudgetCapability", "BudgetCloseout", "BudgetExhaustedError",
+    "CampaignBudget", "CampaignBudgetError", "CampaignBudgetLedger",
+    "CampaignRoutePolicy", "CapabilityCloseout", "ChargeEvent",
+    "CredentialProfile", "CredentialProfileError", "DEFAULT_LIVE_PROFILE_ID",
+    "ProfileBoundEmbeddingGateway", "ProfileBoundModelGateway",
+    "ProfileRoutingError", "ProfileSelectionRecord", "ResolvedProfileCredentials",
+    "SubBudget", "assert_no_secret_values", "backoff_delays_milliseconds",
+    "next_retry_delay_milliseconds", "resolve_credential_profile",
+    "select_credential_profile",
 ]
