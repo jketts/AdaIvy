@@ -2490,6 +2490,28 @@ def _start(args: argparse.Namespace) -> int:
     return 0 if summary["status"] == "completed" else 1
 
 
+def _live_acceptance(args: argparse.Namespace) -> int:
+    """Validate Slice 16 prerequisites without silently starting live work."""
+
+    try:
+        from .campaign.live_acceptance import (
+            assess_live_acceptance_gate, load_live_acceptance_gate,
+        )
+        gate = load_live_acceptance_gate(args.gate)
+        result = assess_live_acceptance_gate(
+            gate, execute=args.execute,
+            acknowledgement=args.activation_acknowledgement,
+            evidence_directory=args.evidence_directory,
+        )
+    except (OSError, TypeError, ValueError) as error:
+        return _refuse(
+            "campaign_live_acceptance_gate_refused",
+            detail=str(error) or type(error).__name__,
+        )
+    _print(result)
+    return 0 if result["status"] == "ready_for_live_execution" else 1
+
+
 # --------------------------------------------------------------------------- #
 # Argument parsing
 # --------------------------------------------------------------------------- #
@@ -2576,6 +2598,18 @@ def main(argv: list[str] | None = None) -> int:
     start.add_argument("--max-storage-bytes", type=int, required=True)
     start.add_argument("--max-wall-milliseconds", type=int, required=True)
 
+    live_acceptance = commands.add_parser(
+        "live-acceptance",
+        help="validate the fail-closed Slice 16 live acceptance prerequisites",
+    )
+    live_acceptance.add_argument(
+        "--gate", type=Path,
+        default=Path("config/campaign-live-acceptance-v1.json"),
+    )
+    live_acceptance.add_argument("--evidence-directory", type=Path)
+    live_acceptance.add_argument("--activation-acknowledgement", default="")
+    live_acceptance.add_argument("--execute", action="store_true")
+
     inspect = commands.add_parser("inspect", help="verify and inspect a persisted campaign")
     inspect.add_argument("root", type=Path)
 
@@ -2605,6 +2639,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run(args)
     if args.command == "start":
         return _start(args)
+    if args.command == "live-acceptance":
+        return _live_acceptance(args)
     if args.command == "inspect":
         return _inspect(args)
     if args.command == "replay":

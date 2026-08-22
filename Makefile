@@ -44,7 +44,7 @@ REPORT_INSTANT ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 OUT ?= reports/local/run-$(REPORT_STAMP)
 WORK ?= work/$(REPORT_STAMP)
 
-.PHONY: check check-all check-sealed check-gate setup-typeset check-typeset publication-build check-phase4b-oci check-campaign-experiment-oci campaign-e2e \
+.PHONY: check check-all check-sealed check-gate setup-typeset check-typeset publication-build check-phase4b-oci check-campaign-experiment-oci check-campaign-live-definition campaign-e2e \
         check-embedding-live spike-phase5-sdp test phase0 phase1 problem-intake phase2 phase3a phase3b phase4a phase4b \
         phase4c phase4d phase5 phase6 embedding corpus corpus-service synthesis campaign publication report clean help
 
@@ -59,6 +59,7 @@ help:
 	@printf '  publication-build automatically emit a complete TeX/Lean/PDF bundle\n'
 	@printf '  check-phase4b-oci strict Phase 4B parser gate (requires exact pinned image)\n'
 	@printf '  check-campaign-experiment-oci ADR-0066 generated-program sandbox gate (requires exact pinned image)\n'
+	@printf '  check-campaign-live-definition Slice 16 fail-closed live gate definition (offline)\n'
 	@printf '  spike-phase5-sdp  ADR-0045 noncommuting-SDP comparison (engines optional)\n'
 	@printf '  check-all     check + check-sealed\n'
 	@printf '  report        write every readable artifact and compile its publication PDF\n'
@@ -841,6 +842,15 @@ check-campaign-experiment-oci:
 	    "$$d/oci-run.json" && \
 	  rm -rf "$$d" && \
 	  printf 'campaign experiment OCI gate ok (16/16 probes flipped; one generated program executed in the pinned sandbox; the exact-graph router verified the selected candidate; no warrant created)\n'
+
+check-campaign-live-definition:
+	@printf '\n== Slice 16 live campaign gate definition (offline, no execution) ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-live-definition.XXXXXX") && \
+	  trap 'rm -rf "$$d"' EXIT && \
+	  { $(PY) -m math_research.cli campaign live-acceptance \
+	      --gate config/campaign-live-acceptance-v1.json > "$$d/result.json" || true; } && \
+	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["status"] == "not_executed" and r["reason"] == "live_execution_not_requested"; assert r["provider_requests_made"] == r["network_requests"] == 0; assert r["before_announcement_human_checkpoint_required"] is True; assert r["retry_policy"]["max_retries"] == 4' "$$d/result.json" && \
+	  printf 'live campaign definition ok (pending activation; 0 provider/network calls)\n'
 
 clean:
 	find . -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
