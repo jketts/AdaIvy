@@ -1,5 +1,13 @@
 # Prior-Art and Novelty Landscape
 
+> **Dated architecture research.** This document records the public landscape
+> reviewed on 19 August 2026. Its build recommendation is historical context,
+> not the current implementation roadmap. See
+> [`docs/CAPABILITY_STATUS.md`](docs/CAPABILITY_STATUS.md) for present capability
+> and
+> [`docs/END_TO_END_RESEARCH_RUNTIME_PLAN.md`](docs/END_TO_END_RESEARCH_RUNTIME_PLAN.md)
+> for the proposed integration sequence.
+
 **Project:** Verification-first system for AI-assisted mathematical research  
 **Review date:** 19 August 2026  
 **Scope:** Publicly accessible papers, project sites, repositories, and technical documentation. This is an engineering prior-art review, not a patentability or freedom-to-operate opinion.

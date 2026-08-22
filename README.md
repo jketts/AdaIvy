@@ -5,207 +5,137 @@
   Sponsored and maintained by <a href="https://staple.ai/">Staple AI</a>.
 </p>
 
-**A verification-first system for mathematical research.** AdaIvy combines
-language models, literature retrieval, symbolic computation, numerical
-experiments, and formal tools to investigate mathematical research problems —
-and it refuses to let any of them count as a proof on their own.
+**A verification-first system for AI-assisted mathematical research.** AdaIvy
+combines model-driven investigation, literature retrieval, computation, and
+formal tools while keeping proposals separate from verified results.
 
-It is not a chatbot with a large context window. Its central state is a
-versioned graph of problems, semantic alignments, claims, representations,
-evidence, hypotheses, experiments, and proof obligations. Model output is
-treated as a *proposal* until an applicable verifier grants a precisely scoped
-warrant. One coherent long-horizon research lead owns that evolving state; a
-centralized verifier independently checks candidate progress.
+The intended product is a budgeted, resumable research campaign:
 
-**The core rule:** no model-generated claim becomes trusted merely because
-another model agrees with it.
+```text
+problem -> literature -> persistent corpus and embeddings -> retrieval
+        -> investigation and experiments -> exact/Lean verification -> report
+```
 
-## Why the design is unusual
+That complete path is the active integration objective, not the current runtime
+state. Today the repository contains working bounded components, but several are
+not yet connected to `campaign run`. See
+[Capability Status](docs/CAPABILITY_STATUS.md) for the precise current state and
+[End-to-End Research Runtime Plan](docs/END_TO_END_RESEARCH_RUNTIME_PLAN.md) for
+the proposed direction of work.
 
-- **Trust boundaries are machine-checked, not conventions.** Formal validity,
-  semantic fidelity, literature novelty, mathematical significance, and
-  human/model/tool contribution are recorded as separate, non-interchangeable
-  dimensions. None is inferred from another.
-- **Determinism is a requirement, not a nicety.** Canonical serialization,
-  content hashes, explicit schema versions, frozen timestamps as inputs, and
-  offline replay mean an acceptance run reproduces byte for byte. Timing and
-  other operational observations are hashed separately so scheduling variance
-  cannot change a result's semantic identity.
-- **Capability arrives through staged phase gates.** Each capability ships as a
-  bounded vertical slice with an architecture decision record, an acceptance
-  suite that encodes its thresholds as executable assertions, and explicit
-  statements of what it does *not* add. Nothing broader is enabled by default.
-- **Fail closed, offline by default.** The runtime is standard-library only,
-  network access is off by default, untrusted parsing runs in a digest-pinned
-  sandbox with no network or host mounts, and a missing prerequisite produces an
-  explicit blocker record rather than a silent pass.
-- **Falsification comes first.** Counterexample search starts early, failed
-  approaches and dead ends are retained in machine-readable form, and a proof,
-  a counterexample, a corrected theorem, or a reduction to an unresolved lemma
-  are all successful outcomes.
+## Current status
 
-## Status
+Implemented components include:
 
-- Phases 0 through 4A are implemented and authoritative.
-- **Phase 4B** (authorized HTTPS acquisition and exact HTML/TeX/PDF parsing) is
-  implementation-complete: its offline acquisition, persistence, deletion,
-  replay, and strict digest-pinned OCI parser gate all pass. The separately
-  acknowledged live HTTPS gate has been executed and ADR-0050 activates its
-  public unauthenticated exact-URL subset. Each invocation still requires a
-  human-final content-hashed plan plus an exact execution acknowledgement;
-  credentials, caller-supplied headers, crawling, and autonomous origin
-  selection remain disabled. A live acquisition yields an untrusted candidate
-  carrying no mathematical warrant. Network remains off by default.
-- **Phase 5** retains the sealed exact commuting/diagonal slice, verifies
-  human-supplied noncommuting certificates, and now discovers certificates for
-  the bounded two-outcome, 2×2 `Q(sqrt(d))(i)` domain (ADR-0049). Every generated
-  candidate must pass the existing exact verifier. The retained dimension-three
-  irreducible-cubic case remains explicitly unresolved; this is not a general
-  noncommuting SDP solver, and search tiers 2–4 remain disabled.
-- **Phase 3B** supports the sealed single-shot checker, the bounded repair loop,
-  and an opt-in Azure OpenAI proposer (ADR-0048). Live repair requires an
-  explicit `--execute`, the pinned provider environment and pricing snapshot,
-  and the sealed Lean image. Model output changes only the proof fragment,
-  remains proposal-only, and never creates epistemic warrant.
-- **Phase 6** covers one frozen local held-out case with canonical replay and
-  the executed Section 18.4 generality control suite (ADR-0034): thirteen
-  controls that drive real Phase 1 trust policy, the exact Phase 5 engine, or the
-  held-out capability boundary, each carrying a named single-field falsifiability
-  probe that must produce the forbidden verdict. Two controls are positive, so an
-  all-reject system cannot pass. The control corpus is project-authored, so the
-  suite demonstrates boundary enforcement on known traps and is **not** evidence
-  of generality against unseen traps.
-- Bounded exploratory synthesis is implemented over the sealed Phase 6
-  workspace.
-- **Bounded central-lead runtime** (ADR-0047) composes one-round Phase 2 runs
-  under a frozen target and content-hashed session bounds. Its history is
-  proposer-only, replay makes no model call, and it creates no warrant or
-  proof-obligation discharge. It activates no higher search tier and measures
-  no retention gain.
-- **Provenance-closed research campaigns** (ADR-0057) put the material AI work
-  inside AdaIvy: the central lead can propose routes, write bounded programs,
-  receive exact sandbox observations, select a candidate, and submit only that
-  candidate to an isolated verifier. Every model attempt, program, tool result,
-  selection, usage record, and estimated cost is causally linked. Failed calls
-  remain visible; external Codex or human work is importable but cannot be
-  relabelled as AdaIvy discovery. ADR-0066 activates generated-code execution
-  only for one exact-graph campaign target through the separately named,
-  digest-pinned Linux/arm64 OCI gate; output remains an untrusted candidate
-  until the isolated exact verifier re-derives it.
-- **Phase 4C** covers benchmark-scoped hybrid retrieval only: a frozen
-  19-document, 17-query fixture set, an FTS5/BM25 lexical signal, a
-  content-keyed alias table, and an exclusion-only evidentiary self-disclaimer
-  signal, fused in score space. All seven gates are measured as passing under
-  ADR-0032. Exclusion removes a candidate from a result list and asserts
-  nothing about applicability.
-- **Phase 4D** (ADR-0051) enables one bounded public Crossref metadata search
-  from operator-supplied terminology grounded in a local problem/context file.
-  It returns at most ten `untrusted_inspiration_candidate` records and never
-  follows them. Relevance, applicability, novelty, and significance remain
-  `not_assessed`; acquisition remains unauthorized and warrant remains `none`.
-  Live execution requires an exact acknowledgement and grounded-query hash;
-  `make check` exercises only the zero-network dry run.
-- **Bounded corpus ingestion** (ADR-0067) replays a content-hashed first tranche
-  of arXiv descriptive metadata and abstracts under per-document Phase 4A
-  rights decisions. Full text, crawling, result following, credentials, and
-  autonomous archive selection remain unavailable. Production activation is
-  still pending owner approval; `make check` runs only the zero-network dry and
-  stored-byte replay paths. Corpus size is reported separately from the count
-  of human applicability records, and this corpus is not wired into Phase 4C.
-- **Novelty checkpoints** (ADR-0055) fail closed at both vulnerable lifecycle
-  transitions. Every operator-chosen problem needs a human, evidence-linked
-  re-check no more than 24 hours before research starts, and every human
-  publication approval needs a second re-check over the exact result being
-  announced. Each record is bound to one subject and one next action. An empty
-  search remains `not_found_under_protocol`, never a novelty conclusion or a
-  mathematical warrant; any prior-art relationship and resolution class is
-  recorded separately from novelty. Reports expose the derived role and target
-  status—for example, the Graffiti 197 regression is
-  `independent_verification` / `already_refuted`, not a new result.
-- Deferred: general noncommuting SDP beyond ADR-0049's exact bounded domain,
-  retrieval embeddings and vector indexes, credentialed or autonomous
-  acquisition, result crawling/citation traversal, broader discovery providers,
-  broader media, higher adaptive-search tiers, and external evaluation.
-  Novelty and significance are recorded as `not_assessed`.
-- Retrieval uses no embedding and no model provider, so the live provider
-  boundary can change without affecting it. Before embeddings are added, note
-  the mixed-vector-space constraint in
-  [`docs/TECHNICAL_DETAILS.md`](docs/TECHNICAL_DETAILS.md#multiple-model-providers-embeddings-and-retrieval)
-  and `TECHNICAL_BLUEPRINT.md` Section 12.2.1: vectors from different providers
-  or embedding models may never share a similarity space, and mixing them
-  degrades retrieval silently rather than failing.
+- provider-neutral model gateways with bounded live activation and accounting;
+- a sequential central-lead campaign with a causal, replayable ledger;
+- a digest-pinned OCI experiment sandbox for one exact-graph target;
+- exact mathematical verifiers and a sealed Lean 4 checking service;
+- bounded Crossref discovery and public source acquisition;
+- bounded arXiv metadata/abstract corpus replay;
+- processor-bound embedding rights, live embedding ingestion, and immutable
+  exact vector artifacts;
+- four-signal Phase 4C retrieval, including semantic similarity; and
+- record-driven publication with provenance and reproducible typesetting.
 
-ADR-0026 records the accepted delivery order for the remaining work; ADR-0012
-records the accepted revision 0.3 delivery sequence while preserving the
-superseded roadmap history.
+The end-to-end workflow is **not yet runnable**:
+
+- the campaign has no literature, acquisition, embedding, indexing, or
+  retrieval actions;
+- the acquired corpus is explicitly not wired into retrieval;
+- semantic retrieval still uses a frozen 19-document synthetic fixture;
+- the production campaign CLI still injects a pending experiment runner and an
+  absent verifier despite the standalone sandbox/verifier implementation;
+- Lean is available only through its separate Phase 3B commands; and
+- ADR-0055 still requires a fresh human novelty re-check before research.
+
+Passing `make check` demonstrates the bounded components and their safety
+properties. It does not demonstrate an autonomous research campaign.
+
+## Design principles
+
+- **One coherent research lead:** literature, experiments, competing branches,
+  and incremental formalization belong in the central campaign loop.
+- **AdaIvy owns its spend:** live campaign model and embedding calls must use an
+  explicitly selected AdaIvy credential profile and appear in campaign
+  accounting. Host Codex or Claude work is an external import.
+- **Retrieval supports reasoning:** a retrieved passage may inspire work but is
+  not a proof or trusted premise without an applicability record.
+- **Verification is independent:** model agreement, retrieval rank, and finite
+  experiments cannot create proof status.
+- **Lean is available, not compulsory at every step:** use it when a claim is
+  mature and for final formal checking where an appropriate Lean statement
+  exists.
+- **Corpus knowledge persists:** source and embedding artifacts are intended to
+  grow across campaigns while derived indexes remain rebuildable.
+- **Failure is durable:** failed calls, rejected candidates, missing tools, and
+  unresolved obligations remain in the research record.
+- **Network is explicit:** offline checks remain offline; live model,
+  acquisition, and embedding paths are separately authorized and budgeted.
 
 ## Quick start
 
-Requirements: **CPython 3.14** (the package declares `requires-python >=3.14`,
-and the suite has been executed against 3.14.4). No third-party packages, no
-network, no model provider, and no container runtime are needed.
+Requirements: CPython 3.14. The ordinary acceptance suite needs no network,
+model provider, container runtime, or third-party package.
 
 ```bash
 git clone https://github.com/jketts/AdaIvy.git
 cd AdaIvy
 make check
+make help
 ```
 
-`make check` is the single documented offline entrypoint. It runs the unit,
-integration, property, and adversarial suite plus the Phase 0 harness check and
-the Phase 1, 2, 3A, 4A, 4B, 4C, 4D, 5, 6, and synthesis acceptance paths, each against a
-disposable temporary workspace.
+Important additional gates:
+
+| Target | Requirement |
+|---|---|
+| `make check-sealed` | ADR-0016 v5 Lean image |
+| `make check-gate PY=…` | pinned Draft 2020-12 validator environment |
+| `make check-phase4b-oci` | Docker and the pinned parser image |
+| `make check-campaign-experiment-oci` | Docker and the pinned campaign image |
+| `make check-embedding-live` | configured embedding provider and explicit live acknowledgement |
+| `make check-typeset` | pinned local BasicTeX toolchain |
+| `make check-all` | offline checks plus the sealed Lean gate |
+
+Every phase is reachable through the common CLI:
 
 ```bash
-make help   # list every target
+PYTHONPATH=src python3 -m math_research.cli --help
 ```
 
-Targets that need more than a bare interpreter are separate and named for what
-they need:
+Installing the package also provides `adaivy` and `adaivy-phase0` console
+scripts. Current commands and their bounded scopes are documented in
+[Technical Details](docs/TECHNICAL_DETAILS.md).
 
-| Target | Requires |
-|---|---|
-| `make check` | nothing beyond CPython 3.14 |
-| `make check-sealed` | the ADR-0016 v5 container image (Phase 3B Lean checking) |
-| `make check-gate PY=…` | a disposable pinned Draft 2020-12 validator environment |
-| `make check-phase4b-oci` | Docker plus the exact pinned Phase 4B parser image |
-| `make check-campaign-experiment-oci` | Docker plus the exact pinned ADR-0066 campaign experiment image |
-| `make setup-typeset` | explicit networked acquisition of hash-pinned BasicTeX under `work/toolchains/` |
-| `make check-typeset` | the locally installed BasicTeX toolchain; two clean offline pdfLaTeX compiles |
-| `make check-all` | `check` + `check-sealed` |
+## Trust model
 
-`make check-sealed`, `make check-gate`, `make check-phase4b-oci`, and
-`make check-campaign-experiment-oci` are local/owner-run because their
-prerequisites are not publicly available.
-Continuous integration runs the offline check only.
+AdaIvy records these properties separately:
 
-The publication PDF is compiled from classic LaTeX, not drawn by an alternate
-PDF generator. Run `make setup-typeset` once on macOS, then
-`make check-typeset`. The setup verifies the BasicTeX package SHA-256 and keeps
-the 377 MB extracted toolchain in gitignored `work/`; the compile itself is
-offline, disables shell escape, and must reproduce the same PDF bytes from two
-clean builds.
+- fidelity to the intended problem;
+- mathematical or empirical warrant;
+- source provenance and applicability;
+- novelty;
+- significance; and
+- human, model, and tool contributions.
 
-For every solved publication claim, the renderer also requires a located,
-acquisition-backed citation to the original problem and a concise auditable
-derivation with citations for any retrieved-source influence. The paper ends
-with an unsuppressible AdaIvy project note linking to
-[github.com/jketts/AdaIvy](https://github.com/jketts/AdaIvy). This derivation is
-a reproducible mathematical account; it is not represented as private model
-chain-of-thought.
-The same disclosure block derives every usage-bearing provider/model, request
-attempt, completed/failed/incomplete response, estimated USD cost, and token
-total from a verified campaign export. Transport and authorization failures are
-paper-visible outcome counts rather than disappearing into a machine-only log.
-Missing telemetry is printed as unavailable and never converted into a complete
-campaign total. Located source references render
-as conventional LaTeX citations, with the recorded passage anchor in the
-optional citation locator.
+A proof assistant establishes correctness of the encoded proposition relative
+to its environment. It does not establish that the proposition faithfully
+captures the informal question, that a cited theorem applies, or that the result
+is new. Those distinctions remain visible rather than being collapsed into one
+“verified” label.
 
-## Running the tests
+## Outputs
 
-Reader-facing solved-result papers use one automatic publication path. With the
-pinned BasicTeX toolchain installed, run:
+Checks are gates: they use temporary directories and do not write tracked
+artifacts. `make report` is the durable counterpart and writes a content-hashed
+index beneath `OUT`, defaulting to `reports/local/run-<stamp>`.
+
+`reports/local/` and `work/` are ignored. Evidence deliberately promoted under
+another `reports/` path is tracked. Live, growing corpus databases and derived
+indexes do not belong in Git; portable manifests and selected evidence bundles
+are exported explicitly.
+
+Reader-facing solved-result papers use the record-driven publication path:
 
 ```bash
 make publication-build MANUSCRIPT=/path/to/manuscript.json \
@@ -214,137 +144,48 @@ make publication-build MANUSCRIPT=/path/to/manuscript.json \
   PUBLICATION_OUT=output/pdf/my-result
 ```
 
-The command fails closed unless it can emit and verify the complete record
-bundle: `paper.tex`, linked Lean sources, `paper.pdf`, build metadata, and
-`MANIFEST.json`. Diagnostic phase reports remain JSON or Markdown and are not
-publication papers.
+The records are authoritative. `paper.tex` is a deterministic projection and
+`paper.pdf` is a reproducible build product; neither feeds information back into
+the research state.
 
-The test suite is plain `unittest` — there is no pytest configuration, and the
-runtime deliberately has no third-party dependencies. `make check` exports
-`PYTHONPATH=src` and `PYTHONDONTWRITEBYTECODE=1` itself, so the ordinary way to
-run the tests is just `make check`. To invoke them directly:
-
-```bash
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m unittest discover -s tests
-```
-
-Some skips are expected: fifteen Phase 4 gate tests skip themselves unless the
-disposable JSON Schema validator environment is importable. CI asserts the
-expected skip count so a test cannot quietly stop running.
-
-## Using the CLI
-
-Every phase is reachable from one entrypoint:
-
-```bash
-PYTHONPATH=src python3 -m math_research.cli --help
-```
-
-Installing the package also provides the `adaivy` and `adaivy-phase0` console
-scripts. Per-phase commands, their exact arguments, and what each slice does and
-does not do are documented in
-[docs/TECHNICAL_DETAILS.md](docs/TECHNICAL_DETAILS.md).
-
-## Repository layout
+## Repository map
 
 ```text
-src/math_research/     phase slices (phase2 … phase6, synthesis), shared domain
-                       and application code, interchange, reporting, and cli.py
-src/phase0_harness/    Phase 0 adoption/evaluation harness
-tests/                 flat unittest modules, one per slice or contract
-fixtures/              deterministic per-phase acceptance fixtures
-schemas/               versioned JSON schemas for every interchange boundary
-migrations/            per-phase SQL migrations
-config/                pinned run configurations, pricing snapshots, image digests
+src/math_research/     domain, phase slices, campaign, adapters, reporting, CLI
+tests/                 unit, integration, property, and adversarial tests
+fixtures/              deterministic acceptance fixtures
+schemas/               versioned interchange schemas
+migrations/            durable-workspace migrations
+config/                pinned run, pricing, activation, and image configuration
 spikes/                reproducible component-evaluation spikes
-reports/               measured per-phase results and gate evidence
-benchmarks/            the quantum-discrimination benchmark package
-prompts/               versioned prompt templates
-docs/                  architecture decision records and per-phase documentation
+reports/               recorded gate evidence and ignored local runs
+docs/                  technical details, plans, ADRs, and historical evidence
 ```
 
-The blueprint's intended target layout (ports/adapters/workers packages, tiered
-test directories) differs from the current tree and is preserved in
-[docs/TECHNICAL_DETAILS.md](docs/TECHNICAL_DETAILS.md#intended-repository-layout).
+## Documentation authority
 
-## Documentation
-
-| Document | Purpose |
+| Document | Role |
 |---|---|
-| [docs/TECHNICAL_DETAILS.md](docs/TECHNICAL_DETAILS.md) | Per-phase implementation detail, commands, and boundaries |
-| [TECHNICAL_BLUEPRINT.md](./TECHNICAL_BLUEPRINT.md) | The build contract, domain model, and phase exit criteria |
-| [NOVELTY_LANDSCAPE.md](./NOVELTY_LANDSCAPE.md) | Prior-art review that informed architecture revision 0.2 |
-| [AGENTS.md](./AGENTS.md) | Repository instructions, current phase, and engineering rules |
-| [docs/adrs/](docs/adrs/) | Architecture decision records |
-| [docs/phase-0/](docs/phase-0/) … [docs/phase-4c/](docs/phase-4c/) | Per-phase gate reports, threat models, and test matrices |
+| [Capability Status](docs/CAPABILITY_STATUS.md) | What is implemented, activated, wired, and runnable now |
+| [End-to-End Runtime Plan](docs/END_TO_END_RESEARCH_RUNTIME_PLAN.md) | Forward implementation plan |
+| [Technical Blueprint](TECHNICAL_BLUEPRINT.md) | Architecture and correctness contract |
+| [Technical Details](docs/TECHNICAL_DETAILS.md) | Current commands and bounded component behavior |
+| [ADR index](docs/adrs/README.md) | Decision history and current integration ADRs |
+| [Prior-Art Landscape](NOVELTY_LANDSCAPE.md) | Dated architecture research, not current runtime status |
+| [Repository Instructions](AGENTS.md) | Stable contributor and agent rules |
 
-## The problem this addresses
-
-Ordinary chat-based research has predictable failure modes:
-
-- assumptions disappear as a discussion grows;
-- a plausible derivation is mistaken for a proof;
-- citations are detached from the exact claims they support;
-- real citations are used under incompatible hypotheses or definitions;
-- computational evidence is reported as a universal result;
-- equivalent-looking reformulations are used without proving equivalence;
-- a proof assistant verifies a statement that does not mean what the researcher
-  intended;
-- failed approaches are forgotten and repeated;
-- generated summaries contaminate the trusted source corpus.
-
-This project makes those boundaries explicit and machine-checkable. A claim is
-promoted only through explicit evidence and an applicable verifier. Retrieval
-supports reasoning; it does not establish truth. Experiments can refute
-universal claims and support conjectures; they do not replace proof.
-
-## How it fits together
-
-```mermaid
-flowchart TD
-    A["Research question"] --> B["Formalization"]
-    B --> C["Long-horizon research lead"]
-    D["Sources"] --> E["Evidence substrate"]
-    E --> C
-    C --> F["Hypothesis branches"]
-    F --> G["Mathematical tool gateway"]
-    F --> J["External research backends"]
-    G --> H["Verification pipeline"]
-    J --> H
-    H -->|"gap or refutation"| C
-    H -->|"verified result"| I["Research report"]
-```
-
-The full twelve-step research lifecycle, the complete list of architectural
-principles, and the definition of done for the first vertical slice are in
-[docs/TECHNICAL_DETAILS.md](docs/TECHNICAL_DETAILS.md).
+Historical phase plans, gate reports, threat models, fixtures, and accepted or
+superseded ADRs remain evidence. They are not the current capability summary.
 
 ## First benchmark
 
-The first end-to-end benchmark studies the iterative method in Jezek, Rehacek,
-and Fiurasek, “Finding optimal strategies for minimum-error quantum-state
-discrimination” ([arXiv:quant-ph/0201109](https://arxiv.org/abs/quant-ph/0201109)),
-asking whether the iteration always reaches a global optimum under precisely
-stated assumptions. Quantum-specific mathematics stays inside the benchmark
-package and must not leak into the core claim, evidence, workflow, or
-verification abstractions.
+The original benchmark studies the Jezek–Rehacek–Fiurasek iterative method for
+minimum-error quantum-state discrimination. Quantum-specific mathematics stays
+inside the benchmark package and must not leak into the core claim, evidence,
+workflow, or verification abstractions.
 
 ## Licence
 
-Licensed under the Apache License, Version 2.0 — see [LICENSE](./LICENSE). This
-grants use, modification, and redistribution, including an express patent grant,
-provided you preserve the copyright and attribution notices and state any
-changes you make.
-
-Fixture corpora under `fixtures/` are project-authored synthetic data carrying
-the separate identifier `LicenseRef-AdaIvy-Synthetic-Fixture`; they are not
-third-party content.
-
-## Contributing
-
-There is no `CONTRIBUTING.md` yet. Before proposing a change, read
-[AGENTS.md](./AGENTS.md) for the engineering rules and change-control
-expectations, and the relevant records in [docs/adrs/](docs/adrs/). In short:
-architecture changes are recorded in an ADR rather than made silently, each
-slice ships an acceptance suite that encodes its thresholds as executable
-assertions, and `make check` must stay green.
+Licensed under the Apache License 2.0. Fixture corpora under `fixtures/` are
+project-authored synthetic data carrying
+`LicenseRef-AdaIvy-Synthetic-Fixture`.

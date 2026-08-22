@@ -1,7 +1,8 @@
 # ADR-0069: Embedding provider port and exact content-hashed vector artifacts
 
-- **Status:** proposed; second of three slices. Requires ADR-0064's processor-bound
-  rights decision. Produces no retrieval change on its own.
+- **Status:** accepted and implemented; second of three slices. Requires
+  ADR-0064's processor-bound rights decision. Produces no retrieval change on
+  its own.
 - **Date:** 2026-08-22
 - **Blueprint requirement:** Section 12.2.1 (provider binding for vector
   projections); Section 12.2 (derived indexes are rebuildable projections);

@@ -1,7 +1,8 @@
 # ADR-0064: Phase 4A embedding rights bind a named processor
 
-- **Status:** proposed; the first of three slices activating embedding-backed
-  semantic retrieval, and a hard prerequisite for ADR-0069 and ADR-0070
+- **Status:** accepted and implemented; the first of three slices activating
+  embedding-backed semantic retrieval, and a hard prerequisite for ADR-0069
+  and ADR-0070
 - **Date:** 2026-08-22
 - **Blueprint requirement:** Section 12.2.1 (provider binding for vector
   projections); Section 2 C1 (provenance completeness), C12 (citation

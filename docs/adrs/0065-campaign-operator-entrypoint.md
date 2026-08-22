@@ -1,7 +1,8 @@
 # ADR-0065: Give the ADR-0057 campaign an operator entrypoint
 
-- **Status:** accepted for the wiring slice; generated-code execution stays
-  fail-closed pending ADR-0066
+- **Status:** accepted and implemented for the entrypoint slice; ADR-0066's OCI
+  component is activated, but this entrypoint still injects the pending runner
+  and absent verifier and therefore needs a later integration slice
 - **Date:** 2026-08-22
 - **Blueprint requirement:** ADR-0057 §1--§4; ADR-0047 bounded runtime;
   ADR-0055 `before_research` checkpoint; ADR-0026 acceptance-suite rule

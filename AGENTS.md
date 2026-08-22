@@ -1,411 +1,154 @@
 # Repository Instructions
 
-This repository implements the architecture in `README.md`,
-`TECHNICAL_BLUEPRINT.md`, and `NOVELTY_LANDSCAPE.md`. Read all three plus the
-current ADRs before changing architecture or phase scope.
+## Documentation authority
 
-When you are handed a **mathematics problem** rather than an engineering task,
-follow the invocation procedure for your harness before computing anything:
-`CODEX.md` (Codex) or `CLAUDE.md` (Claude Code). Both are subordinate to this
-file and cover the same pipeline: problem definition, intake dossier, the human
-novelty re-check that must precede research, convention records and the verdict
-matrix, exact computation, formal checking, and the publication projection.
+Before changing architecture or capability scope, read:
 
-## Current phase
+1. `README.md` for the project contract;
+2. `docs/CAPABILITY_STATUS.md` for what is actually implemented, activated,
+   campaign-wired, and end-to-end runnable;
+3. `TECHNICAL_BLUEPRINT.md` for the target architecture and correctness rules;
+4. `docs/END_TO_END_RESEARCH_RUNTIME_PLAN.md` for proposed integration work;
+5. the relevant accepted ADRs under `docs/adrs/`; and
+6. `NOVELTY_LANDSCAPE.md` as dated prior-art evidence, not runtime status.
 
-Bounded Phase 4B authorized acquisition and exact-source parsing (ADR-0028) is
-the current work. Its offline acquisition, persistence, deletion, replay,
-strict HTML/TeX/PDF candidates, and exact Linux/arm64 OCI parser gate are
-implemented. The digest-pinned OCI gate reproduces all twelve parser fixtures
-with zero false admissions and demonstrates kernel memory, CPU, process, file,
-network-none, read-only-root, noexec-temp, and ambient-secret controls. The
-separately acknowledged live HTTPS gate has executed, and ADR-0050 activates
-only public unauthenticated, human-planned exact-URL acquisition. Network
-remains off by default. Credentials, caller-supplied request headers, retries,
-crawling, scheduling, and autonomous origin selection remain disabled. ADR-0051
-separately activates one operator-initiated Crossref metadata query for grounded
-public scholarly discovery. Every term must occur in a supplied local problem
-or context file; the result is inspiration-only, never fetched automatically,
-and creates no relevance, applicability, acquisition, novelty, significance,
-graph-admission, or warrant effect.
+ADRs preserve decision history. Do not delete or silently rewrite an accepted,
+rejected, or superseded decision. Record changed authority in a new ADR and add
+explicit supersession metadata. `docs/adrs/README.md` lists the current
+integration decisions and the historical duplicate ADR-0038 identifiers.
 
-Phases 0 through 6 remain implemented and authoritative. Phase 5 now has three
-scopes and all must be stated exactly. The sealed scope is exact
-scalar/diagonal `QD-FS-01`: commuting cases, computed results, deterministic
-tier-0 branches. The noncommuting scope (ADR-0035) **verifies certificates
-supplied to it and never discovers them**, so it is a checker and not a solver.
-ADR-0049 adds a separate bounded exact solver for exactly two outcomes in
-dimension two over one measured `Q(sqrt(d))(i)` field. It constructs a candidate
-and submits it to the ADR-0035 verifier; only exact feasibility, zero gap, and
-complementarity create the result. The dimension-three irreducible-cubic case
-remains explicitly unresolved. Search tiers 2--4 stay disabled. The Phase 6
-scope is still one frozen held-out case plus the generality control suite and
-canonical replay.
+Historical phase plans, gate reports, threat models, and fixtures are evidence
+for their named slice. They are not global descriptions of current capability.
 
-Phase 3B now has two scopes and both must be stated exactly. The sealed
-single-shot scope is unchanged. On top of it, ADR-0040 adds a **bounded repair
-loop that adds submissions and no Lean capability**: it orchestrates strictly
-above `FormalCheckingService.check` and holds no reference to the container
-engine, image digest, launcher, fixed invocation, stdin bound, Landlock
-hardener, or seccomp policy. Three bounds are load-bearing and must not be
-relaxed without a new ADR. The theorem is frozen -- a proposer returns one proof
-fragment, so statement, hypotheses, imports, declaration, claim, and meaning
-tests cannot change, and a repair therefore cannot weaken what it claims to
-prove. Only Lean's own `elaboration_failure` is repairable; a policy rejection
-is never fed back, because a validator diagnostic describes how to evade the
-validator, and meaning-test failures and unapproved-assumption results are
-terminal for the same reason. Nothing is promoted: `epistemic_warrant_created`
-is `False` unconditionally, including on a successful repair, and a repaired
-proof is attributed to `MODEL` and never to the operator. ADR-0048 supplies an
-opt-in Azure OpenAI implementation of the `ProofProposer` port. It requires
-explicit live execution, content-hashed bounds, confirmed pricing, the pinned
-SDK, and the sealed Lean image. It returns only a proof fragment and records
-provider, model, usage, cost, and hashes without retaining secret or proof text
-in the public call audit. The offline acceptance path still uses a scripted
-proposer and makes zero model and network calls. Nothing yet measures whether
-repair improves retained verified progress -- that is an
-ADR-0029 retention question and is open. `docs/phase-3b-repair/` is the
-normative gate package, per ADR-0026's revisit trigger.
+## Current integration objective
 
-The Phase 6 generality control suite (ADR-0034) executes. Thirteen controls drive
-Phase 1 `TrustPolicy`, the exact Phase 5 engine, or the Phase 6 `HeldOutView`
-over a content-hashed project-authored manifest whose hash the confirmatory
-protocol freezes and verifies before the first durable write. Each control
-carries one falsifiability probe -- a named single-field mutation of its own
-fixture that must produce the forbidden verdict -- and `probes_flipped ==
-controls_total` is a release gate alongside `controls_passed == controls_total`,
-because a control that cannot be made to fail proves nothing. Two controls are
-positive, so an all-reject system cannot pass. `control_corpus_provenance` is
-`project_authored`: the suite demonstrates boundary enforcement on KNOWN traps
-and is not evidence of generality against unseen traps, and the
-`baseline_comparison` count of enforced boundaries is not a generality rate.
-Held-out access and adaptation counts are computed reads of durable
-`heldout_access` records, not literals. Novelty and significance remain
-`not_assessed`.
+The repository contains working bounded components through ADR-0070, but it does
+not yet run the complete intended research workflow. In particular:
 
-ADR-0026 records the accepted delivery order for the remaining work after
-Phase 4B: Phase 4C hybrid retrieval, then the noncommuting Phase 5 expansion,
-then Phase 6 external evaluation.
+- the campaign has no search, acquisition, embedding, index-refresh, or
+  retrieval action;
+- the bounded corpus is not connected to Phase 4C retrieval;
+- semantic retrieval runs over the frozen 19-document fixture;
+- the campaign CLI still uses a pending experiment runner and absent verifier;
+- Lean checking is available only through the separate Phase 3B path; and
+- ADR-0055's human `before_research` novelty checkpoint remains active.
 
-Benchmark-scoped Phase 4C hybrid retrieval (ADR-0031, ADR-0032) is implemented
-and measures all seven gates as passing on the third fixture extension: 19
-documents, 17 queries, six of them applicability. Three offline signals fuse in
-score space -- FTS5/BM25, a content-keyed alias table, and an exclusion-only
-evidentiary self-disclaimer signal whose cues are composed from two frozen
-vocabularies rather than enumerated. ADR-0031's demotion-only rule is withdrawn
-as its own recorded error; ADR-0032 replaces it with exclusion under three
-invariants (no score changes, retained relative order is preserved, no document
-outside the candidate set is named). Exclusion removes a candidate from one
-result list and is not an applicability judgement: it creates no premise,
-warrant, applicability record, or graph admission, and the excluded document
-stays in the report. Document scope is declared valid only where the retrieval
-unit is a single-claim unit, so it must be re-derived before any multi-section
-parsed unit reuses it. This slice still reads only the frozen Phase 4C fixtures
-and adds no embedding, vector, or network surface.
+The active proposed work is the end-to-end runtime plan. It aims to make one
+budgeted, resumable central campaign use explicit AdaIvy credential profiles,
+grow a persistent literature/embedding corpus, retrieve evidence during
+ideation, run bounded experiments, and invoke exact or Lean verification.
 
-Bounded Phase 4D public scholarly discovery (ADR-0051) is implemented over one
-pinned, public unauthenticated Crossref endpoint. One human-started invocation
-makes at most one request and returns at most ten DOI metadata candidates. All
-query terms are operator supplied and exact-normalized substrings of a supplied
-local context; live execution requires the exact acknowledgement and query
-hash. Provider terms must have been reviewed within thirty days. Every result
-is an `untrusted_inspiration_candidate`: relevance, applicability, novelty, and
-significance are `not_assessed`, acquisition is unauthorized, graph admission
-is absent, and mathematical warrant is `none`. It does not follow results,
-crawl, traverse citations, generate queries, use credentials, schedule work, or
-call a model. `make check` runs only its zero-network dry path.
+The plan is not authority by itself. Before implementing it, create the
+superseding ADR identified in Slice 1. Until that ADR lands, current narrower
+runtime restrictions remain in force.
 
-ADR-0067's bounded arXiv metadata corpus slice is implemented but its production
-activation remains pending owner approval. It admits descriptive metadata and
-abstracts only, under the recorded CC0 basis; full text, result following,
-citation traversal, crawling, credentials, autonomous archive selection, and
-more than one connection are absent. The first tranche is content-hashed and
-bounded to 2,040 mathematics records, requests are paced at no less than three
-seconds, and every document receives separate Phase 4A acquisition, retention,
-and parsing decisions. Offline replay reconstructs records from exact stored
-Atom bytes with zero network calls. Every record remains an
-`untrusted_inspiration_candidate`, applicability stays human-only, and reports
-state that this corpus is not wired into Phase 4C retrieval. `make check`
-exercises only the dry and replay paths and all 29 falsifiability probes.
+## Mathematics-problem invocation
 
-ADR-0055 adds a cross-phase lifecycle rule: every operator-chosen problem needs
-a human, evidence-linked novelty re-check immediately before research starts,
-and every non-null human publication approval needs a second distinct re-check
-over the exact result immediately before announcement. Both records are bound
-to one subject hash and one next-action identifier, strictly precede that action,
-and expire after twenty-four hours; the second links to the first. Their search
-protocol includes terminology and equivalent-formulation checks, sources,
-evidence hashes, and limitations. Outcomes are only `prior_art_found`,
-`not_found_under_protocol`, or `inconclusive`: none creates novelty status,
-significance, applicability, graph admission, or mathematical warrant, and an
-empty search never means novel. A found source also carries a human-supplied
-same/equivalent/stronger/weaker/overlapping relationship, resolution kind, and
-verification state. Runtime and publication reports must expose the derived
-report class and target status. In particular, the Graffiti 197 regression is
-`independent_verification` / `already_refuted`; it must never be presented as a
-new refutation. Phase 4D candidates may be evidence inputs but do not themselves
-perform or satisfy the re-check.
+When a user hands the repository a mathematics problem rather than an
+engineering task, follow `CODEX.md` or `CLAUDE.md`. Both are thin harness
+wrappers around `docs/MATHEMATICS_RUNBOOK.md` and are subordinate to this file.
 
-ADR-0033 records the WP4 entry gate for the noncommuting Phase 5 expansion,
-measured as a spike. `spikes/phase5_noncommuting_sdp/` now checks supplied
-primal/dual certificates exactly over one real quadratic extension of the
-rationals per case, `Q(sqrt(d))(i)` with `d` squarefree. The recorded `1/4` gap
-on both noncommuting pure-state pairs closes to exactly zero on ensembles that
-are byte-identical to the ones that left it open, with no dependency, no float,
-and no tolerance. One frozen fixture is a measured boundary: a noncommuting
-two-outcome ensemble in dimension three whose difference operator has an
-irreducible cubic characteristic polynomial, so its optimum has degree three and
-no certificate over any quadratic extension can close it. The spike verifies
-certificates; it does not find them, grants no mathematical warrant, does not
-integrate with the sealed Phase 5 slice, and does not enable search tiers 2--4.
+Under the current implementation, do not perform material mathematics in the
+host task and describe it as AdaIvy discovery. Host Codex, Claude, human, or
+external-system work is an explicit import. A model proposal, retrieved source,
+experiment, or embedding never creates mathematical warrant by itself.
 
-ADR-0035 promotes that verification into `src/math_research/phase5/` and closes
-the solver option the entry gate left live. The production slice admits a
-certificate and checks primal feasibility, dual feasibility, and an exactly
-closed gap over `Q(sqrt(d))(i)` for one squarefree `d` per case, with the
-radicand MEASURED from the case values rather than declared. It contains no
-search, no iteration toward an optimum, and no candidate generation, and a case
-arriving without a certificate produces an explicit unresolved outcome rather
-than an attempt. A certificate is a human input: it enters through the
-authorized-human-steering boundary, records its deriving principal, and is
-rejected if that principal is missing, nonhuman, or if the derivation declares a
-solver, search, interval, or residual-reconstruction origin. No numerical solver
-is adopted, now or as a gated adapter, and no interval or
-residual-reconstruction path exists.
+Lean verifies the exact encoded proposition relative to its environment. It
+does not establish correspondence with the informal problem, source
+applicability, novelty, or significance.
 
-Read the coverage status before the gap. Every noncommuting result, export
-record, and rendered report carries a machine-readable coverage status, and
-`optimum_discovered` is named as forbidden and is unproducible. The honest risk
-is a coverage illusion: exactly-zero gaps read as "the noncommuting case is
-handled" when only two-outcome ensembles whose optimum a human already derived
-in closed form are. The slice does not answer general noncommuting JRF
-convergence and no report, summary, or status line may imply that it does. The
-frozen fixture retains `real-noncommuting-irreducible-cubic-boundary`, a genuine
-noncommuting ensemble whose optimum has degree three over `Q`, so the boundary
-is visible in every run rather than inferred from an ADR. Outside the field --
-two distinct surds, a cubic or higher irreducible extension, a declared
-transcendental value, any float or tolerance -- every case is an explicit typed
-rejection.
+## Stable trust rules
 
-ADR-0036 adds the publication projection in `src/math_research/publication/`.
-Results are reported as a content-addressed bundle: the records are the artifact
-of record, `paper.tex` is a projection of them, and `paper.pdf` is a build
-product of the projection. **Nothing flows back**, and a hand-edited `.tex` is
-detectable from `MANIFEST.json`. Four boundaries carry the slice. Every rendered
-content block appears in a provenance ledger with at least one resolving record
-reference, and `paper.tex` is exactly the frozen template plus the ledger, checked
-byte-for-byte. A claim's environment is COMPUTED from its records and never
-declared: only a bare `kernel_checked` attestation on a `verified` representation
-reaches `Theorem`, approved-standard-axiom outcomes and exact certificates reach
-`Proposition`, and everything else reaches `Conjecture`. Demotion is the default
-and no manuscript field can promote a claim -- 1,467 single-field mutations were
-checked and none produced a theorem. A bibliography entry exists if and only if an
-acquisition record with a content hash, an authority and publication rights backs
-it; closure runs both ways, a lemma cited at work level rather than at a located
-passage is refused, and unrecorded background renders as an OPEN OBLIGATION rather
-than a citation. Every LaTeX-bearing field is validated against a frozen macro
-allowlist that refuses file input, process output, category-code manipulation and
-package loading by class, because LaTeX executes at compile time.
-
-The offline `make publication` target renders the bundle, verifies closure, and
-runs seventeen falsifiability probes; `probes_flipped == probes_total` gates it,
-because a render rule that cannot be made to fail proves nothing. The fixture
-renders ZERO theorems and its status block says so in words, because `make check`
-excludes the sealed Lean runtime -- a nonzero theorem count on that path means the
-renderer invented one. Typesetting is the separate `make check-typeset` gate:
-bounded, offline, `-no-shell-escape`, `SOURCE_DATE_EPOCH` frozen, two clean
-compiles that must hash identically, and undefined references or citations are
-build failures. Until a compile has run, `typeset_status` stays `not_typeset` and
-`pdf_sha256` stays null; its absence must never be counted as a pass. No model may
-iterate on a compile error. Rendering is not publication: the bundle carries
-`publication_approval: null` and the document prints the absence. Novelty and
-significance stay `not_assessed`, and the projection creates no warrant,
-applicability record, alignment approval, or graph admission.
-
-ADR-0029 refines the target orchestration architecture without enabling a new
-runtime. The baseline is one coherent long-horizon research lead plus a
-centralized verifier, with literature, experiments, multiple branches, and
-incremental formalization available inside that central loop. Higher search
-tiers remain disabled. Bounded specialists require a recorded prediction and
-measured retention gain in verified progress per unit cost; evolutionary search
-additionally requires cheap reliable verifier-backed fitness and adversarial
-calibration. Never substitute an always-on hierarchical swarm.
-
-ADR-0047 activates only the bounded central-lead runtime. It composes distinct
-one-round Phase 2 runs, carries a size-bounded proposer-only ledger between
-them, and rebuilds the verifier context without that history. Session bounds
-are content-hashed, replay is model-free, the target is frozen, and no warrant
-or proof-obligation discharge is producible. ADR-0041 refinement is refused
-inside an ADR-0047 iteration so the two loops cannot multiply each other's
-bounds. The runtime measures no retention gain and activates no specialist,
-parallel, evolutionary, or higher search tier.
-
-ADR-0057 activates a provenance-closed campaign control plane above ADR-0047.
-The same central lead can propose routes, write a bounded program, request an
-allowlisted run, inspect exact recorded output, select a candidate, and submit
-that selection to an isolated verifier. Every provider attempt, program, tool
-artifact, selection, usage observation, and estimated cost closes inside the
-campaign export with semantic and operational hashes. The live activation probe
-uses the same gateway and budget; a failed probe is terminal and recorded.
-External Codex or human work remains an explicit import and cannot be called an
-AdaIvy discovery. Reader-facing AI-authored publication builds derive origin
-and disclosure from the verified campaign/link pair. ADR-0066 activates
-generated-code execution only for one bounded exact-graph campaign target,
-through a distinct digest-pinned Linux/arm64 OCI sandbox whose sixteen probes
-pass. Its output remains an untrusted candidate until the isolated exact
-verifier re-derives it; the offline suite uses only injected scripted ports.
-This activates no parallel specialist, evolutionary, or higher search tier.
-
-ADR-0058, ADR-0059, and ADR-0060 move the trust boundary UPSTREAM of the
-proposition. Every earlier boundary governs whether reasoning about a fixed
-statement is sound; these three govern which statement is being made and whose
-statement it already was. They exist because the Graffiti 322 report shipped a
-correct exact certificate under a title the records did not earn.
-
-A contested definitional term is now a content-hashed `ConventionRecord` in
-`src/math_research/conventions.py` enumerating at least two source-anchored
-readings. A claim that resolves a named external problem is `resolution_target`
-typed and carries a `VerdictMatrix` covering exactly the record's reading
-tuples; `classify_scope` derives `unconditional`, `convention_relative`,
-`contested_unevaluated`, or `no_reading_refutes` from the verdicts alone.
-Scope demotes: `convention_relative` caps the claim at the new
-`convention_relative_proposition` rung rendered as "Proposition
-(convention-relative)", and the two weaker scopes reach `proposal`. Ignorance
-demotes before disagreement does. `unconditional` means unconditional over the
-ENUMERATED readings only -- the enumeration is author-supplied, and a contested
-term omitted entirely is invisible to this machinery. Reports must say so.
-
-`src/math_research/exact_graph/` is the exact spectral engine and the first
-in-repo implementation of the engine the Graffiti 322 certificate names, so that
-certificate is reproducible from the repository for the first time. It is also
-the counter-candidate replay engine: where prior art offers a witness, that
-witness is replayed under every enumerated reading and each verdict is recorded.
-Integers and `Fraction` only; the distinct-eigenvalue count is the degree of the
-minimal polynomial of a symmetric integer distance matrix, and an undecidable
-comparison is a typed refusal rather than a guess. Replaying the published C4
-candidate reproduces the whole external-review finding mechanically: it refutes
-only under `even_excludes_v`, while G(14,18) refutes under both readings of
-`Even` and neither reading of spectral extent.
-
-Citing a work that addresses the same target problem obliges classification, not
-a bibliography entry. Target engagement is FAIL-CLOSED and derived: a citation
-addresses the target by default and whenever the question cannot be decided, and
-escaping that needs an attributable `target_exclusion` naming a closed-vocabulary
-reason. A `prior_resolution_candidate` can never be excluded. Prior art gets a
-top-level `prior_art_engagement` slot that does NOT hang off approval, because
-ADR-0055's gate returned early whenever `publication_approval` was null -- which
-is every draft, and drafts are what circulate. The teeth are now in
-`produce_publication`. The recheck must bind to the manuscript subject hash; the
-24-hour freshness window is deliberately NOT re-enforced at render time, because
-that would make an existing bundle unrebuildable and break ADR-0036's
-regenerable-from-records guarantee.
-
-A passage record separates the bytes we hold from how well we read them:
-`extraction_method`, `reading_status`, `verbatim_text`, and a `verbatim_hash`
-distinct from the byte `content_hash`. A content hash is tamper-evidence and says
-nothing about interpretive faithfulness. `manual_transcription` never reaches
-`verbatim_confirmed` because a hand transcription cannot be re-derived from the
-file. A reading nobody can re-extract forces an open `reading`-tagged obligation,
-may not be called source-faithful, and reaches the headline through the scope
-gate. The displayed report title is composed from a `title_stem` plus a DERIVED
-qualifier, enters the provenance ledger like every other block, and no input
-field can select it -- title and abstract were previously the only reader-facing
-text in the projection with no derivation and no falsifiability probe.
-
-None of this creates novelty status, significance, mathematical warrant, or graph
-admission, and none of it makes an unapproved draft an endorsed result. It makes
-one class of over-claim mechanically detectable. It does not make a report correct.
-
-The Phase 1 domain/trust semantics, sealed Phase 2 evidence, Phase 3A memory,
-sealed Phase 3B runtime, and Phase 4A rights/applicability boundaries remain
-authoritative. ADR-0048's bounded Azure proposer, ADR-0049's bounded exact
-noncommuting solver, and ADR-0051's bounded Crossref discovery query are the
-only newly authorized model/solver/network-discovery paths. Do not add a web UI
-or HTTP API, crawler, result following, broader network acquisition or discovery, embeddings, PDF
-parsing, another model/external API path, a broader noncommuting SDP solver,
-multi-agent or evolutionary search, automated novelty/significance assessment,
-or enable higher search tiers without a later explicit implementation request,
-the ADR-0029 activation evidence, and measured cost-adjusted verified gain.
-
-Two capabilities the synthesis slice supplies are boundaries, not fixes, and
-must not be assumed to hold elsewhere. `synthesis/applicability.py` resolves the
-effective Phase 4A review because Phase 4A itself has no resolver; if Phase 4A
-later adopts its own rule the two must be reconciled. The separation-of-duty
-check in `synthesis/material.py` applies only to that module's surfacing path,
-because sealed Phase 5 accepts an identical originating and creating principal.
-Under ADR-0035 that acceptance is now load-bearing rather than merely tolerable:
-when one principal derives a noncommuting certificate and the same principal
-approves its admission, no independent party stands between the derivation and
-the trust record. What contains it is mathematical, not procedural -- a zero-gap
-certificate is self-verifying against the ensemble, so a wrong certificate fails
-the exact check rather than passing quietly. The procedural gap stays open and
-is recorded in every certificate-admission record. Do not close it by inventing
-a second-principal requirement; that is a separate decision.
+- Treat all external and model-produced output as untrusted candidate
+  artifacts.
+- Never turn retrieval rank, model agreement, or finite experimentation into
+  proof status.
+- Preserve failed attempts, unavailable tools, rejected candidates, and
+  unresolved obligations in machine-readable output.
+- Keep statement alignment, mathematical warrant, source applicability,
+  novelty, significance, and contribution as separate dimensions.
+- Reconstruct verifier context without the proposer's persuasive narrative.
+- A changed statement, assumption set, convention, or representation is a new
+  version and may invalidate downstream results.
+- A retrieved theorem becomes load-bearing only through an exact located span
+  and a checked applicability record.
+- Generated programs run only through an activated sandbox and their output is
+  an untrusted candidate until an independent verifier checks it.
+- Do not broaden a provider, network, solver, sandbox, or search capability by
+  changing a constant or bypassing an activation record.
+- Human publication approval remains separate from rendering and verification.
 
 ## Engineering rules
 
-- Treat external output as untrusted candidate artifacts.
-- Compare every component with the file-based baseline using the same fixture.
-- Never turn retrieval, experiments, or model agreement into proof status.
-- Preserve failed attempts and missing-tool results in machine-readable output.
-- Keep Phase 0 through Phase 6 runnable without network access.
-- Pin direct runtime/development dependencies and record licenses before adding
-  them. Prefer the standard library for the harness.
-- Record any necessary departure from the blueprint in `docs/adrs/`; do not
-  silently change the architecture.
-- Never let vectors from different providers or different embedding models share
-  a similarity space. If a second model provider is admitted, partition any
-  vector projection by `(provider, model_identifier, dimension, normalization)`,
-  rebuild rather than backfill on a provider or model change, and bind stored
-  vector bytes into canonical identity so a deterministic rebuild replays
-  artifacts instead of re-calling the provider. Mixing degrades retrieval
-  silently rather than failing. See `TECHNICAL_BLUEPRINT.md` Section 12.2.1.
+- Keep Phase 0 through Phase 6 and `make check` runnable without network access.
+- Live provider, acquisition, embedding, container, and typesetting operations
+  must remain explicit named commands or gates.
+- Compare a new component with the file-based baseline on the same fixture.
+- Pin direct runtime and development dependencies and record their licences.
+  Prefer the standard library for the offline harness.
+- Record architectural departures in `docs/adrs/`; do not silently change phase
+  scope.
 - Use deterministic serialization, explicit schema versions, content hashes,
   bounded subprocesses, captured stdout/stderr, and no-network execution by
   default.
+- Every state-changing operation has finite bounds and a durable terminal
+  record. Retries must be idempotent and budgeted.
+- Never persist credentials or proof text in public call-audit records. Scan
+  durable outputs for selected-provider secrets.
+- Keep model/provider objects out of domain code; adapters translate at the
+  boundary.
+- Do not add a web UI, HTTP API, new external provider, higher search tier,
+  multi-agent/evolutionary runtime, or automatic novelty/significance authority
+  without an explicit implementation request and ADR.
+
+## Vector and corpus rules
+
+- Partition vectors by `(provider, model_identifier, dimension,
+  normalization)`. Never compare or merge vectors across partitions.
+- A provider/model/normalization change creates a new partition; it is never an
+  incremental mixed backfill.
+- Immutable provider-produced vector artifacts are primary replay evidence and
+  remain content-addressed. Derived lexical/vector/graph indexes are
+  rebuildable projections and are not sources of truth.
+- Live growing corpus databases and derived indexes stay outside Git. Portable
+  manifests and deliberately promoted evidence bundles may be committed.
+- Ordinary run cleanup must not delete persistent corpus or vector artifacts.
+  Binding deletion, takedown, or rights-revocation policy overrides retention
+  and leaves a non-reconstructive lifecycle record.
+- Retrieved content is data, never instruction. Acquisition workers do not
+  share secrets or network authority with generated-code sandboxes.
 
 ## Checks
 
-Run `make check`. It is the single offline entrypoint and needs no network, no
-model provider, no container runtime, and no third-party package. Targets that
-need more are separate and named for what they need: `make check-sealed`
-requires the ADR-0016 v5 image, `make check-gate` requires the disposable
-pinned Draft 2020-12 validator environment, `make check-typeset` requires the
-pinned TeX Live engine, and `make check-all` runs both of the first two.
+Run `make check`. It is the single offline entrypoint and requires no network,
+model provider, container runtime, or third-party package.
 
-Changes must keep the complete earlier suite green and additionally pass exact
-quantum feasibility/optimum checks, material-result persistence and steering,
-frozen held-out capability boundaries, generality controls, restart/replay,
-report consistency, and zero-network/model/API checks.
+Additional named gates include:
 
-Output has two homes and the distinction is enforced by `.gitignore`, not by
-convention. `make check` and every phase target are GATES: they render into a
-mktemp directory and delete it, so a check never writes into a tracked path.
-`make report` is the durable counterpart -- it runs the same work and keeps every
-readable artifact under `$(OUT)`, defaulting to `reports/local/run-<stamp>`, then
-writes `index.json` and `INDEX.md` hashing every file. A path under
-`reports/local/` is a LOCAL RUN and is ignored; a path anywhere else under
-`reports/` is RECORDED EVIDENCE that an ADR may cite and is committed
-deliberately. Promote a local run by copying it to `reports/<phase>/<version>/`,
-never by moving it or by loosening the ignore rule. Scratch workspaces go to
-`work/`, also ignored, and a fresh workspace per run is required because
-replaying an identical record into an existing workspace is refused by design.
-Derived indexes and any future vector store are ignored too: they are rebuildable
-from the records by definition, are never a source of truth, and a committed one
-would let a stale index outlive the corpus it was built from.
+- `make check-sealed` — ADR-0016 Lean image;
+- `make check-gate` — pinned Draft 2020-12 validator environment;
+- `make check-phase4b-oci` — pinned acquisition/parser image;
+- `make check-campaign-experiment-oci` — pinned campaign sandbox image;
+- `make check-embedding-live` — live credentialed embedding ingestion;
+- `make check-typeset` — pinned TeX toolchain; and
+- `make check-all` — offline suite plus sealed Lean checks.
 
-The report index hashes and does not summarise, and its `recorded_at` is an
-argument rather than a clock read. Two files legitimately differ between two
-otherwise identical runs and both are phase properties rather than
-nondeterminism: `phase1/demo-summary.json` echoes its own output paths, and the
-Phase 4C report carries `operational.elapsed_ms` plus the derived
-`operational_hash`, which Phase 4C separates from its stable `content_hash` on
-purpose.
+Each new capability slice ships an ADR and an acceptance suite whose executable
+assertions encode its thresholds. Forbidden outcomes must be demonstrated
+impossible, not merely left untested.
 
-Under ADR-0026 each new slice ships one ADR plus an acceptance suite that
-encodes its thresholds as executable assertions, rather than a separate
-threshold inventory. A scenario's forbidden outcomes must be demonstrated
-impossible, not merely left untested. `tests/test_repository_invariants.py`
-enforces the standing structural properties: no module-level network or
-third-party import in `src/`, and every lazy third-party load declared as a
-gated boundary.
+## Output and repository hygiene
+
+`make check` and phase targets are gates: they use temporary directories and do
+not write tracked outputs. `make report` is the durable counterpart and writes
+under `$(OUT)`, defaulting to ignored `reports/local/run-<stamp>`.
+
+Paths under `reports/local/` are local runs. Other `reports/` paths are recorded
+evidence committed deliberately. Scratch workspaces belong under ignored
+`work/`, with a fresh workspace per run. Promote a local run by copying it into
+a named evidence directory; never weaken ignore rules to capture mutable state.
+
+The report index hashes files; it does not summarize them. `recorded_at` is an
+argument rather than an implicit clock read. Preserve the established separation
+between semantic hashes and operational observations such as elapsed time,
+usage, and cost.

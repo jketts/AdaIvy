@@ -1,16 +1,13 @@
 # Technical Blueprint: Verification-First Mathematical Research System
 
-**Document status:** Architecture baseline 0.7 — bounded Phase 4B acquisition
-and exact-source parsing, local Phase 5 and Phase 6 slices, and the ADR-0027
-exploratory-synthesis slice are accepted and implemented on 20 August 2026.
-The exact OCI parser gate and separately acknowledged live HTTPS gate pass.
-ADR-0050 activates only public unauthenticated, human-planned exact-URL
-acquisition; credentials, crawling, autonomous origin selection, and broader
-acquisition/media remain deferred. Noncommuting SDP beyond ADR-0049's bounded
-domain, higher adaptive-search tiers, broader hybrid retrieval, and external
-evaluation remain deferred. ADR-0029 refines the future adaptive
-search architecture without activating those tiers. ADR-0012 preserves the
-superseded roadmap history.
+**Document status:** Target architecture and correctness contract, updated 22
+August 2026. Bounded components through ADR-0070 exist, but the complete
+literature-to-verification campaign is not yet wired. The canonical implemented
+state is [`docs/CAPABILITY_STATUS.md`](docs/CAPABILITY_STATUS.md); the proposed
+integration sequence is
+[`docs/END_TO_END_RESEARCH_RUNTIME_PLAN.md`](docs/END_TO_END_RESEARCH_RUNTIME_PLAN.md).
+Historical phase and ADR scope remains authoritative for existing code until a
+later ADR explicitly supersedes it.
 
 **Audience:** Implementers, mathematical researchers, evaluators, and AI-system
 operators
@@ -1237,14 +1234,16 @@ exact paper/version identity, acquisition provenance, source hashes,
 parser/converter identity, anchors, and deterministic lineage. Representation
 disagreement blocks silent selection.
 
-The current implementation uses the unmodified Phase 3A lexical index and
-project-authored traversal metadata; semantic, formula, rich-parser, and remote
-acquisition adapters remain deferred. All rich content is untrusted. In
-particular, TeX must never receive arbitrary
+The current implementation includes Phase 3A lexical retrieval, Phase 4B strict
+rich-parser candidates, bounded remote acquisition, and an ADR-0070 semantic
+signal over a frozen project-authored fixture. Formula search, citation-graph
+retrieval, real-corpus semantic retrieval, and campaign orchestration of these
+components remain deferred. All rich content is untrusted. In particular, TeX
+must never receive arbitrary
 execution, shell escape, network access, uncontrolled includes, or unbounded
-macro expansion. No remote acquisition, parser, embedding, vector, or graph
-adapter is activated by this architecture. The authoritative proposed rules are
-in `docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md`.
+macro expansion. The bounded current behavior is recorded in
+`docs/CAPABILITY_STATUS.md`; the authoritative synthesis rules remain in
+`docs/phase-4/EXPLORATORY_RESEARCH_SYNTHESIS_V1.md`.
 
 ---
 
@@ -1677,10 +1676,11 @@ Therefore:
   input-token-only, which the general request/response cost shape does not
   express.
 
-No embedding, vector index, or embedding-provider port exists in the
-implementation yet. This subsection is a forward constraint on the multi-provider
-and Phase 4C work, recorded before either exists so the binding is designed in
-rather than retrofitted over a mixed index.
+ADR-0064 and ADR-0069 now implement processor-bound rights, the embedding
+provider port, and immutable exact vector artifacts. ADR-0070 implements an
+exact linear semantic signal over a frozen fixture partition. The rules above
+remain active: acquired corpus records are not yet connected to those vectors,
+and no persistent cross-campaign retrieval service or approximate index exists.
 
 Multi-provider configuration also has one benefit to retain deliberately:
 `different_provider` is a component of verifier independence, and a
@@ -2174,6 +2174,11 @@ Exit criteria:
 
 ### Phase 4 — Broader acquisition and research automation
 
+The entries below describe implemented bounded slices and their historical
+limits. They are not one end-to-end runtime. Current wiring status and the next
+integration sequence are maintained in `docs/CAPABILITY_STATUS.md` and
+`docs/END_TO_END_RESEARCH_RUNTIME_PLAN.md`.
+
 Implemented bounded Phase 4B slice (ADR-0028):
 
 - exact-human-authorized HTTPS acquisition with terms, robots, rights,
@@ -2228,19 +2233,36 @@ Implemented cross-phase novelty checkpoint rule (ADR-0055):
 - no outcome creates novelty status, significance, applicability, graph
   admission, or mathematical warrant.
 
-Build:
+Implemented but not campaign-integrated:
 
-- licensed source acquisition, result crawling/citation traversal, additional
-  discovery providers, and immutable archives;
-- richer math-aware/PDF parsing, embeddings, and hybrid retrieval;
+- ADR-0064 processor-bound embedding rights;
+- ADR-0067 bounded arXiv metadata/abstract corpus replay, with production
+  activation still pending;
+- ADR-0069 live embedding ingestion and immutable exact vector artifacts; and
+- ADR-0070 four-signal Phase 4C retrieval over the frozen 19-document fixture.
+
+ADR-0068 accepts bounded depth-one following of discovery results but has not
+been implemented. None of these decisions makes the acquired corpus available
+to the campaign or turns the fixture benchmark into a literature service.
+
+Remaining integration work:
+
+- durable licensed full-text corpus ingestion and bounded discovery-result
+  following;
+- persistent cross-campaign embedding storage and hybrid retrieval over real
+  corpus generations;
+- campaign actions for search, acquisition, parsing, embedding, index refresh,
+  and retrieval;
 - evidence cards and source-applicability review;
 - durable material partial-result surfacing, append-only steering, and
   evidence-lifecycle projection over exactly bound verified work, activated
   only after its principal/capability, applicability, and replay boundary is
   approved;
-- terminology/notation expansion, citation traversal, and novelty assessment;
+- terminology/notation expansion, citation traversal, and non-authoritative
+  novelty search;
 - source-injection and misquotation evaluations;
-- broader research automation and the deferred embedding-provider boundary.
+- wiring the activated experiment runner and exact/Lean verifier ports into the
+  campaign entrypoint.
 
 Exploratory multi-result synthesis is implemented by ADR-0027 as a separate
 package layered over the sealed Phase 6 workspace; it is not part of the Phase

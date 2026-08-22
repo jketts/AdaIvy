@@ -11,8 +11,11 @@ Related documents:
 - [`TECHNICAL_BLUEPRINT.md`](../TECHNICAL_BLUEPRINT.md) — the build contract.
 - [`NOVELTY_LANDSCAPE.md`](../NOVELTY_LANDSCAPE.md) — prior-art review that
   informed architecture revision 0.2.
-- [`AGENTS.md`](../AGENTS.md) — repository instructions, current phase, and
-  engineering rules.
+- [`CAPABILITY_STATUS.md`](./CAPABILITY_STATUS.md) — canonical current runtime
+  status.
+- [`END_TO_END_RESEARCH_RUNTIME_PLAN.md`](./END_TO_END_RESEARCH_RUNTIME_PLAN.md)
+  — proposed integration roadmap.
+- [`AGENTS.md`](../AGENTS.md) — stable repository and engineering rules.
 - [`docs/adrs/`](./adrs/) — architecture decision records. ADR-0012 records the
   accepted revision 0.3 delivery sequence while preserving the superseded
   roadmap history; ADR-0026 records the accepted delivery order for the work
@@ -23,8 +26,9 @@ Related documents:
 - [What the system does](#what-the-system-does)
 - [Architectural principles](#architectural-principles)
 - [First benchmark](#first-benchmark)
-- [Build sequence](#build-sequence)
+- [Active build sequence](#active-build-sequence)
 - [Offline repository checks](#offline-repository-checks)
+- [Current campaign boundary](#current-campaign-boundary)
 - [Multiple model providers, embeddings, and retrieval](#multiple-model-providers-embeddings-and-retrieval)
 - [Phase 1 manual trust core](#phase-1-manual-trust-core)
 - [Phase 2 durable baseline loop](#phase-2-durable-baseline-loop)
@@ -42,7 +46,11 @@ Related documents:
 - [Using this blueprint with Codex](#using-this-blueprint-with-codex)
 - [External references](#external-references)
 
-## What the system does
+## What the system is designed to do
+
+The following is the target architecture. It is not yet one connected operator
+workflow; the exact implemented and wired state is maintained in
+[`CAPABILITY_STATUS.md`](./CAPABILITY_STATUS.md).
 
 Given an informal research question, the system:
 
@@ -115,36 +123,26 @@ all successful research outcomes.
 Quantum-specific mathematics belongs in a benchmark/domain package. It must not
 leak into the core claim, evidence, workflow, or verification abstractions.
 
-## Build sequence
+## Active build sequence
 
-1. **Capability/adoption spike:** evaluate MathGraph/Albilich-style proof state,
-   OMDoc/MMT representation, Why3-style obligation dispatch, literature agents,
-   and available Lean tooling on the same reference dossier.
-2. **Trust core and manual slice:** semantic custody, applicability records,
-   orthogonal warrants, obligations, frozen evaluation protocols, and an
-   auditable report.
-3. **Durable baseline loop:** persistent state, jobs, one proposer, one isolated
-   verifier, and one external research-backend adapter.
-4. **Phase 3A — bounded research memory:** manual local UTF-8 text ingestion,
-   opaque metadata-only URI records, immutable source spans, deterministic
-   SQLite FTS5/BM25 retrieval, evidence packs, and citation validation.
-5. **Phase 3B — tools and formal grounding:** symbolic/exact/interval/SMT tools,
-   a minimal proof-assistant adapter, meaning tests, and counterexample
-   workflows.
-6. **Phase 4 — broader research acquisition:** crawling, licensed corpus
-   ingestion, richer parsing, embeddings, hybrid retrieval, and research
-   automation.
-7. **Adaptive search and benchmark:** keep one coherent lead and central
-   verifier; activate bounded specialist or evolutionary overlays only where
-   they beat that rich baseline on verified progress per unit cost.
-8. **Confirmatory evaluation:** held-out tests, contribution reporting,
-   clean-room replay, and release hardening.
+Phases 0–6 supplied the bounded components and trust boundaries. The active
+work is now integration, in the order defined by
+[`END_TO_END_RESEARCH_RUNTIME_PLAN.md`](./END_TO_END_RESEARCH_RUNTIME_PLAN.md):
 
-Each phase has concrete exit criteria in the technical blueprint. Do not begin
-with a broad crawler, custom graph platform, or hierarchical multi-agent swarm.
-The central loop must nevertheless support literature, experimentation,
-branching, and incremental formalization rather than becoming shallow. First
-measure what existing components already provide and what gap remains.
+1. approve the superseding activation ADR and establish a truthful capability
+   matrix;
+2. bind every internal model and embedding call to an explicit AdaIvy
+   credential profile and unified budget;
+3. make the corpus durable and reusable across campaigns;
+4. run semantic and lexical retrieval over real corpus generations;
+5. add campaign-native literature discovery, acquisition, embedding, and
+   retrieval actions;
+6. wire the activated experiment sandbox and verifier router, including Lean;
+7. expose one resumable operator command; and
+8. complete documentation and historical-status cleanup.
+
+Until those slices land, a passing component gate must not be described as an
+end-to-end research run.
 
 ## Offline repository checks
 
@@ -163,18 +161,19 @@ provider, no container runtime, and no third-party package:
 make check
 ```
 
-It runs the unit, integration, property, and adversarial suite plus the Phase 0
-harness check and the Phase 1, 2, 3A, 4A, 4B, 5, 6, and synthesis acceptance
+It runs the unit, integration, property, and adversarial suite plus the phase,
+embedding, corpus, campaign, synthesis, and publication offline acceptance
 paths. `make help` lists every target.
 
-Two targets need more than that and are named for what they need.
+Targets that need more than that are named for what they need.
 `make check-gate PY=/path/to/gate-venv/bin/python` requires the disposable
 pinned Draft 2020-12 validator environment described in
-`docs/phase-4/DEPENDENCY_LICENSE_ASSESSMENT.md`; fifteen gate tests skip
+`docs/phase-4/DEPENDENCY_LICENSE_ASSESSMENT.md`; gate tests skip
 themselves unless that validator is importable, so the target refuses to run
-rather than reporting a silent pass. `make check-sealed` covers Phase 3B and is
-described below. `make check-all` runs the offline check and the sealed runtime
-together.
+rather than reporting a silent pass. `make check-sealed` covers Phase 3B.
+`make check-phase4b-oci` and `make check-campaign-experiment-oci` exercise their
+digest-pinned sandboxes. `make check-embedding-live` is the explicit credentialed
+embedding path. `make check-all` runs the offline check and sealed Lean runtime.
 
 The individual commands remain available for debugging a single phase; see the
 `Makefile` for the exact invocation of each.
@@ -206,19 +205,38 @@ expected skip count so a test cannot silently stop running, and runs the
 structural invariants. `check-sealed` and `check-gate` stay local/owner-run
 because their prerequisites are not publicly available.
 
+## Current campaign boundary
+
+The bounded campaign entrypoint can run a live central model lead through the
+AdaIvy gateway and record its actions, usage, cost, and artifacts. It cannot
+currently perform the target product workflow:
+
+- its action schema contains no literature search, acquisition, embedding,
+  index-refresh, or retrieval action;
+- `campaign run` still constructs `PendingSandboxExperimentRunner` and
+  `AbsentVerifier`;
+- the implemented OCI runner and exact-graph verifier are exercised by their
+  own gate, not by the production campaign entrypoint;
+- Phase 3B Lean checking is a separate command surface; and
+- a fresh human `before_research` novelty record is still required by ADR-0055.
+
+The end-to-end plan changes these boundaries through a superseding ADR. Until
+then, host Codex or Claude work remains an explicit external import rather than
+AdaIvy campaign discovery.
+
 ## Multiple model providers, embeddings, and retrieval
 
-Nothing in the current implementation makes retrieval depend on a model
-provider, and that is worth keeping deliberately rather than by accident.
+Generation, embedding ingestion, and retrieval are separate boundaries. The
+separation is intentional, but they are not yet orchestrated by the campaign.
 
 What holds today:
 
-- Retrieval is lexical only. `src/math_research/phase3a/retrieval.py` is
-  SQLite FTS5/BM25 behind a `RetrievalIndex` port that excludes model providers
-  by construction, and `src/math_research/synthesis/ports.py` keeps the
-  synthesis index replaceable for the same reason.
-- There is an embedding-provider port and an exact vector artifact store, and
-  no vector index. ADR-0064 makes `RightsUse.EMBEDDING` reachable: a rights
+- Phase 3A provides SQLite FTS5/BM25 retrieval. Phase 4C adds aliases,
+  evidentiary-disclaimer exclusion, and an exact semantic signal over replayed
+  vector artifacts. The four-signal benchmark remains frozen at 19 synthetic
+  documents and 17 queries.
+- There is an embedding-provider port and an exact vector artifact store.
+  ADR-0064 makes `RightsUse.EMBEDDING` reachable: a rights
   decision now names the processor that receives the text, so authorizing the
   *use* no longer leaves the *recipient* unstated. ADR-0069 adds
   `src/math_research/embedding/` -- a sibling `EmbeddingGateway`, exact integer
@@ -226,27 +244,23 @@ What holds today:
   partitioned by `(provider, model_identifier, dimension, normalization)`. A
   rebuild replays those bytes and never re-calls the provider, so the read path
   has no provider, no credential, and no network surface.
-- Retrieval does not yet consume any of it. ADR-0070 adds the Phase 4C semantic
-  signal; until it lands and a live ingestion measures its gates, the capability
-  has a recorded ADR-0029 prediction but no measured cost-adjusted gain, and the
-  only vectors in the tree are project-authored synthetic fixtures that say
-  nothing about real embedding quality. There is still no approximate-nearest-
-  neighbour search and no index structure beyond exact linear scan.
+- ADR-0070 is implemented: Phase 4C consumes a replayed semantic partition and
+  its gates pass. It does not consume ADR-0067 corpus records or arbitrary live
+  embedding partitions. The only Phase 4C vectors are project-authored fixture
+  vectors and provide no evidence about real embedding quality. There is no
+  approximate-nearest-neighbour index; similarity uses an exact linear scan.
 - Bounded multi-hop query expansion is deterministic. Terminology, notation,
   citation, and contrasting-approach queries in
   `src/math_research/synthesis/retrieval.py` derive from indexed record terms,
   never from a model, so a retrieval trace and its canonical hash do not vary
   with which provider produced a proposal.
-- The live provider boundary currently admits one provider:
-  `src/math_research/phase2/live_config.py` rejects anything other than
-  `openai`, and `src/math_research/phase2/openai_schema.py` is the only
-  structured-output projection. `ModelResult` already carries
-  `provider_schema_hash` and `projection_manifest_hash`, so a second projection
-  has somewhere to record its identity.
+- The live model gateway has bounded OpenAI, Azure OpenAI, Anthropic, Bedrock,
+  DeepSeek, MiniMax, and Qwen/DashScope adapters. Embedding ingestion supports
+  OpenAI and Azure OpenAI through its sibling port. A configured component does
+  not imply the campaign selected it, so every live route remains explicit and
+  content-hashed.
 
-Consequently, admitting a second generation provider does not affect embeddings
-or retrieval, because neither has a model-backed path. The exposure is entirely
-forward-looking, and one part of it is a silent failure rather than an error:
+The load-bearing rules are:
 
 - **Mixed vector space.** Vectors from different providers, or from different
   embedding models of one provider, share no geometry. A dimension mismatch
@@ -542,6 +556,13 @@ only for the bounded exact-graph campaign target after its dedicated
 digest-pinned Linux/arm64 OCI gate passes. Output remains an untrusted candidate
 until the isolated exact verifier re-derives it; the offline suite continues to
 use a zero-process scripted runner.
+
+Those component capabilities are not yet the behavior of the operator
+entrypoint. `campaign run` currently injects its earlier pending runner and
+absent verifier, so it cannot execute the ADR-0066 sandbox or complete a
+verification. This distinction is recorded in
+[`CAPABILITY_STATUS.md`](./CAPABILITY_STATUS.md) and is the subject of Slice 6
+of the end-to-end runtime plan.
 
 For an AI-authored solved claim, `publication build` requires both campaign
 files. It re-verifies semantic and operational hashes, closes each claim and

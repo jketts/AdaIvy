@@ -1,16 +1,17 @@
 # ADR-0067: Corpus ingestion at volume (owner decision required)
 
-- **Status:** accepted for option C. The owner selected the bulk open-access
-  snapshot and declined the batched-manifest intermediate step. Option B
-  (following discovery results) was opened over a recorded recommendation
-  against it and is carried into ADR-0068 rather than here.
+- **Status:** accepted and implemented as a bounded metadata/abstract replay
+  slice for option C; production acquisition remains pending owner activation.
+  The owner selected the bulk open-access snapshot and declined the
+  batched-manifest intermediate step. Option B (following discovery results)
+  was opened over a recorded recommendation against it and is carried into
+  ADR-0068 rather than here.
 - **Date:** 2026-08-22
 - **Blueprint requirement:** Section 7.3 (retrieval strategy); Section 7.1
   (crawlers produce candidates, not trusted documents); ADR-0050 (public
   unauthenticated acquisition); ADR-0051 (bounded scholarly discovery);
   ADR-0064/0062/0063 (the semantic capability this would feed)
-- **Decision owners:** repository owner. **This ADR asks a question rather than
-  answering one.**
+- **Decision owners:** repository owner
 
 ## Context
 
@@ -111,10 +112,10 @@ project-authored documents and every report from it must say so.
 
 ## What this ADR does not do
 
-It authorizes nothing. It adds no capability, changes no bound, and moves no
-activation record. It does not assess novelty, significance, or applicability,
-and it does not license a crawler under any option, including C — a bulk
-snapshot is an acquisition, not a traversal.
+Its implemented slice does not activate production acquisition; the shipped
+activation remains pending owner approval. It does not assess novelty,
+significance, or applicability, and it does not license a crawler under any
+option, including C — a bulk snapshot is an acquisition, not a traversal.
 
 ## Blueprint deviation
 

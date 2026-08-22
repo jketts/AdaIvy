@@ -1,9 +1,9 @@
 # ADR-0068: Following discovery results (machine-selected fetch origins)
 
-- **Status:** accepted by owner decision on 2026-08-22, **over a recorded
-  recommendation against it**. The recommendation and the residual risk are
-  retained below rather than removed, because an overridden objection that
-  disappears from the record cannot be revisited.
+- **Status:** accepted but not implemented, by owner decision on 2026-08-22,
+  **over a recorded recommendation against it**. The recommendation and the
+  residual risk are retained below rather than removed, because an overridden
+  objection that disappears from the record cannot be revisited.
 - **Date:** 2026-08-22
 - **Blueprint requirement:** Section 7.1 (crawlers produce candidates, not
   trusted documents); Section 15 (`:1801` prompt injection inside retrieved

@@ -1,6 +1,8 @@
 # ADR-0057: Contain AI research inside a recorded AdaIvy campaign
 
-- **Status:** accepted for the bounded campaign-control slice; live generated-code execution pending its OCI gate
+- **Status:** accepted and implemented for the bounded campaign-control slice;
+  ADR-0066 activates the OCI component, but the operator entrypoint has not yet
+  been rewired from its pending runner and absent verifier
 - **Date:** 2026-08-21
 - **Blueprint requirement:** Sections 6, 8, 11, 12, 15.3 and 23; ADR-0029
   central research lead; ADR-0047 bounded runtime; ADR-0054 run disclosure

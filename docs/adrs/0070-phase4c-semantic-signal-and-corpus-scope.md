@@ -1,6 +1,8 @@
 # ADR-0070: Phase 4C semantic signal over replayed vectors, and the corpus-scope limit
 
-- **Status:** proposed; third of three slices. Requires ADR-0064 and ADR-0069.
+- **Status:** accepted and implemented; third of three slices. Requires
+  ADR-0064 and ADR-0069. The signal remains fixture-scoped and is not connected
+  to the acquired corpus or campaign.
 - **Date:** 2026-08-22
 - **Blueprint requirement:** Section 7.3 (retrieval strategy); Section 12.2
   (rebuildable projections); the decision row at `TECHNICAL_BLUEPRINT.md:70`;

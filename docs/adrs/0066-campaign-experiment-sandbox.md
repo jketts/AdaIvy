@@ -1,10 +1,9 @@
 # ADR-0066: Campaign experiment sandbox for model-generated exact computation
 
-- **Status:** accepted and implemented for the bounded exact-graph campaign
-  experiment on 22 August 2026. This is the gate ADR-0057 fail-closes on and
-  ADR-0065 names as the critical path: the slice after which AdaIvy can execute
-  one admitted Python program it wrote and attribute the resulting computation
-  to itself.
+- **Status:** accepted, implemented, and activated for the bounded exact-graph
+  campaign experiment on 22 August 2026. The sandbox and verifier components
+  pass their dedicated gate; integration into the `campaign run` entrypoint is
+  still pending.
 - **Date:** 2026-08-22
 - **Blueprint requirement:** Section 2 C7 (reproducibility: code and dependency
   version, input content hashes, parameters, runtime image identity, stdout,
