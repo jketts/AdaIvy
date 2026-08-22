@@ -84,6 +84,7 @@ def _charge_from_value(value: dict[str, Any]) -> ChargeEvent:
 def run_fixture_campaign(
     campaign_root: Path, *, data_root: Path, campaign_id: str,
     recorded_at: str, repository_root: Path, problem_bytes: bytes | None = None,
+    max_embedding_requests: int = 64,
 ) -> dict[str, Any]:
     """Initialize and run/resume the complete offline fixture in one call."""
 
@@ -115,6 +116,7 @@ def run_fixture_campaign(
         "data_root": str(data_root.resolve()),
         "repository_root": str(repository_root.resolve()),
         "target_hash": target["content_hash"],
+        "max_embedding_requests": max_embedding_requests,
     })
     initialize_data_root(
         data_root, data_root_id="dataroot." + canonical_hash(campaign_id).removeprefix("sha256:")[:24],
@@ -147,11 +149,16 @@ def run_fixture_campaign(
         max_requests=64, max_input_tokens=1_000_000, max_output_tokens=1_000_000,
         max_cost_microusd=0, max_bytes=100_000_000, max_documents=2_048,
     )
+    embedding_budget = SubBudget(
+        max_requests=max_embedding_requests, max_input_tokens=1_000_000,
+        max_output_tokens=0, max_cost_microusd=0, max_bytes=100_000_000,
+        max_documents=2_048,
+    )
     budget = CampaignBudget(
         campaign_id=campaign_id, pricing_snapshot_hash=model_pricing.content_hash,
         embedding_pricing_snapshot_hash=embedding_pricing.content_hash,
         max_total_cost_microusd=0, max_wall_milliseconds=3_600_000,
-        model=generous, embedding=generous, network=generous, tool=generous,
+        model=generous, embedding=embedding_budget, network=generous, tool=generous,
         storage=generous,
     ).finalized()
     _write_once(campaign_root / "credential-profile.json", public_value(profile))

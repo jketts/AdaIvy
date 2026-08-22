@@ -2312,6 +2312,7 @@ def _resume(args: argparse.Namespace) -> int:
                     campaign_id=value["campaign_id"], recorded_at=value["recorded_at"],
                     repository_root=Path(value["repository_root"]),
                     problem_bytes=None,
+                    max_embedding_requests=value.get("max_embedding_requests", 64),
                 )
                 _print({
                     "status": summary["status"], "root": str(args.root),
@@ -2359,6 +2360,7 @@ def _start(args: argparse.Namespace) -> int:
             recorded_at=args.recorded_at,
             repository_root=args.repository_root,
             problem_bytes=None if args.problem is None else args.problem.read_bytes(),
+            max_embedding_requests=args.max_embedding_requests,
         )
     except Exception as error:
         return _refuse(
@@ -2442,6 +2444,7 @@ def main(argv: list[str] | None = None) -> int:
     start.add_argument("--recorded-at", required=True)
     start.add_argument("--repository-root", type=Path, default=Path("."))
     start.add_argument("--problem", type=Path)
+    start.add_argument("--max-embedding-requests", type=int, default=64)
 
     inspect = commands.add_parser("inspect", help="verify and inspect a persisted campaign")
     inspect.add_argument("root", type=Path)

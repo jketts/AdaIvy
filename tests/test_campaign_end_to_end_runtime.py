@@ -42,6 +42,19 @@ class EndToEndCheckpointTests(unittest.TestCase):
             self.assertFalse(first["before_research_human_checkpoint_required"])
             self.assertTrue(first["before_announcement_human_checkpoint_required"])
 
+    def test_budget_exhaustion_produces_unresolved_report(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            result = run_fixture_campaign(
+                root / "campaign", data_root=root / "data",
+                campaign_id="campaign.fixture.exhausted", recorded_at=NOW,
+                repository_root=Path(__file__).resolve().parents[1],
+                max_embedding_requests=0,
+            )
+            self.assertEqual("unresolved", result["status"])
+            self.assertEqual("embed_sources", result["unresolved"]["action_type"])
+            self.assertTrue((root / "campaign" / "publication" / "paper.tex").is_file())
+
     def test_resume_replays_completed_action_without_repeating_effect(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
