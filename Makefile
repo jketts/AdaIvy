@@ -52,7 +52,7 @@ help:
 	@printf 'Targets:\n'
 	@printf '  check         offline suite: tests + phases 0,1,2,3A,4A,4B,4C,4D,5,6, problem intake, synthesis, campaign, publication\n'
 	@printf '  check-sealed  phase 3B Lean formal checking (requires the ADR-0016 v5 image)\n'
-	@printf '  check-embedding-live ADR-0065 live embedding ingestion (requires credentials)\n'
+	@printf '  check-embedding-live ADR-0069 live embedding ingestion (requires credentials)\n'
 	@printf '  check-gate    phase 4 gate tests (requires the disposable jsonschema env)\n'
 	@printf '  setup-typeset acquire and hash-check BasicTeX under work/toolchains\n'
 	@printf '  check-typeset publication PDF build (requires the pinned TeX Live engine)\n'
@@ -300,7 +300,7 @@ phase6:
 	  rm -rf "$$d" && \
 	  printf 'phase 6 ok (13 generality controls executed; 13 probes flipped; clean-room replay verified, 2 unverifiable + 2 not-derived fields named)\n'
 
-# ADR-0065. OFFLINE ONLY: this target authors a `fixture_synthetic` partition,
+# ADR-0069. OFFLINE ONLY: this target authors a `fixture_synthetic` partition,
 # replays it from bytes, and runs the thirteen falsifiability probes. It makes
 # zero provider calls and opens no socket, because a rebuild replays artifacts
 # rather than calling the provider (TECHNICAL_BLUEPRINT.md:1667-1671) and because
@@ -319,7 +319,7 @@ phase6:
 # leg is part of the target: a query against an absent partition must fail
 # closed, never fall back to the neighbouring geometry.
 embedding:
-	@printf '\n== ADR-0065 exact vector partitions (offline replay) ==\n'
+	@printf '\n== ADR-0069 exact vector partitions (offline replay) ==\n'
 	@d=$$(mktemp -d "$(TMPROOT)/adaivy-emb.XXXXXX") && \
 	  $(PY) -m math_research.cli embedding author \
 	    fixtures/embedding/fixture-synthetic-partition-v1.json \
@@ -334,7 +334,7 @@ embedding:
 	    --expect-manifest-hash "$$($(PY) -c 'import json,sys; print(json.load(open(sys.argv[1]))["manifest_hash"])' "$$d/authored.json")" \
 	    --output "$$d/replay.json" >/dev/null && \
 	  $(PY) -m math_research.cli embedding probes --output "$$d/probes.json" && \
-	  $(PY) -c 'import json,sys; a=json.load(open(sys.argv[1])); b=json.load(open(sys.argv[2])); r=json.load(open(sys.argv[3])); p=json.load(open(sys.argv[4])); assert a["manifest_hash"] == b["manifest_hash"] == r["manifest_hash"], "the authored partition stopped reproducing its manifest hash"; assert a["partition_key"] == {"provider": "fixture_synthetic", "model_identifier": "adaivy-cooccurrence-anchor-v1", "dimension": 32, "normalization": "round_half_even_scale_2p30"}, "the fixture partition key moved: %s" % a["partition_key"]; assert a["corpus_provenance"] == "project_authored" and a["is_project_authored"] is True, "a fixture_synthetic partition claimed provider provenance: %s" % a["corpus_provenance"]; assert r["provider_calls"] == 0 and r["network_requests"] == 0, "a replay reported a provider call: %s" % r; assert a["vector_count"] == len(a["document_ids"]) == 5, "the fixture cardinality moved: %s" % a["vector_count"]; assert a["query_ids"] == ["probe-spectral-query"] and len(a["corpus_document_ids"]) == 4, "the fixture artifact kinds moved: %s / %s" % (a["query_ids"], a["corpus_document_ids"]); assert a["document_ids"] == sorted(a["document_ids"]), "partition document ids are not sorted"; assert len(set(a["artifact_content_hashes"])) == 5, "two artifacts share a content hash"; assert r["creates_epistemic_warrant"] is False and r["asserts_source_applicability"] is False, "a vector store claimed an epistemic effect"; assert (r["novelty_status"], r["significance_status"]) == ("not_assessed", "not_assessed"), "a vector store assessed novelty or significance"; assert p["probes_total"] == 13 and p["probes_flipped"] == 13, "ADR-0065 probes moved: %s of %s flipped, unflipped %s" % (p["probes_flipped"], p["probes_total"], p["unflipped_probe_ids"]); assert p["read_path_modules"] == ["constants.py", "errors.py", "partition.py", "replay.py", "similarity.py"], "the swept replay-path module set moved: %s" % p["read_path_modules"]' \
+	  $(PY) -c 'import json,sys; a=json.load(open(sys.argv[1])); b=json.load(open(sys.argv[2])); r=json.load(open(sys.argv[3])); p=json.load(open(sys.argv[4])); assert a["manifest_hash"] == b["manifest_hash"] == r["manifest_hash"], "the authored partition stopped reproducing its manifest hash"; assert a["partition_key"] == {"provider": "fixture_synthetic", "model_identifier": "adaivy-cooccurrence-anchor-v1", "dimension": 32, "normalization": "round_half_even_scale_2p30"}, "the fixture partition key moved: %s" % a["partition_key"]; assert a["corpus_provenance"] == "project_authored" and a["is_project_authored"] is True, "a fixture_synthetic partition claimed provider provenance: %s" % a["corpus_provenance"]; assert r["provider_calls"] == 0 and r["network_requests"] == 0, "a replay reported a provider call: %s" % r; assert a["vector_count"] == len(a["document_ids"]) == 5, "the fixture cardinality moved: %s" % a["vector_count"]; assert a["query_ids"] == ["probe-spectral-query"] and len(a["corpus_document_ids"]) == 4, "the fixture artifact kinds moved: %s / %s" % (a["query_ids"], a["corpus_document_ids"]); assert a["document_ids"] == sorted(a["document_ids"]), "partition document ids are not sorted"; assert len(set(a["artifact_content_hashes"])) == 5, "two artifacts share a content hash"; assert r["creates_epistemic_warrant"] is False and r["asserts_source_applicability"] is False, "a vector store claimed an epistemic effect"; assert (r["novelty_status"], r["significance_status"]) == ("not_assessed", "not_assessed"), "a vector store assessed novelty or significance"; assert p["probes_total"] == 13 and p["probes_flipped"] == 13, "ADR-0069 probes moved: %s of %s flipped, unflipped %s" % (p["probes_flipped"], p["probes_total"], p["unflipped_probe_ids"]); assert p["read_path_modules"] == ["constants.py", "errors.py", "partition.py", "replay.py", "similarity.py"], "the swept replay-path module set moved: %s" % p["read_path_modules"]' \
 	    "$$d/authored.json" "$$d/reauthored.json" "$$d/replay.json" "$$d/probes.json" && \
 	  if $(PY) -m math_research.cli embedding replay --root "$$d/vectors" \
 	      --provider fixture_synthetic \
@@ -347,7 +347,7 @@ embedding:
 	  rm -rf "$$d" && \
 	  printf 'embedding ok (5 exact vectors replayed, 13/13 probes flipped, 0 provider calls; project_authored, not embedding-quality evidence)\n'
 
-# Separate from `check`: ADR-0065 live ingestion needs a real credential and
+# Separate from `check`: ADR-0069 live ingestion needs a real credential and
 # bills a real provider. It is named for what it needs, like `check-sealed`.
 # Nothing here is reachable from `make check`.
 #
@@ -365,7 +365,7 @@ EMBEDDING_LIVE_PHASE4A ?= work/embedding-phase4a
 EMBEDDING_LIVE_ROOT ?= work/embedding-vectors
 
 check-embedding-live:
-	@printf '\n== ADR-0065 live embedding ingestion (requires credentials) ==\n'
+	@printf '\n== ADR-0069 live embedding ingestion (requires credentials) ==\n'
 	@for f in "$(EMBEDDING_LIVE_CONFIG)" "$(EMBEDDING_LIVE_PRICING)" "$(EMBEDDING_LIVE_DOCUMENTS)"; do \
 	  test -f "$$f" || { printf 'absent: %s\n' "$$f"; exit 2; }; \
 	done

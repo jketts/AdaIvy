@@ -1,6 +1,6 @@
-"""The thirteen ADR-0065 falsifiability probes.
+"""The thirteen ADR-0069 falsifiability probes.
 
-ADR-0034 established the standard and ADR-0065 restates it: ``probes_flipped ==
+ADR-0034 established the standard and ADR-0069 restates it: ``probes_flipped ==
 probes_total`` gates the slice, because a rule that cannot be made to fail proves
 nothing.
 
@@ -123,7 +123,7 @@ _PRICING = create_pricing_snapshot(
     snapshot_id=OpaqueId("pricing.embedding.probe.v1"),
     provider="openai",
     model_identifier="text-embedding-probe",
-    source="ADR-0065 probe fixture; project-authored, not a quoted rate",
+    source="ADR-0069 probe fixture; project-authored, not a quoted rate",
     captured_at="2026-08-22T00:00:00Z",
     currency="USD",
     input_microusd_per_million_tokens=20_000,
@@ -154,8 +154,8 @@ def _live_configuration(
 
 
 _PROBE_TEXTS = {
-    "source.alpha": "alpha source text for the ADR-0065 probe suite",
-    "source.beta": "beta source text for the ADR-0065 probe suite",
+    "source.alpha": "alpha source text for the ADR-0069 probe suite",
+    "source.beta": "beta source text for the ADR-0069 probe suite",
 }
 _PROBE_VECTORS = {
     "alpha-doc": (0.5, 0.25, -0.125, 0.0),

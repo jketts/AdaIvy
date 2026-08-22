@@ -43,7 +43,7 @@ def main(argv: list[str] | None = None) -> int:
     novelty.add_argument("novelty_args", nargs=argparse.REMAINDER)
     conventions = subparsers.add_parser("conventions", help="definitional-reading records and derived claim scope")
     conventions.add_argument("conventions_args", nargs=argparse.REMAINDER)
-    embedding = subparsers.add_parser("embedding", help="ADR-0065 exact vector partition commands")
+    embedding = subparsers.add_parser("embedding", help="ADR-0069 exact vector partition commands")
     embedding.add_argument("embedding_args", nargs=argparse.REMAINDER)
     phase2 = subparsers.add_parser("phase2", help="Phase 2 durable workspace commands")
     phase2.add_argument("phase2_args", nargs=argparse.REMAINDER)

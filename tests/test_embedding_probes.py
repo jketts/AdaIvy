@@ -1,4 +1,4 @@
-"""The thirteen ADR-0065 falsifiability probes, plus the gate on them.
+"""The thirteen ADR-0069 falsifiability probes, plus the gate on them.
 
 `probes_flipped == probes_total` is the release gate: a probe that cannot be made
 to fail proves nothing, so the suite asserts that every probe's mutated leg
@@ -17,7 +17,7 @@ from math_research.embedding.probes import PROBES, PROBE_REPORT_SCHEMA_VERSION, 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-#: Exactly the probe identifiers ADR-0065 lists, as literals. A renamed or
+#: Exactly the probe identifiers ADR-0069 lists, as literals. A renamed or
 #: dropped probe fails here rather than quietly reducing the suite.
 ADR_0062_PROBE_IDS = (
     "pr.artifact-overwrite-refused",

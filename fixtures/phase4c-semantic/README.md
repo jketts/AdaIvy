@@ -1,11 +1,11 @@
-# `fixture_synthetic` vector partition for the ADR-0066 Phase 4C semantic signal
+# `fixture_synthetic` vector partition for the ADR-0070 Phase 4C semantic signal
 
 **These are project-authored synthetic vectors. No embedding provider produced
 them. They prove nothing whatever about the quality of any real embedding model,
 and no number measured on them may be reported as an embedding-quality result.**
 
-They exist for one purpose: to give the ADR-0066 semantic-signal slice a
-partition it can read entirely offline, so that ADR-0065's replay-from-bytes
+They exist for one purpose: to give the ADR-0070 semantic-signal slice a
+partition it can read entirely offline, so that ADR-0069's replay-from-bytes
 contract, the exact-integer similarity path, and the Phase 4C zero-network and
 zero-spend gates can all be exercised with no credential, no socket and no spend.
 
@@ -129,7 +129,7 @@ arithmetic and rounded half-to-even exactly once at the end.
    L2 because an L2 norm needs a square root, which is not rational.
 
 Similarity for measurement is exact integer signed `cosine^2`, matching
-ADR-0065: no square root, no epsilon, ties broken by `document_id` ascending.
+ADR-0069: no square root, no epsilon, ties broken by `document_id` ascending.
 
 ### A first construction that was authored, measured and rejected
 
@@ -176,12 +176,12 @@ next-most-similar pair: 0.533532  compactness-lemma :: separation-lemma
 Property 2 **holds, emphatically**. The declared duplicate pair is the single
 most similar pair in the corpus by a factor of nearly two over the runner-up.
 This is not a nice result; it is precisely the `duplicate_rate_at_5` risk
-ADR-0066 predicted, now made measurable.
+ADR-0070 predicted, now made measurable.
 
 ## Unadjusted findings, recorded before anyone builds `semantic.py`
 
 `src/math_research/phase4c/semantic.py`, `src/math_research/embedding/` and the
-ADR-0066 fusion term do **not exist yet**. The numbers below are the standalone
+ADR-0070 fusion term do **not exist yet**. The numbers below are the standalone
 behaviour of this partition ranked by exact cosine alone. They are **not** the
 seven Phase 4C gates, which are measured on the fused four-signal score. Nothing
 in the construction was adjusted after reading them.
@@ -202,7 +202,7 @@ five-document window, over all windowed hits): **1/85 = 0.0118**, against the
 declared maximum of `0.05`.
 
 The `renamed_known_result` result is the finding worth carrying forward, because
-it lands squarely on ADR-0066's recorded prediction that
+it lands squarely on ADR-0070's recorded prediction that
 `renamed_known_result_recall_at_10` would "improve or hold". On this partition,
 standing alone, it does not: it reaches 0.5.
 
@@ -222,7 +222,7 @@ So these four are not merely hard, they are *lexically unreachable by
 construction*: no shared token, no shared bigram, nothing for a term-overlap
 signal to grip. The only route is second-order co-occurrence, and across 19
 documents there is not enough co-occurrence evidence to carry two of the four.
-That is a fact about a 19-document corpus, which is precisely the limit ADR-0066
+That is a fact about a 19-document corpus, which is precisely the limit ADR-0070
 names as binding, and it is why `name-aliases.json` and the ADR-0032 alias signal
 exist for exactly these four cases. It is reported, not repaired: the
 construction has not been touched since these numbers were read.

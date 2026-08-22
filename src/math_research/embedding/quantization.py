@@ -8,7 +8,7 @@ stores; the float is then discarded and never reconstructed.
 The scale is the ``normalization`` component of the partition key, so a change of
 scale is a change of partition and therefore a full rebuild -- not a migration.
 
-Saturation is a FAULT. `ADR-0065`: "A saturating coordinate is a fault, not a
+Saturation is a FAULT. `ADR-0069`: "A saturating coordinate is a fault, not a
 rounding detail, and halts ingestion." The declared scale represents the closed
 interval ``[-1, 1]``, which is where an L2-normalized embedding coordinate lives;
 a coordinate outside it means the model is not the model the partition declares,

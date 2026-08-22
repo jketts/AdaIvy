@@ -1,7 +1,7 @@
 # ADR-0064: Phase 4A embedding rights bind a named processor
 
 - **Status:** proposed; the first of three slices activating embedding-backed
-  semantic retrieval, and a hard prerequisite for ADR-0065 and ADR-0066
+  semantic retrieval, and a hard prerequisite for ADR-0069 and ADR-0070
 - **Date:** 2026-08-22
 - **Blueprint requirement:** Section 12.2.1 (provider binding for vector
   projections); Section 2 C1 (provenance completeness), C12 (citation
@@ -102,7 +102,7 @@ authorization. For `embedding` and `model_context` it must be present.
   the revocation/takedown override at `service.py:129-144` apply to embedding
   decisions exactly as to every other use. An expired embedding decision means
   no new vectors may be produced; it does not retroactively invalidate vectors
-  already produced under it, which is ADR-0065's retention question and is
+  already produced under it, which is ADR-0069's retention question and is
   explicitly open here.
 - **Human authority is unchanged and unweakened.** Rights decisions stay pinned
   to `(ActorKind.HUMAN, Authority.HUMAN_FINAL)` at `service.py:110` and
@@ -111,7 +111,7 @@ authorization. For `embedding` and `model_context` it must be present.
 ## What this decision does not license
 
 It does not create an embedding capability: no provider port, no vector, no
-index, no retrieval change. Those are ADR-0065 and ADR-0066 and each needs its
+index, no retrieval change. Those are ADR-0069 and ADR-0070 and each needs its
 own decision. It does not assess novelty, significance, or source
 applicability, does not create mathematical warrant or graph admission, and does
 not make any source applicable to any claim. Granting the right to embed a
@@ -183,9 +183,9 @@ already-produced vectors; or extending `processor` to non-disclosing uses.
 
 ## Explicit deferrals
 
-- The provider port, vector arithmetic, and artifact store: ADR-0065.
-- The retrieval signal and any fusion change: ADR-0066.
+- The provider port, vector arithmetic, and artifact store: ADR-0069.
+- The retrieval signal and any fusion change: ADR-0070.
 - Corpus ingestion beyond the frozen Phase 4C fixture set: unaddressed here and
-  the real limit on "wide" retrieval; see ADR-0066's context.
+  the real limit on "wide" retrieval; see ADR-0070's context.
 - Whether vectors produced under a later-revoked decision must be deleted: an
   ADR-0021 deletable-content question, open.

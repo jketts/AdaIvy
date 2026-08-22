@@ -1,4 +1,4 @@
-"""CLI for ADR-0065 vector partitions.
+"""CLI for ADR-0069 vector partitions.
 
 Two disjoint surfaces, on purpose. `author`, `replay` and `probes` are OFFLINE:
 they touch no provider, hold no credential and open no socket. `ingest` is the
@@ -69,7 +69,7 @@ def _add_key_arguments(parser: argparse.ArgumentParser) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="embedding", description="ADR-0065 exact vector partition commands",
+        prog="embedding", description="ADR-0069 exact vector partition commands",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -89,7 +89,7 @@ def main(argv: list[str] | None = None) -> int:
     replay.add_argument("--output", type=Path)
 
     probes = subparsers.add_parser(
-        "probes", help="run the thirteen ADR-0065 falsifiability probes",
+        "probes", help="run the thirteen ADR-0069 falsifiability probes",
     )
     probes.add_argument("--output", type=Path)
 

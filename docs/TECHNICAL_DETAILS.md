@@ -220,13 +220,13 @@ What holds today:
 - There is an embedding-provider port and an exact vector artifact store, and
   no vector index. ADR-0064 makes `RightsUse.EMBEDDING` reachable: a rights
   decision now names the processor that receives the text, so authorizing the
-  *use* no longer leaves the *recipient* unstated. ADR-0065 adds
+  *use* no longer leaves the *recipient* unstated. ADR-0069 adds
   `src/math_research/embedding/` -- a sibling `EmbeddingGateway`, exact integer
   coordinates quantized once at ingestion, and content-hashed artifacts
   partitioned by `(provider, model_identifier, dimension, normalization)`. A
   rebuild replays those bytes and never re-calls the provider, so the read path
   has no provider, no credential, and no network surface.
-- Retrieval does not yet consume any of it. ADR-0066 adds the Phase 4C semantic
+- Retrieval does not yet consume any of it. ADR-0070 adds the Phase 4C semantic
   signal; until it lands and a live ingestion measures its gates, the capability
   has a recorded ADR-0029 prediction but no measured cost-adjusted gain, and the
   only vectors in the tree are project-authored synthetic fixtures that say

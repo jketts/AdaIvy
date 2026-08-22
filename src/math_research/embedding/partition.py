@@ -1,4 +1,4 @@
-"""Partitioned, content-hashed exact vector artifacts (ADR-0065).
+"""Partitioned, content-hashed exact vector artifacts (ADR-0069).
 
 `TECHNICAL_BLUEPRINT.md:1661-1663` requires a vector index partitioned by the
 tuple ``(provider, model_identifier, dimension, normalization)``, with no
@@ -68,10 +68,10 @@ ARTIFACT_SCHEMA_VERSION = "adaivy.vector-artifact.v1"
 
 MANIFEST_FILENAME = "manifest.json"
 
-#: RESOLVED by the ADR-0065 amendment of 2026-08-22, recorded here because the
+#: RESOLVED by the ADR-0069 amendment of 2026-08-22, recorded here because the
 #: conflict was real and the resolution is a decision rather than a rename.
 #:
-#: ADR-0065 says artifacts are durable evidence bytes; `.gitignore` ignores
+#: ADR-0069 says artifacts are durable evidence bytes; `.gitignore` ignores
 #: `vectors/`, `vector-store/`, and `embeddings/` because `AGENTS.md` holds that
 #: a derived index is never a source of truth and "a committed one would let a
 #: stale index outlive the corpus it was built from".
@@ -330,7 +330,7 @@ def require_within_scale(
     """``|c| <= 2**k``. The maximum is attained exactly; above it halts.
 
     The declared scale is a closed range, so a coordinate at the boundary is
-    correct data and a coordinate beyond it is a fault -- ADR-0065: "A saturating
+    correct data and a coordinate beyond it is a fault -- ADR-0069: "A saturating
     coordinate is a fault, not a rounding detail." Clamping would hide a model
     that is not the model the partition declares.
     """

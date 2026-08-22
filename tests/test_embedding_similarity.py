@@ -1,4 +1,4 @@
-"""ADR-0065 exact integer similarity.
+"""ADR-0069 exact integer similarity.
 
 The comparator is where the exactness claim either holds or does not, so these
 tests exhaust the sign cases rather than sampling them: squaring the dot product

@@ -4,7 +4,7 @@
 ``response_schema`` is mandatory (`records.py:165-179`), ``structured_output`` is
 a JSON string that cannot hold a vector, and `validate_structured_output`
 recognises only ``proposer``/``verifier`` (`model_gateway.py:83`). Rather than
-lie to four validators, ADR-0065 adds these values alongside them.
+lie to four validators, ADR-0069 adds these values alongside them.
 """
 
 from __future__ import annotations

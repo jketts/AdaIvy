@@ -3,8 +3,8 @@
 
 These are PROJECT-AUTHORED SYNTHETIC VECTORS. No embedding provider produced
 them, they contain no third-party text, and they prove nothing whatever about
-the quality of any real embedding model. They exist so the ADR-0066
-semantic-signal slice has an offline partition to read, and so ADR-0065's
+the quality of any real embedding model. They exist so the ADR-0070
+semantic-signal slice has an offline partition to read, and so ADR-0069's
 replay-from-bytes contract can be exercised with no credential, no socket and no
 spend.
 
@@ -106,12 +106,12 @@ file or in any file it writes.
    of each vector, so this choice does not perturb the ranking the pre-rounding
    vectors induce; it only fixes the magnitude. The argmax coordinate lands on
    exactly +/- 2**30, the declared saturation bound. Anything beyond it halts,
-   per ADR-0065's "a saturating coordinate is a fault, not a rounding detail".
+   per ADR-0069's "a saturating coordinate is a fault, not a rounding detail".
 
 8. **Partition key.** ``(provider, model_identifier, dimension, normalization)``
    exactly as ``TECHNICAL_BLUEPRINT.md:1661-1663`` requires. The quantization
    scale lives in ``normalization``, so changing ``2**30`` is a partition change
-   and therefore a rebuild, which is the property ADR-0065 asks for. The
+   and therefore a rebuild, which is the property ADR-0069 asks for. The
    construction lives in ``model_identifier``, so changing step 4, 5 or 6 is also
    a partition change.
 
@@ -146,7 +146,7 @@ Hash convention
 
 ``content_hash`` is computed over the canonical body with the hash field **set to
 ``None``** (serialized as ``null``), not popped. This differs deliberately from
-``src/math_research/phase4c/serialization.py``, which pops. ADR-0065 artifacts
+``src/math_research/phase4c/serialization.py``, which pops. ADR-0069 artifacts
 are a new record family; the rule is stated once here and applied uniformly to
 the manifest and to every artifact, because mixing the two conventions changes
 every hash. It is also recorded in the manifest as ``hash_rule``.
@@ -448,7 +448,7 @@ def quantize(accumulator: tuple[Fraction, ...], label: str) -> tuple[int, ...]:
 
 
 # --------------------------------------------------------------------------
-# Exact integer similarity, as ADR-0065 specifies it: no sqrt, no division on
+# Exact integer similarity, as ADR-0069 specifies it: no sqrt, no division on
 # the decision, no epsilon. Used for measurement only; never written to a file.
 # --------------------------------------------------------------------------
 
@@ -872,7 +872,7 @@ def measure(built: dict[str, Any]) -> None:
     print()
     print("=" * 78)
     print("SEMANTIC-SIGNAL-ONLY recall, reported UNADJUSTED. NOT a Phase 4C gate.")
-    print("phase4c/semantic.py and the ADR-0066 fusion term do not exist yet; this")
+    print("phase4c/semantic.py and the ADR-0070 fusion term do not exist yet; this")
     print("is the standalone behaviour of this partition and nothing here has been")
     print("tuned against it.")
     print("=" * 78)

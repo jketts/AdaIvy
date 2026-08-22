@@ -1,4 +1,4 @@
-"""Coded, fail-closed refusals for the ADR-0065 embedding slice.
+"""Coded, fail-closed refusals for the ADR-0069 embedding slice.
 
 Every refusal carries a stable ``code``. The falsifiability probes assert on the
 code rather than on a message, so a reworded diagnostic cannot silently turn a

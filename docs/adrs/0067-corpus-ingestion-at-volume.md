@@ -14,12 +14,12 @@
 
 ## Context
 
-ADR-0064 through ADR-0066 add embedding-backed semantic retrieval. They do not
+ADR-0064 through ADR-0070 add embedding-backed semantic retrieval. They do not
 make retrieval wide, and the reason is not the signal — it is the corpus.
 
 Phase 4C retrieves over exactly 19 documents. `phase4c/fixtures.py` enforces
 that count and fails closed on any other. Semantic search over 19 documents is a
-retrieval benchmark, not a literature search, and ADR-0066 says so in terms.
+retrieval benchmark, not a literature search, and ADR-0070 says so in terms.
 
 What stands between the current state and a real corpus is acquisition volume,
 governed today by two deliberately narrow capabilities:
@@ -62,7 +62,7 @@ larger pile of untrusted candidates.
 | **A. Batched human-authored URL manifest** | one plan lists N exact URLs; execution stays sequential and per-URL; `max_requests_per_run` rises from 1 to N with N pinned per plan | the human still chooses every origin, so `autonomous_origin_selection` stays `false` and no crawler exists; smallest honest delta from ADR-0050; rights stay per document | N grows only as fast as a human can curate; does not reach thousands | Recommended first step; **not selected** |
 | **B. Follow Phase 4D discovery results** | machine selects URLs from Crossref output | genuinely wide, low human cost | crosses `autonomous_origin_selection`, the line ADR-0050 and ADR-0051 both draw explicitly; a poisoned metadata record becomes a fetch target; ADR-0051's "does not follow results" is load-bearing prompt-injection defence given `:1801` | Not recommended without a separate injection-containment decision |
 | **C. One authorized bulk open-access snapshot** (arXiv bulk, OpenAlex) | one provenance-bearing archive instead of N fetches | reaches real scale; one rights decision over one licensed corpus; content-hashed and replayable, which suits §12.2.1 | licence diligence is the whole job; a snapshot is a dependency with a version; storage and embedding cost become real; per-document applicability still manual | **Selected** |
-| **D. Do nothing; keep the 19-document benchmark** | nothing | zero risk; benchmark stays clean | leaves the owner's stated goal unmet and leaves ADR-0066 measuring a system nobody wants | Rejected, but honest to name |
+| **D. Do nothing; keep the 19-document benchmark** | nothing | zero risk; benchmark stays clean | leaves the owner's stated goal unmet and leaves ADR-0070 measuring a system nobody wants | Rejected, but honest to name |
 
 ## Decision
 
@@ -106,7 +106,7 @@ condition on which this option is accepted:
 - **Archive selection is a human act.** Which archive, which version, which
   tranche: recorded, not inferred, and never chosen by a model.
 
-Until a tranche is ingested, ADR-0066's semantic signal is measured over 19
+Until a tranche is ingested, ADR-0070's semantic signal is measured over 19
 project-authored documents and every report from it must say so.
 
 ## What this ADR does not do

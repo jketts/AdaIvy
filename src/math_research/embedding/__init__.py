@@ -1,4 +1,4 @@
-"""Embedding provider port and exact content-hashed vector artifacts (ADR-0065).
+"""Embedding provider port and exact content-hashed vector artifacts (ADR-0069).
 
 `TECHNICAL_BLUEPRINT.md` Section 12.2.1 imposes four obligations on any vector
 projection, and this package implements them as written:

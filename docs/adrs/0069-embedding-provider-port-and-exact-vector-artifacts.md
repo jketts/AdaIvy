@@ -1,4 +1,4 @@
-# ADR-0065: Embedding provider port and exact content-hashed vector artifacts
+# ADR-0069: Embedding provider port and exact content-hashed vector artifacts
 
 - **Status:** proposed; second of three slices. Requires ADR-0064's processor-bound
   rights decision. Produces no retrieval change on its own.
@@ -298,8 +298,8 @@ Three further corrections the implementation found in this ADR:
 
 ## Explicit deferrals
 
-- The Phase 4C semantic signal and any fusion change: ADR-0066.
-- Corpus ingestion beyond the frozen fixture set: ADR-0066's context; this is
+- The Phase 4C semantic signal and any fusion change: ADR-0070.
+- Corpus ingestion beyond the frozen fixture set: ADR-0070's context; this is
   the actual limit on "wide" retrieval and no amount of embedding fixes it.
 - Approximate nearest neighbour, dimensionality reduction, and any index
   structure beyond linear exact scan over a partition: not needed at fixture

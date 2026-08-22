@@ -1,4 +1,4 @@
-"""ADR-0065 ingestion: the port, the input-only budget, and the rights ordering.
+"""ADR-0069 ingestion: the port, the input-only budget, and the rights ordering.
 
 Ordering is the substance of two probes, so it is asserted here as an ordering
 and not only as an outcome: the rights check names the processor and runs BEFORE

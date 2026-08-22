@@ -1,4 +1,4 @@
-"""Frozen vocabularies for the ADR-0065 embedding slice.
+"""Frozen vocabularies for the ADR-0069 embedding slice.
 
 Defined once so the partition-key validator, the run-configuration validator,
 the ingestion guard and the manifest writer cannot drift apart.

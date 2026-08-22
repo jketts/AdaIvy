@@ -1,4 +1,4 @@
-"""ADR-0065 partition keys, quantization, and the content-hashed artifact store."""
+"""ADR-0069 partition keys, quantization, and the content-hashed artifact store."""
 
 from __future__ import annotations
 
@@ -571,9 +571,9 @@ class AuthoredFixtureTests(TemporaryRootMixin):
 
 
 class ArtifactDirectoryIsTrackedTests(unittest.TestCase):
-    """The ADR-0065 / `.gitignore` conflict, and the amendment that resolved it.
+    """The ADR-0069 / `.gitignore` conflict, and the amendment that resolved it.
 
-    ADR-0065 wants artifacts to be durable evidence bytes. `.gitignore` ignores
+    ADR-0069 wants artifacts to be durable evidence bytes. `.gitignore` ignores
     `vectors/`, `vector-store/`, and `embeddings/`, and `AGENTS.md` gives the
     reason: a committed derived index can outlive the corpus it was built from.
     Slice B shipped under the ignored name so a partition could never be HALF
