@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaivy.local/schemas/model-campaign-action-v2.schema.json",
+  "title": "AdaIvy end-to-end campaign action",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "action_type", "branch_id", "rationale", "operation_request"],
+  "properties": {
+    "schema_version": {"const": "2.0.0"},
+    "action_type": {
+      "enum": [
+        "search_literature", "follow_discovery_results", "acquire_source",
+        "parse_source", "embed_sources", "refresh_retrieval_index",
+        "retrieve_evidence", "write_program", "run_program", "inspect_result",
+        "derive", "falsify", "verify", "formal_check", "suspend_branch", "report"
+      ]
+    },
+    "branch_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "rationale": {"type": "string", "minLength": 1, "maxLength": 2000},
+    "operation_request": {
+      "type": "object",
+      "maxProperties": 32,
+      "additionalProperties": {
+        "type": ["string", "integer", "boolean", "null", "array", "object"]
+      }
+    }
+  }
+}

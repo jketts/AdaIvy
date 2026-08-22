@@ -313,6 +313,34 @@ class TakedownTests(unittest.TestCase):
 
 
 class FailClosedTests(unittest.TestCase):
+    def test_policy_for_another_archive_is_refused_before_writes(self) -> None:
+        policy = json.loads(POLICY_PATH.read_text())
+        policy["archive"]["archive_id"] = "snapshot.other"
+        policy["content_hash"] = None
+        policy = sealed(policy)
+        config = dict(_tranche())
+        config["policy_content_hash"] = policy["content_hash"]
+        config["content_hash"] = None
+        config = sealed(config)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            _init(root)
+            with self.assertRaisesRegex(Exception, "different archive identity"):
+                ingest_tranche(
+                    root, policy=policy, archive=_archive(), tranche_config=config,
+                    run_id="run.wrong-archive", recorded_at=T1,
+                )
+            self.assertEqual([], read_ledger(root, "acquisitions"))
+
+    def test_same_run_id_replays_terminal_report_without_duplicate_usage(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            _init(root)
+            first = _ingest(root, "run.same", T1)
+            second = _ingest(root, "run.same", T1)
+            self.assertEqual(first, second)
+            self.assertEqual(1, len(read_ledger(root, "usage")))
+
     def test_data_root_inside_git_tree_is_refused(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             fake_repo = Path(temporary) / "repo"

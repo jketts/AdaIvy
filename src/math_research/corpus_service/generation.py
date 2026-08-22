@@ -323,8 +323,13 @@ def record_takedown(
     prompted and nothing else is deleted.
     """
 
-    if document_id in tombstoned_document_ids(root):
-        raise DocumentAlreadyTombstonedError(document_id)
+    existing_tombstone = next((
+        record for record in reversed(read_ledger(root, "tombstones"))
+        if record["kind"] == "document_tombstoned"
+        and record["payload"]["document_id"] == document_id
+    ), None)
+    if existing_tombstone is not None:
+        return existing_tombstone
     acquisitions = [
         record for record in read_ledger(root, "acquisitions")
         if record["kind"] == "document_acquired"
@@ -336,10 +341,13 @@ def record_takedown(
         )
     payload = acquisitions[-1]["payload"]
     source_sha256 = payload["source_sha256"]
+    source_hashes = sorted({record["payload"]["source_sha256"] for record in acquisitions})
     spans_sha256 = None
+    span_hashes: set[str] = set()
     for record in read_ledger(root, "rights"):
         if record["kind"] == "spans_parsed" and record["payload"]["document_id"] == document_id:
             spans_sha256 = record["payload"]["spans_sha256"]
+            span_hashes.add(spans_sha256)
 
     dependent = sorted(
         record["payload"]["generation_id"]
@@ -363,39 +371,55 @@ def record_takedown(
             recorded_at=recorded_at,
         ))
 
-    tombstone = append_ledger(root, "tombstones", kind="document_tombstoned", recorded_at=recorded_at, payload={
-        "document_id": document_id,
-        "source_sha256": source_sha256,
-        "spans_sha256": spans_sha256,
-        "reason_detail": reason_detail,
-        "actor_id": actor_id,
-        "dependent_generation_ids": dependent,
-        "phase4a_revocation_record_ids": sorted(revocation_record_ids),
-        "bytes_removed_from_active_use": True,
-    })
-
     for generation_id in dependent:
         already = invalidated_generation_ids(root)
         if generation_id not in already:
             append_ledger(root, "lineage", kind="generation_invalidated", recorded_at=recorded_at, payload={
                 "generation_id": generation_id,
                 "cause": "takedown",
-                "tombstone_hash": tombstone["content_hash"],
+                "document_id": document_id,
             })
 
     still_referenced = {
         record["payload"]["source_sha256"]
         for record in read_ledger(root, "acquisitions")
         if record["kind"] == "document_acquired"
+        and record["payload"]["document_id"] != document_id
         and record["payload"]["document_id"] not in tombstoned_document_ids(root)
     }
-    for digest in (source_sha256, spans_sha256):
+    vector_hashes: set[str] = set()
+    retrieval_dir = generations_dir(root).joinpath("retrieval")
+    if retrieval_dir.exists():
+        for projection_path in retrieval_dir.glob("retrievalgen.*.json"):
+            try:
+                projection = strict_canonical_object(
+                    projection_path.read_bytes(), maximum=MAX_GENERATION_BYTES,
+                    label="retrieval projection", code=GenerationInvalidError.code,
+                )
+            except Exception:
+                continue
+            for entry in projection.get("vectors", []):
+                if entry.get("document_id") == document_id:
+                    vector_hashes.add(entry["artifact_object_hash"])
+    for digest in (*source_hashes, *sorted(span_hashes), *sorted(vector_hashes)):
         if digest is None or digest in still_referenced:
             continue
         path = object_path(root, digest)
         if path.exists():
             path.unlink()
-    return tombstone
+    return append_ledger(root, "tombstones", kind="document_tombstoned", recorded_at=recorded_at, payload={
+        "document_id": document_id,
+        "source_sha256": source_sha256,
+        "source_sha256_history": source_hashes,
+        "spans_sha256": spans_sha256,
+        "spans_sha256_history": sorted(span_hashes),
+        "vector_artifact_hashes_removed": sorted(vector_hashes),
+        "reason_detail": reason_detail,
+        "actor_id": actor_id,
+        "dependent_generation_ids": dependent,
+        "phase4a_revocation_record_ids": sorted(revocation_record_ids),
+        "bytes_removed_from_active_use": True,
+    })
 
 
 __all__ = [

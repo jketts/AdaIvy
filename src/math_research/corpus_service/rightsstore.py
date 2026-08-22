@@ -140,7 +140,7 @@ class PolicyDerivedRightsWriter:
                 )
             existing = {
                 (record["subject_id"], record["payload"]["intended_use"]):
-                record["id"]
+                record
                 for record in workspace.records()
                 if record["record_type"] == RecordType.RIGHTS_DECISION.value
             }
@@ -155,10 +155,19 @@ class PolicyDerivedRightsWriter:
                     # decision and the corpus rights ledger.
                     continue
                 prior = existing.get((source_id, use.value))
-                if prior is not None:
-                    ids.append(prior)
-                    continue
                 processor = entry["processor"] if disclosing else None
+                expected_value = (
+                    RightsValue.ALLOWED.value if entry["value"] == "allowed"
+                    else RightsValue.PROHIBITED.value
+                )
+                if (
+                    prior is not None
+                    and prior["payload"]["value"] == expected_value
+                    and prior["payload"]["processor"] == processor
+                    and tuple(prior["evidence_refs"]) == refs
+                ):
+                    ids.append(prior["id"])
+                    continue
                 record = service.append_rights(
                     source_id=source_id,
                     intended_use=use,
@@ -178,6 +187,7 @@ class PolicyDerivedRightsWriter:
                     recorded_at=recorded_at,
                     lifecycle_id="lifecycle." + source_id,
                     processor=processor,
+                    predecessor_id=prior["id"] if prior is not None else None,
                 )
                 ids.append(record.id)
         return shard_name, tuple(sorted(ids))

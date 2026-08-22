@@ -189,6 +189,55 @@ def runner(planner, experiment, artifacts, verifier, *, runner_policy=None):
 
 
 class CampaignRunnerTests(unittest.TestCase):
+    def test_verifier_reserves_the_same_tool_run_budget(self):
+        events = []
+        candidate_hash = digest(CANDIDATE)
+        planner = ScriptedPlanner([
+            action("derive", artifact_text=CANDIDATE),
+            action("write_program", program_source=PROGRAM),
+            lambda context: run_action(context.recorded_program_hashes[0]),
+            lambda context: action(
+                "inspect_result", selected_candidate_hash=candidate_hash,
+                selected_tool_artifact_hashes=[context.latest_tool_result_hash],
+            ),
+            lambda context: action(
+                "verify", selected_candidate_hash=context.selected_candidate_hash,
+                selected_tool_artifact_hashes=list(context.selected_tool_artifact_hashes),
+            ),
+        ])
+        verifier = RecordingVerifier()
+        completed = runner(
+            planner, RecordingExperiment(events), MemoryArtifacts(events), verifier,
+            runner_policy=policy(max_tool_runs=1),
+        ).run()
+        self.assertEqual("action_rejected", completed.terminal_reason)
+        self.assertEqual([], verifier.requests)
+        self.assertEqual(1, len(completed.tool_runs))
+
+    def test_verifier_private_artifact_cannot_become_sandbox_input(self):
+        events = []
+        candidate_hash = digest(CANDIDATE)
+        private_result_hash = digest(b'{"verified":true}')
+        program_hash = digest(PROGRAM)
+        planner = ScriptedPlanner([
+            action("derive", artifact_text=CANDIDATE),
+            action("inspect_result", selected_candidate_hash=candidate_hash),
+            lambda context: action(
+                "verify", selected_candidate_hash=context.selected_candidate_hash,
+                selected_tool_artifact_hashes=[],
+            ),
+            action("write_program", program_source=PROGRAM),
+            lambda context: run_action(
+                program_hash, input_artifact_hashes=[private_result_hash],
+            ),
+        ])
+        experiment = RecordingExperiment(events)
+        completed = runner(
+            planner, experiment, MemoryArtifacts(events), RecordingVerifier(),
+        ).run()
+        self.assertEqual("action_rejected", completed.terminal_reason)
+        self.assertEqual([], experiment.requests)
+
     def test_failed_planner_attempt_is_retained_in_the_campaign_ledger(self):
         events = []
         artifacts = MemoryArtifacts(events)

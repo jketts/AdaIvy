@@ -16,9 +16,8 @@ problem -> literature -> persistent corpus and embeddings -> retrieval
         -> investigation and experiments -> exact/Lean verification -> report
 ```
 
-That complete path is the active integration objective, not the current runtime
-state. Today the repository contains working bounded components, but several are
-not yet connected to `campaign run`. See
+That complete path is now exercised by an offline, deterministic acceptance
+runtime; live effects remain separately activated. See
 [Capability Status](docs/CAPABILITY_STATUS.md) for the precise current state and
 [End-to-End Research Runtime Plan](docs/END_TO_END_RESEARCH_RUNTIME_PLAN.md) for
 the proposed direction of work.
@@ -43,25 +42,40 @@ Implemented components include:
 - four-signal Phase 4C retrieval, including semantic similarity; and
 - record-driven publication with provenance and reproducible typesetting.
 - automatic claim-free LaTeX status drafts for terminal campaigns, with
-  idempotent terminal-finalization resume.
+  idempotent terminal-finalization resume;
+- persistent corpus-backed vector projections and exact-span evidence cards;
+- first-class literature/acquire/parse/embed/index/retrieve/formal-check action
+  names; and
+- `campaign start` plus action-level `campaign resume` for the complete offline
+  fixture path, using an explicit credential profile and unified budget.
 
-The end-to-end workflow is **not yet runnable**:
+The end-to-end workflow is runnable offline. The following live scope remains
+separately gated or pending:
 
-- the campaign has no literature, acquisition, embedding, indexing, or
-  retrieval actions;
-- the acquired corpus is explicitly not wired into retrieval;
-- semantic retrieval still uses a frozen 19-document synthetic fixture;
-- the production campaign CLI still injects a pending experiment runner and an
-  absent verifier despite the standalone sandbox/verifier implementation;
-- Lean is available only through its separate Phase 3B commands; and
-- ADR-0055 still requires a fresh human novelty re-check before research.
+- production snapshot acquisition remains pending;
+- live Crossref, provider, embedding, OCI, and Lean effects require their named
+  activation gates;
+- the legacy `campaign run` command retains its compatibility contract,
+  including a human novelty re-check; the new end-to-end path structurally
+  records search before research and does not require that checkpoint; and
+- the offline fixture experiment is explicitly not a production sandbox run.
 
-`campaign resume ROOT` currently resumes only deterministic finalization of an
-already complete terminal ledger. It does not yet continue interrupted paid
-research actions.
+`campaign resume ROOT` detects end-to-end campaign roots and replays completed
+action checkpoints without repeating paid work. It still performs the original
+terminal-finalization behavior for legacy campaign roots. An ambiguous intent
+is retained as unresolved rather than retried.
 
-Passing `make check` demonstrates the bounded components and their safety
-properties. It does not demonstrate an autonomous research campaign.
+Passing `make check` includes the complete offline fixture campaign. It does not
+activate or claim success for any live external capability.
+
+Run that path directly with an external persistent data root:
+
+```sh
+python3 -m math_research.cli campaign start work/campaign campaign.example \
+  --data-root /path/outside/the/git/tree/adaivy-data \
+  --recorded-at 2026-08-22T00:10:00Z --problem problem.txt
+python3 -m math_research.cli campaign resume work/campaign
+```
 
 ## Design principles
 

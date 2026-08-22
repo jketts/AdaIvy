@@ -36,6 +36,7 @@ from .serialization import canonical_hash, content_hash_of, public_value
 
 DECISION_FIELDS = frozenset({
     "schema_version", "decision_id", "document_id", "source_id",
+    "archive_id", "archive_version", "source_sha256",
     "policy_content_hash", "rule_id", "licence_inputs", "derivation",
     "authored_by", "status", "quarantine_reason", "uses", "content_hash",
 })
@@ -90,6 +91,9 @@ def _base(policy: Mapping[str, Any], document: Mapping[str, Any]) -> dict[str, A
         "decision_id": None,
         "document_id": document_id,
         "source_id": source_id_for(document_id),
+        "archive_id": policy["archive"]["archive_id"],
+        "archive_version": policy["archive"]["archive_version"],
+        "source_sha256": document["sha256"],
         "policy_content_hash": policy["content_hash"],
         "derivation": DERIVATION_MECHANISM,
         "authored_by": dict(policy["authored_by"]),
@@ -209,6 +213,17 @@ def verify_derived_decision(value: Mapping[str, Any]) -> dict[str, Any]:
     if decision["source_id"] != source_id_for(document_id):
         raise DerivedDecisionInvalidError(
             "derived rights decision source_id is not the derived identity"
+        )
+    for name in ("archive_id", "archive_version"):
+        if not isinstance(decision[name], str) or not decision[name]:
+            raise DerivedDecisionInvalidError(
+                f"derived rights decision {name} differs"
+            )
+    if not isinstance(decision["source_sha256"], str) or HASH_PATTERN.fullmatch(
+        decision["source_sha256"]
+    ) is None:
+        raise DerivedDecisionInvalidError(
+            "derived rights decision source hash differs"
         )
 
     status = decision["status"]

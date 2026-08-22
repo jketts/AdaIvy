@@ -44,7 +44,7 @@ REPORT_INSTANT ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 OUT ?= reports/local/run-$(REPORT_STAMP)
 WORK ?= work/$(REPORT_STAMP)
 
-.PHONY: check check-all check-sealed check-gate setup-typeset check-typeset publication-build check-phase4b-oci check-campaign-experiment-oci \
+.PHONY: check check-all check-sealed check-gate setup-typeset check-typeset publication-build check-phase4b-oci check-campaign-experiment-oci campaign-e2e \
         check-embedding-live spike-phase5-sdp test phase0 phase1 problem-intake phase2 phase3a phase3b phase4a phase4b \
         phase4c phase4d phase5 phase6 embedding corpus corpus-service synthesis campaign publication report clean help
 
@@ -65,7 +65,7 @@ help:
 	@printf '                default OUT=reports/local/run-<stamp> (gitignored)\n'
 	@printf '  clean         remove __pycache__ and stray sqlite journals\n'
 
-check: test phase0 phase1 problem-intake phase2 phase3a phase4a phase4b phase4c phase4d phase5 phase6 embedding corpus corpus-service synthesis campaign publication
+check: test phase0 phase1 problem-intake phase2 phase3a phase4a phase4b phase4c phase4d phase5 phase6 embedding corpus corpus-service synthesis campaign campaign-e2e publication
 	@printf '\n== offline check complete ==\n'
 
 check-all: check check-sealed
@@ -608,6 +608,18 @@ campaign:
 	    "$$d/graph-run.json" "$$d/rejected-run.json" && \
 	  rm -rf "$$d" && \
 	  printf 'campaign ok (unwired sandbox refused with its reason recorded; exact-graph candidate verified through the router; a refuted candidate left the campaign continuing; replay MEASURED 0 model/tool/network/subprocess calls)\n'
+
+campaign-e2e:
+	@printf '\n== ADR-0072 end-to-end persistent campaign fixture ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-campaign-e2e.XXXXXX") && \
+	  $(PY) -m math_research.cli campaign start "$$d/campaign" campaign.e2e.fixture.v1 \
+	    --data-root "$$d/data-root" --recorded-at $(CAMPAIGN_INSTANT) \
+	    --repository-root "$(CURDIR)" > "$$d/start.json" && \
+	  $(PY) -m math_research.cli campaign resume "$$d/campaign" > "$$d/resume.json" && \
+	  $(PY) -c 'import json,sys; a=json.load(open(sys.argv[1])); b=json.load(open(sys.argv[2])); s=a["summary"]; assert a["status"] == b["status"] == "completed"; assert s["completed_action_count"] == 13 and s["literature_search_recorded"] is True; assert s["before_research_human_checkpoint_required"] is False and s["before_announcement_human_checkpoint_required"] is True; assert s["charge_event_count"] == 3 and b["paid_work_repeated"] is False; assert s["epistemic_warrant_created"] is False' "$$d/start.json" "$$d/resume.json" && \
+	  $(PY) -c 'import json,sys,pathlib; p=pathlib.Path(sys.argv[1]); s=json.load(open(p/"status.json")); assert s["approval"] == "unapproved" and s["typeset_status"] == "not_typeset" and (p/"paper.tex").is_file()' "$$d/campaign/publication" && \
+	  rm -rf "$$d" && \
+	  printf 'campaign e2e ok (13 checkpointed actions; persistent corpus/retrieval; profile budget; resume repeats 0 paid calls)\n'
 
 # ADR-0036: the publication projection renders the manuscript record set into a
 # content-addressed bundle and asserts the recorded outcome rather than the exit

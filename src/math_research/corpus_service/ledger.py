@@ -10,6 +10,8 @@ superseded state is superseded by a later record.
 
 from __future__ import annotations
 
+import fcntl
+import os
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -104,23 +106,31 @@ def append_ledger(
 ) -> dict[str, Any]:
     """Verify the tail, then append one sealed, chained record."""
 
-    existing = read_ledger(root, name)
-    prev_hash = existing[-1]["content_hash"] if existing else None
-    record = _verify_record(sealed({
-        "schema_version": LEDGER_SCHEMA_VERSION,
-        "ledger": name,
-        "sequence": len(existing),
-        "prev_content_hash": prev_hash,
-        "kind": kind,
-        "recorded_at": recorded_at,
-        "payload": dict(payload),
-        "content_hash": None,
-    }), name=name)
     path = ledger_path(root, name)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("ab") as handle:
-        handle.write(canonical_bytes(record) + b"\n")
-        handle.flush()
+    lock_path = path.with_suffix(path.suffix + ".lock")
+    with lock_path.open("a+b") as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        # Sequence allocation and append are one single-writer critical section.
+        existing = read_ledger(root, name)
+        prev_hash = existing[-1]["content_hash"] if existing else None
+        record = _verify_record(sealed({
+            "schema_version": LEDGER_SCHEMA_VERSION,
+            "ledger": name,
+            "sequence": len(existing),
+            "prev_content_hash": prev_hash,
+            "kind": kind,
+            "recorded_at": recorded_at,
+            "payload": dict(payload),
+            "content_hash": None,
+        }), name=name)
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+        try:
+            os.write(descriptor, canonical_bytes(record) + b"\n")
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
     return record
 
 

@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from enum import Enum
-from typing import Callable
+from typing import Callable, Iterable
 
 from .credentials import CampaignRoutePolicy
 from .records import (
@@ -333,6 +333,8 @@ class CampaignBudgetLedger:
         *,
         recorded_at: Callable[[], str],
         route_policy: CampaignRoutePolicy | None = None,
+        initial_events: Iterable[ChargeEvent] = (),
+        event_sink: Callable[[ChargeEvent], None] | None = None,
     ) -> None:
         budget.verify_hashes()
         if route_policy is not None and route_policy.fallback_profile_id is not None:
@@ -358,6 +360,27 @@ class CampaignBudgetLedger:
         }
         self._exceeded: list[str] = []
         self._closed = False
+        self._event_sink = event_sink
+        for event in initial_events:
+            if event.campaign_id != budget.campaign_id:
+                raise CampaignBudgetError("prior charge belongs to another campaign")
+            if event.sequence != len(self._events) + 1:
+                raise CampaignBudgetError("prior charge sequence is not contiguous")
+            expected = event.finalized()
+            if (
+                event.content_hash != expected.content_hash
+                or event.operational_hash != expected.operational_hash
+            ):
+                raise CampaignBudgetError("prior charge hash differs")
+            if event.capability is BudgetCapability.MODEL:
+                bucket_name, _, totals = self._model_bucket(event.credential_profile_id)
+            else:
+                bucket_name = event.capability.value
+                totals = self._totals[event.capability]
+            self._events.append(event)
+            for field in _QUANTITY_FIELDS:
+                totals[field] += getattr(event, field)
+            self._note_breaches(bucket_name, totals)
 
     def _model_bucket(
         self, credential_profile_id: str | None,
@@ -488,6 +511,8 @@ class CampaignBudgetLedger:
         for field in _QUANTITY_FIELDS:
             totals[field] += getattr(event, field)
         self._note_breaches(bucket_name, totals)
+        if self._event_sink is not None:
+            self._event_sink(event)
         return event
 
     def _total_cost(self) -> int:

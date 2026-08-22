@@ -43,11 +43,9 @@ PARSABLE_MEDIA_TYPES = frozenset({"text/plain", "text/markdown"})
 SPAN_TRANSFORMATION = "utf8_exact_char_spans_v1"
 
 #: Phase 4A caps a workspace at 256 append-only records.  One admitted document
-#: needs at most five decisions (acquisition, storage/retention, parsing,
-#: embedding, model_context) plus one workspace policy snapshot, and takedowns
-#: append lifecycle records later, so shard capacity reserves headroom:
-#: 1 + 40 * 5 = 201 of 256, leaving 55 slots for revocation/takedown records.
-RIGHTS_SHARD_MAX_DOCUMENTS = 40
+#: needs at most five initial decisions and five later superseding/revocation
+#: decisions. Reserve the complete lifecycle: 1 + 25 * 10 = 251 of 256.
+RIGHTS_SHARD_MAX_DOCUMENTS = 25
 
 #: Exact acknowledgement for the live snapshot acquisition gate.  Acquiring a
 #: bulk archive sends traffic to a third party under its terms; not a default.

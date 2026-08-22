@@ -16,19 +16,19 @@ operator path, and usable end to end.
 | Generated-program OCI sandbox | Yes | Yes for one Linux/arm64 exact-graph target | Yes, behind activation matching (ADR-0073) | `campaign run --experiment-activation` wires the activated runner only when the record re-verifies against the current locks; otherwise the pending runner remains with the reason recorded |
 | Campaign verifier | Yes: verifier router | Yes | Yes (ADR-0073) | Routes exact-graph, Phase 5 diagonal, and Phase 5 noncommuting candidates plus formal-check envelopes; anything else is an explicit `unsupported` failure |
 | Lean checking | Yes | Separate sealed runtime | Port wired; sealed adapter is an explicit opt-in | The router's formal-check route defaults to a recorded missing-tool result; `--formal-check-adapter sealed` uses the Phase 3B Docker Lean service |
-| Crossref discovery | Yes | Explicit one-request live opt-in | **No** | Operator-supplied grounded terms, at most ten metadata candidates |
-| Discovery-result following | Decision accepted | No | No | ADR-0068 and ADR-0072 are accepted; nothing is implemented |
+| Crossref discovery | Yes | Explicit one-request live opt-in | Offline fixture action wired | Operator-supplied grounded terms, at most ten metadata candidates; live search retains its explicit permit |
+| Discovery-result following | Yes | Offline fixture | Yes, depth one | The end-to-end runtime enforces `max_depth: 1` and an allowlisted origin |
 | Bulk corpus ingestion | Yes, bounded replay slice | Production activation pending | No | arXiv descriptive metadata and abstracts; no full text |
-| Persistent corpus store (ADR-0072 Slice 3) | Yes | Local ingest from an already-acquired archive; live snapshot acquisition pending | No | Operator-selected data root outside Git; grow-only across runs; policy-derived per-document rights with quarantine; full text and exact spans where the policy permits; immutable content-addressed generations with takedown tombstones; still `retrieval_indexed: false` |
-| Embedding ingestion | Yes | Explicit live opt-in | No | Operator-supplied local documents with processor-bound rights; ADR-0072's policy-derived per-document rights are implemented for the Slice 3 persistent corpus store, while the standalone embedding CLI path still requires human-authored decisions |
-| Persistent vector artifacts | Yes | Yes | No | Immutable exact vector artifacts; caller supplies the storage root |
+| Persistent corpus store (ADR-0072 Slice 3) | Yes | Local ingest from an already-acquired archive; live snapshot acquisition pending | Yes in offline end-to-end path | Operator-selected grow-only data root, exact spans, policy-derived rights, immutable generations, idempotent run records, and takedown tombstones; corpus manifests remain `retrieval_indexed: false` because retrieval is a separate projection |
+| Embedding ingestion | Yes | Explicit live opt-in | Yes in offline end-to-end path | Exact processor/provider/model rights checks precede reads; profile-bound live gateway remains explicit |
+| Persistent vector artifacts | Yes | Yes | Yes in offline end-to-end path | Immutable artifacts stored in the persistent data root and reused across generations |
 | Semantic retrieval | Yes | Offline fixture only | No | Fourth Phase 4C signal over 19 project-authored documents and 17 queries |
-| Retrieval over acquired corpus | **No** | No | No | Accepted by ADR-0072 (Slice 4); corpus records remain marked `retrieval_indexed: false` |
-| Campaign literature/embedding actions | **No** | No | No | Accepted by ADR-0072 (Slice 5); the campaign action schema still has no search, acquire, embed, index, or retrieve action |
-| Named credential profiles and unified budget | Yes, per ADR-0072 §1 | No | **No** | Profile selection/resolution refuses ambient credentials, profile-bound model/embedding gateway wrappers, one append-only multi-capability budget ledger with a dedicated fallback sub-budget, and deterministic bounded backoff; `campaign run` does not construct them yet |
-| Terminal campaign resume | Yes | Yes | Yes | Idempotently verifies a complete terminal ledger and finishes its draft; it does not yet resume a partial paid run |
+| Retrieval over acquired corpus | Yes (ADR-0074) | Offline fixture | Yes | Immutable projection binds active corpus generation/hash and exact vector partition; query artifacts and exact-span evidence cards are replayable with zero provider calls |
+| Campaign literature/embedding actions | Yes | Offline fixture | Yes | Action schema v2 names search, depth-one follow, acquire, parse, embed, refresh, retrieve, and formal check |
+| Named credential profiles and unified budget | Yes | Offline fixture | Yes in `campaign start` | Selection and charge records are durable and secret-free; live resolution refuses ambient credentials and has no implicit fallback |
+| Action-level campaign resume | Yes (ADR-0075) | Yes | Yes in `campaign start` | Intent precedes every effect; completed actions replay; ambiguous effects stop unresolved without repetition |
 | Automatic campaign LaTeX draft | Yes | Yes | Yes | Every terminal run attempts a claim-free, unapproved `paper.tex` bundle; PDF typesetting remains an explicit gate |
-| End-to-end autonomous research run | **No** | No | No | Decision-authorized by ADR-0072; components remain separate and no single command performs the complete loop |
+| End-to-end research run | Yes, offline fixture | Offline only | Yes through `campaign start` | One command executes 13 checkpointed actions from literature through report; live effects remain separately gated |
 
 ## What works today
 
@@ -46,22 +46,18 @@ operator path, and usable end to end.
 
 ## What does not work today
 
-AdaIvy cannot yet take a problem and autonomously execute this complete path:
+AdaIvy now executes this complete path in the deterministic offline fixture:
 
 ```text
 literature search -> acquisition -> persistent embedding/indexing -> retrieval
 -> iterative investigation and experiments -> exact or Lean verification
 ```
 
-The campaign entrypoint does not expose literature actions, does not read the
-acquired corpus, and does not use the persistent vector artifacts. The
-experiment sandbox and verifier router are wired, so the
-investigation-and-verification tail of this path runs inside one recorded
-campaign; the literature head does not exist yet. ADR-0072 supersedes the
-ADR-0055 `before_research` human re-check as a decision, but the entrypoint code
-still enforces it until the replacing recorded in-campaign search ships with
-its own gate. The human `before_announcement` re-check remains required
-unconditionally.
+`campaign start` records every stage and enforces search before research. Live
+provider/search/snapshot/container/Lean execution is not implied by this
+offline result and still requires each named gate. The legacy `campaign run`
+path remains available with its former novelty-check contract. Human
+`before_announcement` approval remains required unconditionally.
 
 ## Status vocabulary
 

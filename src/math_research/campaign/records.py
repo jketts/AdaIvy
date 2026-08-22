@@ -50,6 +50,14 @@ class ActionType(ValueEnum):
     SUSPEND_BRANCH = "suspend_branch"
     REPORT = "report"
     IMPORT = "import"
+    SEARCH_LITERATURE = "search_literature"
+    FOLLOW_DISCOVERY_RESULTS = "follow_discovery_results"
+    ACQUIRE_SOURCE = "acquire_source"
+    PARSE_SOURCE = "parse_source"
+    EMBED_SOURCES = "embed_sources"
+    REFRESH_RETRIEVAL_INDEX = "refresh_retrieval_index"
+    RETRIEVE_EVIDENCE = "retrieve_evidence"
+    FORMAL_CHECK = "formal_check"
 
 
 class ActorType(ValueEnum):

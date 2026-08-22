@@ -425,6 +425,7 @@ class SequentialCampaignRunner:
         programs: set[str] = set()
         candidates: set[str] = set()
         tool_artifacts: set[str] = set()
+        verifier_private_artifacts: set[str] = set()
         suspended: set[str] = set()
         selected_candidate: str | None = None
         selected_tools: tuple[str, ...] = ()
@@ -570,7 +571,7 @@ class SequentialCampaignRunner:
                 action_status = RecordStatus.COMPLETED
                 inputs = self._inputs(
                     action, actions, source_hash=source_hash, selected_candidate=selected_candidate,
-                    selected_tools=selected_tools,
+                    selected_tools=selected_tools, available=available,
                 )
                 if (
                     action.action_type is ActionType.RUN_PROGRAM
@@ -627,6 +628,8 @@ class SequentialCampaignRunner:
                     selected_candidate = chosen
                     selected_tools = action.selected_tool_artifact_hashes
                 elif action.action_type is ActionType.VERIFY:
+                    if len(tools) >= self.policy.max_tool_runs:
+                        raise CampaignRunnerError("campaign tool-run bound exhausted")
                     if action.selected_candidate_hash != selected_candidate:
                         raise CampaignRunnerError("verifier candidate differs from the inspected selection")
                     if action.selected_tool_artifact_hashes != selected_tools:
@@ -657,7 +660,7 @@ class SequentialCampaignRunner:
                     tools.append(tool)
                     source_ids.append(tool.tool_run_id)
                     outputs.extend(artifact_hashes)
-                    available.update(artifact_hashes)
+                    verifier_private_artifacts.update(artifact_hashes)
                     action_status = result.status
                 elif action.action_type is ActionType.SUSPEND_BRANCH:
                     suspended.add(action.branch_id)
@@ -679,7 +682,10 @@ class SequentialCampaignRunner:
                     recorded_at=self.recorded_at(),
                 ).finalized()
                 actions.append(record)
-                available.update(record.output_artifact_hashes)
+                available.update(
+                    item for item in record.output_artifact_hashes
+                    if item not in verifier_private_artifacts
+                )
                 if (
                     action.action_type is ActionType.RUN_PROGRAM
                     and action_status is not RecordStatus.COMPLETED
@@ -802,6 +808,7 @@ class SequentialCampaignRunner:
     def _inputs(
         self, action: CampaignAction, prior: list[ActionRecord], *, source_hash: str,
         selected_candidate: str | None, selected_tools: tuple[str, ...],
+        available: set[str],
     ) -> tuple[str, ...]:
         if action.action_type is ActionType.RUN_PROGRAM:
             assert action.tool_request is not None
@@ -816,7 +823,9 @@ class SequentialCampaignRunner:
         if action.action_type is ActionType.VERIFY:
             return tuple(filter(None, (selected_candidate, *selected_tools)))
         if prior:
-            return prior[-1].output_artifact_hashes
+            return tuple(
+                item for item in prior[-1].output_artifact_hashes if item in available
+            )
         return (self.target_hash, self.configuration_hash)
 
     def _admit_experiment(

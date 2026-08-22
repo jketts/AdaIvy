@@ -2528,6 +2528,23 @@ than guessing.
 
 ---
 
+### 21.4 Implemented end-to-end runtime boundary (2026-08-22)
+
+ADRs 0072–0075 add an offline accepted vertical path without changing the
+trust lattice above. `campaign start` freezes a target, selects a named profile,
+opens one unified budget, records a search before research, ingests the
+persistent corpus, constructs a generation-bound vector projection, retrieves
+exact-span evidence, performs bounded fixture experimentation and exact
+artifact verification, and emits an unapproved claim-free draft. Every action
+has a durable intent and terminal checkpoint. Live network, provider, OCI,
+Lean, and typesetting effects remain separately activated boundaries.
+
+The persistent projection is deliberately not a mutation of the corpus
+generation: source generations remain primary evidence and state
+`retrieval_indexed: false`; projection manifests carry the exact corpus hash
+and vector partition. This preserves the immutable/rebuildable distinction in
+Sections 11 and 14.
+
 ## 22. Open decisions
 
 These choices should be resolved through small implementation experiments, not

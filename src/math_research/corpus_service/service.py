@@ -25,6 +25,7 @@ the ledgers and in the run report; they are never discarded.
 
 from __future__ import annotations
 
+import fcntl
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -37,7 +38,7 @@ from .constants import (
     TIMESTAMP_PATTERN,
     TRUST_EFFECTS,
 )
-from .dataroot import open_data_root, write_object
+from .dataroot import ledgers_dir, open_data_root, read_object, write_object
 from .derivation import (
     STATUS_DERIVED,
     STATUS_QUARANTINED,
@@ -57,6 +58,7 @@ from .policy import validate_policy
 from .ports import ArchiveSource
 from .rightsstore import PolicyDerivedRightsWriter
 from .serialization import canonical_bytes, sealed, sha256_bytes
+from .serialization import strict_canonical_object, verify_sealed
 from .snapshot import (
     assert_tranche_within_bounds,
     load_archive_manifest,
@@ -96,11 +98,12 @@ def _latest_rights_state(root: Path) -> dict[str, dict[str, Any]]:
     return state
 
 
-def _spans_by_document(root: Path) -> dict[str, str]:
-    found: dict[str, str] = {}
+def _spans_by_document(root: Path) -> dict[tuple[str, str], str]:
+    found: dict[tuple[str, str], str] = {}
     for record in read_ledger(root, "rights"):
         if record["kind"] == "spans_parsed":
-            found[record["payload"]["document_id"]] = record["payload"]["spans_sha256"]
+            payload = record["payload"]
+            found[(payload["document_id"], payload["source_sha256"])] = payload["spans_sha256"]
     return found
 
 
@@ -157,8 +160,8 @@ def build_current_generation(root: Path) -> dict[str, Any]:
             "rule_id": decision["rule_id"],
             "decision_content_hash": decision["content_hash"],
             "phase4a_decision_ids": sorted(state["phase4a_decision_ids"]),
-            "spans_sha256": spans.get(document_id),
-            "full_text_stored": document_id in spans,
+            "spans_sha256": spans.get((document_id, payload["source_sha256"])),
+            "full_text_stored": (document_id, payload["source_sha256"]) in spans,
             "embedding": {
                 "value": uses["embedding"]["value"],
                 "processor_id": (
@@ -191,7 +194,7 @@ def build_current_generation(root: Path) -> dict[str, Any]:
     })
 
 
-def ingest_tranche(
+def _ingest_tranche_unlocked(
     root: Path, *, policy: Mapping[str, Any], archive: ArchiveSource,
     tranche_config: Mapping[str, Any], run_id: str, recorded_at: str,
 ) -> dict[str, Any]:
@@ -203,12 +206,51 @@ def ingest_tranche(
     validated_policy = validate_policy(policy)
     manifest = load_archive_manifest(archive.manifest_bytes())
     config = validate_tranche_config(tranche_config)
+    if validated_policy["archive"] != {
+        "archive_id": manifest["archive_id"],
+        "archive_version": manifest["archive_version"],
+    }:
+        raise CorpusServiceError(
+            "the source-and-rights policy names a different archive identity",
+            code="snapshot_policy_archive_mismatch",
+        )
     if config["policy_content_hash"] != validated_policy["content_hash"]:
         raise CorpusServiceError(
             "the tranche config pins a different source-and-rights policy",
             code="snapshot_tranche_config_invalid",
         )
     assert_tranche_within_bounds(manifest, config)
+    policy_object_hash = write_object(root, canonical_bytes(validated_policy) + b"\n")
+    manifest_object_hash = write_object(root, canonical_bytes(manifest) + b"\n")
+    config_object_hash = write_object(root, canonical_bytes(config) + b"\n")
+    prior_runs = [
+        record for record in read_ledger(root, "usage")
+        if record["kind"] == "corpus_used" and record["payload"].get("run_id") == run_id
+    ]
+    if prior_runs:
+        payload = prior_runs[-1]["payload"]
+        if (
+            payload.get("archive_manifest_hash") != manifest["content_hash"]
+            or payload.get("policy_content_hash") != validated_policy["content_hash"]
+            or payload.get("tranche_id") != config["tranche_id"]
+        ):
+            raise CorpusServiceError(
+                "run_id already identifies a different corpus operation",
+                code="corpus_run_id_conflict",
+            )
+        report_hash = payload.get("run_report_object_hash")
+        if report_hash is None:
+            raise CorpusServiceError(
+                "legacy run record has no replayable terminal report",
+                code="corpus_run_not_replayable",
+            )
+        return verify_sealed(
+            strict_canonical_object(
+                read_object(root, report_hash), maximum=1_048_576,
+                label="corpus run report", code="corpus_run_report_invalid",
+            ),
+            label="corpus run report", code="corpus_run_report_invalid",
+        )
 
     already_acquired = _acquired(root)
     rights_state = _latest_rights_state(root)
@@ -235,6 +277,7 @@ def ingest_tranche(
 
         prior = already_acquired.get(document_id)
         if prior is not None and prior["source_sha256"] == document["sha256"]:
+            read_object(root, prior["source_sha256"])
             documents_reused += 1
         else:
             body = archive.document_bytes(document["relative_path"])
@@ -263,7 +306,7 @@ def ingest_tranche(
             )
             if (
                 rule["full_text"]
-                and document_id not in spans_by_document
+                and (document_id, document["sha256"]) not in spans_by_document
             ):
                 body = archive.document_bytes(document["relative_path"])
                 try:
@@ -289,7 +332,7 @@ def ingest_tranche(
                         "span_count": spans_doc["span_count"],
                         "transformation": spans_doc["transformation"],
                     })
-                    spans_by_document[document_id] = spans_sha256
+                    spans_by_document[(document_id, document["sha256"])] = spans_sha256
 
         existing = rights_state.get(document_id)
         if existing is None or existing["decision"]["content_hash"] != decision["content_hash"]:
@@ -331,21 +374,7 @@ def ingest_tranche(
     if generation_published:
         publish_generation(root, generation, run_id=run_id, recorded_at=recorded_at)
 
-    append_ledger(root, "usage", kind="corpus_used", recorded_at=recorded_at, payload={
-        "run_id": run_id,
-        "generation_id": generation["generation_id"],
-        "tranche_id": config["tranche_id"],
-        "archive_manifest_hash": manifest["content_hash"],
-        "policy_content_hash": validated_policy["content_hash"],
-        "documents_total": manifest["document_count"],
-        "documents_acquired": documents_acquired,
-        "documents_reused": documents_reused,
-        "documents_admitted": documents_admitted,
-        "documents_quarantined": documents_quarantined,
-        "documents_tombstone_skipped": documents_tombstone_skipped,
-    })
-
-    return sealed({
+    report = sealed({
         "schema_version": RUN_REPORT_SCHEMA_VERSION,
         "provider": PROVIDER,
         "run_id": run_id,
@@ -373,6 +402,49 @@ def ingest_tranche(
         "network_requests": 0,
         "content_hash": None,
     })
+    run_report_object_hash = write_object(root, canonical_bytes(report) + b"\n")
+    append_ledger(root, "usage", kind="corpus_used", recorded_at=recorded_at, payload={
+        "run_id": run_id,
+        "generation_id": generation["generation_id"],
+        "tranche_id": config["tranche_id"],
+        "archive_manifest_hash": manifest["content_hash"],
+        "policy_content_hash": validated_policy["content_hash"],
+        "governing_input_object_hashes": {
+            "archive_manifest": manifest_object_hash,
+            "source_rights_policy": policy_object_hash,
+            "tranche_config": config_object_hash,
+        },
+        "run_report_object_hash": run_report_object_hash,
+        "documents_total": manifest["document_count"],
+        "documents_acquired": documents_acquired,
+        "documents_reused": documents_reused,
+        "documents_admitted": documents_admitted,
+        "documents_quarantined": documents_quarantined,
+        "documents_tombstone_skipped": documents_tombstone_skipped,
+    })
+
+    return report
+
+
+def ingest_tranche(
+    root: Path, *, policy: Mapping[str, Any], archive: ArchiveSource,
+    tranche_config: Mapping[str, Any], run_id: str, recorded_at: str,
+) -> dict[str, Any]:
+    """Serialize a whole ingestion transaction and replay duplicate run ids."""
+
+    open_data_root(root)
+    lock_path = ledgers_dir(root).joinpath("ingest.lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open("a+b") as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        try:
+            return _ingest_tranche_unlocked(
+                root, policy=policy, archive=archive,
+                tranche_config=tranche_config, run_id=run_id,
+                recorded_at=recorded_at,
+            )
+        finally:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
 
 __all__ = ["build_current_generation", "ingest_tranche"]

@@ -839,6 +839,16 @@ now exists at the repository root.
 These are defaults, not permanent constraints. Ports should make replacement
 possible without changing domain logic.
 
+## Implemented end-to-end fixture boundary
+
+The ADR-0075 runtime provides a single-command offline acceptance path with
+action-level checkpoints. It uses an explicit profile selection and unified
+budget, a persistent corpus and ADR-0074 retrieval projection, exact-span
+evidence, a bounded fixture experiment, exact artifact verification, and an
+unapproved claim-free LaTeX status draft. This does not activate live search,
+provider, snapshot, OCI, Lean, or typesetting capabilities; those retain their
+named gates.
+
 ## Definition of done for the first vertical slice
 
 A user can create a problem, approve its formalization and semantic alignment,

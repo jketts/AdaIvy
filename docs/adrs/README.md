@@ -20,21 +20,28 @@ capability is summarized separately in
 - ADR-0065: campaign operator entrypoint
 - ADR-0066: bounded campaign experiment sandbox
 - ADR-0067: bounded corpus ingestion
-- ADR-0068: accepted depth-one discovery-result following; not implemented
+- ADR-0068: accepted depth-one discovery-result following; implemented in the
+  ADR-0075 offline end-to-end runtime
 - ADR-0069: embedding provider and immutable vector artifacts
 - ADR-0070: fixture-scoped semantic retrieval signal
 - ADR-0071: terminal campaign resume and automatic unapproved LaTeX draft
 - ADR-0072: end-to-end campaign authority under one initial authorization;
-  decision only, activates no code, supersedes named clauses of ADR-0047,
+  implemented by the bounded slices while activating no live external service,
+  and superseding named clauses of ADR-0047,
   ADR-0051, ADR-0055, ADR-0064, ADR-0067, ADR-0068, and ADR-0070
 - ADR-0073: canonical identifier for the implemented campaign experiment and
   verifier-router wiring; supersedes the identifier authority of the historical
   parallel `0072-campaign-experiment-and-verifier-wiring.md`
+- ADR-0074: persistent corpus-backed retrieval projections and partition-bound
+  query/evidence replay
+- ADR-0075: action-level checkpoints and the single-command offline end-to-end
+  campaign runtime
 
 The end-to-end integration is documented in
 [`../END_TO_END_RESEARCH_RUNTIME_PLAN.md`](../END_TO_END_RESEARCH_RUNTIME_PLAN.md).
 ADR-0072 is the superseding decision that plan required before implementation;
-Slices 2–6 remain unimplemented until their own acceptance gates pass.
+Slices 2–7 now have offline acceptance coverage; live provider, snapshot,
+container, and Lean execution retain their separate explicit gates.
 
 ## Duplicate ADR numbers
 

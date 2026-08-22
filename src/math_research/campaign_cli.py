@@ -2303,6 +2303,23 @@ def _resume(args: argparse.Namespace) -> int:
 
     with measure_effects():
         try:
+            end_to_end_config = args.root / "end-to-end-runtime-config.json"
+            if end_to_end_config.exists():
+                from .campaign.fixture_runtime import run_fixture_campaign
+                value = json.loads(end_to_end_config.read_text(encoding="utf-8"))
+                summary = run_fixture_campaign(
+                    args.root, data_root=Path(value["data_root"]),
+                    campaign_id=value["campaign_id"], recorded_at=value["recorded_at"],
+                    repository_root=Path(value["repository_root"]),
+                    problem_bytes=None,
+                )
+                _print({
+                    "status": summary["status"], "root": str(args.root),
+                    "campaign_id": summary["campaign_id"],
+                    "resume_scope": "action_level_end_to_end",
+                    "paid_work_repeated": False, "summary": summary,
+                })
+                return 0 if summary["status"] == "completed" else 1
             loaded = _load_campaign(args.root)
             configuration = load_campaign_configuration(args.root / "campaign-config.json")
             report = _finish_terminal_report(
@@ -2330,6 +2347,30 @@ def _resume(args: argparse.Namespace) -> int:
             "epistemic_warrant_created": False,
         })
         return 0
+
+
+def _start(args: argparse.Namespace) -> int:
+    """Initialize and run the one-command end-to-end fixture campaign."""
+
+    try:
+        from .campaign.fixture_runtime import run_fixture_campaign
+        summary = run_fixture_campaign(
+            args.root, data_root=args.data_root, campaign_id=args.campaign_id,
+            recorded_at=args.recorded_at,
+            repository_root=args.repository_root,
+            problem_bytes=None if args.problem is None else args.problem.read_bytes(),
+        )
+    except Exception as error:
+        return _refuse(
+            "campaign_end_to_end_start_refused", root=str(args.root),
+            detail=str(error) or type(error).__name__,
+        )
+    _print({
+        "status": summary["status"], "root": str(args.root),
+        "campaign_id": summary["campaign_id"],
+        "resume_scope": "action_level_end_to_end", "summary": summary,
+    })
+    return 0 if summary["status"] == "completed" else 1
 
 
 # --------------------------------------------------------------------------- #
@@ -2392,6 +2433,16 @@ def main(argv: list[str] | None = None) -> int:
         default="unavailable",
     )
 
+    start = commands.add_parser(
+        "start", help="initialize and run/resume one end-to-end campaign",
+    )
+    start.add_argument("root", type=Path)
+    start.add_argument("campaign_id")
+    start.add_argument("--data-root", type=Path, required=True)
+    start.add_argument("--recorded-at", required=True)
+    start.add_argument("--repository-root", type=Path, default=Path("."))
+    start.add_argument("--problem", type=Path)
+
     inspect = commands.add_parser("inspect", help="verify and inspect a persisted campaign")
     inspect.add_argument("root", type=Path)
 
@@ -2419,6 +2470,8 @@ def main(argv: list[str] | None = None) -> int:
         return _target(args)
     if args.command == "run":
         return _run(args)
+    if args.command == "start":
+        return _start(args)
     if args.command == "inspect":
         return _inspect(args)
     if args.command == "replay":

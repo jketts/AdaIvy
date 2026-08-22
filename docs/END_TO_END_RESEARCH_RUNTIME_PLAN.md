@@ -1,5 +1,12 @@
 # End-to-End Research Runtime Plan
 
+> Implementation status (2026-08-22): Slices 1–7 have an offline acceptance
+> path. `campaign start` exercises the full fixture workflow and `campaign
+> resume` replays action checkpoints. Production network/provider/snapshot/OCI/
+> Lean effects remain controlled by their separate activation gates; the
+> offline result must not be read as activation of those capabilities. Slice 8
+> documentation reconciliation is reflected in `CAPABILITY_STATUS.md`.
+
 **Status:** proposed implementation plan  
 **Date:** 2026-08-22  
 **Purpose:** turn AdaIvy's existing bounded components into one budgeted,
