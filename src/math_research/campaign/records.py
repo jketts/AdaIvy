@@ -43,6 +43,8 @@ class ActionType(ValueEnum):
     WRITE_PROGRAM = "write_program"
     RUN_PROGRAM = "run_program"
     INSPECT_RESULT = "inspect_result"
+    READ_ARTIFACT = "read_artifact"
+    NOTE = "note"
     EXPERIMENT = "experiment"
     FALSIFY = "falsify"
     VERIFY = "verify"

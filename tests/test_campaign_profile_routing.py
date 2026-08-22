@@ -163,10 +163,11 @@ def clock():
 
 def action(kind, **fields):
     value = {
-        "schema_version": "1.0.0", "action_type": kind, "branch_id": "branch.main",
+        "schema_version": "1.1.0", "action_type": kind, "branch_id": "branch.main",
         "rationale": "test", "artifact_text": None, "program_source": None,
         "tool_request": None, "selected_candidate_hash": None,
         "selected_tool_artifact_hashes": [], "report_text": None,
+        "read_artifact_hash": None, "note_text": None,
     }
     value.update(fields)
     return json.dumps(value, separators=(",", ":"), sort_keys=True)

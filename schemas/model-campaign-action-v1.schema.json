@@ -7,14 +7,16 @@
   "required": [
     "schema_version", "action_type", "branch_id", "rationale", "artifact_text",
     "program_source", "tool_request", "selected_candidate_hash",
-    "selected_tool_artifact_hashes", "report_text"
+    "selected_tool_artifact_hashes", "report_text", "read_artifact_hash",
+    "note_text"
   ],
   "properties": {
-    "schema_version": {"const": "1.0.0"},
+    "schema_version": {"const": "1.1.0"},
     "action_type": {
       "enum": [
         "derive", "write_program", "run_program", "inspect_result", "falsify",
-        "verify", "ask_user", "suspend_branch", "report"
+        "verify", "ask_user", "suspend_branch", "report", "read_artifact",
+        "note"
       ]
     },
     "branch_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
@@ -71,6 +73,13 @@
       "type": "array", "uniqueItems": true,
       "items": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
     },
-    "report_text": {"type": ["string", "null"], "maxLength": 65536}
+    "report_text": {"type": ["string", "null"], "maxLength": 65536},
+    "read_artifact_hash": {
+      "anyOf": [
+        {"type": "null"},
+        {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+      ]
+    },
+    "note_text": {"type": ["string", "null"], "maxLength": 8192}
   }
 }

@@ -138,6 +138,55 @@ def freeze_target(dossier: ResearchDossier) -> TargetIdentity:
     )
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class FrozenTargetContext:
+    """The frozen target's exact preimage bytes, for problem-visible context.
+
+    ADR-0077: `freeze_target` hashes these structures and discards the text.
+    This value carries the same canonical bytes whose sha256 digests are the
+    recorded `target_statement_hash`, `formalization_statement_hash`, and
+    `assumption_manifest_hash`, so a campaign can show the model the problem
+    it is working on while any reader re-derives the identity from the bytes.
+    """
+
+    statement_text: str
+    statement_hash: str
+    #: (recorded hash, canonical preimage bytes) for statement, formalization,
+    #: and assumption manifest, in that order.
+    artifacts: tuple[tuple[str, bytes], ...]
+
+
+def frozen_target_context(dossier: ResearchDossier) -> FrozenTargetContext:
+    """Derive the frozen target's readable text and hash-attested preimages."""
+
+    identity = freeze_target(dossier)
+    target = next(
+        item for item in dossier.claims
+        if item.id == dossier.formalization.target_claim_id
+    )
+    from .serialization import canonical_bytes
+    statement_bytes = canonical_bytes(target.statement)
+    formalization_bytes = canonical_bytes({
+        "formal_language": dossier.formalization.formal_language.value
+        if hasattr(dossier.formalization.formal_language, "value")
+        else dossier.formalization.formal_language,
+        "quantifiers": list(dossier.formalization.quantifiers),
+        "statement": dossier.formalization.statement,
+    })
+    assumption_bytes = canonical_bytes(
+        sorted(item.value for item in dossier.formalization.assumption_claim_ids)
+    )
+    return FrozenTargetContext(
+        statement_text=target.statement,
+        statement_hash=identity.target_statement_hash,
+        artifacts=(
+            (identity.target_statement_hash, statement_bytes),
+            (identity.formalization_statement_hash, formalization_bytes),
+            (identity.assumption_manifest_hash, assumption_bytes),
+        ),
+    )
+
+
 class ResearchLeadRuntime:
     """One bounded iterative session over one frozen problem."""
 

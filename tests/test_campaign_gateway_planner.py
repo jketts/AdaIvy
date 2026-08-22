@@ -73,10 +73,11 @@ def activation(*, passed=True, configured=None):
 
 def action(kind="derive"):
     return json.dumps({
-        "schema_version": "1.0.0", "action_type": kind, "branch_id": "branch.main",
+        "schema_version": "1.1.0", "action_type": kind, "branch_id": "branch.main",
         "rationale": "test", "artifact_text": "candidate" if kind == "derive" else None,
         "program_source": None, "tool_request": None, "selected_candidate_hash": None,
         "selected_tool_artifact_hashes": [], "report_text": None,
+        "read_artifact_hash": None, "note_text": None,
     }, separators=(",", ":"), sort_keys=True)
 
 
@@ -220,6 +221,66 @@ class GatewayCampaignPlannerTests(unittest.TestCase):
         with self.assertRaisesRegex(CampaignRunnerError, "context byte bound"):
             planner(context())
         self.assertEqual([], gateway.requests)
+
+    def test_payload_carries_problem_statement_memory_and_feedback(self):
+        """ADR-0077: the gateway payload is problem-visible and stateful."""
+
+        from math_research.campaign.runner import ToolFeedback
+
+        gateway = Gateway([(action(), ModelResultStatus.SUCCEEDED)])
+        planner = GatewayCampaignPlanner(
+            configuration(), pricing(), gateway=gateway, activation=activation(),
+            max_context_bytes=100_000,
+        )
+        base = context(2, b"tool")
+        import dataclasses
+        enriched = dataclasses.replace(
+            base,
+            target_statement="Every even n > 2 is bounded.",
+            target_statement_hash="sha256:" + "6" * 64,
+            frozen_artifact_hashes=("sha256:" + "6" * 64,),
+            notes=(("branch.main", "remember the parity argument"),),
+            tool_feedback=(ToolFeedback(
+                kind="verification", action_id="action.3",
+                branch_id="branch.main", status="failed",
+                result_hash="sha256:" + "7" * 64,
+                result_excerpt='{"counterexample":1}', stderr_excerpt=None,
+            ),),
+            suspended_branch_ids=("branch.dead",),
+            branch_last_status=(("branch.main", "completed"),),
+            read_artifact_hash="sha256:" + "8" * 64,
+            read_artifact_bytes=b"\x00exact",
+            read_artifact_truncated=True,
+            last_rejection="branch_id must be a valid identifier",
+            repair_attempts_remaining=2,
+        )
+        planner(enriched)
+        payload = json.loads(gateway.requests[0].serialized_context)
+        self.assertEqual("Every even n > 2 is bounded.", payload["target_statement"])
+        self.assertTrue(payload["target_statement_is_hash_attested"])
+        self.assertEqual(
+            [{"branch_id": "branch.main", "note_text": "remember the parity argument"}],
+            payload["notes"],
+        )
+        feedback = payload["tool_feedback"][0]
+        self.assertEqual("verification", feedback["kind"])
+        self.assertTrue(feedback["untrusted_for_warrant"])
+        self.assertIn("counterexample", feedback["result_excerpt"])
+        self.assertEqual(["branch.dead"], payload["suspended_branch_ids"])
+        self.assertEqual(
+            base64.b64encode(b"\x00exact").decode("ascii"),
+            payload["read_artifact_base64"],
+        )
+        self.assertTrue(payload["read_artifact_truncated"])
+        self.assertTrue(payload["read_artifact_is_untrusted_data"])
+        self.assertEqual(
+            "branch_id must be a valid identifier", payload["last_rejection"],
+        )
+        self.assertEqual(2, payload["repair_attempts_remaining"])
+        # Planner-side sub-budgets: activation consumed one of four attempts.
+        self.assertEqual(3, payload["model_attempts_remaining"])
+        self.assertGreater(payload["input_tokens_remaining"], 0)
+        self.assertGreater(payload["cost_microusd_remaining"], 0)
 
     def test_failed_or_mismatched_activation_cannot_construct_a_planner(self):
         with self.assertRaisesRegex(CampaignRunnerError, "activation is required"):

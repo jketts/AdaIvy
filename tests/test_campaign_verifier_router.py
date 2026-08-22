@@ -448,11 +448,11 @@ LIMITS = {
 
 def action(kind: str, **updates) -> bytes:
     value = {
-        "schema_version": "1.0.0", "action_type": kind, "branch_id": "branch.main",
+        "schema_version": "1.1.0", "action_type": kind, "branch_id": "branch.main",
         "rationale": f"Scripted offline slice-6 step: {kind}.",
         "artifact_text": None, "program_source": None, "tool_request": None,
         "selected_candidate_hash": None, "selected_tool_artifact_hashes": [],
-        "report_text": None,
+        "report_text": None, "read_artifact_hash": None, "note_text": None,
     }
     value.update(updates)
     return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")

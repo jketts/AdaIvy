@@ -38,7 +38,7 @@ TOOL_RESULT = b'{"witness":10,"exact":true}'
 
 def action(kind: str, **updates) -> bytes:
     value = {
-        "schema_version": "1.0.0",
+        "schema_version": "1.1.0",
         "action_type": kind,
         "branch_id": "branch.main",
         "rationale": f"Perform {kind} within the frozen campaign.",
@@ -48,6 +48,8 @@ def action(kind: str, **updates) -> bytes:
         "selected_candidate_hash": None,
         "selected_tool_artifact_hashes": [],
         "report_text": None,
+        "read_artifact_hash": None,
+        "note_text": None,
     }
     value.update(updates)
     return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
@@ -367,7 +369,8 @@ class CampaignRunnerTests(unittest.TestCase):
         self.assertEqual(
             {
                 "derive", "write_program", "run_program", "inspect_result", "falsify",
-                "verify", "ask_user", "suspend_branch", "report",
+                "verify", "ask_user", "suspend_branch", "report", "read_artifact",
+                "note",
             },
             set(schema["properties"]["action_type"]["enum"]),
         )

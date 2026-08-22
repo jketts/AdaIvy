@@ -386,6 +386,33 @@ class CampaignEntrypointFixtureTests(unittest.TestCase):
         self.assertEqual(facts["operational_hash"], export.operational_hash)
         self.assertNotEqual(export.content_hash, export.operational_hash)
 
+    def test_frozen_target_preimages_are_durable_and_hash_named(self):
+        """ADR-0077: the statement/formalization/assumption preimage bytes are
+        persisted under the root, named by their own hashes, matching the
+        hashes the frozen target record already carries.
+        """
+
+        code, _, root = self.run_campaign("target-artifacts")
+        self.assertEqual(0, code)
+        target = json.loads((root / "target.json").read_text(encoding="utf-8"))
+        expected = {
+            target["target_statement_hash"],
+            target["formalization_statement_hash"],
+            target["assumption_manifest_hash"],
+        }
+        found = {}
+        for path in sorted((root / "target-artifacts").iterdir()):
+            named = "sha256:" + path.name[len("sha256-"):]
+            found[named] = path.read_bytes()
+        self.assertEqual(expected, set(found))
+        for named, content in found.items():
+            self.assertEqual(campaign_cli._raw_hash(content), named)
+        # The preimages are NOT campaign artifact-store members: the ledger
+        # closure rule is unchanged and replay still verifies.
+        with no_effects():
+            replay_code, replay_payload = invoke("replay", str(root))
+        self.assertEqual(0, replay_code, replay_payload)
+
     def test_terminal_campaign_automatically_writes_an_unapproved_latex_draft(self):
         code, payload, root = self.run_campaign("automatic-publication-draft")
         self.assertEqual(0, code, payload)
@@ -1257,6 +1284,7 @@ def _derive_action_json() -> str:
         "artifact_text": "candidate text", "program_source": None,
         "tool_request": None, "selected_candidate_hash": None,
         "selected_tool_artifact_hashes": [], "report_text": None,
+        "read_artifact_hash": None, "note_text": None,
     }, sort_keys=True, separators=(",", ":"))
 
 

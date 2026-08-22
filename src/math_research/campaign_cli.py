@@ -78,6 +78,7 @@ from .campaign.runner import (
     CampaignRunnerPolicy,
     ExperimentRequest,
     ExperimentResult,
+    FrozenTargetArtifacts,
     PlannerContext,
     PlannerResponse,
     ResourceLimits,
@@ -121,7 +122,7 @@ from .provider_activation import (
     run_live_provider_probe,
     static_provider_preflight,
 )
-from .runtime.lead import freeze_target
+from .runtime.lead import freeze_target, frozen_target_context
 
 
 CAMPAIGN_CONFIG_SCHEMA_VERSION = "adaivy.campaign-configuration.v1"
@@ -1025,6 +1026,8 @@ def _action_json(kind: str, **updates: Any) -> bytes:
         "selected_candidate_hash": None,
         "selected_tool_artifact_hashes": [],
         "report_text": None,
+        "read_artifact_hash": None,
+        "note_text": None,
     }
     value.update(updates)
     return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -1524,9 +1527,10 @@ def _existing_durable_state(root: Path) -> tuple[str, ...]:
     """
 
     found = [name for name in DURABLE_FILE_NAMES if (root / name).exists()]
-    artifacts = root / "artifacts"
-    if artifacts.is_dir() and any(artifacts.iterdir()):
-        found.append("artifacts/")
+    for directory in ("artifacts", "target-artifacts"):
+        path = root / directory
+        if path.is_dir() and any(path.iterdir()):
+            found.append(directory + "/")
     return tuple(sorted(found))
 
 
@@ -1832,6 +1836,9 @@ class _RunInputs:
     target_hash: str
     recheck: Any
     recheck_bytes: bytes
+    #: ADR-0077: the frozen target's readable statement and hash-attested
+    #: preimage bytes, surfaced to the planner and persisted under the root.
+    frozen_target: FrozenTargetArtifacts
 
 
 def _run(args: argparse.Namespace) -> int:
@@ -1962,6 +1969,7 @@ def _run_measured(args: argparse.Namespace) -> int:
             verifier=verifier,
             policy=runner_policy(configuration),
             recorded_at=lambda: args.recorded_at,
+            frozen_target=inputs.frozen_target,
         ).run()
         export = build_campaign_export(
             campaign_id=completed.campaign_id, target_hash=inputs.target_hash,
@@ -2049,11 +2057,27 @@ def _read_run_inputs(args: argparse.Namespace) -> _RunInputs:
         next_action_id=args.campaign_id,
         action_at=args.recorded_at,
     )
+    frozen = frozen_target_context(dossier)
+    frozen_target = FrozenTargetArtifacts(
+        statement_text=frozen.statement_text,
+        statement_hash=frozen.statement_hash,
+        artifacts=frozen.artifacts,
+    )
+    # Fail closed if the derived preimages disagree with the frozen record.
+    recorded = {
+        str(target_record["target_statement_hash"]),
+        str(target_record["formalization_statement_hash"]),
+        str(target_record["assumption_manifest_hash"]),
+    }
+    if {item for item, _ in frozen_target.artifacts} != recorded:
+        raise CampaignConfigurationError(
+            "frozen target preimages do not hash to the frozen target record"
+        )
     return _RunInputs(
         configuration=configuration, configuration_bytes=configuration_bytes,
         target_record=target_record, target_content=target_content,
         target_hash=_raw_hash(target_content), recheck=recheck,
-        recheck_bytes=recheck_bytes,
+        recheck_bytes=recheck_bytes, frozen_target=frozen_target,
     )
 
 
@@ -2062,6 +2086,13 @@ def _shared_durable_files(inputs: _RunInputs) -> list[tuple[str, bytes]]:
         ("target.json", inputs.target_content),
         ("campaign-config.json", inputs.configuration_bytes),
         ("novelty-recheck.json", inputs.recheck_bytes),
+        # ADR-0077: hash-named frozen-target preimages. Outside the campaign
+        # artifact store on purpose -- the ledger closure rule requires every
+        # store member to be introduced by a source record.
+        *(
+            (f"target-artifacts/sha256-{item[len('sha256:'):]}", content)
+            for item, content in inputs.frozen_target.artifacts
+        ),
     ]
 
 

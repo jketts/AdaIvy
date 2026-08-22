@@ -36,14 +36,22 @@ from .records import (
 )
 
 
-ACTION_SCHEMA_VERSION = "1.0.0"
+ACTION_SCHEMA_VERSION = "1.1.0"
+#: ADR-0077 context bounds. All deterministic: identical inputs truncate
+#: identically across runs and processes.
+NOTE_TEXT_LIMIT = 8_192
+READ_ARTIFACT_ECHO_LIMIT = 65_536
+TARGET_STATEMENT_LIMIT = 65_536
+FEEDBACK_WINDOW = 8
+FEEDBACK_EXCERPT_LIMIT = 4_096
 _HASH = re.compile(r"^sha256:[0-9a-f]{64}$")
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]*$")
 _SAFE_ARGUMENT = re.compile(r"^[A-Za-z0-9_.:=+,-]{0,128}$")
 _ACTION_FIELDS = frozenset({
     "schema_version", "action_type", "branch_id", "rationale", "artifact_text",
     "program_source", "tool_request", "selected_candidate_hash",
-    "selected_tool_artifact_hashes", "report_text",
+    "selected_tool_artifact_hashes", "report_text", "read_artifact_hash",
+    "note_text",
 })
 _TOOL_FIELDS = frozenset({
     "tool_id", "program_artifact_hash", "input_artifact_hashes", "arguments",
@@ -57,6 +65,7 @@ _SUPPORTED_ACTIONS = frozenset({
     ActionType.DERIVE, ActionType.WRITE_PROGRAM, ActionType.RUN_PROGRAM,
     ActionType.INSPECT_RESULT, ActionType.FALSIFY, ActionType.VERIFY,
     ActionType.ASK_USER, ActionType.SUSPEND_BRANCH, ActionType.REPORT,
+    ActionType.READ_ARTIFACT, ActionType.NOTE,
 })
 
 
@@ -112,6 +121,37 @@ class CampaignAction:
     selected_candidate_hash: str | None
     selected_tool_artifact_hashes: tuple[str, ...]
     report_text: str | None
+    read_artifact_hash: str | None = None
+    note_text: str | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class FrozenTargetArtifacts:
+    """Hash-attested frozen-target preimages surfaced to the planner.
+
+    ADR-0077: these bytes are NOT campaign artifact-store members (the ledger
+    closure rule requires every stored artifact to be introduced by a source
+    record).  They are durable, hash-named files under the campaign root,
+    readable through `read_artifact` and never usable as ledger inputs.
+    """
+
+    statement_text: str
+    statement_hash: str
+    artifacts: tuple[tuple[str, bytes], ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ToolFeedback:
+    """One untrusted-for-warrant structured feedback record (ADR-0077 §3)."""
+
+    kind: str
+    action_id: str
+    branch_id: str
+    status: str
+    result_hash: str
+    result_excerpt: str
+    stderr_excerpt: str | None
+    untrusted_for_warrant: bool = True
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -129,6 +169,20 @@ class PlannerContext:
     latest_tool_result: bytes | None
     actions_remaining: int
     tool_runs_remaining: int
+    # -- ADR-0077 problem-visible context and durable memory ----------------
+    target_statement: str | None = None
+    target_statement_hash: str | None = None
+    frozen_artifact_hashes: tuple[str, ...] = ()
+    notes: tuple[tuple[str, str], ...] = ()
+    tool_feedback: tuple[ToolFeedback, ...] = ()
+    suspended_branch_ids: tuple[str, ...] = ()
+    branch_last_status: tuple[tuple[str, str], ...] = ()
+    read_artifact_hash: str | None = None
+    read_artifact_bytes: bytes | None = None
+    read_artifact_truncated: bool = False
+    # -- ADR-0078 bounded repair ---------------------------------------------
+    last_rejection: str | None = None
+    repair_attempts_remaining: int = 0
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -347,38 +401,56 @@ def parse_campaign_action(raw: bytes | str) -> CampaignAction:
     artifact = _bounded_text(value["artifact_text"], "artifact_text", 262_144, optional=True)
     program = _bounded_text(value["program_source"], "program_source", 262_144, optional=True)
     report = _bounded_text(value["report_text"], "report_text", 65_536, optional=True)
+    note = _bounded_text(value["note_text"], "note_text", NOTE_TEXT_LIMIT, optional=True)
+    read_hash = _optional_hash(value["read_artifact_hash"], "read_artifact_hash")
     selected = _optional_hash(value["selected_candidate_hash"], "selected_candidate_hash")
     selected_tools = _hash_tuple(
         value["selected_tool_artifact_hashes"], "selected_tool_artifact_hashes",
     )
     tool = None if value["tool_request"] is None else _parse_tool_request(value["tool_request"])
 
-    empty = (artifact is None, program is None, tool is None, selected is None, not selected_tools, report is None)
+    empty = (
+        artifact is None, program is None, tool is None, selected is None,
+        not selected_tools, report is None, read_hash is None, note is None,
+    )
     if action_type in {ActionType.DERIVE, ActionType.FALSIFY}:
-        if empty != (False, True, True, True, True, True):
+        if empty != (False, True, True, True, True, True, True, True):
             raise CampaignRunnerError(f"{action_type.value} carries forbidden or missing fields")
     elif action_type is ActionType.WRITE_PROGRAM:
-        if empty != (True, False, True, True, True, True):
+        if empty != (True, False, True, True, True, True, True, True):
             raise CampaignRunnerError("write_program carries forbidden or missing fields")
     elif action_type is ActionType.RUN_PROGRAM:
-        if empty != (True, True, False, True, True, True):
+        if empty != (True, True, False, True, True, True, True, True):
             raise CampaignRunnerError("run_program carries forbidden or missing fields")
+    elif action_type is ActionType.READ_ARTIFACT:
+        if empty != (True, True, True, True, True, True, False, True):
+            raise CampaignRunnerError("read_artifact carries forbidden or missing fields")
+    elif action_type is ActionType.NOTE:
+        if empty != (True, True, True, True, True, True, True, False):
+            raise CampaignRunnerError("note carries forbidden or missing fields")
     elif action_type is ActionType.INSPECT_RESULT:
-        if program is not None or tool is not None or report is not None:
+        if (
+            program is not None or tool is not None or report is not None
+            or read_hash is not None or note is not None
+        ):
             raise CampaignRunnerError("inspect_result carries forbidden fields")
         if (artifact is None) == (selected is None):
             raise CampaignRunnerError("inspect_result must create or select exactly one candidate")
     elif action_type is ActionType.VERIFY:
-        if empty[:3] != (True, True, True) or selected is None or report is not None:
+        if (
+            empty[:3] != (True, True, True) or selected is None
+            or report is not None or read_hash is not None or note is not None
+        ):
             raise CampaignRunnerError("verify carries forbidden or missing fields")
     else:
-        if empty != (True, True, True, True, True, False):
+        if empty != (True, True, True, True, True, False, True, True):
             raise CampaignRunnerError(f"{action_type.value} carries forbidden or missing fields")
     return CampaignAction(
         action_type=action_type, branch_id=branch, rationale=rationale or "",
         artifact_text=artifact, program_source=program, tool_request=tool,
         selected_candidate_hash=selected,
         selected_tool_artifact_hashes=selected_tools, report_text=report,
+        read_artifact_hash=read_hash, note_text=note,
     )
 
 
@@ -402,6 +474,7 @@ class SequentialCampaignRunner:
         verifier: VerifierPort,
         policy: CampaignRunnerPolicy,
         recorded_at: Callable[[], str],
+        frozen_target: FrozenTargetArtifacts | None = None,
     ) -> None:
         for value, name in ((campaign_id, "campaign_id"), (planner_actor_id, "planner_actor_id")):
             if not _IDENTIFIER.fullmatch(value):
@@ -424,6 +497,28 @@ class SequentialCampaignRunner:
         self.verifier = verifier
         self.policy = policy
         self.recorded_at = recorded_at
+        # ADR-0077: hash-attested frozen-target preimages, validated byte for
+        # byte before any planner call can quote them.
+        self.frozen_target = frozen_target
+        self.frozen_artifacts: dict[str, bytes] = {}
+        if frozen_target is not None:
+            statement_bytes = frozen_target.statement_text.encode("utf-8")
+            if not statement_bytes or len(statement_bytes) > TARGET_STATEMENT_LIMIT:
+                raise CampaignRunnerError(
+                    "frozen target statement must be non-empty and within the "
+                    f"{TARGET_STATEMENT_LIMIT}-byte context bound"
+                )
+            _hash_value(frozen_target.statement_hash, "frozen target statement hash")
+            for artifact_hash, content in frozen_target.artifacts:
+                if _raw_hash(content) != artifact_hash:
+                    raise CampaignRunnerError(
+                        "frozen target artifact bytes do not match their declared hash"
+                    )
+                self.frozen_artifacts[artifact_hash] = content
+            if frozen_target.statement_hash not in self.frozen_artifacts:
+                raise CampaignRunnerError(
+                    "frozen target statement hash is not among the frozen artifacts"
+                )
 
     def run(self) -> CampaignRun:
         """Drive one bounded campaign to a terminal action.
@@ -456,6 +551,11 @@ class SequentialCampaignRunner:
         report_hash: str | None = None
         terminal = "bounds_exhausted"
         first_sequence = 1
+        # -- ADR-0077 durable model memory and feedback ----------------------
+        notes: list[tuple[str, str]] = []
+        feedback: list[ToolFeedback] = []
+        branch_status: dict[str, str] = {}
+        pending_read: tuple[str, bytes, bool] | None = None
 
         activation = getattr(self.planner, "activation", None)
         if activation is not None:
@@ -526,7 +626,26 @@ class SequentialCampaignRunner:
                 latest_tool_result=latest_tool_result,
                 actions_remaining=self.policy.max_actions - sequence + 1,
                 tool_runs_remaining=self.policy.max_tool_runs - len(tools),
+                target_statement=(
+                    None if self.frozen_target is None
+                    else self.frozen_target.statement_text
+                ),
+                target_statement_hash=(
+                    None if self.frozen_target is None
+                    else self.frozen_target.statement_hash
+                ),
+                frozen_artifact_hashes=tuple(sorted(self.frozen_artifacts)),
+                notes=tuple(notes),
+                tool_feedback=tuple(feedback[-FEEDBACK_WINDOW:]),
+                suspended_branch_ids=tuple(sorted(suspended)),
+                branch_last_status=tuple(sorted(branch_status.items())),
+                read_artifact_hash=None if pending_read is None else pending_read[0],
+                read_artifact_bytes=None if pending_read is None else pending_read[1],
+                read_artifact_truncated=(
+                    False if pending_read is None else pending_read[2]
+                ),
             )
+            pending_read = None
             # The planner call sits INSIDE the no-lost-attempt boundary.  A
             # planner-side bound exhaustion (model attempts, tokens, cost, or
             # the context byte bound) is a terminal fact about this campaign,
@@ -673,6 +792,17 @@ class SequentialCampaignRunner:
                     latest_tool_hash = tool.result_hash
                     latest_tool_result = result.result
                     action_status = result.status
+                    # ADR-0077 §3: sandbox outcome and failure diagnostics are
+                    # fed back as an untrusted-for-warrant structured record.
+                    feedback.append(ToolFeedback(
+                        kind="experiment", action_id=action_id,
+                        branch_id=action.branch_id, status=result.status.value,
+                        result_hash=tool.result_hash,
+                        result_excerpt=self._excerpt(result.result),
+                        stderr_excerpt=(
+                            self._excerpt(result.stderr) if result.stderr else None
+                        ),
+                    ))
                 elif action.action_type is ActionType.INSPECT_RESULT:
                     if action.selected_tool_artifact_hashes and not set(
                         action.selected_tool_artifact_hashes
@@ -720,6 +850,43 @@ class SequentialCampaignRunner:
                     outputs.extend(artifact_hashes)
                     verifier_private_artifacts.update(artifact_hashes)
                     action_status = result.status
+                    # ADR-0077 §3: the verdict -- and for refutations the exact
+                    # counterexample or failing invariant the verifier recorded
+                    # -- is fed back as an untrusted-for-warrant record.  The
+                    # verifier artifacts themselves remain private.
+                    feedback.append(ToolFeedback(
+                        kind="verification", action_id=action_id,
+                        branch_id=action.branch_id, status=result.status.value,
+                        result_hash=tool.result_hash,
+                        result_excerpt=self._excerpt(result.result),
+                        stderr_excerpt=None,
+                    ))
+                elif action.action_type is ActionType.READ_ARTIFACT:
+                    # ADR-0077: the model's memory. A read is ledgered and
+                    # consumes an action slot but never a tool run.  Only
+                    # in-provenance stored artifacts and the hash-attested
+                    # frozen-target preimages are readable; verifier-private
+                    # artifacts are not in `available` and stay unreadable.
+                    assert action.read_artifact_hash is not None
+                    requested = action.read_artifact_hash
+                    if requested in self.frozen_artifacts:
+                        content = self.frozen_artifacts[requested]
+                    elif requested in available:
+                        content = self.artifacts.get(requested)
+                    else:
+                        raise CampaignRunnerError(
+                            "read_artifact names an artifact outside campaign provenance"
+                        )
+                    truncated = len(content) > READ_ARTIFACT_ECHO_LIMIT
+                    pending_read = (
+                        requested, content[:READ_ARTIFACT_ECHO_LIMIT], truncated,
+                    )
+                elif action.action_type is ActionType.NOTE:
+                    # ADR-0077: durable bounded scratch text.  Stored as the
+                    # action's own text/plain artifact and echoed, in order,
+                    # in every later planner context.  Notes carry no warrant.
+                    assert action.note_text is not None
+                    notes.append((action.branch_id, action.note_text))
                 elif action.action_type is ActionType.SUSPEND_BRANCH:
                     suspended.add(action.branch_id)
                 elif action.action_type is ActionType.ASK_USER:
@@ -740,6 +907,7 @@ class SequentialCampaignRunner:
                     recorded_at=self.recorded_at(),
                 ).finalized()
                 actions.append(record)
+                branch_status[record.branch_id] = record.status.value
                 available.update(
                     item for item in record.output_artifact_hashes
                     if item not in verifier_private_artifacts
@@ -853,6 +1021,19 @@ class SequentialCampaignRunner:
             "latest_tool_result_hash": context.latest_tool_result_hash,
             "actions_remaining": context.actions_remaining,
             "tool_runs_remaining": context.tool_runs_remaining,
+            # ADR-0077 semantic context fields. Raw echoed bytes are bound
+            # through their content hash, exactly like the latest tool result.
+            "target_statement_hash": context.target_statement_hash,
+            "frozen_artifact_hashes": context.frozen_artifact_hashes,
+            "notes": context.notes,
+            "tool_feedback": context.tool_feedback,
+            "suspended_branch_ids": context.suspended_branch_ids,
+            "branch_last_status": context.branch_last_status,
+            "read_artifact_hash": context.read_artifact_hash,
+            "read_artifact_truncated": context.read_artifact_truncated,
+            # ADR-0078 bounded repair fields.
+            "last_rejection": context.last_rejection,
+            "repair_attempts_remaining": context.repair_attempts_remaining,
         })
 
     def _model_call(
@@ -887,7 +1068,15 @@ class SequentialCampaignRunner:
             return action.artifact_text.encode("utf-8"), "text/plain"
         if action.report_text is not None:
             return action.report_text.encode("utf-8"), "text/plain"
+        if action.note_text is not None:
+            return action.note_text.encode("utf-8"), "text/plain"
         return raw, "application/vnd.adaivy.campaign-action+json"
+
+    @staticmethod
+    def _excerpt(content: bytes) -> str:
+        """Deterministic bounded text projection of exact result bytes."""
+
+        return content[:FEEDBACK_EXCERPT_LIMIT].decode("utf-8", errors="replace")
 
     def _inputs(
         self, action: CampaignAction, prior: list[ActionRecord], *, source_hash: str,
@@ -906,6 +1095,13 @@ class SequentialCampaignRunner:
             )))
         if action.action_type is ActionType.VERIFY:
             return tuple(filter(None, (selected_candidate, *selected_tools)))
+        if action.action_type is ActionType.READ_ARTIFACT:
+            # A frozen-target preimage is not a ledger artifact and cannot be
+            # a ledger input; a stored artifact read is named as one.
+            assert action.read_artifact_hash is not None
+            if action.read_artifact_hash in available:
+                return (action.read_artifact_hash,)
+            return (self.target_hash,)
         if prior:
             return tuple(
                 item for item in prior[-1].output_artifact_hashes if item in available
@@ -977,6 +1173,9 @@ class SequentialCampaignRunner:
 __all__ = [
     "ACTION_SCHEMA_VERSION", "ArtifactStore", "CampaignAction",
     "CampaignExperimentRunner", "CampaignRun", "CampaignRunnerError",
+    "FEEDBACK_EXCERPT_LIMIT", "FEEDBACK_WINDOW", "FrozenTargetArtifacts",
+    "NOTE_TEXT_LIMIT", "READ_ARTIFACT_ECHO_LIMIT", "TARGET_STATEMENT_LIMIT",
+    "ToolFeedback",
     "CampaignRunnerPolicy", "ExperimentRequest", "ExperimentResult", "PlannerContext",
     "PlannerPort", "PlannerResponse", "PlannerBoundsExhaustedError",
     "PlannerContextBoundExhaustedError", "ResourceLimits",
