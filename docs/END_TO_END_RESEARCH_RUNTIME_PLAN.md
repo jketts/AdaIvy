@@ -37,6 +37,7 @@ problem and budget
   -> optional intermediate verification
   -> final exact and/or Lean verification
   -> result or explicit unresolved obligations
+  -> automatic record-driven LaTeX draft
 ```
 
 The host Codex or Claude session may install, configure, start, inspect, resume,
@@ -86,6 +87,11 @@ novelty claim or publication approval.
 Human interruption during research is reserved for target ambiguity, requested
 budget expansion, exceptional rights decisions, or an explicit operator pause.
 `ask_user` must not be the ordinary way to advance a campaign.
+
+Finishing a campaign automatically produces a draft report from the recorded
+campaign state. This is generation, not publication: it does not require human
+approval, create a novelty or significance assessment, or announce or
+distribute the result.
 
 ### 2.3 Lean is available throughout and normally decisive at the end
 
@@ -232,6 +238,33 @@ The router reconstructs verifier context independently. No verifier receives
 the campaign's persuasive narrative, provider credentials, or unrestricted
 source corpus.
 
+### 3.7 Generate the report automatically at campaign completion
+
+Every terminal campaign outcome—verified result, counterexample, partial
+result, unresolved obligations, budget exhaustion, or blocker—must invoke the
+record-driven publication projection automatically.
+
+The completion step must:
+
+- construct the manuscript record from the verified campaign export rather
+  than require a separately authored summary;
+- generate `paper.tex`, its provenance ledger, linked verification artifacts,
+  and `MANIFEST.json` in the campaign output directory;
+- compile `paper.pdf` automatically when the pinned typesetting toolchain is
+  available;
+- otherwise retain a complete LaTeX draft with
+  `typeset_status: not_typeset` and a machine-readable missing-tool reason;
+- derive titles, claim environments, caveats, attribution, model usage, cost,
+  source citations, failed attempts, and unresolved obligations from records;
+  and
+- make report-generation failure visible without changing the mathematical
+  outcome of the campaign.
+
+The generated bundle is always an **unapproved draft**. Human publication
+approval, the `before_announcement` novelty re-check, and any external release
+remain separate explicit actions. A successful PDF build must never be treated
+as approval or endorsement.
+
 ## 4. Delivery sequence
 
 ### Slice 1 — Activation ADR and truthful documentation baseline
@@ -308,10 +341,14 @@ applicable exact or Lean verifier without leaving AdaIvy.
   provider profiles and budgets, freezes the target, and starts the campaign.
 - Resume from the durable ledger after interruption without repeating paid
   model, acquisition, or embedding work.
-- Produce a final result/unresolved report and reusable campaign export.
+- Produce a reusable campaign export and automatically generate the
+  record-driven LaTeX draft for every terminal outcome. Compile the PDF when the
+  pinned toolchain is present; otherwise preserve the complete `.tex` bundle and
+  record the missing typesetter.
 
 Exit: a fresh operator can hand AdaIvy a problem and let it run to a genuine
-terminal condition without driving individual phase CLIs.
+terminal condition, receiving a traceable report draft without driving
+individual phase or publication CLIs.
 
 ### Slice 8 — Documentation cleanup
 
@@ -360,7 +397,11 @@ following in one campaign:
    pays for deltas.
 10. Budget exhaustion produces a complete unresolved report rather than lost
     state or a demand for routine human review.
-11. Offline `make check` remains network- and provider-free, with live campaign,
+11. Every terminal outcome automatically produces a provenance-closed
+    `paper.tex` bundle, and produces `paper.pdf` when the pinned toolchain is
+    available. The bundle remains visibly unapproved until a separate human
+    publication action.
+12. Offline `make check` remains network- and provider-free, with live campaign,
     acquisition, embedding, OCI, and Lean checks remaining explicit named
     gates.
 
