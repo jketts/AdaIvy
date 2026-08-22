@@ -525,11 +525,13 @@ class CampaignEntrypointFixtureTests(unittest.TestCase):
         )
         self.assertEqual(0, code, payload)
         facts = payload["facts"]
+        # ADR-0078 §4: the refused execution is recorded and NON-terminal;
+        # the scripted campaign continues to its report.
         self.assertEqual(
-            ["derive", "write_program", "run_program"], facts["action_types"],
+            ["derive", "write_program", "run_program", "report"],
+            facts["action_types"],
         )
-        # ADR-0066: a sandbox execution failure is TERMINAL, never repair fuel.
-        self.assertEqual("experiment_failed", payload["terminal_reason"])
+        self.assertEqual("reported", payload["terminal_reason"])
         self.assertEqual({
             "activation_decision": SANDBOX_GATE_DECISION,
             "status": EXPERIMENT_WIRING_PENDING,
@@ -1543,8 +1545,11 @@ class CampaignRepairedDefectTests(unittest.TestCase):
 
     def _rejected_run(self, name: str):
         config = write_config(self.root / f"{name}-cfg", max_program_bytes=1)
+        # One-shot repair keeps these historical rejection gates exact; the
+        # ADR-0078 repair loop has its own tests.
         return self.run_campaign(
-            name, "--fixture-script", "program-sandbox-refusal", config=config,
+            name, "--fixture-script", "program-sandbox-refusal",
+            "--max-repair-attempts", "1", config=config,
         )
 
     def test_a_rejected_action_retains_the_partial_ledger(self):

@@ -151,12 +151,20 @@ MAX_OUTPUT_TOKENS_CEILING = 500_000
 MAX_COST_MICROUSD_CEILING = 25_000_000
 MAX_PROGRAM_BYTES_CEILING = 262_144
 MAX_ARTIFACT_BYTES_CEILING = 1_048_576
-MAX_CONTEXT_BYTES_CEILING = 262_144
+#: ADR-0078 §1 raised this from 262,144 toward provider context windows. The
+#: per-configuration bound is still operator input: refused above the ceiling,
+#: never clamped.
+MAX_CONTEXT_BYTES_CEILING = 2_097_152
 MAX_CPU_MILLISECONDS_CEILING = 60_000
 MAX_WALL_MILLISECONDS_CEILING = 300_000
 MAX_MEMORY_BYTES_CEILING = 536_870_912
 MAX_OUTPUT_BYTES_CEILING = 1_048_576
 MAX_PROCESS_COUNT_CEILING = 8
+#: ADR-0078 §3: consecutive rejected planner actions tolerated before the
+#: campaign is terminal `action_rejected`. An operator flag, not a
+#: configuration field, so existing content-hashed configurations stay valid.
+DEFAULT_REPAIR_ATTEMPTS = 3
+MAX_REPAIR_ATTEMPTS_CEILING = 8
 
 #: The fifteenth bound. ADR-0065 §1 requires every bound to be checked against a
 #: hard ceiling, and `allowed_tools` was the one field that carried no ceiling and
@@ -683,9 +691,22 @@ def campaign_configuration_bytes(configuration: CampaignConfiguration) -> bytes:
     return canonical_bytes(campaign_configuration_payload(configuration)) + b"\n"
 
 
-def runner_policy(configuration: CampaignConfiguration) -> CampaignRunnerPolicy:
+def runner_policy(
+    configuration: CampaignConfiguration,
+    *, max_repair_attempts: int = DEFAULT_REPAIR_ATTEMPTS,
+) -> CampaignRunnerPolicy:
+    if (
+        not isinstance(max_repair_attempts, int)
+        or isinstance(max_repair_attempts, bool)
+        or not 1 <= max_repair_attempts <= MAX_REPAIR_ATTEMPTS_CEILING
+    ):
+        raise CampaignConfigurationError(
+            "max_repair_attempts must be an integer between 1 and "
+            f"{MAX_REPAIR_ATTEMPTS_CEILING}"
+        )
     return CampaignRunnerPolicy(
         allowed_tools=frozenset(configuration.allowed_tools),
+        max_repair_attempts=max_repair_attempts,
         max_actions=configuration.max_actions,
         max_tool_runs=configuration.max_tool_runs,
         max_program_bytes=configuration.max_program_bytes,
@@ -1527,7 +1548,7 @@ def _existing_durable_state(root: Path) -> tuple[str, ...]:
     """
 
     found = [name for name in DURABLE_FILE_NAMES if (root / name).exists()]
-    for directory in ("artifacts", "target-artifacts"):
+    for directory in ("action-checkpoints", "artifacts", "target-artifacts"):
         path = root / directory
         if path.is_dir() and any(path.iterdir()):
             found.append(directory + "/")
@@ -1848,6 +1869,20 @@ def _run(args: argparse.Namespace) -> int:
 
 def _run_measured(args: argparse.Namespace) -> int:
     root: Path = args.root
+    # Validate BEFORE any paid activation can fire: a bad operator flag must
+    # not follow a real billable probe.
+    if (
+        not isinstance(args.max_repair_attempts, int)
+        or isinstance(args.max_repair_attempts, bool)
+        or not 1 <= args.max_repair_attempts <= MAX_REPAIR_ATTEMPTS_CEILING
+    ):
+        return _refuse(
+            REFUSAL_CONFIG_REJECTED,
+            detail=(
+                "max_repair_attempts must be an integer between 1 and "
+                f"{MAX_REPAIR_ATTEMPTS_CEILING}"
+            ),
+        )
     existing = _existing_durable_state(root)
     if existing:
         return _refuse(
@@ -1955,6 +1990,13 @@ def _run_measured(args: argparse.Namespace) -> int:
 
     root.mkdir(parents=True, exist_ok=True)
     artifacts = FileArtifactStore(root / "artifacts")
+    # ADR-0078 §5: action-level checkpoints on both provider paths. Import is
+    # local because the store is stdlib-only but not needed by read commands.
+    from .campaign.checkpoint import ActionCheckpointStore, CheckpointError
+    try:
+        checkpoints = ActionCheckpointStore(root=root, campaign_id=args.campaign_id)
+    except CheckpointError as error:
+        return _refuse(REFUSAL_CONFIG_REJECTED, detail=str(error))
     try:
         completed = SequentialCampaignRunner(
             campaign_id=args.campaign_id,
@@ -1967,9 +2009,13 @@ def _run_measured(args: argparse.Namespace) -> int:
             experiment_runner=experiment,
             artifacts=artifacts,
             verifier=verifier,
-            policy=runner_policy(configuration),
+            policy=runner_policy(
+                configuration, max_repair_attempts=args.max_repair_attempts,
+            ),
             recorded_at=lambda: args.recorded_at,
             frozen_target=inputs.frozen_target,
+            checkpoints=checkpoints,
+            paid_planner=args.provider != FIXTURE_PROVIDER,
         ).run()
         export = build_campaign_export(
             campaign_id=completed.campaign_id, target_hash=inputs.target_hash,
@@ -2488,6 +2534,11 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("schemas/model-campaign-action-v1.schema.json"),
     )
     run.add_argument("--execute", action="store_true")
+    # ADR-0078 §3: bounded repair of malformed actions. Operator input with a
+    # hard ceiling; 1 restores the bootstrap one-shot rule.
+    run.add_argument(
+        "--max-repair-attempts", type=int, default=DEFAULT_REPAIR_ATTEMPTS,
+    )
     # Slice 6 wiring (end-to-end runtime plan §3.6, ADR-0073). Without
     # `--experiment-activation` the pending runner remains and records why; an
     # activation record that does not strictly re-verify against the current

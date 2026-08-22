@@ -112,12 +112,7 @@ class GatewayCampaignPlanner:
 
     def __call__(self, context: PlannerContext) -> PlannerResponse:
         self._reserve()
-        payload = self._payload(context)
-        serialized = canonical_json(payload)
-        if len(serialized.encode("utf-8")) > self.max_context_bytes:
-            raise PlannerContextBoundExhaustedError(
-                "campaign planner context byte bound exhausted"
-            )
+        serialized = self._bounded_serialized_payload(context)
         request = ModelRequest(
             request_id=OpaqueId(
                 f"request.campaign.{context.campaign_id}.{context.sequence}"
@@ -215,7 +210,44 @@ class GatewayCampaignPlanner:
             or self.cost_microusd_used > budget.max_cost_microusd
         )
 
-    def _payload(self, context: PlannerContext) -> dict[str, object]:
+    def _bounded_serialized_payload(self, context: PlannerContext) -> str:
+        """ADR-0078 §2: deterministic rolling-window context.
+
+        When the payload would exceed the byte bound, `previous_actions`
+        entries collapse OLDEST FIRST into hash + bounded-rationale summaries.
+        Only a payload that exceeds the bound with every entry collapsed
+        refuses, and that refusal is the
+        recorded terminal `context_bound_exhausted`, never a discarded run.
+        Collapse is a pure function of the same inputs, so identical
+        campaigns still serialize identical requests.
+        """
+
+        for collapse_count in range(len(self.previous_actions) + 1):
+            serialized = canonical_json(self._payload(context, collapse_count))
+            if len(serialized.encode("utf-8")) <= self.max_context_bytes:
+                return serialized
+        raise PlannerContextBoundExhaustedError(
+            "campaign planner context byte bound exhausted"
+        )
+
+    @staticmethod
+    def _collapsed_action(entry: dict[str, object]) -> dict[str, object]:
+        return {
+            "collapsed": True,
+            "action_hash": sha256_bytes(canonical_json(entry).encode("utf-8")),
+            "action_type": entry.get("action_type"),
+            "branch_id": entry.get("branch_id"),
+            "rationale": str(entry.get("rationale", ""))[:200],
+            "full_action_retained_by_planner": True,
+        }
+
+    def _payload(
+        self, context: PlannerContext, collapse_count: int = 0,
+    ) -> dict[str, object]:
+        previous: list[dict[str, object]] = [
+            self._collapsed_action(entry) if index < collapse_count else entry
+            for index, entry in enumerate(self.previous_actions)
+        ]
         payload: dict[str, object] = {
             "schema_version": CAMPAIGN_PROMPT_VERSION,
             "campaign_id": context.campaign_id,
@@ -235,7 +267,7 @@ class GatewayCampaignPlanner:
             "latest_tool_result_is_untrusted_data": True,
             "actions_remaining": context.actions_remaining,
             "tool_runs_remaining": context.tool_runs_remaining,
-            "previous_actions": self.previous_actions,
+            "previous_actions": previous,
             # -- ADR-0077: problem-visible context and durable memory --------
             "target_statement": context.target_statement,
             "target_statement_hash": context.target_statement_hash,

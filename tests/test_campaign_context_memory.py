@@ -155,6 +155,7 @@ def policy(**updates):
         max_artifact_bytes=131_072, max_cpu_milliseconds=500,
         max_wall_milliseconds=1000, max_memory_bytes=8192,
         max_output_bytes=4096, max_process_count=2,
+        max_repair_attempts=1,
     )
     value.update(updates)
     return CampaignRunnerPolicy(**value)
@@ -384,11 +385,21 @@ class FeedbackAndRunnerStateTests(unittest.TestCase):
     def test_experiment_diagnostics_are_fed_back(self):
         failure = b'{"refusal_code":"program_nonzero_exit"}'
 
-        planner_steps = [
+        def react(context):
+            feedback = context.tool_feedback[-1]
+            assert feedback.kind == "experiment"
+            assert feedback.status == "failed"
+            assert "program_nonzero_exit" in feedback.result_excerpt
+            assert feedback.stderr_excerpt is not None
+            assert "exact overflow guard" in feedback.stderr_excerpt
+            assert feedback.untrusted_for_warrant is True
+            return action("report", report_text="diagnostics observed")
+
+        planner = ScriptedPlanner([
             action("write_program", program_source=PROGRAM),
             lambda context: run_action(context.recorded_program_hashes[0]),
-        ]
-        planner = ScriptedPlanner(planner_steps)
+            react,
+        ])
         experiment = ScriptedExperiment([
             experiment_result(
                 status=RecordStatus.FAILED, result=failure,
@@ -398,8 +409,8 @@ class FeedbackAndRunnerStateTests(unittest.TestCase):
         completed = runner(
             planner, experiment, MemoryArtifacts(), ScriptedVerifier([]),
         ).run()
-        # Failure semantics stay ADR-0066-terminal until ADR-0078; the
-        # feedback record itself is asserted through the runner state below.
+        # ADR-0078 §4: the failure is recorded and NON-terminal.
+        self.assertEqual("reported", completed.terminal_reason)
         self.assertEqual(1, len(completed.tool_runs))
         self.assertEqual(RecordStatus.FAILED, completed.tool_runs[0].status)
         close(completed)

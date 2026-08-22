@@ -170,6 +170,9 @@ def policy(**updates):
         max_memory_bytes=8192,
         max_output_bytes=4096,
         max_process_count=2,
+        # One-shot semantics for the historical rejection gates; the ADR-0078
+        # repair loop has its own tests.
+        max_repair_attempts=1,
     )
     value.update(updates)
     return CampaignRunnerPolicy(**value)
@@ -304,14 +307,18 @@ class CampaignRunnerTests(unittest.TestCase):
             model_calls=completed.model_calls, tool_runs=completed.tool_runs,
         )
 
-    def test_failed_sandbox_run_is_terminal_and_not_fed_back_to_planner(self):
+    def test_failed_sandbox_run_is_recorded_non_terminal_with_diagnostics(self):
+        """ADR-0078 §4 supersedes ADR-0066's terminal clause: a failed
+        run_program is a recorded outcome, its diagnostic enters the next
+        context, and the campaign continues while budgets remain.
+        """
+
         events = []
         artifacts = MemoryArtifacts(events)
-        program_hash = digest(PROGRAM)
         planner = ScriptedPlanner([
             action("write_program", program_source=PROGRAM),
             lambda context: run_action(context.recorded_program_hashes[0]),
-            action("report", report_text="must never be requested"),
+            action("report", report_text="continuing after the recorded failure"),
         ])
 
         class FailedExperiment(RecordingExperiment):
@@ -325,9 +332,20 @@ class CampaignRunnerTests(unittest.TestCase):
         completed = runner(
             planner, FailedExperiment(events), artifacts, RecordingVerifier(),
         ).run()
-        self.assertEqual("experiment_failed", completed.terminal_reason)
-        self.assertEqual(2, len(planner.contexts))
+        self.assertEqual("reported", completed.terminal_reason)
+        self.assertEqual(3, len(planner.contexts))
         self.assertEqual(RecordStatus.FAILED, completed.tool_runs[0].status)
+        # The diagnostic entered the next context, labeled untrusted.
+        feedback = planner.contexts[2].tool_feedback[-1]
+        self.assertEqual("experiment", feedback.kind)
+        self.assertEqual("failed", feedback.status)
+        self.assertIn("program_nonzero_exit", feedback.result_excerpt)
+        self.assertTrue(feedback.untrusted_for_warrant)
+        build_campaign_export(
+            campaign_id=completed.campaign_id, target_hash=TARGET,
+            configuration_hash=CONFIGURATION, actions=completed.actions,
+            model_calls=completed.model_calls, tool_runs=completed.tool_runs,
+        )
 
     def test_plan_write_run_inspect_select_verify_and_report(self):
         events = []

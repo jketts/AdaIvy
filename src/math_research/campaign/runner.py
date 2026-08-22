@@ -260,6 +260,25 @@ class ArtifactStore(Protocol):
     def get(self, content_hash: str) -> bytes: ...
 
 
+class CheckpointStorePort(Protocol):
+    """ADR-0075 action-level checkpoints, extended to the live path (ADR-0078).
+
+    An intent is durable before every planner call; a terminal record is
+    durable after every admitted or rejected action.  Resume-driving is a
+    staged follow-up; this port only guarantees the crash-safe trail exists.
+    """
+
+    def intent(
+        self, *, sequence: int, action_type: str, request: Mapping[str, Any],
+        paid_or_irreversible: bool, recorded_at: str,
+    ) -> Mapping[str, Any]: ...
+
+    def complete(
+        self, *, sequence: int, intent: Mapping[str, Any], status: str,
+        result: Mapping[str, Any], recorded_at: str,
+    ) -> Mapping[str, Any]: ...
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class CampaignRunnerPolicy:
     allowed_tools: frozenset[str]
@@ -272,6 +291,9 @@ class CampaignRunnerPolicy:
     max_memory_bytes: int
     max_output_bytes: int
     max_process_count: int
+    #: ADR-0078 §3: consecutive rejected actions tolerated before the campaign
+    #: is terminal `action_rejected`.  One means the bootstrap one-shot rule.
+    max_repair_attempts: int = 3
 
     def __post_init__(self) -> None:
         if not self.allowed_tools or any(not _IDENTIFIER.fullmatch(v) for v in self.allowed_tools):
@@ -279,7 +301,7 @@ class CampaignRunnerPolicy:
         for name in (
             "max_actions", "max_tool_runs", "max_program_bytes", "max_artifact_bytes",
             "max_cpu_milliseconds", "max_wall_milliseconds", "max_memory_bytes",
-            "max_output_bytes", "max_process_count",
+            "max_output_bytes", "max_process_count", "max_repair_attempts",
         ):
             value = getattr(self, name)
             if not isinstance(value, int) or isinstance(value, bool) or value < 1:
@@ -481,6 +503,8 @@ class SequentialCampaignRunner:
         policy: CampaignRunnerPolicy,
         recorded_at: Callable[[], str],
         frozen_target: FrozenTargetArtifacts | None = None,
+        checkpoints: CheckpointStorePort | None = None,
+        paid_planner: bool = False,
     ) -> None:
         for value, name in ((campaign_id, "campaign_id"), (planner_actor_id, "planner_actor_id")):
             if not _IDENTIFIER.fullmatch(value):
@@ -503,6 +527,8 @@ class SequentialCampaignRunner:
         self.verifier = verifier
         self.policy = policy
         self.recorded_at = recorded_at
+        self.checkpoints = checkpoints
+        self.paid_planner = bool(paid_planner)
         # ADR-0077: hash-attested frozen-target preimages, validated byte for
         # byte before any planner call can quote them.
         self.frozen_target = frozen_target
@@ -565,6 +591,9 @@ class SequentialCampaignRunner:
         feedback: list[ToolFeedback] = []
         branch_status: dict[str, str] = {}
         pending_read: tuple[str, bytes, bool] | None = None
+        # -- ADR-0078 bounded repair -----------------------------------------
+        consecutive_rejections = 0
+        last_rejection: str | None = None
 
         activation = getattr(self.planner, "activation", None)
         if activation is not None:
@@ -659,8 +688,26 @@ class SequentialCampaignRunner:
                 selected_tool_determinism_unverified=(
                     selected_tool_determinism_unverified
                 ),
+                last_rejection=last_rejection,
+                repair_attempts_remaining=(
+                    self.policy.max_repair_attempts - consecutive_rejections
+                ),
             )
             pending_read = None
+            # ADR-0078 §5: an intent is durable before the (possibly paid)
+            # planner call; a terminal record is durable after the action.
+            intent: Mapping[str, Any] | None = None
+            if self.checkpoints is not None:
+                intent = self.checkpoints.intent(
+                    sequence=sequence, action_type=ActionType.PLAN.value,
+                    # JSON-normalized so the held intent equals its reloaded
+                    # bytes (tuples and dataclasses become arrays/objects).
+                    request=json.loads(canonical_bytes(
+                        self._planner_request_payload(context)
+                    )),
+                    paid_or_irreversible=self.paid_planner,
+                    recorded_at=self.recorded_at(),
+                )
             # The planner call sits INSIDE the no-lost-attempt boundary.  A
             # planner-side bound exhaustion (model attempts, tokens, cost, or
             # the context byte bound) is a terminal fact about this campaign,
@@ -679,6 +726,9 @@ class SequentialCampaignRunner:
                     ),
                 ))
                 terminal = "planner_bounds_exhausted"
+                self._checkpoint_terminal(
+                    intent, sequence, "failed", {"terminal_reason": terminal},
+                )
                 break
             except PlannerContextBoundExhaustedError as exhaustion:
                 actions.append(self._planner_refusal_action(
@@ -689,6 +739,9 @@ class SequentialCampaignRunner:
                     ),
                 ))
                 terminal = "context_bound_exhausted"
+                self._checkpoint_terminal(
+                    intent, sequence, "failed", {"terminal_reason": terminal},
+                )
                 break
             except CampaignRunnerError as refusal:
                 actions.append(self._planner_refusal_action(
@@ -699,6 +752,9 @@ class SequentialCampaignRunner:
                     ),
                 ))
                 terminal = "planner_rejected"
+                self._checkpoint_terminal(
+                    intent, sequence, "failed", {"terminal_reason": terminal},
+                )
                 break
             # A mid-loop rejection must not discard the ledger: `_store` has
             # already written model-authored bytes to the artifact store by the
@@ -737,6 +793,10 @@ class SequentialCampaignRunner:
                         recorded_at=self.recorded_at(),
                     ).finalized())
                     terminal = "planner_" + response.status.value
+                    self._checkpoint_terminal(
+                        intent, sequence, response.status.value,
+                        {"terminal_reason": terminal, "action_id": action_id},
+                    )
                     break
 
                 action = parse_campaign_action(response.action_json)
@@ -943,14 +1003,18 @@ class SequentialCampaignRunner:
                     item for item in record.output_artifact_hashes
                     if item not in verifier_private_artifacts
                 )
-                if (
-                    action.action_type is ActionType.RUN_PROGRAM
-                    and action_status is not RecordStatus.COMPLETED
-                ):
-                    # ADR-0066: a sandbox failure is terminal. Its diagnostic
-                    # is retained but never fed back as repair guidance.
-                    terminal = "experiment_failed"
-                    break
+                # ADR-0078 §3: an admitted action resets the repair window.
+                consecutive_rejections = 0
+                last_rejection = None
+                self._checkpoint_terminal(intent, sequence, record.status.value, {
+                    "action_id": action_id,
+                    "action_type": action.action_type.value,
+                    "status": record.status.value,
+                })
+                # ADR-0078 §4 (superseding ADR-0066's terminal clause): a
+                # failed run_program is a recorded non-terminal outcome; its
+                # diagnostic is already in `feedback` and enters the next
+                # context while tool-run and campaign budgets remain.
                 if action.action_type in {ActionType.ASK_USER, ActionType.REPORT}:
                     break
             except CampaignRunnerError as rejection:
@@ -981,6 +1045,10 @@ class SequentialCampaignRunner:
                         rejected_outputs.extend(
                             (item.result_hash, item.stdout_hash, item.stderr_hash)
                         )
+                consecutive_rejections += 1
+                repair_exhausted = (
+                    consecutive_rejections >= self.policy.max_repair_attempts
+                )
                 actions.append(ActionRecord(
                     action_id=action_id, campaign_id=self.campaign_id,
                     sequence=sequence, branch_id="branch.system",
@@ -995,13 +1063,29 @@ class SequentialCampaignRunner:
                     output_artifact_hashes=tuple(dict.fromkeys(rejected_outputs)),
                     status=RecordStatus.FAILED,
                     declared_rationale=(
-                        "The campaign runner rejected this planner action and the "
-                        "campaign is terminal: " + str(rejection)[:1_000]
+                        (
+                            "The campaign runner rejected this planner action and "
+                            "the campaign is terminal: "
+                            if repair_exhausted else
+                            "The campaign runner rejected this planner action; the "
+                            "rejection is echoed for a bounded repair attempt: "
+                        ) + str(rejection)[:1_000]
                     ),
                     recorded_at=self.recorded_at(),
                 ).finalized())
-                terminal = "action_rejected"
-                break
+                branch_status["branch.system"] = RecordStatus.FAILED.value
+                self._checkpoint_terminal(intent, sequence, "failed", {
+                    "action_id": action_id,
+                    "rejection": str(rejection)[:500],
+                    "repair_exhausted": repair_exhausted,
+                })
+                if repair_exhausted:
+                    # ADR-0078 §3: N consecutive rejections are terminal, and
+                    # the terminal reason is the same one ADR-0065 named.
+                    terminal = "action_rejected"
+                    break
+                # The exact validation error becomes next-context repair fuel.
+                last_rejection = str(rejection)[:1_000]
 
         return CampaignRun(
             campaign_id=self.campaign_id, terminal_reason=terminal,
@@ -1037,9 +1121,24 @@ class SequentialCampaignRunner:
             recorded_at=self.recorded_at(),
         ).finalized()
 
+    def _checkpoint_terminal(
+        self, intent: Mapping[str, Any] | None, sequence: int, status: str,
+        result: Mapping[str, Any],
+    ) -> None:
+        if self.checkpoints is None or intent is None:
+            return
+        self.checkpoints.complete(
+            sequence=sequence, intent=intent, status=status, result=result,
+            recorded_at=self.recorded_at(),
+        )
+
+    @classmethod
+    def _planner_request_hash(cls, context: PlannerContext) -> str:
+        return canonical_hash(cls._planner_request_payload(context))
+
     @staticmethod
-    def _planner_request_hash(context: PlannerContext) -> str:
-        value = {
+    def _planner_request_payload(context: PlannerContext) -> dict[str, Any]:
+        value: dict[str, Any] = {
             "campaign_id": context.campaign_id,
             "target_hash": context.target_hash,
             "configuration_hash": context.configuration_hash,
@@ -1070,7 +1169,7 @@ class SequentialCampaignRunner:
             value["latest_tool_determinism_unverified"] = True
         if context.selected_tool_determinism_unverified:
             value["selected_tool_determinism_unverified"] = True
-        return canonical_hash(value)
+        return value
 
     def _model_call(
         self, *, call_id: str, action_id: str, response: PlannerResponse,
