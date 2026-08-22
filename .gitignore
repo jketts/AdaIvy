@@ -31,3 +31,9 @@ work/
 vector-store/
 vectors/
 embeddings/
+
+# LaTeX byproducts of a publication compile. The bundle manifest covers
+# paper.tex and paper.pdf; these are incidental and not manifest-hashed.
+output/**/*.aux
+output/**/*.log
+output/**/*.out
