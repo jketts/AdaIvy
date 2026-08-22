@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 import unittest
 
-from math_research.campaign.records import RecordStatus, UsageSource
+from math_research.campaign.records import ActorType, RecordStatus, UsageSource
 from math_research.campaign.replay import build_campaign_export
 from math_research.campaign.runner import (
     CampaignRunnerError,
@@ -305,19 +305,97 @@ class CampaignRunnerTests(unittest.TestCase):
             parse_campaign_action(json.dumps(extra))
 
     def _assert_run_rejected_before_executor(self, run_step, pattern, *, runner_policy=None):
+        """The rejection must precede the executor AND be recorded.
+
+        `run` no longer raises past its caller: `FileArtifactStore.put` has
+        already written model-authored bytes by the time most of these checks run,
+        so raising discarded a ledger while leaving those bytes on disk. The
+        property these cases guard -- nothing reached the experiment port -- is
+        asserted exactly as before; the terminal reason, the failed action, the
+        recorded rejection text and ledger closure are asserted in ADDITION to it.
+        """
+
         events = []
         experiment = RecordingExperiment(events)
         planner = ScriptedPlanner([
             action("write_program", program_source=PROGRAM),
             run_step,
         ])
-        with self.assertRaisesRegex(CampaignRunnerError, pattern):
-            runner(
-                planner, experiment, MemoryArtifacts(events), RecordingVerifier(),
-                runner_policy=runner_policy,
-            ).run()
+        completed = runner(
+            planner, experiment, MemoryArtifacts(events), RecordingVerifier(),
+            runner_policy=runner_policy,
+        ).run()
         self.assertEqual([], experiment.requests)
         self.assertFalse(any(item[0] == "execute" for item in events))
+        self.assertEqual("action_rejected", completed.terminal_reason)
+        terminal = completed.actions[-1]
+        self.assertIs(RecordStatus.FAILED, terminal.status)
+        self.assertIs(ActorType.SYSTEM, terminal.actor_type)
+        self.assertRegex(terminal.declared_rationale, pattern)
+        # The partial ledger is closed, so nothing is orphaned.
+        build_campaign_export(
+            campaign_id=completed.campaign_id, target_hash=TARGET,
+            configuration_hash=CONFIGURATION, actions=completed.actions,
+            model_calls=completed.model_calls, tool_runs=completed.tool_runs,
+        )
+        return completed
+
+    def test_a_rejected_action_leaves_no_artifact_outside_the_ledger(self):
+        """The retention property the eight rejection cases above depend on.
+
+        A discarded run used to leave every artifact `put` had already written on
+        disk -- including model-authored Python source -- with no record naming it.
+        """
+
+        events = []
+        artifacts = MemoryArtifacts(events)
+        planner = ScriptedPlanner([
+            action("write_program", program_source=PROGRAM),
+            lambda context: run_action(
+                context.recorded_program_hashes[0], tool_id="shell",
+            ),
+        ])
+        completed = runner(
+            planner, RecordingExperiment(events), artifacts, RecordingVerifier(),
+        ).run()
+        terminal = completed.actions[-1]
+        self.assertEqual("action_rejected", completed.terminal_reason)
+        self.assertEqual(("call.2",), terminal.source_record_ids)
+        # Every byte the store holds is named by some action in the ledger.
+        recorded = set()
+        for item in completed.actions:
+            recorded.update(item.output_artifact_hashes)
+        self.assertEqual(set(artifacts.values), recorded)
+        # The refused planner output is one of them, and it is the model call's
+        # own result, so closure holds without inventing an artifact.
+        self.assertEqual(
+            (completed.model_calls[-1].result_hash,), terminal.output_artifact_hashes,
+        )
+
+    def test_a_rejection_too_large_to_record_still_raises(self):
+        """The documented residual: a planner result larger than the artifact
+        bound cannot be named without breaching the bound that rejected it.
+        """
+
+        oversized = b'{"planner_result":"' + b"x" * 64 + b'"}'
+
+        class OversizedPlanner:
+            def __call__(self, context):
+                return PlannerResponse(
+                    action_json=oversized, provider="fixture",
+                    model_identifier="scripted", status=RecordStatus.FAILED,
+                    usage_source=UsageSource.UNAVAILABLE, input_tokens=0,
+                    output_tokens=0, estimated_cost_microusd=None,
+                    provider_request_id=None,
+                )
+
+        events = []
+        with self.assertRaisesRegex(CampaignRunnerError, "exceeds campaign byte bound"):
+            runner(
+                OversizedPlanner(), RecordingExperiment(events),
+                MemoryArtifacts(events), RecordingVerifier(),
+                runner_policy=policy(max_artifact_bytes=16),
+            ).run()
 
     def test_unknown_tool_is_rejected_before_executor(self):
         self._assert_run_rejected_before_executor(
@@ -395,9 +473,21 @@ class CampaignRunnerTests(unittest.TestCase):
             ),
         ])
         verifier = RecordingVerifier()
-        with self.assertRaisesRegex(CampaignRunnerError, "differ from the inspected selection"):
-            runner(planner, RecordingExperiment(events), artifacts, verifier).run()
+        completed = runner(
+            planner, RecordingExperiment(events), artifacts, verifier,
+        ).run()
         self.assertEqual([], verifier.requests)
+        self.assertEqual("action_rejected", completed.terminal_reason)
+        self.assertRegex(
+            completed.actions[-1].declared_rationale,
+            "differ from the inspected selection",
+        )
+        self.assertIs(RecordStatus.FAILED, completed.actions[-1].status)
+        build_campaign_export(
+            campaign_id=completed.campaign_id, target_hash=TARGET,
+            configuration_hash=CONFIGURATION, actions=completed.actions,
+            model_calls=completed.model_calls, tool_runs=completed.tool_runs,
+        )
 
 
 if __name__ == "__main__":

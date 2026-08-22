@@ -4,6 +4,10 @@ Every effectful boundary is injected.  This module imports no subprocess or
 network package and never executes model-authored source itself.  It records the
 source as an artifact and model-call result before an admitted experiment port
 can receive a request for that program.
+
+A rejected action is terminal and RETAINED rather than raised: `run` returns the
+partial ledger with `terminal_reason == "action_rejected"` and a `failed`
+action naming the refused planner output.  See `SequentialCampaignRunner.run`.
 """
 
 from __future__ import annotations
@@ -400,6 +404,20 @@ class SequentialCampaignRunner:
         self.recorded_at = recorded_at
 
     def run(self) -> CampaignRun:
+        """Drive one bounded campaign to a terminal action.
+
+        A rejected planner action is terminal but is never silent: the planner
+        output that was rejected is already stored as an artifact, so the
+        rejection is recorded as a `failed` action naming its own model call and
+        that artifact, `terminal_reason` becomes `action_rejected`, and the
+        partial run is RETURNED.  Raising here would leave model-authored bytes
+        on disk with no record of who wrote them, which is exactly the loss of a
+        failed attempt that AGENTS.md forbids.  A rejection that cannot itself be
+        recorded -- a planner result larger than the artifact bound -- still
+        raises, because there is no way to name it without breaching the bound
+        that rejected it.
+        """
+
         actions: list[ActionRecord] = []
         calls: list[ModelCallRecord] = []
         tools: list[ToolRunRecord] = []
@@ -489,173 +507,229 @@ class SequentialCampaignRunner:
             response = self.planner(context)
             action_id = f"action.{sequence}"
             call_id = f"call.{sequence}"
+            # A mid-loop rejection must not discard the ledger: `_store` has
+            # already written model-authored bytes to the artifact store by the
+            # time most of these checks run, and AGENTS.md requires the failed
+            # attempt to survive in machine-readable output.  The rejection is
+            # therefore recorded as a terminal action and the partial run is
+            # returned, rather than raised past the caller.
+            source_hash: str | None = None
+            try:
+                if response.status is not RecordStatus.COMPLETED:
+                    source = response.action_json or b'{"planner_result":"unavailable"}'
+                    if len(source) > self.policy.max_artifact_bytes:
+                        raise CampaignRunnerError("failed planner result exceeds campaign byte bound")
+                    source_hash = self._store(
+                        source, media_type="application/vnd.adaivy.campaign-planner-result+json",
+                    )
+                    call = self._model_call(
+                        call_id=call_id, action_id=action_id, response=response,
+                        request_hash=self._planner_request_hash(context), result_hash=source_hash,
+                    )
+                    calls.append(call)
+                    inputs = (
+                        actions[-1].output_artifact_hashes
+                        if actions else (self.target_hash, self.configuration_hash)
+                    )
+                    actions.append(ActionRecord(
+                        action_id=action_id, campaign_id=self.campaign_id, sequence=sequence,
+                        branch_id="branch.system", action_type=ActionType.PLAN,
+                        actor_type=ActorType.MODEL, actor_id=self.planner_actor_id,
+                        parent_action_ids=((actions[-1].action_id,) if actions else ()),
+                        input_artifact_hashes=inputs, source_record_ids=(call_id,),
+                        output_artifact_hashes=(source_hash,), status=response.status,
+                        declared_rationale=(
+                            "Planner call ended before an executable action was admitted."
+                        ),
+                        recorded_at=self.recorded_at(),
+                    ).finalized())
+                    terminal = "planner_" + response.status.value
+                    break
 
-            if response.status is not RecordStatus.COMPLETED:
-                source = response.action_json or b'{"planner_result":"unavailable"}'
+                action = parse_campaign_action(response.action_json)
+                if action.branch_id in suspended:
+                    raise CampaignRunnerError("planner selected a suspended branch")
+
+                source, media_type = self._model_source(action, response.action_json)
                 if len(source) > self.policy.max_artifact_bytes:
-                    raise CampaignRunnerError("failed planner result exceeds campaign byte bound")
-                source_hash = self._store(
-                    source, media_type="application/vnd.adaivy.campaign-planner-result+json",
-                )
+                    raise CampaignRunnerError("model artifact exceeds campaign byte bound")
+                source_hash = self._store(source, media_type=media_type)
+                # The exact tool bytes are bound through their content hash.  They
+                # remain present in the in-memory planner context but are not passed
+                # to the generic JSON serializer, which deliberately has no bytes
+                # encoding convention.
                 call = self._model_call(
                     call_id=call_id, action_id=action_id, response=response,
                     request_hash=self._planner_request_hash(context), result_hash=source_hash,
                 )
+                # This append precedes every effectful program/verifier call.
                 calls.append(call)
-                inputs = (
-                    actions[-1].output_artifact_hashes
-                    if actions else (self.target_hash, self.configuration_hash)
+
+                source_ids = [call_id]
+                outputs = [source_hash]
+                action_status = RecordStatus.COMPLETED
+                inputs = self._inputs(
+                    action, actions, source_hash=source_hash, selected_candidate=selected_candidate,
+                    selected_tools=selected_tools,
                 )
-                actions.append(ActionRecord(
+                if (
+                    action.action_type is ActionType.RUN_PROGRAM
+                    and action.tool_request is not None
+                    and action.tool_request.program_artifact_hash not in programs
+                ):
+                    raise CampaignRunnerError("only a prior recorded program may run")
+                if not set(inputs).issubset(available | {source_hash}):
+                    raise CampaignRunnerError("planner selected an artifact outside campaign provenance")
+
+                if action.action_type is ActionType.WRITE_PROGRAM:
+                    assert action.program_source is not None
+                    if len(action.program_source.encode("utf-8")) > self.policy.max_program_bytes:
+                        raise CampaignRunnerError("program exceeds campaign byte bound")
+                    programs.add(source_hash)
+                elif action.action_type in {ActionType.DERIVE, ActionType.FALSIFY}:
+                    candidates.add(source_hash)
+                elif action.action_type is ActionType.RUN_PROGRAM:
+                    request = self._admit_experiment(action, action_id, programs, available, tools)
+                    result = self.experiment_runner(request)
+                    tool, artifact_hashes = self._record_tool(
+                        action_id, len(tools) + 1, result,
+                        request_hash=canonical_hash({
+                            "campaign_id": request.campaign_id,
+                            "action_id": request.action_id,
+                            "tool_id": request.tool_id,
+                            "program_artifact_hash": request.program_artifact_hash,
+                            "input_artifact_hashes": tuple(
+                                item[0] for item in request.input_artifacts
+                            ),
+                            "arguments": request.arguments,
+                            "resource_limits": request.resource_limits,
+                            "network": request.network,
+                        }),
+                    )
+                    tools.append(tool)
+                    source_ids.append(tool.tool_run_id)
+                    outputs.extend(artifact_hashes)
+                    available.update(artifact_hashes)
+                    tool_artifacts.update(artifact_hashes)
+                    latest_tool_hash = tool.result_hash
+                    latest_tool_result = result.result
+                    action_status = result.status
+                elif action.action_type is ActionType.INSPECT_RESULT:
+                    if action.selected_tool_artifact_hashes and not set(
+                        action.selected_tool_artifact_hashes
+                    ).issubset(tool_artifacts):
+                        raise CampaignRunnerError("inspection selected a non-tool artifact")
+                    chosen = source_hash if action.artifact_text is not None else action.selected_candidate_hash
+                    assert chosen is not None
+                    if chosen != source_hash and chosen not in candidates:
+                        raise CampaignRunnerError("inspection selected an unrecorded candidate")
+                    candidates.add(chosen)
+                    selected_candidate = chosen
+                    selected_tools = action.selected_tool_artifact_hashes
+                elif action.action_type is ActionType.VERIFY:
+                    if action.selected_candidate_hash != selected_candidate:
+                        raise CampaignRunnerError("verifier candidate differs from the inspected selection")
+                    if action.selected_tool_artifact_hashes != selected_tools:
+                        raise CampaignRunnerError("verifier tool artifacts differ from the inspected selection")
+                    if selected_candidate is None or selected_candidate not in candidates:
+                        raise CampaignRunnerError("no recorded candidate is selected for verification")
+                    verification = VerificationRequest(
+                        campaign_id=self.campaign_id, action_id=action_id,
+                        target_hash=self.target_hash,
+                        candidate_artifact=(selected_candidate, self.artifacts.get(selected_candidate)),
+                        tool_artifacts=tuple(
+                            (item, self.artifacts.get(item)) for item in selected_tools
+                        ),
+                    )
+                    result = self.verifier(verification)
+                    tool, artifact_hashes = self._record_tool(
+                        action_id, len(tools) + 1, result,
+                        request_hash=canonical_hash({
+                            "campaign_id": verification.campaign_id,
+                            "action_id": verification.action_id,
+                            "target_hash": verification.target_hash,
+                            "candidate_artifact_hash": verification.candidate_artifact[0],
+                            "tool_artifact_hashes": tuple(
+                                item[0] for item in verification.tool_artifacts
+                            ),
+                        }),
+                    )
+                    tools.append(tool)
+                    source_ids.append(tool.tool_run_id)
+                    outputs.extend(artifact_hashes)
+                    available.update(artifact_hashes)
+                    action_status = result.status
+                elif action.action_type is ActionType.SUSPEND_BRANCH:
+                    suspended.add(action.branch_id)
+                elif action.action_type is ActionType.ASK_USER:
+                    terminal = "awaiting_user"
+                elif action.action_type is ActionType.REPORT:
+                    report_hash = source_hash
+                    terminal = "reported"
+
+                record = ActionRecord(
                     action_id=action_id, campaign_id=self.campaign_id, sequence=sequence,
-                    branch_id="branch.system", action_type=ActionType.PLAN,
+                    branch_id=action.branch_id, action_type=action.action_type,
                     actor_type=ActorType.MODEL, actor_id=self.planner_actor_id,
                     parent_action_ids=((actions[-1].action_id,) if actions else ()),
-                    input_artifact_hashes=inputs, source_record_ids=(call_id,),
-                    output_artifact_hashes=(source_hash,), status=response.status,
+                    input_artifact_hashes=tuple(dict.fromkeys(inputs)),
+                    source_record_ids=tuple(source_ids),
+                    output_artifact_hashes=tuple(dict.fromkeys(outputs)),
+                    status=action_status, declared_rationale=action.rationale,
+                    recorded_at=self.recorded_at(),
+                ).finalized()
+                actions.append(record)
+                available.update(record.output_artifact_hashes)
+                if action.action_type in {ActionType.ASK_USER, ActionType.REPORT}:
+                    break
+            except CampaignRunnerError as rejection:
+                if source_hash is None:
+                    rejected = response.action_json or b'{"planner_result":"unavailable"}'
+                    if len(rejected) > self.policy.max_artifact_bytes:
+                        # Storing it would breach the same bound that rejected it.
+                        raise
+                    source_hash = self._store(
+                        rejected,
+                        media_type=(
+                            "application/vnd.adaivy.campaign-planner-result+json"
+                        ),
+                    )
+                if all(item.call_id != call_id for item in calls):
+                    calls.append(self._model_call(
+                        call_id=call_id, action_id=action_id, response=response,
+                        request_hash=self._planner_request_hash(context),
+                        result_hash=source_hash,
+                    ))
+                # Closure needs every source record used by exactly one action, so
+                # a tool run already appended for this action is named here too.
+                rejected_sources = [call_id]
+                rejected_outputs = [source_hash]
+                for item in tools:
+                    if item.action_id == action_id:
+                        rejected_sources.append(item.tool_run_id)
+                        rejected_outputs.extend(
+                            (item.result_hash, item.stdout_hash, item.stderr_hash)
+                        )
+                actions.append(ActionRecord(
+                    action_id=action_id, campaign_id=self.campaign_id,
+                    sequence=sequence, branch_id="branch.system",
+                    action_type=ActionType.PLAN, actor_type=ActorType.SYSTEM,
+                    actor_id="system.campaign-runner",
+                    parent_action_ids=((actions[-1].action_id,) if actions else ()),
+                    input_artifact_hashes=(
+                        actions[-1].output_artifact_hashes if actions
+                        else (self.target_hash, self.configuration_hash)
+                    ),
+                    source_record_ids=tuple(rejected_sources),
+                    output_artifact_hashes=tuple(dict.fromkeys(rejected_outputs)),
+                    status=RecordStatus.FAILED,
                     declared_rationale=(
-                        "Planner call ended before an executable action was admitted."
+                        "The campaign runner rejected this planner action and the "
+                        "campaign is terminal: " + str(rejection)[:1_000]
                     ),
                     recorded_at=self.recorded_at(),
                 ).finalized())
-                terminal = "planner_" + response.status.value
-                break
-
-            action = parse_campaign_action(response.action_json)
-            if action.branch_id in suspended:
-                raise CampaignRunnerError("planner selected a suspended branch")
-
-            source, media_type = self._model_source(action, response.action_json)
-            if len(source) > self.policy.max_artifact_bytes:
-                raise CampaignRunnerError("model artifact exceeds campaign byte bound")
-            source_hash = self._store(source, media_type=media_type)
-            # The exact tool bytes are bound through their content hash.  They
-            # remain present in the in-memory planner context but are not passed
-            # to the generic JSON serializer, which deliberately has no bytes
-            # encoding convention.
-            call = self._model_call(
-                call_id=call_id, action_id=action_id, response=response,
-                request_hash=self._planner_request_hash(context), result_hash=source_hash,
-            )
-            # This append precedes every effectful program/verifier call.
-            calls.append(call)
-
-            source_ids = [call_id]
-            outputs = [source_hash]
-            action_status = RecordStatus.COMPLETED
-            inputs = self._inputs(
-                action, actions, source_hash=source_hash, selected_candidate=selected_candidate,
-                selected_tools=selected_tools,
-            )
-            if (
-                action.action_type is ActionType.RUN_PROGRAM
-                and action.tool_request is not None
-                and action.tool_request.program_artifact_hash not in programs
-            ):
-                raise CampaignRunnerError("only a prior recorded program may run")
-            if not set(inputs).issubset(available | {source_hash}):
-                raise CampaignRunnerError("planner selected an artifact outside campaign provenance")
-
-            if action.action_type is ActionType.WRITE_PROGRAM:
-                assert action.program_source is not None
-                if len(action.program_source.encode("utf-8")) > self.policy.max_program_bytes:
-                    raise CampaignRunnerError("program exceeds campaign byte bound")
-                programs.add(source_hash)
-            elif action.action_type in {ActionType.DERIVE, ActionType.FALSIFY}:
-                candidates.add(source_hash)
-            elif action.action_type is ActionType.RUN_PROGRAM:
-                request = self._admit_experiment(action, action_id, programs, available, tools)
-                result = self.experiment_runner(request)
-                tool, artifact_hashes = self._record_tool(
-                    action_id, len(tools) + 1, result,
-                    request_hash=canonical_hash({
-                        "campaign_id": request.campaign_id,
-                        "action_id": request.action_id,
-                        "tool_id": request.tool_id,
-                        "program_artifact_hash": request.program_artifact_hash,
-                        "input_artifact_hashes": tuple(
-                            item[0] for item in request.input_artifacts
-                        ),
-                        "arguments": request.arguments,
-                        "resource_limits": request.resource_limits,
-                        "network": request.network,
-                    }),
-                )
-                tools.append(tool)
-                source_ids.append(tool.tool_run_id)
-                outputs.extend(artifact_hashes)
-                available.update(artifact_hashes)
-                tool_artifacts.update(artifact_hashes)
-                latest_tool_hash = tool.result_hash
-                latest_tool_result = result.result
-                action_status = result.status
-            elif action.action_type is ActionType.INSPECT_RESULT:
-                if action.selected_tool_artifact_hashes and not set(
-                    action.selected_tool_artifact_hashes
-                ).issubset(tool_artifacts):
-                    raise CampaignRunnerError("inspection selected a non-tool artifact")
-                chosen = source_hash if action.artifact_text is not None else action.selected_candidate_hash
-                assert chosen is not None
-                if chosen != source_hash and chosen not in candidates:
-                    raise CampaignRunnerError("inspection selected an unrecorded candidate")
-                candidates.add(chosen)
-                selected_candidate = chosen
-                selected_tools = action.selected_tool_artifact_hashes
-            elif action.action_type is ActionType.VERIFY:
-                if action.selected_candidate_hash != selected_candidate:
-                    raise CampaignRunnerError("verifier candidate differs from the inspected selection")
-                if action.selected_tool_artifact_hashes != selected_tools:
-                    raise CampaignRunnerError("verifier tool artifacts differ from the inspected selection")
-                if selected_candidate is None or selected_candidate not in candidates:
-                    raise CampaignRunnerError("no recorded candidate is selected for verification")
-                verification = VerificationRequest(
-                    campaign_id=self.campaign_id, action_id=action_id,
-                    target_hash=self.target_hash,
-                    candidate_artifact=(selected_candidate, self.artifacts.get(selected_candidate)),
-                    tool_artifacts=tuple(
-                        (item, self.artifacts.get(item)) for item in selected_tools
-                    ),
-                )
-                result = self.verifier(verification)
-                tool, artifact_hashes = self._record_tool(
-                    action_id, len(tools) + 1, result,
-                    request_hash=canonical_hash({
-                        "campaign_id": verification.campaign_id,
-                        "action_id": verification.action_id,
-                        "target_hash": verification.target_hash,
-                        "candidate_artifact_hash": verification.candidate_artifact[0],
-                        "tool_artifact_hashes": tuple(
-                            item[0] for item in verification.tool_artifacts
-                        ),
-                    }),
-                )
-                tools.append(tool)
-                source_ids.append(tool.tool_run_id)
-                outputs.extend(artifact_hashes)
-                available.update(artifact_hashes)
-                action_status = result.status
-            elif action.action_type is ActionType.SUSPEND_BRANCH:
-                suspended.add(action.branch_id)
-            elif action.action_type is ActionType.ASK_USER:
-                terminal = "awaiting_user"
-            elif action.action_type is ActionType.REPORT:
-                report_hash = source_hash
-                terminal = "reported"
-
-            record = ActionRecord(
-                action_id=action_id, campaign_id=self.campaign_id, sequence=sequence,
-                branch_id=action.branch_id, action_type=action.action_type,
-                actor_type=ActorType.MODEL, actor_id=self.planner_actor_id,
-                parent_action_ids=((actions[-1].action_id,) if actions else ()),
-                input_artifact_hashes=tuple(dict.fromkeys(inputs)),
-                source_record_ids=tuple(source_ids),
-                output_artifact_hashes=tuple(dict.fromkeys(outputs)),
-                status=action_status, declared_rationale=action.rationale,
-                recorded_at=self.recorded_at(),
-            ).finalized()
-            actions.append(record)
-            available.update(record.output_artifact_hashes)
-            if action.action_type in {ActionType.ASK_USER, ActionType.REPORT}:
+                terminal = "action_rejected"
                 break
 
         return CampaignRun(

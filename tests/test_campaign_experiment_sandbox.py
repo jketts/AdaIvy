@@ -89,9 +89,14 @@ MODULE_PATH = ROOT / "src/math_research/campaign/experiment_sandbox.py"
 # Process/socket audit observer
 # ---------------------------------------------------------------------------
 
+#: CPython's own audit-event names. `socket.socket` is NOT an audit event, so
+#: listing it observes nothing; the real socket-construction event is
+#: `socket.__new__`.
 _WATCHED_EVENTS = frozenset({
-    "subprocess.Popen", "socket.socket", "socket.connect", "socket.getaddrinfo",
-    "os.exec", "os.posix_spawn", "os.fork", "os.system",
+    "subprocess.Popen", "socket.__new__", "socket.connect", "socket.bind",
+    "socket.sendto", "socket.getaddrinfo", "socket.gethostbyname",
+    "os.exec", "os.posix_spawn", "os.spawn", "os.fork", "os.forkpty",
+    "os.system", "pty.spawn",
 })
 _OBSERVED: list[str] = []
 _ACTIVE = False
