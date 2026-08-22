@@ -99,6 +99,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     inspect_v2.add_argument("path", type=Path)
     inspect_v2.add_argument("--policy", type=Path, required=True)
+    inspect_v2.add_argument(
+        "--grounding-source", action="append", required=True,
+        metavar="SOURCE_ID=PATH",
+        help="exact authorized grounding bytes; repeat for every policy source",
+    )
     args = parser.parse_args(argv)
 
     if args.command == "inspect-v2":
@@ -106,10 +111,18 @@ def main(argv: list[str] | None = None) -> int:
             read_interchange_file(args.policy, max_bytes=MAX_CONFIG_BYTES),
             MAX_CONFIG_BYTES, "discovery v2 policy",
         ))
+        grounding_sources = {}
+        for specification in args.grounding_source:
+            source_id, separator, raw_path = specification.partition("=")
+            if not separator or not source_id or not raw_path or source_id in grounding_sources:
+                parser.error("--grounding-source must be unique SOURCE_ID=PATH")
+            grounding_sources[source_id] = read_interchange_file(
+                Path(raw_path), max_bytes=MAX_SOURCE_BYTES,
+            )
         value = verify_report_v2(_strict_json(
             read_interchange_file(args.path, max_bytes=MAX_REPORT_BYTES_V2),
             MAX_REPORT_BYTES_V2, "discovery v2 report",
-        ), policy)
+        ), policy, grounding_sources)
         print(json.dumps({
             "status": value["status"], "content_hash": value["content_hash"],
             "policy_hash": value["policy_hash"],

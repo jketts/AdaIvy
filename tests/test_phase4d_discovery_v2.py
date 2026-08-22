@@ -272,7 +272,7 @@ class PaginatedSweepTests(unittest.TestCase):
 
     def test_multi_page_sweep_accumulates_hundreds_under_budget(self) -> None:
         report = self.run_sweep(full_sweep_pages(self.config))
-        verify_report_v2(report, self.policy)
+        verify_report_v2(report, self.policy, SOURCES)
         self.assertEqual("executed", report["status"])
         self.assertEqual(8, report["totals"]["requests"])
         self.assertEqual(350, report["totals"]["candidates"])
@@ -338,7 +338,7 @@ class PaginatedSweepTests(unittest.TestCase):
             "application/json", crossref_body(50, 50, "CR3"),
         )
         report = self.run_sweep(pages, policy=policy)
-        verify_report_v2(report, policy)
+        verify_report_v2(report, policy, SOURCES)
         self.assertEqual("budget_exhausted", report["status"])
         self.assertEqual(2, report["totals"]["requests"])
         self.assertEqual(100, report["totals"]["candidates"])
@@ -350,20 +350,22 @@ class PaginatedSweepTests(unittest.TestCase):
         self.assertEqual(2, len(self.transport.requests))
 
     def test_byte_budget_exhaustion_refuses_the_next_request(self) -> None:
-        policy = policy_for(("crossref",), max_response_bytes=1_024)
         crossref = self.config["providers"]["crossref"]
+        first_body = crossref_body(0, 50, "CR2")
+        policy = policy_for(("crossref",), max_response_bytes=len(first_body))
         pages = {
             request_url("crossref", crossref, QUERY_TEXT, "*"): (
-                "application/json", crossref_body(0, 50, "CR2"),
+                "application/json", first_body,
             ),
         }
         report = self.run_sweep(pages, policy=policy)
-        verify_report_v2(report, policy)
+        verify_report_v2(report, policy, SOURCES)
         self.assertEqual("budget_exhausted", report["status"])
         self.assertEqual(1, report["totals"]["requests"])
         self.assertEqual(
             "refused_budget_exhausted", report["request_ledger"][-1]["outcome"],
         )
+        self.assertEqual(len(first_body), self.transport.requests[0].max_body_bytes)
 
     def test_provider_failure_is_retained_not_discarded(self) -> None:
         crossref = self.config["providers"]["crossref"]
@@ -374,7 +376,7 @@ class PaginatedSweepTests(unittest.TestCase):
             ),
         }
         report = self.run_sweep(pages, policy=policy)
-        verify_report_v2(report, policy)
+        verify_report_v2(report, policy, SOURCES)
         self.assertEqual("executed", report["status"])
         self.assertEqual(
             "provider_response_invalid", report["request_ledger"][0]["outcome"],
@@ -411,7 +413,7 @@ class VerifyReportV2Tests(unittest.TestCase):
         self.report = dry_run_v2(self.config, self.policy, SOURCES, [TERMS], 0)
 
     def test_dry_run_is_zero_network_and_verifies(self) -> None:
-        verify_report_v2(self.report, self.policy)
+        verify_report_v2(self.report, self.policy, SOURCES)
         self.assertEqual("not_executed", self.report["status"])
         self.assertEqual(0, self.report["totals"]["requests"])
         self.assertEqual([], self.report["request_ledger"])
@@ -428,13 +430,13 @@ class VerifyReportV2Tests(unittest.TestCase):
         }
         changed["content_hash"] = canonical_hash(semantic)
         with self.assertRaisesRegex(ValueError, "trust promotion"):
-            verify_report_v2(changed, self.policy)
+            verify_report_v2(changed, self.policy, SOURCES)
 
     def test_float_anywhere_is_refused(self) -> None:
         changed = copy.deepcopy(self.report)
         changed["totals"]["response_bytes"] = 0.0
         with self.assertRaisesRegex(ValueError, "float"):
-            verify_report_v2(changed, self.policy)
+            verify_report_v2(changed, self.policy, SOURCES)
 
     def test_request_accounting_must_be_exact(self) -> None:
         changed = copy.deepcopy(self.report)
@@ -445,7 +447,56 @@ class VerifyReportV2Tests(unittest.TestCase):
         }
         changed["content_hash"] = canonical_hash(semantic)
         with self.assertRaisesRegex(ValueError, "accounting"):
-            verify_report_v2(changed, self.policy)
+            verify_report_v2(changed, self.policy, SOURCES)
+
+    def test_grounding_is_rechecked_against_exact_source_bytes(self) -> None:
+        with self.assertRaisesRegex(ValueError, "source content differs"):
+            verify_report_v2(
+                self.report, self.policy,
+                {"problem.statement": SOURCE.replace(b"spectral", b"forgedxx")},
+            )
+
+    def test_rehashed_forged_grounding_span_is_refused(self) -> None:
+        changed = copy.deepcopy(self.report)
+        changed["queries"][0]["grounding"][0]["span_start"] += 1
+        changed["queries"][0]["grounding"][0]["span_end"] += 1
+        query = changed["queries"][0]
+        query["query_hash"] = canonical_hash({
+            key: value for key, value in query.items() if key != "query_hash"
+        })
+        semantic = {
+            key: value for key, value in changed.items()
+            if key not in {"content_hash", "operational", "operational_hash"}
+        }
+        changed["content_hash"] = canonical_hash(semantic)
+        with self.assertRaisesRegex(ValueError, "source bytes"):
+            verify_report_v2(changed, self.policy, SOURCES)
+
+    def test_rehashed_malformed_operational_timing_is_refused(self) -> None:
+        changed = copy.deepcopy(self.report)
+        changed["operational"]["timings"] = [
+            {"sequence": 1, "waited_milliseconds": -1},
+        ]
+        changed["operational_hash"] = canonical_hash(changed["operational"])
+        with self.assertRaisesRegex(ValueError, "operational timings"):
+            verify_report_v2(changed, self.policy, SOURCES)
+
+
+class ProviderBoundaryAdversarialTests(unittest.TestCase):
+    def test_xml_declaration_beyond_first_four_kib_is_refused_before_parse(self) -> None:
+        from math_research.phase4d.providers import parse_page
+
+        body = (
+            b'<feed xmlns="http://www.w3.org/2005/Atom">'
+            + b" " * 5_000
+            + b'<!DOCTYPE feed [<!ENTITY x "expanded">]><entry><id>'
+            + b"http://arxiv.org/abs/2408.00001v1</id><title>&x;</title></entry></feed>"
+        )
+        with self.assertRaisesRegex(ValueError, "forbidden markup"):
+            parse_page(
+                "arxiv", body, cursor="0", page_size=50,
+                max_response_bytes=len(body),
+            )
 
 
 class DiscoveryV2CliTests(unittest.TestCase):
@@ -456,12 +507,15 @@ class DiscoveryV2CliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as workdir:
             report_path = Path(workdir) / "report.json"
             policy_path = Path(workdir) / "policy.json"
+            source_path = Path(workdir) / "source.txt"
             report_path.write_bytes(canonical_bytes(report))
             policy_path.write_bytes(canonical_bytes(policy))
+            source_path.write_bytes(SOURCE)
             output = StringIO()
             with redirect_stdout(output):
                 code = phase4d_main([
                     "inspect-v2", str(report_path), "--policy", str(policy_path),
+                    "--grounding-source", "problem.statement=" + str(source_path),
                 ])
             self.assertEqual(0, code)
             summary = json.loads(output.getvalue())

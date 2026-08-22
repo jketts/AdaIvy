@@ -182,6 +182,7 @@ class BatchPlanTests(unittest.TestCase):
             )
         item["provenance"] = {
             "origin_document_id": "doc.alpha",
+            "origin_acquisition_record_id": "phase4b.acquisition.alpha",
             "reference_field": "reference_url",
             "reference_index": 0,
             "reference_value": item["url"],
@@ -250,6 +251,36 @@ class BatchExecutionTests(unittest.TestCase):
         plan = plan_for([request(1)])
         (report, _), _ = execute(plan)
         self.assertFalse(report["acquisition_authorized_by_discovery"])
+
+    def test_each_request_is_bounded_by_remaining_run_bytes(self) -> None:
+        plan = plan_for([request(1), request(2)])
+        (report, _), transport = execute(plan)
+        verify_batch_report(report, plan)
+        scope = load_batch_activation(ACTIVATION, EVIDENCE)["scope"]
+        first_bytes = report["url_ledger"][0]["body_bytes"]
+        self.assertEqual(
+            scope["max_response_bytes_per_request"],
+            transport.requests[0].max_body_bytes,
+        )
+        self.assertEqual(
+            min(
+                scope["max_response_bytes_per_request"],
+                scope["max_response_bytes_per_run"] - first_bytes,
+            ),
+            transport.requests[1].max_body_bytes,
+        )
+
+    def test_rehashed_report_cannot_exceed_response_byte_budgets(self) -> None:
+        plan = plan_for([request(1)])
+        (report, _), _ = execute(plan)
+        changed = copy.deepcopy(report)
+        changed["url_ledger"][0]["body_bytes"] = 33_554_433
+        changed["totals"]["body_bytes"] = 33_554_433
+        changed["content_hash"] = canonical_hash({
+            key: value for key, value in changed.items() if key != "content_hash"
+        })
+        with self.assertRaisesRegex(ValueError, "per-request byte budget"):
+            verify_batch_report(changed, plan)
 
 
 if __name__ == "__main__":

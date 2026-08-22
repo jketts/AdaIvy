@@ -25,7 +25,7 @@ from ..phase4b.serialization import canonical_bytes, canonical_hash, sha256_byte
 from .discovery import _is_normal_text, _json, _normal_text, _public_addresses
 from .policy import (
     KNOWN_PROVIDERS, ground_query, validate_authorization, validate_policy,
-    validate_query,
+    verify_query_grounding,
 )
 from .providers import (
     INITIAL_CURSOR, media_type_allowed, parse_page, request_url,
@@ -45,6 +45,18 @@ _PROVIDER_HOSTS = {
     "crossref": "api.crossref.org",
     "arxiv": "export.arxiv.org",
     "openalex": "api.openalex.org",
+}
+_PROVIDER_INTERVALS = {"crossref": 1_000, "arxiv": 3_000, "openalex": 1_000}
+_PINNED_PROVIDER_REQUESTS = {
+    "arxiv": {
+        "origin": "https://export.arxiv.org", "path": "/api/query", "page_size": 50,
+    },
+    "crossref": {
+        "origin": "https://api.crossref.org", "path": "/works", "page_size": 50,
+    },
+    "openalex": {
+        "origin": "https://api.openalex.org", "path": "/works", "page_size": 50,
+    },
 }
 _TRUST_EFFECTS = {
     "acquisition_authorized": False,
@@ -326,11 +338,19 @@ def sweep(
                 })
                 next_cursor: str | None = None
                 try:
+                    remaining_bytes = budget["max_response_bytes"] - bytes_used
+                    response_limit = min(
+                        config["max_response_bytes_per_request"], remaining_bytes,
+                    )
                     response = transport.fetch(TransportRequest(
                         "GET", url, (), addresses[name],
                         config["timeout_milliseconds"], 65_536,
-                        config["max_response_bytes_per_request"],
+                        response_limit,
                     ))
+                    if len(response.body) > response_limit:
+                        raise RuntimeError(
+                            "discovery transport violated its response byte limit"
+                        )
                     entry["http_status"] = response.status
                     entry["response_bytes"] = len(response.body)
                     entry["response_sha256"] = sha256_bytes(response.body)
@@ -390,11 +410,16 @@ def _reject_floats(value: Any, path: str) -> None:
             _reject_floats(item, f"{path}[{index}]")
 
 
-def verify_report_v2(report: dict[str, Any], policy: dict[str, Any]) -> dict[str, Any]:
+def verify_report_v2(
+    report: dict[str, Any], policy: dict[str, Any],
+    grounding_sources: Mapping[str, bytes],
+) -> dict[str, Any]:
     """Recheck a v2 report without trusting the process that produced it."""
 
     if not isinstance(report, dict) or report.get("schema_version") != REPORT_SCHEMA_V2:
         raise ValueError("discovery v2 report schema differs")
+    if len(canonical_bytes(report)) > MAX_REPORT_BYTES_V2:
+        raise ValueError("discovery v2 report byte bound differs")
     _reject_floats(report, "report")
     expected_fields = {
         "schema_version", "config_hash", "policy_hash", "authorization_hash",
@@ -437,9 +462,11 @@ def verify_report_v2(report: dict[str, Any], policy: dict[str, Any]) -> dict[str
     if not isinstance(queries, list) or not 1 <= len(queries) <= policy["max_queries"]:
         raise ValueError("discovery v2 report query count differs")
     query_hashes = set()
+    query_text_by_hash: dict[str, str] = {}
     for query in queries:
-        validate_query(query, policy)
+        verify_query_grounding(query, policy, grounding_sources)
         query_hashes.add(query["query_hash"])
+        query_text_by_hash[query["query_hash"]] = query["query_text"]
     if len(query_hashes) != len(queries):
         raise ValueError("discovery v2 report queries are not unique")
     ledger = report.get("request_ledger")
@@ -461,10 +488,21 @@ def verify_report_v2(report: dict[str, Any], policy: dict[str, Any]) -> dict[str
             or entry.get("provider") not in KNOWN_PROVIDERS
             or entry.get("query_hash") not in query_hashes
             or entry.get("outcome") not in _OUTCOMES
+            or entry.get("min_interval_milliseconds")
+            != _PROVIDER_INTERVALS.get(entry.get("provider"))
             or not isinstance(entry.get("url"), str)
             or not isinstance(entry.get("cursor"), str)
         ):
             raise ValueError("discovery v2 request ledger entry differs")
+        try:
+            expected_url = request_url(
+                entry["provider"], _PINNED_PROVIDER_REQUESTS[entry["provider"]],
+                query_text_by_hash[entry["query_hash"]], entry["cursor"],
+            )
+        except (KeyError, ValueError) as error:
+            raise ValueError("discovery v2 request ledger URL differs") from error
+        if entry["url"] != expected_url:
+            raise ValueError("discovery v2 request ledger URL differs")
         response_bytes = entry.get("response_bytes")
         if isinstance(response_bytes, bool) or not isinstance(response_bytes, int) \
                 or response_bytes < 0:
@@ -473,16 +511,37 @@ def verify_report_v2(report: dict[str, Any], policy: dict[str, Any]) -> dict[str
             refused += 1
             if entry.get("network") is not False or response_bytes != 0 \
                     or entry.get("response_sha256") is not None \
-                    or entry.get("http_status") is not None:
+                    or entry.get("http_status") is not None \
+                    or not (
+                        executed_requests >= policy["budget"]["max_requests"]
+                        or total_bytes >= policy["budget"]["max_response_bytes"]
+                    ):
                 raise ValueError("discovery v2 refused entry claims network effect")
         else:
             if entry.get("network") is not True:
                 raise ValueError("discovery v2 executed entry accounting differs")
             executed_requests += 1
             total_bytes += response_bytes
+            if response_bytes > 2_097_152:
+                raise ValueError("discovery v2 response exceeds per-request byte budget")
             digest = entry.get("response_sha256")
-            if digest is not None and _SHA256.fullmatch(str(digest)) is None:
+            if response_bytes > 0 and _SHA256.fullmatch(str(digest)) is None:
                 raise ValueError("discovery v2 ledger response hash differs")
+            if response_bytes == 0 and digest is not None:
+                raise ValueError("discovery v2 empty response has a response hash")
+            status_code = entry.get("http_status")
+            if (
+                entry["outcome"] == "transport_failure"
+                and (status_code is not None or response_bytes != 0)
+            ):
+                raise ValueError("discovery v2 transport failure claims a response")
+            if entry["outcome"] in {"executed", "provider_response_invalid"} \
+                    and status_code != 200:
+                raise ValueError("discovery v2 response outcome differs")
+            if entry["outcome"] == "http_status_not_ok" \
+                    and (isinstance(status_code, bool) or not isinstance(status_code, int)
+                         or status_code == 200):
+                raise ValueError("discovery v2 HTTP outcome differs")
     totals = report.get("totals")
     if (
         not isinstance(totals, dict)
@@ -493,12 +552,31 @@ def verify_report_v2(report: dict[str, Any], policy: dict[str, Any]) -> dict[str
         raise ValueError("discovery v2 request accounting differs")
     if executed_requests > policy["budget"]["max_requests"]:
         raise ValueError("discovery v2 report exceeds the request budget")
+    if total_bytes > policy["budget"]["max_response_bytes"]:
+        raise ValueError("discovery v2 report exceeds the response byte budget")
     if report["status"] == "not_executed" and (ledger or executed_requests):
         raise ValueError("discovery v2 dry run claims network effect")
     if report["status"] == "budget_exhausted" and refused == 0:
         raise ValueError("discovery v2 exhaustion status lacks a refused entry")
     if report["status"] != "budget_exhausted" and refused != 0:
         raise ValueError("discovery v2 refused entry lacks exhaustion status")
+    timings = operational["timings"]
+    network_sequences = [entry["sequence"] for entry in ledger if entry["network"]]
+    if not isinstance(timings, list) or len(timings) != len(network_sequences):
+        raise ValueError("discovery v2 operational timings differ")
+    for timing, expected_sequence in zip(timings, network_sequences):
+        ledger_entry = ledger[expected_sequence - 1]
+        if (
+            not isinstance(timing, dict)
+            or set(timing) != {"sequence", "waited_milliseconds"}
+            or timing.get("sequence") != expected_sequence
+            or isinstance(timing.get("waited_milliseconds"), bool)
+            or not isinstance(timing.get("waited_milliseconds"), int)
+            or timing["waited_milliseconds"] < 0
+            or timing["waited_milliseconds"]
+            > ledger_entry["min_interval_milliseconds"]
+        ):
+            raise ValueError("discovery v2 operational timing entry differs")
     operator_id = report.get("operator_id")
     if report["status"] == "not_executed":
         if operator_id is not None or report.get("authorization_hash") is not None:

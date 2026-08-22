@@ -156,3 +156,21 @@ Revisit with a new ADR before: adding a provider, credentials, or model-issued
 above one; letting discovery output authorize acquisition; widening any pinned
 budget ceiling; or removing the plan-level human approval from batch
 acquisition.
+
+## Implementation correction (2026-08-22)
+
+The pre-integration implementation audit found that several stated controls
+were not fully enforced. The corrected verifier requires the exact authorized
+grounding-source bytes and reconstructs every query and request URL; response
+byte ceilings and operational timing shapes are checked independently. Both
+discovery and batch transports receive the smaller of the per-request limit and
+the remaining run budget. The Atom parser scans the complete bounded body for
+DOCTYPE and ENTITY declarations before parsing.
+
+The original followed-candidate input accepted a caller-supplied `acquired`
+boolean. That representation never satisfied this ADR's “already acquired”
+condition. Followed-candidate records are therefore emitted as schema v2 and
+embed validated Phase 4B acquisition records, with each provenance edge bound
+to the corresponding acquisition record identifier. Automation-selected batch
+plans carry the same binding and the batch plan/report schemas advance to v2.
+These changes narrow authority and do not supersede any accepted decision.

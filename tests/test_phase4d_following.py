@@ -6,6 +6,10 @@ import copy
 import unittest
 
 from math_research.phase4b.serialization import canonical_hash
+from math_research.phase4b.records import RecordType, SCHEMA_VERSION
+from math_research.phase4b.serialization import (
+    expected_record_id, operational_record_hash, semantic_record_hash,
+)
 from math_research.phase4d.following import (
     build_follow_allowlist, follow_references, validate_follow_allowlist,
     verify_followed,
@@ -14,13 +18,47 @@ from math_research.phase4d.following import (
 ALLOWLIST = build_follow_allowlist(["doi.org", "arxiv.org"])
 
 
+def acquisition_record(source_id: str) -> dict:
+    h = "sha256:" + "1" * 64
+    payload = {
+        "candidate_id": "candidate.acquisition.alpha", "source_id": source_id,
+        "request_id": "request.acquisition.alpha", "normalized_url_hash": h,
+        "content_object_id": "content-object.acquisition.alpha",
+        "artifact_hash": h, "byte_length": 128, "media_type_hash": h,
+        "acquisition_adapter_id": "adapter.phase4b.scripted",
+        "acquisition_adapter_version": "v1", "policy_snapshot_id": "policy.phase4b.v1",
+        "rights_decision_ids": ["rights.acquire.alpha", "rights.retain.alpha"],
+        "terms_snapshot_hash": h, "robots_snapshot_hash": h,
+        "predecessor_record_ids": [],
+    }
+    value = {
+        "schema_version": SCHEMA_VERSION,
+        "record_id": expected_record_id(RecordType.ACQUISITION_CANDIDATE.value, source_id, payload),
+        "record_type": RecordType.ACQUISITION_CANDIDATE.value,
+        "subject_id": source_id, "sequence": 0,
+        "recorded_at": "2026-08-22T00:00:00Z", "payload": payload,
+        "operational": {
+            "attempt_number": 1, "elapsed_milliseconds": 0, "exit_status": None,
+            "stdout_hash": None, "stderr_hash": None,
+            "stdout_bytes": 0, "stderr_bytes": 0,
+        },
+    }
+    value["content_hash"] = semantic_record_hash(value)
+    value["operational_hash"] = operational_record_hash(value)
+    return value
+
+
 def document(document_id: str = "doc.alpha", references: list | None = None) -> dict:
     if references is None:
         references = [
             {"field": "reference_doi", "value": "10.1000/upstream.1"},
             {"field": "reference_url", "value": "https://arxiv.org/abs/2408.01234v1"},
         ]
-    return {"document_id": document_id, "acquired": True, "references": references}
+    return {
+        "document_id": document_id,
+        "acquisition_record": acquisition_record(document_id),
+        "references": references,
+    }
 
 
 class FollowAllowlistTests(unittest.TestCase):
@@ -100,10 +138,10 @@ class FollowReferencesTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "further follows"):
             follow_references([marked], allowlist=ALLOWLIST, max_followed_per_run=4)
 
-    def test_unacquired_document_cannot_originate_follows(self) -> None:
+    def test_unverified_acquisition_record_cannot_originate_follows(self) -> None:
         item = document()
-        item["acquired"] = False
-        with self.assertRaisesRegex(ValueError, "acquired"):
+        item["acquisition_record"]["payload"]["byte_length"] = 129
+        with self.assertRaisesRegex(ValueError, "acquisition record"):
             follow_references([item], allowlist=ALLOWLIST, max_followed_per_run=4)
 
     def test_query_strings_and_http_targets_are_refused(self) -> None:
@@ -131,6 +169,18 @@ class FollowReferencesTests(unittest.TestCase):
             key: value for key, value in changed.items() if key != "content_hash"
         })
         with self.assertRaisesRegex(ValueError, "semantics differ"):
+            verify_followed(changed, ALLOWLIST)
+
+    def test_rehashed_record_cannot_replace_verified_acquisition_origin(self) -> None:
+        record = follow_references(
+            [document()], allowlist=ALLOWLIST, max_followed_per_run=4,
+        )
+        changed = copy.deepcopy(record)
+        changed["origin_acquisition_records"][0]["payload"]["byte_length"] = 129
+        changed["content_hash"] = canonical_hash({
+            key: value for key, value in changed.items() if key != "content_hash"
+        })
+        with self.assertRaisesRegex(ValueError, "acquisition record is invalid"):
             verify_followed(changed, ALLOWLIST)
 
 

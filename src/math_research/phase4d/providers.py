@@ -185,8 +185,10 @@ def _openalex_page(body: bytes, page_size: int, maximum: int) -> ProviderPage:
 def _arxiv_page(body: bytes, cursor: str, page_size: int, maximum: int) -> ProviderPage:
     if not isinstance(body, bytes) or not body or len(body) > maximum:
         raise ValueError("provider response byte bound differs")
-    lowered = body[:4_096].lower()
-    if b"<!doctype" in lowered or b"<!entity" in lowered:
+    # Scan the complete bounded body before invoking ElementTree. Internal
+    # declarations can otherwise hide beyond an arbitrary prefix and expand
+    # while the parser constructs the tree.
+    if re.search(br"<!\s*(?:doctype|entity)\b", body, re.IGNORECASE):
         raise ValueError("arXiv response declares forbidden markup")
     try:
         root = ElementTree.fromstring(body.decode("utf-8", "strict"))

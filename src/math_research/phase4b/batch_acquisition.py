@@ -28,8 +28,8 @@ from .serialization import canonical_hash, sha256_bytes
 
 BATCH_ACTIVATION_SCHEMA = "adaivy.phase4b-public-acquisition-activation.v2"
 BATCH_ACTIVATION_HASH = "sha256:50066cdcdd1c0b9d5c0413191bdc43cde51550e17334b2cc79716756cdd37ef3"
-BATCH_PLAN_SCHEMA = "adaivy.phase4b-batch-acquisition-plan.v1"
-BATCH_REPORT_SCHEMA = "adaivy.phase4b-batch-acquisition-report.v1"
+BATCH_PLAN_SCHEMA = "adaivy.phase4b-batch-acquisition-plan.v2"
+BATCH_REPORT_SCHEMA = "adaivy.phase4b-batch-acquisition-report.v2"
 BATCH_CAPABILITY_ID = "capability.phase4b.live.batch"
 BATCH_ACKNOWLEDGEMENT = "I_ACKNOWLEDGE_PHASE4B_BATCH_ACQUISITION"
 MAX_BATCH_ACTIVATION_BYTES = 32_768
@@ -58,6 +58,17 @@ _EXPECTED_SCOPE = {
     "request_headers_allowed": [],
     "timeout_milliseconds": 30_000,
 }
+
+
+def _reject_floats(value: Any, path: str) -> None:
+    if isinstance(value, float):
+        raise ValueError(f"batch report contains a float at {path}")
+    if isinstance(value, dict):
+        for key, item in value.items():
+            _reject_floats(item, f"{path}.{key}")
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            _reject_floats(item, f"{path}[{index}]")
 
 
 def load_batch_activation(
@@ -206,8 +217,8 @@ def validate_batch_plan(
             if (
                 not isinstance(provenance, dict)
                 or set(provenance) != {
-                    "origin_document_id", "reference_field", "reference_index",
-                    "reference_value",
+                    "origin_document_id", "origin_acquisition_record_id",
+                    "reference_field", "reference_index", "reference_value",
                 }
             ):
                 raise AcquisitionPolicyError("batch_plan_origin_selection_invalid")
@@ -291,11 +302,17 @@ def execute_batch_plan(
                     resolver.resolve(hostname), hostname
                 )
             entry["network"] = True
+            remaining_bytes = scope["max_response_bytes_per_run"] - bytes_used
+            response_limit = min(
+                scope["max_response_bytes_per_request"], remaining_bytes,
+            )
             response = transport.fetch(TransportRequest(
                 "GET", url, (), addresses[hostname],
                 scope["timeout_milliseconds"], 65_536,
-                scope["max_response_bytes_per_request"],
+                response_limit,
             ))
+            if len(response.body) > response_limit:
+                raise RuntimeError("batch transport violated its response byte limit")
             entry["http_status"] = response.status
             entry["body_bytes"] = len(response.body)
             entry["body_sha256"] = sha256_bytes(response.body)
@@ -351,6 +368,11 @@ def verify_batch_report(report: Any, plan: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(report, dict) or set(report) != expected \
             or report.get("schema_version") != BATCH_REPORT_SCHEMA:
         raise ValueError("batch report fields differ")
+    _reject_floats(report, "report")
+    validate_batch_plan(
+        {"scope": _EXPECTED_SCOPE}, plan,
+        execution_epoch=report.get("execution_epoch"),
+    )
     supplied = report.get("content_hash")
     if _SHA256.fullmatch(str(supplied)) is None or canonical_hash(
         {key: value for key, value in report.items() if key != "content_hash"}
@@ -367,30 +389,75 @@ def verify_batch_report(report: Any, plan: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("batch report binding differs")
     ledger = report.get("url_ledger")
     planned = {item["request_id"]: item["url"] for item in plan["requests"]}
-    if not isinstance(ledger, list) or len(ledger) != len(planned):
+    if not isinstance(ledger, list) or len(ledger) != len(planned) \
+            or [entry.get("request_id") for entry in ledger if isinstance(entry, dict)] \
+            != [item["request_id"] for item in plan["requests"]]:
         raise ValueError("batch report ledger coverage differs")
     requests = stored = failed = refused = body_bytes = 0
+    seen_request_ids: set[str] = set()
     for entry in ledger:
-        if not isinstance(entry, dict) \
-                or planned.get(entry.get("request_id")) != entry.get("url"):
+        expected_entry_fields = {
+            "request_id", "url", "origin", "origin_selected_by", "provenance",
+            "network", "http_status", "body_bytes", "body_sha256", "outcome",
+            "failure_code", "disposition", "applicability", "mathematical_warrant",
+        }
+        request_id = entry.get("request_id") if isinstance(entry, dict) else None
+        planned_request = next(
+            (item for item in plan["requests"] if item["request_id"] == request_id), None,
+        )
+        if (
+            not isinstance(entry, dict) or set(entry) != expected_entry_fields
+            or request_id in seen_request_ids
+            or planned_request is None
+            or planned.get(request_id) != entry.get("url")
+            or entry.get("origin") != origin_for(planned_request["url"])
+            or entry.get("origin_selected_by") != planned_request["origin_selected_by"]
+            or entry.get("provenance") != planned_request["provenance"]
+        ):
             raise ValueError("batch report ledger entry differs")
+        seen_request_ids.add(request_id)
         if isinstance(entry.get("body_bytes"), bool) \
                 or not isinstance(entry.get("body_bytes"), int) or entry["body_bytes"] < 0:
             raise ValueError("batch report byte accounting differs")
         body_bytes += entry["body_bytes"]
+        if entry["body_bytes"] > _EXPECTED_SCOPE["max_response_bytes_per_request"]:
+            raise ValueError("batch report exceeds per-request byte budget")
+        digest = entry.get("body_sha256")
+        if entry["body_bytes"] > 0 and _SHA256.fullmatch(str(digest)) is None:
+            raise ValueError("batch report body hash differs")
+        if entry["body_bytes"] == 0 and digest is not None:
+            raise ValueError("batch report empty body has a hash")
         outcome = entry.get("outcome")
         if outcome == "stored_candidate":
+            if entry.get("network") is not True or entry.get("http_status") != 200 \
+                    or entry.get("failure_code") is not None:
+                raise ValueError("batch stored outcome differs")
             stored += 1
         elif outcome == "failed":
+            if not isinstance(entry.get("failure_code"), str) \
+                    or not entry["failure_code"]:
+                raise ValueError("batch failed outcome differs")
+            if entry.get("network") is False and (
+                entry.get("http_status") is not None or entry["body_bytes"] != 0
+                or entry.get("body_sha256") is not None
+            ):
+                raise ValueError("batch pre-network failure claims a response")
+            if entry.get("network") is not False and entry.get("network") is not True:
+                raise ValueError("batch failed network marker differs")
             failed += 1
         elif outcome == "refused_budget_exhausted":
             refused += 1
-            if entry.get("network") is not False:
+            if entry.get("network") is not False or entry["body_bytes"] != 0 \
+                    or entry.get("http_status") is not None \
+                    or entry.get("failure_code") != "batch_byte_budget_exhausted" \
+                    or body_bytes < _EXPECTED_SCOPE["max_response_bytes_per_run"]:
                 raise ValueError("batch report refused entry claims network effect")
         else:
             raise ValueError("batch report outcome differs")
         if entry.get("network") is True:
             requests += 1
+        elif outcome not in {"refused_budget_exhausted", "failed"}:
+            raise ValueError("batch report outcome lacks its network effect")
         if entry.get("disposition") != "untrusted_candidate" \
                 or entry.get("applicability") != "not_assessed" \
                 or entry.get("mathematical_warrant") != "none":
@@ -400,6 +467,8 @@ def verify_batch_report(report: Any, plan: dict[str, Any]) -> dict[str, Any]:
         "refused": refused, "body_bytes": body_bytes,
     }:
         raise ValueError("batch report accounting differs")
+    if body_bytes > _EXPECTED_SCOPE["max_response_bytes_per_run"]:
+        raise ValueError("batch report exceeds run response byte budget")
     return report
 
 

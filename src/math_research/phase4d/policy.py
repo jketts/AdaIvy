@@ -340,10 +340,22 @@ def validate_query(query: Any, policy: dict[str, Any]) -> dict[str, Any]:
     return query
 
 
+def verify_query_grounding(
+    query: Any, policy: dict[str, Any], grounding_sources: Mapping[str, bytes],
+) -> dict[str, Any]:
+    """Verify recorded spans against the exact authorized source bytes."""
+
+    validate_query(query, policy)
+    rebuilt = ground_query(policy, grounding_sources, query["terms"])
+    if rebuilt != query:
+        raise ValueError("grounded query does not match authorized source bytes")
+    return query
+
+
 __all__ = [
     "AUTHORIZATION_SCHEMA", "GROUNDING_VERSION", "KNOWN_PROVIDERS",
     "MAX_GROUNDING_SOURCES", "POLICY_SCHEMA", "QUERY_SCHEMA",
     "authorize_policy", "build_policy", "ground_query",
     "normalized_source_text", "validate_authorization", "validate_policy",
-    "validate_query",
+    "validate_query", "verify_query_grounding",
 ]

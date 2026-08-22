@@ -22,11 +22,13 @@ import re
 from typing import Any, Iterable
 from urllib.parse import quote, urlsplit
 
+from ..phase4b.interchange import Phase4BValidationError, validate_record
+from ..phase4b.records import RecordType
 from ..phase4b.serialization import canonical_hash
 from .discovery import _is_normal_text
 
 ALLOWLIST_SCHEMA = "adaivy.phase4d-follow-allowlist.v1"
-FOLLOW_SCHEMA = "adaivy.phase4d-followed-candidates.v1"
+FOLLOW_SCHEMA = "adaivy.phase4d-followed-candidates.v2"
 MAX_ALLOWLIST_HOSTS = 32
 MAX_FOLLOWED_PER_RUN_CEILING = 128
 MAX_REFERENCES_PER_DOCUMENT = 256
@@ -36,6 +38,22 @@ _HOST = re.compile(r"^[a-z0-9]([a-z0-9-]{0,62}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,
 _DOCUMENT_ID = re.compile(r"^[a-z0-9][a-z0-9._:-]{0,127}$")
 _REFERENCE_FIELDS = {"reference_doi", "reference_url"}
 _FOLLOWED_MARKERS = frozenset({"provenance", "origin_selected_by", "depth"})
+_FOLLOWED_FIELDS = frozenset({
+    "candidate_id", "candidate_url", "provider", "origin_selected_by", "depth",
+    "provenance", "status", "relevance", "applicability",
+    "acquisition_authorized", "mathematical_warrant", "novelty", "significance",
+})
+
+
+def _reject_floats(value: Any, path: str) -> None:
+    if isinstance(value, float):
+        raise ValueError(f"followed-candidates record contains a float at {path}")
+    if isinstance(value, dict):
+        for key, item in value.items():
+            _reject_floats(item, f"{path}.{key}")
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            _reject_floats(item, f"{path}[{index}]")
 
 
 def build_follow_allowlist(hosts: Iterable[str]) -> dict[str, Any]:
@@ -88,7 +106,7 @@ def follow_references(
     documents: Iterable[dict[str, Any]], *, allowlist: dict[str, Any],
     max_followed_per_run: int,
 ) -> dict[str, Any]:
-    """Enqueue depth-one follow candidates from acquired document metadata."""
+    """Enqueue follows from metadata bound to verified acquisition records."""
 
     validate_follow_allowlist(allowlist)
     if (
@@ -101,6 +119,7 @@ def follow_references(
     followed: list[dict[str, Any]] = []
     refused: list[dict[str, Any]] = []
     seen_documents: set[str] = set()
+    acquisition_records: list[dict[str, Any]] = []
     seen_urls: set[str] = set()
     for document in documents:
         if not isinstance(document, dict):
@@ -109,19 +128,30 @@ def follow_references(
             # Depth two, absolutely refused: a followed candidate never
             # becomes an origin (ADR-0068 control 2).
             raise ValueError("a followed candidate may not originate further follows")
-        if set(document) != {"document_id", "acquired", "references"}:
+        if set(document) != {"document_id", "acquisition_record", "references"}:
             raise ValueError("followed-origin document fields differ")
         document_id = document.get("document_id")
         if not isinstance(document_id, str) or _DOCUMENT_ID.fullmatch(document_id) is None:
             raise ValueError("followed-origin document identifier is invalid")
-        if document.get("acquired") is not True:
-            raise ValueError("only an acquired document may originate follows")
+        acquisition_record = document.get("acquisition_record")
+        try:
+            validate_record(acquisition_record)
+        except Phase4BValidationError as error:
+            raise ValueError("followed-origin acquisition record is invalid") from error
+        if (
+            acquisition_record.get("record_type")
+            != RecordType.ACQUISITION_CANDIDATE.value
+            or acquisition_record.get("subject_id") != document_id
+        ):
+            raise ValueError("followed origin is not bound to its acquisition record")
         if document_id in seen_documents:
             raise ValueError("followed-origin documents must be unique")
         seen_documents.add(document_id)
         references = document.get("references")
         if not isinstance(references, list) or len(references) > MAX_REFERENCES_PER_DOCUMENT:
             raise ValueError("followed-origin references are invalid")
+        if references:
+            acquisition_records.append(acquisition_record)
         for index, reference in enumerate(references):
             if (
                 not isinstance(reference, dict)
@@ -134,6 +164,7 @@ def follow_references(
             value = reference["value"]
             provenance = {
                 "origin_document_id": document_id,
+                "origin_acquisition_record_id": acquisition_record["record_id"],
                 "reference_field": field,
                 "reference_index": index,
                 "reference_value": value,
@@ -175,6 +206,7 @@ def follow_references(
         "max_followed_per_run": max_followed_per_run,
         "followed_count": len(followed),
         "refused_count": len(refused),
+        "origin_acquisition_records": acquisition_records,
         "followed": followed,
         "refused": refused,
         "inspiration_only": True,
@@ -189,12 +221,14 @@ def verify_followed(record: Any, allowlist: dict[str, Any]) -> dict[str, Any]:
     validate_follow_allowlist(allowlist)
     expected = {
         "schema_version", "allowlist_hash", "max_followed_per_run",
-        "followed_count", "refused_count", "followed", "refused",
+        "followed_count", "refused_count", "origin_acquisition_records",
+        "followed", "refused",
         "inspiration_only", "content_hash",
     }
     if not isinstance(record, dict) or set(record) != expected \
             or record.get("schema_version") != FOLLOW_SCHEMA:
         raise ValueError("followed-candidates record fields differ")
+    _reject_floats(record, "record")
     supplied = record.get("content_hash")
     if _SHA256.fullmatch(str(supplied)) is None or canonical_hash(
         {key: value for key, value in record.items() if key != "content_hash"}
@@ -217,10 +251,28 @@ def verify_followed(record: Any, allowlist: dict[str, Any]) -> dict[str, Any]:
     ):
         raise ValueError("followed-candidates accounting differs")
     hosts = set(allowlist["hosts"])
+    acquisition_records = record.get("origin_acquisition_records")
+    if not isinstance(acquisition_records, list) \
+            or len(acquisition_records) > len(followed) + len(refused):
+        raise ValueError("followed-candidates acquisition records differ")
+    acquisition_by_id: dict[str, dict[str, Any]] = {}
+    for acquisition_record in acquisition_records:
+        try:
+            validate_record(acquisition_record)
+        except Phase4BValidationError as error:
+            raise ValueError("followed-candidates acquisition record is invalid") from error
+        if acquisition_record.get("record_type") != RecordType.ACQUISITION_CANDIDATE.value:
+            raise ValueError("followed-candidates origin is not an acquisition record")
+        record_id = acquisition_record["record_id"]
+        if record_id in acquisition_by_id:
+            raise ValueError("followed-candidates acquisition records are duplicated")
+        acquisition_by_id[record_id] = acquisition_record
+    seen_urls: set[str] = set()
     for item in followed:
         provenance = item.get("provenance") if isinstance(item, dict) else None
         if (
-            not isinstance(item, dict) or not isinstance(provenance, dict)
+            not isinstance(item, dict) or set(item) != _FOLLOWED_FIELDS
+            or not isinstance(provenance, dict)
             or item.get("origin_selected_by") != "automation"
             or item.get("depth") != 1
             or item.get("provider") != "followed_reference"
@@ -232,17 +284,65 @@ def verify_followed(record: Any, allowlist: dict[str, Any]) -> dict[str, Any]:
             or item.get("novelty") != "not_assessed"
             or item.get("significance") != "not_assessed"
             or set(provenance) != {
-                "origin_document_id", "reference_field", "reference_index",
-                "reference_value",
+                "origin_document_id", "origin_acquisition_record_id",
+                "reference_field", "reference_index", "reference_value",
             }
             or provenance.get("reference_field") not in _REFERENCE_FIELDS
-            or urlsplit(str(item.get("candidate_url"))).hostname not in hosts
+            or isinstance(provenance.get("reference_index"), bool)
+            or not isinstance(provenance.get("reference_index"), int)
+            or provenance["reference_index"] < 0
+            or not _is_normal_text(provenance.get("reference_value"), 512)
         ):
             raise ValueError("followed candidate semantics differ")
+        expected_url = _reference_url(
+            provenance["reference_field"], provenance["reference_value"],
+        )
+        if expected_url != item["candidate_url"] \
+                or urlsplit(expected_url).hostname not in hosts \
+                or expected_url in seen_urls:
+            raise ValueError("followed candidate URL differs")
+        seen_urls.add(expected_url)
+        acquisition_record = acquisition_by_id.get(
+            provenance["origin_acquisition_record_id"]
+        )
+        if acquisition_record is None \
+                or acquisition_record["subject_id"] != provenance["origin_document_id"]:
+            raise ValueError("followed candidate acquisition binding differs")
         core = {"candidate_url": item["candidate_url"], "provenance": provenance}
         expected_id = "followed." + canonical_hash(core).removeprefix("sha256:")[:24]
         if item.get("candidate_id") != expected_id:
             raise ValueError("followed candidate identity differs")
+    allowed_refusal_reasons = {
+        "refused_reference_malformed", "refused_offlist_origin",
+        "refused_duplicate_target", "refused_fanout_bound",
+    }
+    provenance_fields = {
+        "origin_document_id", "origin_acquisition_record_id",
+        "reference_field", "reference_index", "reference_value",
+    }
+    for item in refused:
+        if (
+            not isinstance(item, dict)
+            or set(item) != provenance_fields | {"reason"}
+            or item.get("reason") not in allowed_refusal_reasons
+            or item.get("reference_field") not in _REFERENCE_FIELDS
+            or isinstance(item.get("reference_index"), bool)
+            or not isinstance(item.get("reference_index"), int)
+            or item["reference_index"] < 0
+            or not _is_normal_text(item.get("reference_value"), 512)
+        ):
+            raise ValueError("followed refusal semantics differ")
+        acquisition_record = acquisition_by_id.get(
+            item["origin_acquisition_record_id"]
+        )
+        if acquisition_record is None \
+                or acquisition_record["subject_id"] != item["origin_document_id"]:
+            raise ValueError("followed refusal acquisition binding differs")
+    used_records = {
+        item["provenance"]["origin_acquisition_record_id"] for item in followed
+    } | {item["origin_acquisition_record_id"] for item in refused}
+    if used_records != set(acquisition_by_id):
+        raise ValueError("followed-candidates acquisition record coverage differs")
     return record
 
 
