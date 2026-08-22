@@ -88,6 +88,11 @@ from .phase2.pricing import (
     pricing_snapshot_is_confirmed,
 )
 from .phase2.provider_registry import build_gateway
+from .publication.campaign_terminal import (
+    REPORT_STATUS_FILE,
+    finalize_campaign_report,
+)
+from .publication.errors import PublicationValidationError
 from .provider_activation import (
     LIVE_PROBE_ACKNOWLEDGEMENT,
     GatewayProviderProbe,
@@ -1160,6 +1165,32 @@ def _write_durable(root: Path, files: Sequence[tuple[str, bytes]]) -> None:
         _write_once(root / name, content)
 
 
+def _finish_terminal_report(
+    root: Path, export: Any, facts: Mapping[str, Any], configuration: Any,
+) -> Mapping[str, Any]:
+    """Write the report projection and its immutable completion record."""
+
+    report = finalize_campaign_report(root, export, facts, configuration)
+    durable = dict(report)
+    # Whether this invocation wrote or re-verified the same bundle is an
+    # invocation fact, not part of the immutable campaign completion record.
+    durable["status"] = "complete"
+    _write_once(root / REPORT_STATUS_FILE, canonical_bytes(durable) + b"\n")
+    return report
+
+
+def _failed_terminal_report(error: Exception) -> Mapping[str, Any]:
+    return {
+        "schema_version": "adaivy.campaign-terminal-report.v1",
+        "status": "failed",
+        "reason": str(error) or type(error).__name__,
+        "typeset_status": "not_typeset",
+        "pdf_sha256": None,
+        "publication_approval": None,
+        "epistemic_warrant_created": False,
+    }
+
+
 def _existing_durable_state(root: Path) -> tuple[str, ...]:
     """Every durable campaign byte already present under `root`.
 
@@ -1618,6 +1649,13 @@ def _run_measured(args: argparse.Namespace) -> int:
     ) as error:
         return _refuse(_rejection_reason(error), detail=str(error))
 
+    try:
+        report = _finish_terminal_report(root, export, facts, configuration)
+    except (PublicationValidationError, CampaignConfigurationError, OSError) as error:
+        # The campaign ledger is already durable. A projection failure is
+        # visible, but cannot rewrite the mathematical or operational outcome.
+        report = _failed_terminal_report(error)
+
     payload = {
         "campaign_id": completed.campaign_id,
         "terminal_reason": completed.terminal_reason,
@@ -1627,6 +1665,7 @@ def _run_measured(args: argparse.Namespace) -> int:
         "effects": _METER.snapshot(),
         "effect_measurement": effect_measurement(),
         "facts": facts,
+        "publication_draft": report,
     }
     compliance = facts["bound_compliance"]
     if compliance["status"] != "within_bounds":
@@ -1723,6 +1762,10 @@ def _retain_activation(
         CampaignRunnerError, CampaignProvenanceError, CampaignConfigurationError, OSError,
     ) as error:
         return _refuse(_rejection_reason(error), detail=str(error))
+    try:
+        report = _finish_terminal_report(root, export, facts, inputs.configuration)
+    except (PublicationValidationError, CampaignConfigurationError, OSError) as error:
+        report = _failed_terminal_report(error)
     _print({
         "status": "refused",
         "reason": terminal if reason is None else reason,
@@ -1733,6 +1776,7 @@ def _retain_activation(
         "effects": _METER.snapshot(),
         "effect_measurement": effect_measurement(),
         "facts": facts,
+        "publication_draft": report,
         **{key: value for key, value in detail.items() if key != "reason"},
     })
     return 2
@@ -1919,6 +1963,40 @@ def _export_measured(args: argparse.Namespace) -> int:
     return 0
 
 
+def _resume(args: argparse.Namespace) -> int:
+    """Resume only deterministic terminal finalization; never repeat paid work."""
+
+    with measure_effects():
+        try:
+            loaded = _load_campaign(args.root)
+            configuration = load_campaign_configuration(args.root / "campaign-config.json")
+            report = _finish_terminal_report(
+                args.root, loaded.export, loaded.facts, configuration,
+            )
+        except (
+            CampaignProvenanceError, CampaignConfigurationError, NoveltyRecheckError,
+            PublicationValidationError, OSError, KeyError, TypeError,
+        ) as error:
+            return _refuse(
+                "campaign_terminal_resume_refused",
+                root=str(args.root), detail=str(error) or type(error).__name__,
+                resume_scope="terminal_finalization_only",
+            )
+        _print({
+            "status": "finalized",
+            "root": str(args.root),
+            "campaign_id": loaded.export.campaign_id,
+            "campaign_content_hash": loaded.export.content_hash,
+            "resume_scope": "terminal_finalization_only",
+            "paid_work_repeated": False,
+            "publication_draft": report,
+            "effects": _METER.snapshot(),
+            "effect_measurement": effect_measurement(),
+            "epistemic_warrant_created": False,
+        })
+        return 0
+
+
 # --------------------------------------------------------------------------- #
 # Argument parsing
 # --------------------------------------------------------------------------- #
@@ -1978,6 +2056,12 @@ def main(argv: list[str] | None = None) -> int:
     export.add_argument("root", type=Path)
     export.add_argument("output", type=Path)
 
+    resume = commands.add_parser(
+        "resume",
+        help="idempotently finish a verified terminal campaign without paid calls",
+    )
+    resume.add_argument("root", type=Path)
+
     args = parser.parse_args(argv)
     if args.command == "config-create":
         return _config_create(args)
@@ -1991,6 +2075,8 @@ def main(argv: list[str] | None = None) -> int:
         return _replay(args)
     if args.command == "export":
         return _export(args)
+    if args.command == "resume":
+        return _resume(args)
     raise AssertionError(f"unhandled command {args.command}")
 
 

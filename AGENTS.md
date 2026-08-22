@@ -22,7 +22,7 @@ for their named slice. They are not global descriptions of current capability.
 
 ## Current integration objective
 
-The repository contains working bounded components through ADR-0070, but it does
+The repository contains working bounded components through ADR-0071, but it does
 not yet run the complete intended research workflow. In particular:
 
 - the campaign has no search, acquisition, embedding, index-refresh, or
@@ -32,6 +32,10 @@ not yet run the complete intended research workflow. In particular:
 - the campaign CLI still uses a pending experiment runner and absent verifier;
 - Lean checking is available only through the separate Phase 3B path; and
 - ADR-0055's human `before_research` novelty checkpoint remains active.
+
+ADR-0071 adds automatic claim-free LaTeX status drafts and idempotent terminal
+finalization through `campaign resume`. It does not resume a partially executed
+paid campaign; do not describe it as action-level or crash-safe continuation.
 
 The active proposed work is the end-to-end runtime plan. It aims to make one
 budgeted, resumable central campaign use explicit AdaIvy credential profiles,

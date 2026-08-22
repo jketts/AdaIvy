@@ -24,6 +24,8 @@ operator path, and usable end to end.
 | Semantic retrieval | Yes | Offline fixture only | No | Fourth Phase 4C signal over 19 project-authored documents and 17 queries |
 | Retrieval over acquired corpus | **No** | No | No | Corpus records are deliberately marked `retrieval_indexed: false` |
 | Campaign literature/embedding actions | **No** | No | No | The campaign action schema has no search, acquire, embed, index, or retrieve action |
+| Terminal campaign resume | Yes | Yes | Yes | Idempotently verifies a complete terminal ledger and finishes its draft; it does not yet resume a partial paid run |
+| Automatic campaign LaTeX draft | Yes | Yes | Yes | Every terminal run attempts a claim-free, unapproved `paper.tex` bundle; PDF typesetting remains an explicit gate |
 | End-to-end autonomous research run | **No** | No | No | Components remain separate; no single command performs the complete loop |
 
 ## What works today
@@ -34,6 +36,9 @@ operator path, and usable end to end.
   separate named gates with explicit prerequisites.
 - Campaign model calls, actions, artifacts, usage, and costs can be recorded and
   replayed.
+- A terminal campaign automatically emits an unapproved LaTeX status bundle,
+  and `campaign resume ROOT` idempotently completes or verifies that projection
+  without paid calls.
 - Exact verifiers, the sealed Lean checker, corpus replay, embedding artifacts,
   and semantic retrieval each work inside their bounded scopes.
 

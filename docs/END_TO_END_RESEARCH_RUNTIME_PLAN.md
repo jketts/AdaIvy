@@ -337,6 +337,13 @@ applicable exact or Lean verifier without leaving AdaIvy.
 
 ### Slice 7 — One resumable operator command
 
+ADR-0071 delivers the first bounded part of this slice: terminal campaigns now
+produce a claim-free, unapproved LaTeX status bundle automatically, and
+`campaign resume ROOT` idempotently completes or verifies that finalization
+without paid calls. It intentionally does not claim mid-campaign continuation.
+The remaining work below requires action-level checkpoints, request-intent
+records, and optional automatic invocation of the pinned PDF typesetter.
+
 - Provide one command that initializes or resumes the data root, validates
   provider profiles and budgets, freezes the target, and starts the campaign.
 - Resume from the durable ledger after interruption without repeating paid

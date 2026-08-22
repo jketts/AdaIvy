@@ -527,6 +527,22 @@ review, but does not satisfy the checkpoint by itself.
 
 ## Automatic solved-result publication reports
 
+ADR-0071 also wires a narrower automatic report into the campaign entrypoint.
+After its terminal ledger is durable, `campaign run` writes
+`publication-draft/paper.tex`, its record ledger, and `MANIFEST.json`. This is a
+claim-free status draft because the current campaign export does not yet carry
+the typed claim and evidence records needed for a mathematical paper. It is
+unapproved, creates no warrant, and stays `not_typeset` on the offline path.
+
+```bash
+PYTHONPATH=src python3 -m math_research.cli campaign resume CAMPAIGN_ROOT
+```
+
+That command verifies an existing terminal campaign and finishes or verifies
+the deterministic draft with zero provider, network, tool, or subprocess work.
+It does not resume a partially executed paid campaign; safe mid-run continuation
+still needs append-only per-action checkpoints and paid-request intent records.
+
 ADR-0056 makes the record-to-paper path atomic for every reader-facing report
 that contains a solved mathematical claim. With the pinned typesetter installed,
 the supported command is:

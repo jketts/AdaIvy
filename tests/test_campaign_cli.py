@@ -75,6 +75,7 @@ from math_research.phase2.live_config import (
 )
 from math_research.phase2.pricing import create_pricing_snapshot, write_pricing_snapshot
 from math_research.phase2.records import BudgetLimits
+from math_research.publication.bundle import verify_bundle
 from math_research.provider_activation import (
     LIVE_PROBE_ACKNOWLEDGEMENT,
     LiveProviderProbeResult,
@@ -361,6 +362,42 @@ class CampaignEntrypointFixtureTests(unittest.TestCase):
         self.assertEqual(facts["content_hash"], export.content_hash)
         self.assertEqual(facts["operational_hash"], export.operational_hash)
         self.assertNotEqual(export.content_hash, export.operational_hash)
+
+    def test_terminal_campaign_automatically_writes_an_unapproved_latex_draft(self):
+        code, payload, root = self.run_campaign("automatic-publication-draft")
+        self.assertEqual(0, code, payload)
+        report = payload["publication_draft"]
+        self.assertEqual("written", report["status"])
+        self.assertEqual("not_typeset", report["typeset_status"])
+        self.assertIsNone(report["publication_approval"])
+        self.assertFalse(report["epistemic_warrant_created"])
+        bundle = root / "publication-draft"
+        self.assertTrue((bundle / "paper.tex").is_file())
+        self.assertFalse((bundle / "paper.pdf").exists())
+        manifest = verify_bundle(bundle)
+        self.assertEqual(report["bundle_hash"], manifest["bundle_hash"])
+        manuscript = json.loads(
+            (bundle / "records/manuscript.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual([], manuscript["claims"])
+        self.assertIsNone(manuscript["publication_approval"])
+
+    def test_resume_only_verifies_terminal_state_and_finishes_missing_report(self):
+        _, first, root = self.run_campaign("terminal-resume")
+        campaign_before = (root / "campaign.json").read_bytes()
+        report_before = (root / "publication-draft/MANIFEST.json").read_bytes()
+        with no_effects():
+            code, resumed = invoke("resume", str(root))
+        self.assertEqual(0, code, resumed)
+        self.assertEqual("terminal_finalization_only", resumed["resume_scope"])
+        self.assertFalse(resumed["paid_work_repeated"])
+        self.assertEqual("verified_existing", resumed["publication_draft"]["status"])
+        self.assertEqual(first["facts"]["content_hash"], resumed["campaign_content_hash"])
+        self.assertEqual(campaign_before, (root / "campaign.json").read_bytes())
+        self.assertEqual(report_before, (root / "publication-draft/MANIFEST.json").read_bytes())
+        self.assertEqual(0, resumed["effects"]["provider_requests_made"])
+        self.assertEqual(0, resumed["effects"]["network_requests"])
+        self.assertEqual(0, resumed["effects"]["subprocesses_opened"])
 
     # --- gate 2: byte-identical output across runs and processes ---
 

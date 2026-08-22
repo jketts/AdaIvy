@@ -37,6 +37,8 @@ Implemented components include:
   exact vector artifacts;
 - four-signal Phase 4C retrieval, including semantic similarity; and
 - record-driven publication with provenance and reproducible typesetting.
+- automatic claim-free LaTeX status drafts for terminal campaigns, with
+  idempotent terminal-finalization resume.
 
 The end-to-end workflow is **not yet runnable**:
 
@@ -48,6 +50,10 @@ The end-to-end workflow is **not yet runnable**:
   absent verifier despite the standalone sandbox/verifier implementation;
 - Lean is available only through its separate Phase 3B commands; and
 - ADR-0055 still requires a fresh human novelty re-check before research.
+
+`campaign resume ROOT` currently resumes only deterministic finalization of an
+already complete terminal ledger. It does not yet continue interrupted paid
+research actions.
 
 Passing `make check` demonstrates the bounded components and their safety
 properties. It does not demonstrate an autonomous research campaign.

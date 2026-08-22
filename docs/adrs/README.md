@@ -18,6 +18,7 @@ capability is summarized separately in
 - ADR-0068: accepted depth-one discovery-result following; not implemented
 - ADR-0069: embedding provider and immutable vector artifacts
 - ADR-0070: fixture-scoped semantic retrieval signal
+- ADR-0071: terminal campaign resume and automatic unapproved LaTeX draft
 
 The proposed end-to-end integration is documented in
 [`../END_TO_END_RESEARCH_RUNTIME_PLAN.md`](../END_TO_END_RESEARCH_RUNTIME_PLAN.md).
