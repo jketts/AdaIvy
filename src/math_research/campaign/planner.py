@@ -11,6 +11,7 @@ from __future__ import annotations
 import base64
 import json
 from pathlib import Path
+from typing import Mapping
 
 from ..domain.entities import OpaqueId
 from ..phase2.live_config import LiveRunConfiguration
@@ -51,6 +52,14 @@ mathematical warrant, and a refutation there is a fact your next action should
 engage with. Branches listed in suspended_branch_ids may not be used again.
 If last_rejection is set, your previous action was refused for exactly that
 reason; produce a corrected action.
+"""
+V2_CAMPAIGN_PROMPT_ADDENDUM = """
+The response schema is the end-to-end v2 contract. Choose one operation at a
+time through operation_request. Literature may repeat in ordered cycles:
+search, optional depth-one follow, acquire, parse, embed, explicit refresh,
+then retrieval from that published generation. Search must precede substantive
+research. External effects remain checkpointed and may refuse; do not treat a
+retrieval, model output, or experiment as proof.
 """
 
 
@@ -103,16 +112,27 @@ class GatewayCampaignPlanner:
         self.action_schema = action_schema or Path(
             "schemas/model-campaign-action-v1.schema.json"
         ).read_text(encoding="utf-8")
+        try:
+            action_schema_value = json.loads(self.action_schema)
+        except json.JSONDecodeError as error:
+            raise CampaignRunnerError("campaign action schema is not JSON") from error
+        properties = action_schema_value.get("properties", {})
+        action_enum = properties.get("action_type", {}).get("enum", [])
+        self.v2_contract = (
+            "search_literature" in action_enum and "operation_request" in properties
+        )
         self.max_context_bytes = max_context_bytes
         self.attempts_used = activation.requests_attempted
         self.input_tokens_used = activation.input_tokens
         self.output_tokens_used = activation.output_tokens
         self.cost_microusd_used = activation.estimated_cost_microusd
         self.previous_actions: list[dict[str, object]] = []
+        self._accounted_sequences: set[int] = set()
 
     def __call__(self, context: PlannerContext) -> PlannerResponse:
         self._reserve()
         serialized = self._bounded_serialized_payload(context)
+        prompt = CAMPAIGN_PROMPT + (V2_CAMPAIGN_PROMPT_ADDENDUM if self.v2_contract else "")
         request = ModelRequest(
             request_id=OpaqueId(
                 f"request.campaign.{context.campaign_id}.{context.sequence}"
@@ -120,9 +140,9 @@ class GatewayCampaignPlanner:
             run_id=OpaqueId(f"run.campaign.{context.campaign_id}"),
             purpose="campaign_planner",
             template_id="campaign.central_lead",
-            template_version=CAMPAIGN_PROMPT_VERSION,
-            template_hash=sha256_bytes(CAMPAIGN_PROMPT.encode("utf-8")),
-            template_text=CAMPAIGN_PROMPT,
+            template_version=("2.0.0" if self.v2_contract else CAMPAIGN_PROMPT_VERSION),
+            template_hash=sha256_bytes(prompt.encode("utf-8")),
+            template_text=prompt,
             serialized_context=serialized,
             response_schema=self.action_schema,
             referenced_entity_ids=(),
@@ -140,6 +160,7 @@ class GatewayCampaignPlanner:
             output_tokens=result.usage.output_tokens,
         )
         self.cost_microusd_used += cost
+        self._accounted_sequences.add(context.sequence)
         status = self._status(result.status)
         structured = result.structured_output
         if status is RecordStatus.COMPLETED and structured is None:
@@ -181,6 +202,45 @@ class GatewayCampaignPlanner:
             estimated_cost_microusd=cost if usage_reported else None,
             provider_request_id=result.provider_request_id,
         )
+
+    def restore_checkpoint(self, sequence: int, value: Mapping[str, object]) -> None:
+        """Restore paid-call accounting and transcript from a v2 checkpoint."""
+
+        if sequence in self._accounted_sequences:
+            return
+        try:
+            raw = base64.b64decode(str(value["action_json_base64"]), validate=True)
+            status = RecordStatus(str(value["status"]))
+            input_tokens = value["input_tokens"]
+            output_tokens = value["output_tokens"]
+            estimated = value["estimated_cost_microusd"]
+        except (KeyError, TypeError, ValueError) as error:
+            raise CampaignRunnerError("planner checkpoint cannot restore accounting") from error
+        if (
+            value.get("provider") != self.configuration.provider
+            or value.get("model_identifier") != self.configuration.model_identifier
+            or not isinstance(input_tokens, int) or isinstance(input_tokens, bool)
+            or not isinstance(output_tokens, int) or isinstance(output_tokens, bool)
+            or input_tokens < 0 or output_tokens < 0
+            or (
+            estimated is not None and (not isinstance(estimated, int) or estimated < 0)
+            )
+        ):
+            raise CampaignRunnerError("planner checkpoint usage differs")
+        if status is RecordStatus.COMPLETED:
+            try:
+                decoded = json.loads(raw)
+            except (UnicodeDecodeError, json.JSONDecodeError) as error:
+                raise CampaignRunnerError("planner checkpoint action differs") from error
+            if not isinstance(decoded, dict):
+                raise CampaignRunnerError("planner checkpoint action differs")
+            self.previous_actions.append(decoded)
+        self.attempts_used += 1
+        self.input_tokens_used += input_tokens
+        self.output_tokens_used += output_tokens
+        if estimated is not None:
+            self.cost_microusd_used += estimated
+        self._accounted_sequences.add(sequence)
 
     def _reserve(self) -> None:
         budget = self.configuration.budget

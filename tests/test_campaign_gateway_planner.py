@@ -4,10 +4,15 @@ from __future__ import annotations
 
 import base64
 import json
+from pathlib import Path
+import tempfile
 import unittest
 
+from math_research.campaign.end_to_end import (
+    ModelDrivenEndToEndCampaignRunner, RuntimeEffect, RuntimeEffectRegistry,
+)
 from math_research.campaign.planner import GatewayCampaignPlanner
-from math_research.campaign.records import RecordStatus, UsageSource
+from math_research.campaign.records import ActionType, RecordStatus, UsageSource
 from math_research.campaign.runner import CampaignRunnerError, PlannerContext
 from math_research.campaign.runner import (
     CampaignRunnerPolicy, SequentialCampaignRunner,
@@ -124,6 +129,75 @@ def context(sequence=1, tool_result=None):
 
 
 class GatewayCampaignPlannerTests(unittest.TestCase):
+    def test_v2_schema_selects_end_to_end_prompt_and_restores_accounting(self):
+        raw = json.dumps({
+            "schema_version": "2.0.0", "action_type": "search_literature",
+            "branch_id": "branch.main", "rationale": "grounded search",
+            "operation_request": {"query": "spectral graph"},
+        }, separators=(",", ":"), sort_keys=True)
+        gateway = Gateway([(raw, ModelResultStatus.SUCCEEDED)])
+        schema = Path("schemas/model-campaign-action-v2.schema.json").read_text()
+        planner = GatewayCampaignPlanner(
+            configuration(), pricing(), gateway=gateway, activation=activation(),
+            action_schema=schema, max_context_bytes=50_000,
+        )
+        response = planner(context())
+        self.assertEqual("2.0.0", gateway.requests[0].template_version)
+        self.assertIn("ordered cycles", gateway.requests[0].template_text)
+
+        restored = GatewayCampaignPlanner(
+            configuration(), pricing(), gateway=Gateway([]), activation=activation(),
+            action_schema=schema, max_context_bytes=50_000,
+        )
+        restored.restore_checkpoint(1, {
+            "action_json_base64": base64.b64encode(response.action_json).decode("ascii"),
+            "status": "completed", "input_tokens": response.input_tokens,
+            "output_tokens": response.output_tokens,
+            "estimated_cost_microusd": response.estimated_cost_microusd,
+            "provider": response.provider,
+            "model_identifier": response.model_identifier,
+        })
+        self.assertEqual(2, restored.attempts_used)
+        self.assertEqual(1, len(restored.previous_actions))
+
+    def test_gateway_planner_drives_the_v2_runtime(self):
+        def v2(kind, request):
+            return json.dumps({
+                "schema_version": "2.0.0", "action_type": kind,
+                "branch_id": "branch.main", "rationale": "fixture",
+                "operation_request": request,
+            }, separators=(",", ":"), sort_keys=True)
+
+        gateway = Gateway([
+            (v2("search_literature", {"query": "exact graph"}),
+             ModelResultStatus.SUCCEEDED),
+            (v2("report", {"status": "bounded conclusion"}),
+             ModelResultStatus.SUCCEEDED),
+        ])
+        configured = configuration(attempts=4)
+        planner = GatewayCampaignPlanner(
+            configured, pricing(), gateway=gateway,
+            activation=activation(configured=configured),
+            action_schema=Path("schemas/model-campaign-action-v2.schema.json").read_text(),
+            max_context_bytes=50_000,
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            summary = ModelDrivenEndToEndCampaignRunner(
+                Path(temporary), campaign_id="campaign.gateway-v2",
+                target_hash="sha256:" + "1" * 64,
+                configuration_hash="sha256:" + "2" * 64,
+                recorded_at="2026-08-22T00:00:00Z", max_actions=3,
+                planner=planner,
+                effects=RuntimeEffectRegistry({
+                    ActionType.SEARCH_LITERATURE: RuntimeEffect(
+                        lambda request, key: {"query": request["query"]}, True,
+                    ),
+                }),
+            ).run()
+        self.assertEqual("completed", summary["status"])
+        self.assertEqual(["search_literature", "report"], summary["action_types"])
+        self.assertEqual(2, len(gateway.requests))
+
     def test_activation_is_the_first_counted_campaign_model_attempt(self):
         gateway = Gateway([(report_action(), ModelResultStatus.SUCCEEDED)])
         planner = GatewayCampaignPlanner(

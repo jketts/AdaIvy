@@ -97,7 +97,7 @@ supersedes ADR-0066's terminal clause. Nothing about execution authority
 changes: an unwired sandbox still executes nothing; the refusal is simply no
 longer the end of the campaign.
 
-### 5. Action-level checkpointing on the live path; resume staged
+### 5. Action-level checkpointing and v2 continuation
 
 `SequentialCampaignRunner` now accepts the ADR-0075 `ActionCheckpointStore`:
 an intent is durable before every planner call (marked paid/irreversible on
@@ -106,13 +106,11 @@ rejected action. The operator entrypoint wires the store under the campaign
 root (`action-checkpoints/`), and any checkpoint bytes close the root against
 a second `run`.
 
-**Staged follow-up, explicitly not implemented here:** continuing an
-`awaiting_user` live campaign through `campaign resume` with an operator
-answer (rebuilding runner state from the checkpoints and durable artifacts,
-recording the answer as a human-attributed record, and refusing to repeat any
-paid intent). The checkpoint plumbing this requires is in place; the resume
-driver is the follow-up and until it lands an answered `ask_user` still
-requires a new campaign.
+This ADR originally staged continuation after `ask_user`. ADR-0079 now supplies
+it on the unified v2 runtime: resume replays planner and operation checkpoints,
+records the bounded answer as a human-attributed import, refuses to repeat an
+ambiguous paid intent, and continues at the next sequence. The legacy v1
+`campaign run` compatibility path retains terminal `ask_user` behavior.
 
 ## Consequences
 

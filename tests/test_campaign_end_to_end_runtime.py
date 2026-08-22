@@ -12,10 +12,14 @@ from math_research.campaign.end_to_end import (
     ACTION_SCHEMA_PATH,
     EndToEndCampaignRunner,
     EndToEndRuntimeError,
+    ModelDrivenEndToEndCampaignRunner,
     RuntimeAction,
+    RuntimeEffect,
+    RuntimeEffectRegistry,
     parse_planned_action,
 )
-from math_research.campaign.records import ActionType
+from math_research.campaign.records import ActionType, RecordStatus, UsageSource
+from math_research.campaign.runner import PlannerResponse
 from math_research.campaign.fixture_runtime import (
     load_fixture_runtime_config, run_fixture_campaign,
 )
@@ -237,6 +241,128 @@ class EndToEndCheckpointTests(unittest.TestCase):
                     RuntimeAction(ActionType.SEARCH_LITERATURE, {}, lambda key: {}),
                     RuntimeAction(ActionType.RETRIEVE_EVIDENCE, {}, lambda key: {}),
                 ])
+
+
+class ModelDrivenV2Tests(unittest.TestCase):
+    @staticmethod
+    def action(action_type: str, request: dict | None = None) -> bytes:
+        return json.dumps({
+            "schema_version": "2.0.0", "action_type": action_type,
+            "branch_id": "branch.main", "rationale": "fixture choice",
+            "operation_request": request or {},
+        }, separators=(",", ":"), sort_keys=True).encode()
+
+    @staticmethod
+    def response(raw: bytes) -> PlannerResponse:
+        return PlannerResponse(
+            action_json=raw, provider="fixture", model_identifier="scripted.v2",
+            status=RecordStatus.COMPLETED, usage_source=UsageSource.UNAVAILABLE,
+            input_tokens=0, output_tokens=0, estimated_cost_microusd=None,
+            provider_request_id=None,
+        )
+
+    def test_model_chosen_cycle_failure_answer_resume_and_report(self) -> None:
+        generation = "sha256:" + "a" * 64
+        first_actions = [
+            self.action("search_literature", {"query": "spectral"}),
+            self.action("acquire_source", {"candidate_ids": ["paper.1"]}),
+            self.action("parse_source", {"source_id": "paper.1"}),
+            self.action("embed_sources", {"source_id": "paper.1"}),
+            self.action("refresh_retrieval_index", {"generation": "next"}),
+            self.action("retrieve_evidence", {"generation_hash": generation}),
+            self.action("experiment", {"program": "exact"}),
+            self.action("ask_user", {"question": "Choose convention A?"}),
+        ]
+
+        class Planner:
+            def __init__(self, values):
+                self.values = list(values)
+                self.calls = 0
+
+            def __call__(self, context):
+                self.calls += 1
+                return ModelDrivenV2Tests.response(self.values.pop(0))
+
+        effects = RuntimeEffectRegistry({
+            ActionType.SEARCH_LITERATURE: RuntimeEffect(
+                lambda request, key: {"query": request["query"], "key": key}, True,
+            ),
+            ActionType.ACQUIRE_SOURCE: RuntimeEffect(lambda request, key: {"acquired": 1}),
+            ActionType.PARSE_SOURCE: RuntimeEffect(lambda request, key: {"parsed": 1}),
+            ActionType.EMBED_SOURCES: RuntimeEffect(lambda request, key: {"embedded": 1}, True),
+            ActionType.REFRESH_RETRIEVAL_INDEX: RuntimeEffect(
+                lambda request, key: {"published_generation_hash": generation},
+            ),
+            ActionType.RETRIEVE_EVIDENCE: RuntimeEffect(
+                lambda request, key: {"evidence_hash": "sha256:" + "b" * 64}, True,
+            ),
+            ActionType.EXPERIMENT: RuntimeEffect(
+                lambda request, key: (_ for _ in ()).throw(RuntimeError("dead end")),
+            ),
+        })
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            first_planner = Planner(first_actions)
+            first = ModelDrivenEndToEndCampaignRunner(
+                root, campaign_id="campaign.model-v2", target_hash="sha256:" + "1" * 64,
+                configuration_hash="sha256:" + "2" * 64, recorded_at=NOW,
+                max_actions=10, planner=first_planner, effects=effects,
+                target_statement="A modest exact target.",
+            ).run()
+            self.assertEqual("awaiting_user", first["status"])
+            self.assertEqual(8, first_planner.calls)
+
+            resumed_planner = Planner([
+                self.action("search_literature", {"query": "second cycle"}),
+                self.action("report", {"conclusion": "unresolved but recorded"}),
+            ])
+            resumed = ModelDrivenEndToEndCampaignRunner(
+                root, campaign_id="campaign.model-v2", target_hash="sha256:" + "1" * 64,
+                configuration_hash="sha256:" + "2" * 64, recorded_at=NOW,
+                max_actions=10, planner=resumed_planner, effects=effects,
+                target_statement="A modest exact target.",
+            ).run(answer="yes", operator_id="human.operator")
+            self.assertEqual("completed", resumed["status"])
+            self.assertEqual(2, resumed_planner.calls)
+            self.assertEqual("report", resumed["action_types"][-1])
+            self.assertTrue((root / "human" / "action-checkpoints" / "000008.terminal.json").is_file())
+
+    def test_retrieval_must_bind_a_published_generation(self) -> None:
+        class Planner:
+            def __init__(self):
+                self.values = [
+                    ModelDrivenV2Tests.action("search_literature", {"query": "x"}),
+                    ModelDrivenV2Tests.action("acquire_source", {}),
+                    ModelDrivenV2Tests.action("parse_source", {}),
+                    ModelDrivenV2Tests.action("embed_sources", {}),
+                    ModelDrivenV2Tests.action("refresh_retrieval_index", {}),
+                    ModelDrivenV2Tests.action("retrieve_evidence", {
+                        "generation_hash": "sha256:" + "f" * 64,
+                    }),
+                ]
+
+            def __call__(self, context):
+                return ModelDrivenV2Tests.response(self.values.pop(0))
+
+        with tempfile.TemporaryDirectory() as temporary:
+            result = ModelDrivenEndToEndCampaignRunner(
+                Path(temporary), campaign_id="campaign.bad-generation",
+                target_hash="sha256:" + "1" * 64,
+                configuration_hash="sha256:" + "2" * 64, recorded_at=NOW,
+                max_actions=6, planner=Planner(),
+                effects=RuntimeEffectRegistry({
+                    ActionType.SEARCH_LITERATURE: RuntimeEffect(lambda request, key: {}),
+                    ActionType.ACQUIRE_SOURCE: RuntimeEffect(lambda request, key: {}),
+                    ActionType.PARSE_SOURCE: RuntimeEffect(lambda request, key: {}),
+                    ActionType.EMBED_SOURCES: RuntimeEffect(lambda request, key: {}),
+                    ActionType.REFRESH_RETRIEVAL_INDEX: RuntimeEffect(
+                        lambda request, key: {"projection_id": "projection.empty"},
+                    ),
+                    ActionType.RETRIEVE_EVIDENCE: RuntimeEffect(lambda request, key: {}),
+                }), planner_is_paid=False,
+            ).run()
+            self.assertEqual("unresolved", result["status"])
+            self.assertIn("published generation", result["unresolved"]["reason"])
 
     def test_verifier_failure_is_nonterminal_while_actions_remain(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
