@@ -4,6 +4,13 @@ This repository implements the architecture in `README.md`,
 `TECHNICAL_BLUEPRINT.md`, and `NOVELTY_LANDSCAPE.md`. Read all three plus the
 current ADRs before changing architecture or phase scope.
 
+When you are handed a **mathematics problem** rather than an engineering task,
+follow the invocation procedure for your harness before computing anything:
+`CODEX.md` (Codex) or `CLAUDE.md` (Claude Code). Both are subordinate to this
+file and cover the same pipeline: problem definition, intake dossier, the human
+novelty re-check that must precede research, convention records and the verdict
+matrix, exact computation, formal checking, and the publication projection.
+
 ## Current phase
 
 Bounded Phase 4B authorized acquisition and exact-source parsing (ADR-0028) is
