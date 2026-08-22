@@ -8,9 +8,10 @@ from typing import Any, Iterable, Mapping
 from . import MAX_SOURCE_BYTES
 from .content_store import ContentStoreError, read_local_text
 from .records import (
+    DISCLOSING_RIGHTS_USES, PROCESSOR_FORBIDDEN_REFUSAL, PROCESSOR_REQUIRED_REFUSAL,
     ActorKind, ApplicabilityOutcome, ApplicabilityReason, ApplicabilityStatus, AuditRecord,
-    Authority, LifecycleType, RecordType, RightsEvaluation, RightsOutcome, RightsReason,
-    RightsUse, RightsValue,
+    Authority, LifecycleType, Processor, RecordType, RightsEvaluation, RightsOutcome,
+    RightsReason, RightsUse, RightsValue,
 )
 from .serialization import (
     ZERO_HASH, canonical_hash, expected_record_id, finalize_record, sha256_bytes,
@@ -90,8 +91,20 @@ class Phase4Service:
         self, *, source_id: str, intended_use: RightsUse, value: RightsValue,
         reason_code: RightsReason, reason_detail: str, evidence_refs: Iterable[str],
         actor_id: str, valid_from: str, valid_until: str | None, recorded_at: str,
-        lifecycle_id: str, predecessor_id: str | None = None,
+        lifecycle_id: str, processor: Processor | Mapping[str, Any] | None = None,
+        predecessor_id: str | None = None,
     ) -> AuditRecord:
+        """Append one human-final rights decision.
+
+        ADR-0064: `processor` names the recipient of disclosed source text.  It
+        is required for the two disclosing uses and must be `None` for every
+        other use.  The closed-envelope validator is the gate: an omitted or
+        misplaced processor is refused there and nothing is appended.
+        """
+
+        processor_payload = processor.as_payload() if isinstance(processor, Processor) else (
+            None if processor is None else dict(processor)
+        )
         prior = [
             item for item in self.workspace.records()
             if item["record_type"] == RecordType.RIGHTS_DECISION.value
@@ -115,12 +128,35 @@ class Phase4Service:
             payload={
                 "source_id": source_id, "intended_use": intended_use.value, "value": value.value,
                 "valid_from": valid_from, "valid_until": valid_until, "lifecycle_id": lifecycle_id,
+                "processor": processor_payload,
             },
         )
         self.workspace.append(record)
         return record
 
-    def evaluate_rights(self, source_id: str, intended_use: RightsUse, *, at: str) -> RightsEvaluation:
+    @staticmethod
+    def _require_processor_argument(intended_use: RightsUse, processor_id: str | None) -> None:
+        """ADR-0064: naming the processor is the caller's obligation, not a default.
+
+        Omitting it for a disclosing use is a programming error and raises; it
+        never falls back to a decision that authorized some other processor.
+        """
+
+        if intended_use in DISCLOSING_RIGHTS_USES:
+            if processor_id is None:
+                raise ValueError(
+                    f"{PROCESSOR_REQUIRED_REFUSAL}: {intended_use.value} requires a named processor_id"
+                )
+        elif processor_id is not None:
+            raise ValueError(
+                f"{PROCESSOR_FORBIDDEN_REFUSAL}: {intended_use.value} must not name a processor_id"
+            )
+
+    def evaluate_rights(
+        self, source_id: str, intended_use: RightsUse, *, at: str,
+        processor_id: str | None = None,
+    ) -> RightsEvaluation:
+        self._require_processor_argument(intended_use, processor_id)
         records = list(self.workspace.records())
         lifecycles = [
             record for record in records
@@ -161,13 +197,31 @@ class Phase4Service:
             return RightsEvaluation(source_id, intended_use, RightsOutcome.EXPIRED, False, decision["id"], "rights decision is outside its validity interval")
         value = RightsValue(payload["value"])
         if value is RightsValue.ALLOWED:
+            if intended_use in DISCLOSING_RIGHTS_USES:
+                authorized = payload["processor"]
+                if authorized is None or authorized["processor_id"] != processor_id:
+                    named = "none" if authorized is None else authorized["processor_id"]
+                    return RightsEvaluation(
+                        source_id, intended_use, RightsOutcome.PROCESSOR_NOT_AUTHORIZED, False,
+                        decision["id"],
+                        f"rights decision authorizes processor {named} and not {processor_id}",
+                    )
             return RightsEvaluation(source_id, intended_use, RightsOutcome.PERMITTED, True, decision["id"], "explicit human decision permits requested use")
         if value is RightsValue.PROHIBITED:
             return RightsEvaluation(source_id, intended_use, RightsOutcome.EXPLICITLY_PROHIBITED, False, decision["id"], "explicit human decision prohibits requested use")
         return RightsEvaluation(source_id, intended_use, RightsOutcome.MISSING_OR_UNKNOWN, False, decision["id"], "rights remain unresolved")
 
-    def require_rights(self, source_id: str, intended_use: RightsUse, *, at: str) -> RightsEvaluation:
-        evaluation = self.evaluate_rights(source_id, intended_use, at=at)
+    def require_rights(
+        self, source_id: str, intended_use: RightsUse, *, at: str,
+        processor_id: str | None = None,
+    ) -> RightsEvaluation:
+        """Raise `RightsBlocked` on any non-permitted outcome.
+
+        The returned evaluation is retained for callers that need the decision
+        identity; a caller coding to ADR-0064's `-> None` contract may ignore it.
+        """
+
+        evaluation = self.evaluate_rights(source_id, intended_use, at=at, processor_id=processor_id)
         if not evaluation.allowed:
             raise RightsBlocked(evaluation)
         try:

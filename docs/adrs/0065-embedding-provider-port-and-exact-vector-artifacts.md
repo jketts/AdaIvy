@@ -1,6 +1,6 @@
-# ADR-0062: Embedding provider port and exact content-hashed vector artifacts
+# ADR-0065: Embedding provider port and exact content-hashed vector artifacts
 
-- **Status:** proposed; second of three slices. Requires ADR-0061's processor-bound
+- **Status:** proposed; second of three slices. Requires ADR-0064's processor-bound
   rights decision. Produces no retrieval change on its own.
 - **Date:** 2026-08-22
 - **Blueprint requirement:** Section 12.2.1 (provider binding for vector
@@ -148,7 +148,7 @@ normalization)`. Enforced properties:
 
 ### Rights
 
-No text is sent to a provider without an ADR-0061 rights decision that is live at
+No text is sent to a provider without an ADR-0064 rights decision that is live at
 the moment of the call and names the exact `processor_id` being called.
 `require_rights(source_id, RightsUse.EMBEDDING, processor_id=..., at=...)` is
 called before the text is read from disk, following the ordering already used at
@@ -176,7 +176,7 @@ raises `RightsBlocked` and no call is made.
 No retrieval change: Phase 4C is untouched by this slice and its seven gates,
 report hashes, and fixture cardinalities are unmodified. No corpus expansion, no
 acquisition, no crawling, no citation traversal, no query generation. No second
-embedding provider without its own ADR-0061 decision. No novelty, significance,
+embedding provider without its own ADR-0064 decision. No novelty, significance,
 or applicability assessment, no mathematical warrant, no graph admission. An
 artifact store full of vectors is not a literature search and must not be
 reported as one.
@@ -187,7 +187,7 @@ reported as one.
   check` gains the offline replay path only; the live path is a separate named
   target requiring credentials, as `check-sealed` and `check-typeset` already are.
 - Ingestion is billable and irreversible in the sense that a provider has seen
-  the text. This is why ADR-0061 precedes it and why the acknowledgement string
+  the text. This is why ADR-0064 precedes it and why the acknowledgement string
   is exact.
 - Artifacts are durable bytes under `reports/`-style evidence rules, not `work/`
   scratch, because a rebuild depends on them. They are content-addressed, so a
@@ -222,7 +222,7 @@ for a provider-fidelity claim.
   fail, not re-embed.
 - `pr.artifact-overwrite-refused` -- writing different bytes to an existing
   artifact path must refuse.
-- `pr.embedding-without-rights-refused` -- ingestion with no live ADR-0061
+- `pr.embedding-without-rights-refused` -- ingestion with no live ADR-0064
   decision must raise `RightsBlocked` before the source file is opened.
 - `pr.embedding-wrong-processor-refused` -- a decision naming processor A must
   not authorize a call to processor B.
@@ -250,10 +250,56 @@ approximate nearest-neighbour search, which trades exactness for speed and would
 reintroduce every problem this ADR closes; caching a query vector across
 partitions; or letting a retrieval process hold a credential.
 
+## Amendment, 2026-08-22: the artifact store is tracked, not ignored
+
+The implementation surfaced a genuine contradiction in this ADR and stopped on it
+rather than picking a side, which was the right call.
+
+This ADR said artifacts are "durable bytes under `reports/`-style evidence
+rules". But `.gitignore` ignores `vectors/` at any depth, and `AGENTS.md` gives
+the reason: a derived index is never a source of truth, and "a committed one
+would let a stale index outlive the corpus it was built from". Worse, the two
+rules were asymmetric — `manifest.json` was committable while `vectors/*.json`
+was silently dropped, so a partition could be *half* committed, which is worse
+than neither half being tracked.
+
+**Resolution: the two rules are about different things.** A derived index is
+rebuildable FROM THE RECORDS by definition. A vector artifact is not — it
+required a provider call that is not bit-reproducible, which is the whole reason
+`TECHNICAL_BLUEPRINT.md:1667-1671` says to store the bytes and have a rebuild
+replay them. An artifact is therefore primary evidence that a disclosure
+happened, closer to an acquisition than to an index, and the ignore rule was
+never aimed at it. An ANN or similarity index built OVER the artifacts *is* a
+derived index and stays ignored.
+
+`VECTOR_DIRNAME` is accordingly `vector-artifacts`, a tracked name.
+`ArtifactDirectoryIsTrackedTests` asserts both halves — the artifacts are
+tracked, the derived-index names are still ignored, and above all that the
+manifest and its artifacts share one fate, because the asymmetry was the hazard.
+
+Three further corrections the implementation found in this ADR:
+
+- **The artifact body contradicted itself.** This ADR said the artifact "stores
+  the scale and the count of coordinates that saturated" while also freezing a
+  four-field `VectorArtifact` — and since a saturating coordinate halts
+  ingestion, that count is necessarily zero in any artifact that exists. Scale
+  lives in the partition key's `normalization`, as this ADR says elsewhere;
+  `saturated_coordinate_count: 0` belongs in the ingestion record.
+- **"No new gated-import declaration is required" was true only conditionally.**
+  `test_dynamic_third_party_loads_are_declared_gated_boundaries` asserts set
+  *equality* over `(path, module)` pairs, so an `import_module("openai")` in a
+  new file WOULD have needed a new entry. It is satisfied only by routing through
+  `phase2.model_gateway`'s existing gated loader, which the implementation did.
+- **`LiveRunConfiguration` was also unusable for `max_wall_milliseconds`**, which
+  nothing on this path can enforce without a clock read. The embedding budget is
+  `max_calls`, `max_input_tokens`, and `max_cost_microusd` only. A field that
+  reads as a guarantee and enforces nothing is worse than its absence, so there
+  is no operational hash and ingestion records are byte-reproducible.
+
 ## Explicit deferrals
 
-- The Phase 4C semantic signal and any fusion change: ADR-0063.
-- Corpus ingestion beyond the frozen fixture set: ADR-0063's context; this is
+- The Phase 4C semantic signal and any fusion change: ADR-0066.
+- Corpus ingestion beyond the frozen fixture set: ADR-0066's context; this is
   the actual limit on "wide" retrieval and no amount of embedding fixes it.
 - Approximate nearest neighbour, dimensionality reduction, and any index
   structure beyond linear exact scan over a partition: not needed at fixture

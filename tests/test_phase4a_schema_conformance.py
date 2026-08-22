@@ -10,7 +10,9 @@ from pathlib import Path
 from typing import Callable
 
 from math_research.phase4a.interchange import build_envelope
-from math_research.phase4a.records import ActorKind, RightsReason, RightsUse, RightsValue
+from math_research.phase4a.records import (
+    ActorKind, DisclosureKind, Processor, RightsReason, RightsUse, RightsValue,
+)
 from math_research.phase4a.service import Phase4Service
 from math_research.phase4a.validation import (
     Phase4ValidationError, schema_path, validate_schema_contract, validate_structure,
@@ -19,6 +21,14 @@ from math_research.phase4a.workspace import Phase4Workspace
 
 HAS_ORACLE = importlib.util.find_spec("jsonschema") is not None
 T0 = "2026-08-20T00:00:00Z"
+# ADR-0064. The oracle envelope carries one disclosing decision with a named
+# processor, so the new field round-trips through the real Draft 2020-12
+# validator and not only through the hand-written closed-envelope checker.
+ORACLE_PROCESSOR = Processor(
+    processor_id="processor.azure-openai.text-embedding-3-large",
+    provider="azure_openai", model_identifier="text-embedding-3-large",
+    disclosure_kind=DisclosureKind.TEXT_LEAVES_PROCESS,
+)
 STABLE_AGGREGATE = "sha256:3965809035292ae610ebf483ea2600a7b216a12dffc7679ca3e9d1857a8debfb"
 HISTORICAL_AGGREGATE = "sha256:cab6d6fb718af616c7be919a147799bc4eadf3a508e547eb6b83acc7ae83d5e5"
 EXCLUSIONS = [
@@ -153,6 +163,13 @@ class Phase4DifferentialConformanceTests(unittest.TestCase):
                     valid_from=T0, valid_until=None, recorded_at=T0,
                     lifecycle_id=f"rights-lifecycle.oracle-{use.value}",
                 )
+            service.append_rights(
+                source_id=source_id, intended_use=RightsUse.EMBEDDING, value=RightsValue.ALLOWED,
+                reason_code=RightsReason.PERMITTED, reason_detail="schema oracle embedding right",
+                evidence_refs=("evidence.oracle-embedding",), actor_id="actor.owner",
+                valid_from=T0, valid_until=None, recorded_at=T0,
+                lifecycle_id="rights-lifecycle.oracle-embedding", processor=ORACLE_PROCESSOR,
+            )
             source = Path(cls.temp.name) / "oracle.txt"; source.write_text("oracle statement\n", encoding="utf-8")
             service.intake_local(source, source_id=source_id, actor_id="actor.operator", recorded_at=T0)
             service.create_evidence_card(
@@ -198,6 +215,51 @@ class Phase4DifferentialConformanceTests(unittest.TestCase):
         changed(lambda value: value["records"].extend(copy.deepcopy(value["records"][0]) for _ in range(256)))
         for value in mutations:
             self.assert_agrees(value)
+
+    def _rights_index(self, intended_use: str) -> int:
+        return next(
+            index for index, record in enumerate(self.valid["records"])
+            if record["record_type"] == "source_rights_decision"
+            and record["payload"]["intended_use"] == intended_use
+        )
+
+    def test_adr_0061_processor_mutations_are_refused_by_both_validators(self) -> None:
+        """The new field round-trips, and every one-field mutation of it refuses.
+
+        Agreement alone would be satisfied by two validators that both accept,
+        so the oracle is asserted to REJECT each mutation and the closed-envelope
+        checker is then asserted to agree.
+        """
+
+        self.assert_agrees(self.valid)
+        self.assertEqual([], list(self.oracle.iter_errors(self.valid)))
+        embedding = self._rights_index("embedding")
+        acquisition = self._rights_index("acquisition")
+        authorized = copy.deepcopy(self.valid["records"][embedding]["payload"]["processor"])
+        self.assertEqual(
+            {"processor_id", "provider", "model_identifier", "disclosure_kind"}, set(authorized),
+        )
+        mutations: list[Callable[[dict], None]] = [
+            lambda value: value["records"][embedding]["payload"].pop("processor"),
+            lambda value: value["records"][embedding]["payload"].__setitem__("processor", None),
+            lambda value: value["records"][embedding]["payload"]["processor"].__setitem__("region", "eastus"),
+            lambda value: value["records"][embedding]["payload"]["processor"].pop("provider"),
+            lambda value: value["records"][embedding]["payload"]["processor"].__setitem__("provider", "not-a-real-provider"),
+            lambda value: value["records"][embedding]["payload"]["processor"].__setitem__("model_identifier", ""),
+            lambda value: value["records"][embedding]["payload"]["processor"].__setitem__("disclosure_kind", "text_maybe_leaves"),
+            lambda value: value["records"][embedding]["payload"]["processor"].__setitem__("processor_id", "Not An Id"),
+            lambda value: value["records"][acquisition]["payload"].__setitem__("processor", copy.deepcopy(authorized)),
+            lambda value: value["records"][acquisition]["payload"].pop("processor"),
+        ]
+        for index, mutate in enumerate(mutations):
+            with self.subTest(mutation=index):
+                value = copy.deepcopy(self.valid)
+                mutate(value)
+                self.assertTrue(
+                    tuple(self.oracle.iter_errors(value)),
+                    "the Draft 2020-12 oracle accepted a processor mutation",
+                )
+                self.assert_agrees(value)
 
     def test_all_used_schema_keywords_are_exercised(self) -> None:
         seen: set[str] = set()

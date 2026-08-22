@@ -43,13 +43,14 @@ OUT ?= reports/local/run-$(REPORT_STAMP)
 WORK ?= work/$(REPORT_STAMP)
 
 .PHONY: check check-all check-sealed check-gate setup-typeset check-typeset publication-build check-phase4b-oci \
-        spike-phase5-sdp test phase0 phase1 problem-intake phase2 phase3a phase3b phase4a phase4b \
-        phase4c phase4d phase5 phase6 synthesis publication report clean help
+        check-embedding-live spike-phase5-sdp test phase0 phase1 problem-intake phase2 phase3a phase3b phase4a phase4b \
+        phase4c phase4d phase5 phase6 embedding synthesis publication report clean help
 
 help:
 	@printf 'Targets:\n'
 	@printf '  check         offline suite: tests + phases 0,1,2,3A,4A,4B,4C,4D,5,6, problem intake, synthesis, publication\n'
 	@printf '  check-sealed  phase 3B Lean formal checking (requires the ADR-0016 v5 image)\n'
+	@printf '  check-embedding-live ADR-0065 live embedding ingestion (requires credentials)\n'
 	@printf '  check-gate    phase 4 gate tests (requires the disposable jsonschema env)\n'
 	@printf '  setup-typeset acquire and hash-check BasicTeX under work/toolchains\n'
 	@printf '  check-typeset publication PDF build (requires the pinned TeX Live engine)\n'
@@ -61,7 +62,7 @@ help:
 	@printf '                default OUT=reports/local/run-<stamp> (gitignored)\n'
 	@printf '  clean         remove __pycache__ and stray sqlite journals\n'
 
-check: test phase0 phase1 problem-intake phase2 phase3a phase4a phase4b phase4c phase4d phase5 phase6 synthesis publication
+check: test phase0 phase1 problem-intake phase2 phase3a phase4a phase4b phase4c phase4d phase5 phase6 embedding synthesis publication
 	@printf '\n== offline check complete ==\n'
 
 check-all: check check-sealed
@@ -297,6 +298,111 @@ phase6:
 	  rm -rf "$$d" && \
 	  printf 'phase 6 ok (13 generality controls executed; 13 probes flipped; clean-room replay verified, 2 unverifiable + 2 not-derived fields named)\n'
 
+# ADR-0065. OFFLINE ONLY: this target authors a `fixture_synthetic` partition,
+# replays it from bytes, and runs the thirteen falsifiability probes. It makes
+# zero provider calls and opens no socket, because a rebuild replays artifacts
+# rather than calling the provider (TECHNICAL_BLUEPRINT.md:1667-1671) and because
+# the retrieval side has no network surface at all.
+#
+# `fixture_synthetic` is the ONLY non-provider partition value. It can never be
+# produced by the live ingestion path, and every manifest built on it carries
+# `corpus_provenance: project_authored`, mirroring ADR-0034. So this target
+# demonstrates the partition, artifact, hash and probe machinery, and is NOT
+# evidence about real embedding quality.
+#
+# The recorded outcome is asserted rather than the exit status alone, in BOTH
+# directions: a probe count that drops, a probe that stops flipping, a manifest
+# hash that stops reproducing, a partition that starts claiming provider
+# provenance, or a replay that reports a provider call is a failure. The negative
+# leg is part of the target: a query against an absent partition must fail
+# closed, never fall back to the neighbouring geometry.
+embedding:
+	@printf '\n== ADR-0065 exact vector partitions (offline replay) ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-emb.XXXXXX") && \
+	  $(PY) -m math_research.cli embedding author \
+	    fixtures/embedding/fixture-synthetic-partition-v1.json \
+	    --root "$$d/vectors" --output "$$d/authored.json" >/dev/null && \
+	  $(PY) -m math_research.cli embedding author \
+	    fixtures/embedding/fixture-synthetic-partition-v1.json \
+	    --root "$$d/replayed" --output "$$d/reauthored.json" >/dev/null && \
+	  $(PY) -m math_research.cli embedding replay --root "$$d/vectors" \
+	    --provider fixture_synthetic \
+	    --model-identifier adaivy-cooccurrence-anchor-v1 \
+	    --dimension 32 --normalization round_half_even_scale_2p30 \
+	    --expect-manifest-hash "$$($(PY) -c 'import json,sys; print(json.load(open(sys.argv[1]))["manifest_hash"])' "$$d/authored.json")" \
+	    --output "$$d/replay.json" >/dev/null && \
+	  $(PY) -m math_research.cli embedding probes --output "$$d/probes.json" && \
+	  $(PY) -c 'import json,sys; a=json.load(open(sys.argv[1])); b=json.load(open(sys.argv[2])); r=json.load(open(sys.argv[3])); p=json.load(open(sys.argv[4])); assert a["manifest_hash"] == b["manifest_hash"] == r["manifest_hash"], "the authored partition stopped reproducing its manifest hash"; assert a["partition_key"] == {"provider": "fixture_synthetic", "model_identifier": "adaivy-cooccurrence-anchor-v1", "dimension": 32, "normalization": "round_half_even_scale_2p30"}, "the fixture partition key moved: %s" % a["partition_key"]; assert a["corpus_provenance"] == "project_authored" and a["is_project_authored"] is True, "a fixture_synthetic partition claimed provider provenance: %s" % a["corpus_provenance"]; assert r["provider_calls"] == 0 and r["network_requests"] == 0, "a replay reported a provider call: %s" % r; assert a["vector_count"] == len(a["document_ids"]) == 5, "the fixture cardinality moved: %s" % a["vector_count"]; assert a["query_ids"] == ["probe-spectral-query"] and len(a["corpus_document_ids"]) == 4, "the fixture artifact kinds moved: %s / %s" % (a["query_ids"], a["corpus_document_ids"]); assert a["document_ids"] == sorted(a["document_ids"]), "partition document ids are not sorted"; assert len(set(a["artifact_content_hashes"])) == 5, "two artifacts share a content hash"; assert r["creates_epistemic_warrant"] is False and r["asserts_source_applicability"] is False, "a vector store claimed an epistemic effect"; assert (r["novelty_status"], r["significance_status"]) == ("not_assessed", "not_assessed"), "a vector store assessed novelty or significance"; assert p["probes_total"] == 13 and p["probes_flipped"] == 13, "ADR-0065 probes moved: %s of %s flipped, unflipped %s" % (p["probes_flipped"], p["probes_total"], p["unflipped_probe_ids"]); assert p["read_path_modules"] == ["constants.py", "errors.py", "partition.py", "replay.py", "similarity.py"], "the swept replay-path module set moved: %s" % p["read_path_modules"]' \
+	    "$$d/authored.json" "$$d/reauthored.json" "$$d/replay.json" "$$d/probes.json" && \
+	  if $(PY) -m math_research.cli embedding replay --root "$$d/vectors" \
+	      --provider fixture_synthetic \
+	      --model-identifier adaivy-cooccurrence-anchor-v2 \
+	      --dimension 32 --normalization round_half_even_scale_2p30 \
+	      --output "$$d/must-not-exist.json" >/dev/null 2>&1; then \
+	    printf 'a query against an absent partition fell back to another one\n'; exit 1; \
+	  fi && \
+	  test ! -e "$$d/must-not-exist.json" && \
+	  rm -rf "$$d" && \
+	  printf 'embedding ok (5 exact vectors replayed, 13/13 probes flipped, 0 provider calls; project_authored, not embedding-quality evidence)\n'
+
+# Separate from `check`: ADR-0065 live ingestion needs a real credential and
+# bills a real provider. It is named for what it needs, like `check-sealed`.
+# Nothing here is reachable from `make check`.
+#
+# Ingestion is irreversible in the sense that a provider has seen the text, so
+# the target runs the DRY plan first, asserts it executed nothing, and only then
+# passes `--execute` with the exact acknowledgement string. Rights are checked
+# before any source is opened and must name the processor being called
+# (ADR-0064); until that slice lands the seam refuses and this target fails
+# closed rather than embedding under an unbound decision.
+EMBEDDING_LIVE_CONFIG ?= config/embedding-run-configuration-v1.json
+EMBEDDING_LIVE_PRICING ?= config/embedding-pricing-snapshot-v1.json
+EMBEDDING_LIVE_DOCUMENTS ?= config/embedding-documents-v1.json
+EMBEDDING_LIVE_CORPUS ?= work/embedding-corpus
+EMBEDDING_LIVE_PHASE4A ?= work/embedding-phase4a
+EMBEDDING_LIVE_ROOT ?= work/embedding-vectors
+
+check-embedding-live:
+	@printf '\n== ADR-0065 live embedding ingestion (requires credentials) ==\n'
+	@for f in "$(EMBEDDING_LIVE_CONFIG)" "$(EMBEDDING_LIVE_PRICING)" "$(EMBEDDING_LIVE_DOCUMENTS)"; do \
+	  test -f "$$f" || { printf 'absent: %s\n' "$$f"; exit 2; }; \
+	done
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-emb-live.XXXXXX") && \
+	  $(PY) -m math_research.cli embedding ingest \
+	    "$(EMBEDDING_LIVE_CONFIG)" "$(EMBEDDING_LIVE_PRICING)" \
+	    "$(EMBEDDING_LIVE_DOCUMENTS)" \
+	    --corpus-root "$(EMBEDDING_LIVE_CORPUS)" \
+	    --phase4a-workspace "$(EMBEDDING_LIVE_PHASE4A)" \
+	    --root "$(EMBEDDING_LIVE_ROOT)" \
+	    --run-id "$(REPORT_STAMP)" --recorded-at "$(REPORT_INSTANT)" \
+	    --output "$$d/plan.json" >/dev/null && \
+	  $(PY) -c 'import json,sys; p=json.load(open(sys.argv[1])); assert p["execution_status"] == "not_executed" and p["provider_calls"] == 0 and p["network_requests"] == 0, "the dry plan called a provider: %s" % p; assert p["output_tokens"] == 0, "an embeddings plan budgeted output tokens"; assert p["pricing_confirmed"] is True, "live ingestion requires a confirmed pricing snapshot"' \
+	    "$$d/plan.json" && \
+	  printf 'dry plan ok (0 provider calls); executing live ingestion\n' && \
+	  $(PY) -m math_research.cli embedding ingest \
+	    "$(EMBEDDING_LIVE_CONFIG)" "$(EMBEDDING_LIVE_PRICING)" \
+	    "$(EMBEDDING_LIVE_DOCUMENTS)" \
+	    --corpus-root "$(EMBEDDING_LIVE_CORPUS)" \
+	    --phase4a-workspace "$(EMBEDDING_LIVE_PHASE4A)" \
+	    --root "$(EMBEDDING_LIVE_ROOT)" \
+	    --run-id "$(REPORT_STAMP)" --recorded-at "$(REPORT_INSTANT)" \
+	    --execute --confirm-live-embedding I_ACKNOWLEDGE_LIVE_EMBEDDING_INGESTION \
+	    --output "$$d/ingestion-record.json" > "$$d/record.json" && \
+	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["output_tokens"] == 0, "the provider reported output tokens for an embeddings call"; assert r["saturated_coordinate_count"] == 0, "a saturating coordinate reached a record"; assert r["corpus_provenance"] == "provider_embedded", "a live run did not record provider provenance: %s" % r["corpus_provenance"]; assert r["creates_epistemic_warrant"] is False and r["asserts_source_applicability"] is False and r["creates_graph_admission"] is False, "ingestion claimed an epistemic effect"; assert (r["novelty_status"], r["significance_status"]) == ("not_assessed", "not_assessed"), "ingestion assessed novelty or significance"; assert r["pricing_confirmed"] is True' \
+	    "$$d/record.json" && \
+	  $(PY) -m math_research.cli embedding replay --root "$(EMBEDDING_LIVE_ROOT)" \
+	    --provider "$$($(PY) -c 'import json,sys; print(json.load(open(sys.argv[1]))["partition_key"]["provider"])' "$$d/record.json")" \
+	    --model-identifier "$$($(PY) -c 'import json,sys; print(json.load(open(sys.argv[1]))["partition_key"]["model_identifier"])' "$$d/record.json")" \
+	    --dimension "$$($(PY) -c 'import json,sys; print(json.load(open(sys.argv[1]))["partition_key"]["dimension"])' "$$d/record.json")" \
+	    --normalization "$$($(PY) -c 'import json,sys; print(json.load(open(sys.argv[1]))["partition_key"]["normalization"])' "$$d/record.json")" \
+	    --expect-manifest-hash "$$($(PY) -c 'import json,sys; print(json.load(open(sys.argv[1]))["manifest_hash"])' "$$d/record.json")" \
+	    --output "$$d/replay.json" >/dev/null && \
+	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["provider_calls"] == 0 and r["network_requests"] == 0, "the rebuild called the provider again"' \
+	    "$$d/replay.json" && \
+	  rm -rf "$$d" && \
+	  printf 'live embedding ingestion ok (rebuild replayed the same manifest hash with zero provider calls)\n'
+
+
 synthesis:
 	@printf '\n== bounded exploratory synthesis ==\n'
 	@d=$$(mktemp -d "$(TMPROOT)/adaivy-synthesis.XXXXXX") && \
@@ -441,7 +547,7 @@ report:
 	  $(PY) -m math_research.report_index "$$out" --recorded-at "$(REPORT_INSTANT)" && \
 	  printf '\nreport written to %s -- open %s/INDEX.md\n' "$$out" "$$out"
 
-# The 15 gate tests skip themselves unless `jsonschema` is importable. They are
+# The 16 gate tests skip themselves unless `jsonschema` is importable. They are
 # meant to run inside the disposable environment described in
 # docs/phase-4/DEPENDENCY_LICENSE_ASSESSMENT.md -- never the ordinary .venv.
 # Acquisition needs network, so this target never installs anything; point PY at
@@ -450,7 +556,7 @@ check-gate:
 	@printf '\n== phase 4 gate tests (disposable validator environment) ==\n'
 	@$(PY) -c 'import importlib.util,sys; sys.exit(0 if importlib.util.find_spec("jsonschema") else 1)' \
 	  || { \
-	    printf 'jsonschema is not importable for %s, so all 15 gate tests would skip.\n' '$(PY)'; \
+	    printf 'jsonschema is not importable for %s, so all 16 gate tests would skip.\n' '$(PY)'; \
 	    printf 'Build the disposable environment from the pinned manifest first:\n'; \
 	    printf '  requirements-phase4-gate-py314-macos-arm64.txt\n'; \
 	    printf 'then re-run: make check-gate PY=/path/to/gate-venv/bin/python\n'; \

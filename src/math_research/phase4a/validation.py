@@ -14,18 +14,20 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
+from ..phase2 import SUPPORTED_LIVE_PROVIDERS
 from . import EXPORT_PROFILE, EXPORT_SCHEMA_VERSION, MAX_EXPORT_BYTES, MAX_RECORDS, SCHEMA_VERSION
 from .records import (
+    DISCLOSING_RIGHTS_USES, PROCESSOR_FORBIDDEN_REFUSAL, PROCESSOR_REQUIRED_REFUSAL,
     ActorKind, ApplicabilityOutcome, ApplicabilityReason, ApplicabilityStatus,
-    Authority, LifecycleType, RecordType, RightsReason, RightsUse, RightsValue,
-    VerifiedSnapshot,
+    Authority, DisclosureKind, LifecycleType, RecordType, RightsReason, RightsUse,
+    RightsValue, VerifiedSnapshot,
 )
 from .serialization import (
     HASH_RE, canonical_bytes, expected_record_id, operational_envelope_hash,
     record_content_hash, semantic_envelope_hash, stable_id,
 )
 
-PRODUCTION_SCHEMA_SHA256 = "sha256:f166aae343997433370c7d61c08e47c52787d51b59af05edae152b074612537a"
+PRODUCTION_SCHEMA_SHA256 = "sha256:6e21dca67beff9cab33f22792090c7d4b1edd03a8f0fe80925671ee9bcad336b"
 POLICY_VERSIONS = [
     "phase4a-rights-v1", "phase4a-applicability-v1",
     "phase4a-lifecycle-v1", "phase4a-canonical-identity-v1",
@@ -166,6 +168,46 @@ def _array(value: Any, path: str, validator: Callable[[Any, str], Any], *, maxim
     return result
 
 
+_PROCESSOR_FIELDS = {"processor_id", "provider", "model_identifier", "disclosure_kind"}
+
+
+def _validate_processor(value: Any, path: str) -> dict[str, Any]:
+    """The closed processor sub-object of an ADR-0064 rights payload."""
+
+    processor = _exact(value, _PROCESSOR_FIELDS, path)
+    _identifier(processor["processor_id"], f"{path}.processor_id")
+    if processor["provider"] not in SUPPORTED_LIVE_PROVIDERS:
+        raise Phase4ValidationError(f"{path}.provider is not an admitted live provider")
+    _string(processor["model_identifier"], f"{path}.model_identifier", minimum=1, maximum=128)
+    _enum(DisclosureKind, processor["disclosure_kind"], f"{path}.disclosure_kind")
+    return processor
+
+
+def _validate_rights_processor(payload: Mapping[str, Any], path: str) -> None:
+    """ADR-0064: rights bind the processor, not only the use.
+
+    The two disclosing uses must name exactly one processor; every other use
+    must carry `null`.  Called from the structural field-set check and from both
+    domain paths, so a record that validates on append cannot fail on durable
+    re-verify.
+    """
+
+    if "processor" not in payload:
+        raise Phase4ValidationError(f"{path}.processor is required")
+    use = RightsUse(payload["intended_use"])
+    processor = payload["processor"]
+    if use in DISCLOSING_RIGHTS_USES:
+        if processor is None:
+            raise Phase4ValidationError(
+                f"{PROCESSOR_REQUIRED_REFUSAL}: {path}.processor is required for {use.value}"
+            )
+        _validate_processor(processor, f"{path}.processor")
+    elif processor is not None:
+        raise Phase4ValidationError(
+            f"{PROCESSOR_FORBIDDEN_REFUSAL}: {path}.processor must be null for {use.value}"
+        )
+
+
 _RECORD_FIELDS = {
     "id", "record_type", "subject_id", "sequence", "actor_id", "actor_kind", "authority",
     "reason_code", "reason_detail", "evidence_refs", "recorded_at", "policy_snapshot_id",
@@ -222,11 +264,12 @@ def _validate_payload(record_type: RecordType, payload: Any, path: str) -> None:
         _boolean(value["quarantined"], f"{path}.quarantined"); _boolean(value["content_retained"], f"{path}.content_retained"); _boolean(value["tombstone"], f"{path}.tombstone")
         _array(value["quarantine_reasons"], f"{path}.quarantine_reasons", lambda item, item_path: _string(item, item_path, minimum=1, maximum=64, pattern=_REASON), maximum=16, unique=True)
     elif record_type is RecordType.RIGHTS_DECISION:
-        value = _exact(payload, {"source_id", "intended_use", "value", "valid_from", "valid_until", "lifecycle_id"}, path)
+        value = _exact(payload, {"source_id", "intended_use", "value", "valid_from", "valid_until", "lifecycle_id", "processor"}, path)
         _identifier(value["source_id"], f"{path}.source_id"); _enum(RightsUse, value["intended_use"], f"{path}.intended_use"); _enum(RightsValue, value["value"], f"{path}.value")
         _timestamp(value["valid_from"], f"{path}.valid_from"); _nullable(value["valid_until"], _timestamp, f"{path}.valid_until"); _identifier(value["lifecycle_id"], f"{path}.lifecycle_id")
         if value["valid_until"] is not None and value["valid_until"] < value["valid_from"]:
             raise Phase4ValidationError(f"{path}.valid_until precedes valid_from")
+        _validate_rights_processor(value, path)
     elif record_type is RecordType.LIFECYCLE_ACTION:
         value = _exact(payload, {"source_id", "action", "target_record_id", "previous_event_id", "original_semantic_hash", "content_retained", "legal_hold"}, path)
         _identifier(value["source_id"], f"{path}.source_id"); _enum(LifecycleType, value["action"], f"{path}.action"); _identifier(value["target_record_id"], f"{path}.target_record_id")
@@ -298,6 +341,7 @@ def validate_record_for_append(record: Mapping[str, Any]) -> dict[str, Any]:
         _real_timestamp(value["payload"]["valid_from"], "$.payload.valid_from")
         if value["payload"]["valid_until"] is not None:
             _real_timestamp(value["payload"]["valid_until"], "$.payload.valid_until")
+        _validate_rights_processor(value["payload"], "$.payload")
     elif record_type is RecordType.LIFECYCLE_ACTION:
         if not value["evidence_refs"] or (kind, authority) not in {
             (ActorKind.HUMAN, Authority.HUMAN_FINAL), (ActorKind.SYSTEM, Authority.DETERMINISTIC_POLICY),
@@ -378,6 +422,7 @@ def _validate_domain(value: dict[str, Any], *, allow_preintake_rights: bool = Fa
             _real_timestamp(record["payload"]["valid_from"], "rights.valid_from")
             if record["payload"]["valid_until"] is not None:
                 _real_timestamp(record["payload"]["valid_until"], "rights.valid_until")
+            _validate_rights_processor(record["payload"], "rights")
             rights_value = RightsValue(record["payload"]["value"])
             allowed_reasons = {
                 RightsValue.ALLOWED: {RightsReason.PERMITTED, RightsReason.RIGHTS_CORRECTED},

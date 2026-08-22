@@ -38,6 +38,28 @@ class RightsUse(ValueEnum):
     PUBLICATION = "publication"
 
 
+class DisclosureKind(ValueEnum):
+    """Where disclosed source text goes (ADR-0064).
+
+    Recorded, never inferred: a local model still crosses a process boundary
+    and still needs its own decision.
+    """
+
+    TEXT_LEAVES_PROCESS = "text_leaves_process"
+    TEXT_STAYS_LOCAL = "text_stays_local"
+
+
+# ADR-0064. The only two uses that disclose source text to a named processor.
+# Every other use must carry `processor: null`; a processor named there would be
+# decoration that later reads as an authorization.
+DISCLOSING_RIGHTS_USES = frozenset({RightsUse.EMBEDDING, RightsUse.MODEL_CONTEXT})
+
+# The two refusal codes ADR-0064 fixes verbatim. Defined once so the validator,
+# the service, and the probe suite cannot drift apart.
+PROCESSOR_REQUIRED_REFUSAL = "embedding_use_requires_processor"
+PROCESSOR_FORBIDDEN_REFUSAL = "non_disclosing_use_forbids_processor"
+
+
 class RightsValue(ValueEnum):
     ALLOWED = "allowed"
     PROHIBITED = "prohibited"
@@ -61,6 +83,7 @@ class RightsOutcome(ValueEnum):
     EXPIRED = "expired"
     REVOKED = "revoked"
     REQUESTED_USE_INCOMPATIBLE = "requested_use_incompatible"
+    PROCESSOR_NOT_AUTHORIZED = "processor_not_authorized"
 
 
 class LifecycleType(ValueEnum):
@@ -128,6 +151,28 @@ class AuditRecord:
     payload: dict[str, Any]
     content_hash: str
     schema_version: str = SCHEMA_VERSION
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class Processor:
+    """The named recipient of disclosed source text (ADR-0064).
+
+    One decision authorizes one processor.  There is no wildcard, no `any`, and
+    no fallback: a second provider is a second decision, never an inherited one.
+    """
+
+    processor_id: str
+    provider: str
+    model_identifier: str
+    disclosure_kind: DisclosureKind
+
+    def as_payload(self) -> dict[str, str]:
+        return {
+            "processor_id": self.processor_id,
+            "provider": self.provider,
+            "model_identifier": self.model_identifier,
+            "disclosure_kind": DisclosureKind(self.disclosure_kind).value,
+        }
 
 
 @dataclass(frozen=True, slots=True)

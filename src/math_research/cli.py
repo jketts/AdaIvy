@@ -43,6 +43,8 @@ def main(argv: list[str] | None = None) -> int:
     novelty.add_argument("novelty_args", nargs=argparse.REMAINDER)
     conventions = subparsers.add_parser("conventions", help="definitional-reading records and derived claim scope")
     conventions.add_argument("conventions_args", nargs=argparse.REMAINDER)
+    embedding = subparsers.add_parser("embedding", help="ADR-0065 exact vector partition commands")
+    embedding.add_argument("embedding_args", nargs=argparse.REMAINDER)
     phase2 = subparsers.add_parser("phase2", help="Phase 2 durable workspace commands")
     phase2.add_argument("phase2_args", nargs=argparse.REMAINDER)
     phase3a = subparsers.add_parser("phase3a", help="bounded Phase 3A research-memory commands")
@@ -78,6 +80,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "conventions":
         from .conventions_cli import main as conventions_main
         return conventions_main(args.conventions_args)
+    if args.command == "embedding":
+        from .embedding_cli import main as embedding_main
+        return embedding_main(args.embedding_args)
     if args.command == "phase2":
         from .phase2_cli import main as phase2_main
         return phase2_main(args.phase2_args)

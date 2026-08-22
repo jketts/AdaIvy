@@ -108,13 +108,17 @@ def main(argv: list[str] | None = None) -> int:
             spec = _spec(
                 args.spec,
                 {"source_id", "intended_use", "value", "reason_code", "reason_detail", "evidence_refs", "actor_id", "valid_from", "recorded_at", "lifecycle_id"},
-                {"valid_until", "predecessor_id"},
+                # ADR-0064: `processor` is optional in the spec file and defaults
+                # to null, which the validator then requires to be absent for the
+                # six non-disclosing uses and present for the other two.
+                {"valid_until", "predecessor_id", "processor"},
             )
             record = service.append_rights(
                 source_id=spec["source_id"], intended_use=RightsUse(spec["intended_use"]), value=RightsValue(spec["value"]),
                 reason_code=RightsReason(spec["reason_code"]), reason_detail=spec["reason_detail"], evidence_refs=spec["evidence_refs"],
                 actor_id=spec["actor_id"], valid_from=spec["valid_from"], valid_until=spec.get("valid_until"),
-                recorded_at=spec["recorded_at"], lifecycle_id=spec["lifecycle_id"], predecessor_id=spec.get("predecessor_id"),
+                recorded_at=spec["recorded_at"], lifecycle_id=spec["lifecycle_id"],
+                processor=spec.get("processor"), predecessor_id=spec.get("predecessor_id"),
             )
         elif args.command == "lifecycle":
             spec = _spec(

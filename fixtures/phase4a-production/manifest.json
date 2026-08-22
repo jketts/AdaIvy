@@ -9,10 +9,10 @@
     "rights_decision_count": 4
   },
   "expected_record_count": 9,
-  "expected_semantic_export_hash": "sha256:1d4819b08292ed490c13b45eea84e1255d38b479a6a1710c314d50a607460e4c",
+  "expected_semantic_export_hash": "sha256:cb8c83a4778596239ffdbfa4021f61634cd96726fcaf6eecab5cab8c9b537d9b",
   "export_profile": "phase4-review-v1",
-  "fixture_sha256": "sha256:7ffcffe96c76cf1f1dabb0b048f2561a6cc412809f25dc04d65faf3c9336658e",
+  "fixture_sha256": "sha256:4c68cf25697c48b075603e1c03afaed80c32140708fb6abfada1d5d4b7f83287",
   "record_schema_version": "adaivy.phase4a-record.v1",
-  "schema_sha256": "sha256:f166aae343997433370c7d61c08e47c52787d51b59af05edae152b074612537a",
+  "schema_sha256": "sha256:6e21dca67beff9cab33f22792090c7d4b1edd03a8f0fe80925671ee9bcad336b",
   "schema_version": "adaivy.phase4a-production-fixture-manifest.v1"
 }

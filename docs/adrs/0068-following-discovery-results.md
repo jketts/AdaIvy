@@ -1,4 +1,4 @@
-# ADR-0065: Following discovery results (machine-selected fetch origins)
+# ADR-0068: Following discovery results (machine-selected fetch origins)
 
 - **Status:** accepted by owner decision on 2026-08-22, **over a recorded
   recommendation against it**. The recommendation and the residual risk are
@@ -9,7 +9,7 @@
   trusted documents); Section 15 (`:1801` prompt injection inside retrieved
   documents; `:1817-1818` treat all retrieved content as untrusted data);
   ADR-0050 (exact-URL human-planned acquisition); ADR-0051 (bounded discovery,
-  which states "does not follow results"); ADR-0064 (corpus at volume)
+  which states "does not follow results"); ADR-0067 (corpus at volume)
 - **Decision owners:** repository owner
 
 ## Context
@@ -77,7 +77,7 @@ a hard gate, not a default.
   `:1817-1818`. Content inside the region is never treated as instruction.
 - **Rights are not inherited from discovery.** A discovery hit authorizes
   nothing. Each followed document needs its own Phase 4A acquisition, retention,
-  and parsing decisions, and its own ADR-0061 processor decision before it may be
+  and parsing decisions, and its own ADR-0064 processor decision before it may be
   embedded.
 - **This does not license query generation.** The machine may follow a result; it
   may not invent the query that produced it. ADR-0051's operator-supplied,

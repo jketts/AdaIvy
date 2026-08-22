@@ -1,7 +1,7 @@
-# ADR-0061: Phase 4A embedding rights bind a named processor
+# ADR-0064: Phase 4A embedding rights bind a named processor
 
 - **Status:** proposed; the first of three slices activating embedding-backed
-  semantic retrieval, and a hard prerequisite for ADR-0062 and ADR-0063
+  semantic retrieval, and a hard prerequisite for ADR-0065 and ADR-0066
 - **Date:** 2026-08-22
 - **Blueprint requirement:** Section 12.2.1 (provider binding for vector
   projections); Section 2 C1 (provenance completeness), C12 (citation
@@ -40,8 +40,14 @@ mode: reusing `EMBEDDING`/`MODEL_CONTEXT` against their meaning.
 Three consequences of the closed schema are load-bearing and must be stated
 before the decision rather than discovered during it:
 
-1. The rights payload field set is closed in two places and both must change
-   together, or a decision that validates on append fails on durable re-verify.
+1. The rights payload field set is closed in ONE place, not two. **This ADR
+   originally said two and was wrong.** `_exact(...)` for the rights payload
+   exists only in `_validate_payload`, which both `validate_record_for_append`
+   and `validate_durable_records` reach through `validate_structure`. What is
+   duplicated at `validation.py:374-388` is the *domain* block -- reason/value
+   consistency and timestamp checks -- not the field set. The coupling rule
+   therefore belongs in the shared structural check, mirrored defensively in both
+   domain blocks to match the file's existing idiom.
 2. `PRODUCTION_SCHEMA_SHA256` at `validation.py:28` pins the schema digest. Any
    field addition moves it.
 3. ADR-0026:108-110 routes any slice touching the Phase 4A rights boundary back
@@ -96,7 +102,7 @@ authorization. For `embedding` and `model_context` it must be present.
   the revocation/takedown override at `service.py:129-144` apply to embedding
   decisions exactly as to every other use. An expired embedding decision means
   no new vectors may be produced; it does not retroactively invalidate vectors
-  already produced under it, which is ADR-0062's retention question and is
+  already produced under it, which is ADR-0065's retention question and is
   explicitly open here.
 - **Human authority is unchanged and unweakened.** Rights decisions stay pinned
   to `(ActorKind.HUMAN, Authority.HUMAN_FINAL)` at `service.py:110` and
@@ -105,7 +111,7 @@ authorization. For `embedding` and `model_context` it must be present.
 ## What this decision does not license
 
 It does not create an embedding capability: no provider port, no vector, no
-index, no retrieval change. Those are ADR-0062 and ADR-0063 and each needs its
+index, no retrieval change. Those are ADR-0065 and ADR-0066 and each needs its
 own decision. It does not assess novelty, significance, or source
 applicability, does not create mathematical warrant or graph admission, and does
 not make any source applicable to any claim. Granting the right to embed a
@@ -177,9 +183,9 @@ already-produced vectors; or extending `processor` to non-disclosing uses.
 
 ## Explicit deferrals
 
-- The provider port, vector arithmetic, and artifact store: ADR-0062.
-- The retrieval signal and any fusion change: ADR-0063.
+- The provider port, vector arithmetic, and artifact store: ADR-0065.
+- The retrieval signal and any fusion change: ADR-0066.
 - Corpus ingestion beyond the frozen Phase 4C fixture set: unaddressed here and
-  the real limit on "wide" retrieval; see ADR-0063's context.
+  the real limit on "wide" retrieval; see ADR-0066's context.
 - Whether vectors produced under a later-revoked decision must be deleted: an
   ADR-0021 deletable-content question, open.

@@ -1,6 +1,6 @@
-# ADR-0063: Phase 4C semantic signal over replayed vectors, and the corpus-scope limit
+# ADR-0066: Phase 4C semantic signal over replayed vectors, and the corpus-scope limit
 
-- **Status:** proposed; third of three slices. Requires ADR-0061 and ADR-0062.
+- **Status:** proposed; third of three slices. Requires ADR-0064 and ADR-0065.
 - **Date:** 2026-08-22
 - **Blueprint requirement:** Section 7.3 (retrieval strategy); Section 12.2
   (rebuildable projections); the decision row at `TECHNICAL_BLUEPRINT.md:70`;
@@ -31,7 +31,7 @@ ADR-0031 deferred this signal deliberately, choosing "Wrap (deterministic signal
 now, embeddings later behind the same fusion port)" over "Adopt", and recorded the
 unblocking conditions: an owner-issued Phase 4A `embedding` rights decision
 naming a processor, §12.2.1's partitioning and artifact obligations, and a pinned
-per-provider pricing snapshot. ADR-0061 and ADR-0062 satisfy those. The deferral
+per-provider pricing snapshot. ADR-0064 and ADR-0065 satisfy those. The deferral
 is now lifted on its own stated terms rather than overridden.
 
 ### The corpus is the binding limit, not the signal
@@ -44,7 +44,7 @@ queries**, and the count is not incidental -- `fixtures.py:190-255` enforces
 Adding semantic retrieval over 19 documents does not produce a wide literature
 search. It produces a better-measured retrieval benchmark. The path to a real
 corpus runs through ADR-0050 acquisition, one human-planned exact URL at a time,
-plus a Phase 4A rights decision per document and now an ADR-0061 processor
+plus a Phase 4A rights decision per document and now an ADR-0064 processor
 decision per document before any of it may be embedded. Nothing in this slice
 shortens that path, and no report from it may imply otherwise.
 
@@ -55,19 +55,19 @@ shortens that path, and no report from it may imply otherwise.
 | Live embedding call inside `evaluate_hybrid` | simplest | query vectors for free | breaks the network-blocked cost test, the `external_spend_usd == 0` gate, the stdlib allowlist, and §12.2.1's replay rule | Rejected |
 | Float cosine as an unbounded additive term | BM25 is already float | fidelity to provider scores | injects an unbounded term into a score space whose 4.4-13.2 point BM25 margins ADR-0031 exists to protect; a small vector score change could silently reorder golds | Rejected |
 | Exclusion-only semantic signal, mirroring the disclaimer signal | ADR-0032 precedent; three invariants already enforced | cannot promote a wrong document | cannot fix vocabulary mismatch either, which is the *only* failure this signal was deferred to address | Rejected: solves the wrong half |
-| Exact-cosine tiering contributing bounded integer points, mirroring the alias signal | `fusion.py:132-181`; `aliases.py:32`; ADR-0062's exact integers | exact and decidable ranking; bounded, auditable contribution; preserves BM25 margins; no float, no network | tier boundaries and point value must be frozen before measurement, or the slice becomes fixture-fitting | **Selected** |
+| Exact-cosine tiering contributing bounded integer points, mirroring the alias signal | `fusion.py:132-181`; `aliases.py:32`; ADR-0065's exact integers | exact and decidable ranking; bounded, auditable contribution; preserves BM25 margins; no float, no network | tier boundaries and point value must be frozen before measurement, or the slice becomes fixture-fitting | **Selected** |
 
 ## Decision
 
 Add a fourth port, `SemanticSignal`, to `phase4c/ports.py`, and a
-`semantic.py` module that reads **only** ADR-0062 artifacts from one declared
+`semantic.py` module that reads **only** ADR-0065 artifacts from one declared
 partition. It constructs no float, holds no credential, opens no socket, and
 makes no provider call, so every existing Phase 4C invariant survives unchanged.
 
 ### Contribution shape, frozen before measurement
 
 The signal ranks documents within its partition by exact integer cosine
-(ADR-0062), takes the top `semantic_candidate_limit`, and assigns each a tier by
+(ADR-0065), takes the top `semantic_candidate_limit`, and assigns each a tier by
 rank. Fusion adds `semantic_tier_points * tier_credit`, an exact rational
 multiple, in the same additive position as `alias_phrase_points * phrase_count`
 at `fusion.py:171-175`.
@@ -154,7 +154,7 @@ perform an ADR-0055 novelty re-check, which remains human by construction.
 - The seven gates are re-measured. Their previous values are not the baseline to
   protect; the recorded prediction is the thing being tested.
 - `make check` stays offline and network-free. The live ingestion path from
-  ADR-0062 remains a separate credentialed target.
+  ADR-0065 remains a separate credentialed target.
 - Phase 4C's document-scope caveat still applies: the retrieval unit is a
   single-claim unit, and this must be re-derived before any multi-section parsed
   unit reuses the slice.

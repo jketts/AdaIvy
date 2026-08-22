@@ -217,9 +217,21 @@ What holds today:
   SQLite FTS5/BM25 behind a `RetrievalIndex` port that excludes model providers
   by construction, and `src/math_research/synthesis/ports.py` keeps the
   synthesis index replaceable for the same reason.
-- There are no embeddings, no vector index, and no embedding-provider port.
-  `RightsUse.EMBEDDING` in `src/math_research/phase4a/records.py` is a rights
-  enum value awaiting an implementation, not a capability.
+- There is an embedding-provider port and an exact vector artifact store, and
+  no vector index. ADR-0064 makes `RightsUse.EMBEDDING` reachable: a rights
+  decision now names the processor that receives the text, so authorizing the
+  *use* no longer leaves the *recipient* unstated. ADR-0065 adds
+  `src/math_research/embedding/` -- a sibling `EmbeddingGateway`, exact integer
+  coordinates quantized once at ingestion, and content-hashed artifacts
+  partitioned by `(provider, model_identifier, dimension, normalization)`. A
+  rebuild replays those bytes and never re-calls the provider, so the read path
+  has no provider, no credential, and no network surface.
+- Retrieval does not yet consume any of it. ADR-0066 adds the Phase 4C semantic
+  signal; until it lands and a live ingestion measures its gates, the capability
+  has a recorded ADR-0029 prediction but no measured cost-adjusted gain, and the
+  only vectors in the tree are project-authored synthetic fixtures that say
+  nothing about real embedding quality. There is still no approximate-nearest-
+  neighbour search and no index structure beyond exact linear scan.
 - Bounded multi-hop query expansion is deterministic. Terminology, notation,
   citation, and contrasting-approach queries in
   `src/math_research/synthesis/retrieval.py` derive from indexed record terms,
