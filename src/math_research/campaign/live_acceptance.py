@@ -23,6 +23,19 @@ _RETRY_FIELDS = frozenset({
     "retryable_http_statuses", "initial_backoff_milliseconds",
     "maximum_backoff_milliseconds", "max_retries", "jitter",
 })
+_REQUIRED_EVIDENCE = (
+    "provider_activation", "discovery_activation", "snapshot_activation",
+    "embedding_activation", "workspace_sandbox_activation",
+    "verifier_activation",
+)
+_BUDGET_CEILINGS = {
+    "max_model_requests": 256,
+    "max_embedding_requests": 4_096,
+    "max_network_requests": 4_096,
+    "max_tool_runs": 256,
+    "max_storage_bytes": 1_000_000_000_000,
+    "max_wall_milliseconds": 86_400_000,
+}
 
 
 class LiveAcceptanceGateError(ValueError):
@@ -54,7 +67,13 @@ def load_live_acceptance_gate(path: Path) -> dict[str, Any]:
         raise LiveAcceptanceGateError("live acceptance gate content hash differs")
     if value["status"] not in {"pending_operator_activation", "active"}:
         raise LiveAcceptanceGateError("live acceptance gate status differs")
-    if value["provider"] != "azure_openai" or not isinstance(value["model_identifier"], str):
+    if (
+        value["provider"] != "azure_openai"
+        or not isinstance(value["model_identifier"], str)
+        or not value["model_identifier"]
+        or not isinstance(value["gate_id"], str) or not value["gate_id"]
+        or not isinstance(value["target_id"], str) or not value["target_id"]
+    ):
         raise LiveAcceptanceGateError("live acceptance provider binding differs")
     if value["action_schema"] != "schemas/model-campaign-action-v2.schema.json":
         raise LiveAcceptanceGateError("live acceptance action schema differs")
@@ -63,6 +82,8 @@ def load_live_acceptance_gate(path: Path) -> dict[str, Any]:
         raise LiveAcceptanceGateError("live acceptance budget fields differ")
     if any(not isinstance(item, int) or isinstance(item, bool) or item < 1 for item in budget.values()):
         raise LiveAcceptanceGateError("live acceptance budgets must be positive integers")
+    if any(budget[name] > ceiling for name, ceiling in _BUDGET_CEILINGS.items()):
+        raise LiveAcceptanceGateError("live acceptance budget exceeds its structural ceiling")
     retry = value["retry_policy"]
     if not isinstance(retry, dict) or set(retry) != _RETRY_FIELDS:
         raise LiveAcceptanceGateError("live acceptance retry policy fields differ")
@@ -75,7 +96,7 @@ def load_live_acceptance_gate(path: Path) -> dict[str, Any]:
     }:
         raise LiveAcceptanceGateError("live acceptance retry policy differs")
     evidence = value["required_gate_evidence"]
-    if not isinstance(evidence, list) or len(evidence) != len(set(evidence)) or not evidence:
+    if evidence != list(_REQUIRED_EVIDENCE):
         raise LiveAcceptanceGateError("live acceptance evidence list differs")
     if value["required_human_checkpoint"] != "before_announcement":
         raise LiveAcceptanceGateError("before_announcement checkpoint must remain mandatory")

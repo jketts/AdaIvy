@@ -73,3 +73,22 @@ class LiveAcceptanceGateTests(unittest.TestCase):
             active, execute=True, acknowledgement="", evidence_directory=ROOT / "absent",
         )
         self.assertEqual("live_acceptance_not_acknowledged", no_ack["reason"])
+
+    def test_rehashed_gate_cannot_remove_evidence_or_raise_budget_ceiling(self) -> None:
+        original = json.loads(
+            (ROOT / "config/campaign-live-acceptance-v1.json").read_text()
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "gate.json"
+            for changed in ("evidence", "budget"):
+                value = json.loads(json.dumps(original))
+                if changed == "evidence":
+                    value["required_gate_evidence"].remove("verifier_activation")
+                else:
+                    value["budget"]["max_network_requests"] = 4_097
+                value["content_hash"] = canonical_hash({
+                    key: item for key, item in value.items() if key != "content_hash"
+                })
+                path.write_bytes(canonical_bytes(value) + b"\n")
+                with self.assertRaises(LiveAcceptanceGateError):
+                    load_live_acceptance_gate(path)
