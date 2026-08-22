@@ -14,6 +14,8 @@ from math_research.campaign.runner import (
     CampaignRunnerError,
     CampaignRunnerPolicy,
     ExperimentResult,
+    PlannerBoundsExhaustedError,
+    PlannerContextBoundExhaustedError,
     PlannerResponse,
     SequentialCampaignRunner,
     parse_campaign_action,
@@ -571,6 +573,92 @@ class CampaignRunnerTests(unittest.TestCase):
             campaign_id=completed.campaign_id, target_hash=TARGET,
             configuration_hash=CONFIGURATION, actions=completed.actions,
             model_calls=completed.model_calls, tool_runs=completed.tool_runs,
+        )
+
+
+class LedgerDurabilityTests(unittest.TestCase):
+    """Slice 9: no code path may lose a partially completed campaign's records.
+
+    The planner invocation used to sit OUTSIDE the protective `try`, so a
+    planner-side bound exhaustion propagated out of `run()` and the caller
+    discarded the entire in-memory ledger -- contradicting the runner's own
+    no-lost-attempt contract.
+    """
+
+    def _exhausting_planner(self, error: Exception, *, good_steps=()):
+        steps = list(good_steps)
+
+        class Planner:
+            def __init__(self):
+                self.calls = 0
+
+            def __call__(self, context):
+                self.calls += 1
+                if steps:
+                    return response(steps.pop(0))
+                raise error
+
+        return Planner()
+
+    def _run(self, planner):
+        events = []
+        return runner(
+            planner, RecordingExperiment(events), MemoryArtifacts(events),
+            RecordingVerifier(),
+        ).run()
+
+    def _assert_recorded_terminal(self, completed, terminal, *, actions):
+        self.assertEqual(terminal, completed.terminal_reason)
+        self.assertEqual(actions, [a.action_type.value for a in completed.actions])
+        last = completed.actions[-1]
+        self.assertIs(RecordStatus.FAILED, last.status)
+        self.assertIs(ActorType.SYSTEM, last.actor_type)
+        self.assertEqual((), last.source_record_ids)
+        self.assertEqual((), last.output_artifact_hashes)
+        # The partial ledger is complete and closed: nothing was discarded.
+        build_campaign_export(
+            campaign_id=completed.campaign_id, target_hash=TARGET,
+            configuration_hash=CONFIGURATION, actions=completed.actions,
+            model_calls=completed.model_calls, tool_runs=completed.tool_runs,
+        )
+
+    def test_planner_attempt_exhaustion_mid_run_keeps_the_ledger(self):
+        planner = self._exhausting_planner(
+            PlannerBoundsExhaustedError("campaign model-attempt bound exhausted"),
+            good_steps=[
+                action("derive", artifact_text=CANDIDATE),
+                action("write_program", program_source=PROGRAM),
+            ],
+        )
+        completed = self._run(planner)
+        self._assert_recorded_terminal(
+            completed, "planner_bounds_exhausted",
+            actions=["derive", "write_program", "plan"],
+        )
+        self.assertIn("model-attempt bound", completed.actions[-1].declared_rationale)
+        # Both prior model calls survive.
+        self.assertEqual(2, len(completed.model_calls))
+
+    def test_context_bound_exhaustion_mid_run_keeps_the_ledger(self):
+        planner = self._exhausting_planner(
+            PlannerContextBoundExhaustedError(
+                "campaign planner context byte bound exhausted"
+            ),
+            good_steps=[action("derive", artifact_text=CANDIDATE)],
+        )
+        completed = self._run(planner)
+        self._assert_recorded_terminal(
+            completed, "context_bound_exhausted", actions=["derive", "plan"],
+        )
+        self.assertIn("context", completed.actions[-1].declared_rationale)
+
+    def test_generic_planner_error_is_recorded_not_raised(self):
+        planner = self._exhausting_planner(
+            CampaignRunnerError("scripted campaign planner exhausted"),
+        )
+        completed = self._run(planner)
+        self._assert_recorded_terminal(
+            completed, "planner_rejected", actions=["plan"],
         )
 
 

@@ -20,7 +20,13 @@ from ..phase2.records import ModelRequest, ModelResultStatus, PricingSnapshot
 from ..phase2.serialization import canonical_json, sha256_bytes
 from ..provider_activation import LiveProviderProbeResult
 from .records import RecordStatus, UsageSource
-from .runner import CampaignRunnerError, PlannerContext, PlannerResponse
+from .runner import (
+    CampaignRunnerError,
+    PlannerBoundsExhaustedError,
+    PlannerContextBoundExhaustedError,
+    PlannerContext,
+    PlannerResponse,
+)
 
 
 CAMPAIGN_PROMPT_VERSION = "1.0.0"
@@ -100,7 +106,9 @@ class GatewayCampaignPlanner:
         payload = self._payload(context)
         serialized = canonical_json(payload)
         if len(serialized.encode("utf-8")) > self.max_context_bytes:
-            raise CampaignRunnerError("campaign planner context byte bound exhausted")
+            raise PlannerContextBoundExhaustedError(
+                "campaign planner context byte bound exhausted"
+            )
         request = ModelRequest(
             request_id=OpaqueId(
                 f"request.campaign.{context.campaign_id}.{context.sequence}"
@@ -173,21 +181,21 @@ class GatewayCampaignPlanner:
     def _reserve(self) -> None:
         budget = self.configuration.budget
         if self.attempts_used >= budget.max_attempts:
-            raise CampaignRunnerError("campaign model-attempt bound exhausted")
+            raise PlannerBoundsExhaustedError("campaign model-attempt bound exhausted")
         if (
             self.input_tokens_used + self.configuration.per_call_input_token_reserve
             > budget.max_input_tokens
             or self.output_tokens_used + self.configuration.per_call_output_token_reserve
             > budget.max_output_tokens
         ):
-            raise CampaignRunnerError("campaign model-token bound exhausted")
+            raise PlannerBoundsExhaustedError("campaign model-token bound exhausted")
         reserved_cost = estimate_cost_microusd(
             self.pricing,
             input_tokens=self.configuration.per_call_input_token_reserve,
             output_tokens=self.configuration.per_call_output_token_reserve,
         )
         if self.cost_microusd_used + reserved_cost > budget.max_cost_microusd:
-            raise CampaignRunnerError("campaign model-cost bound exhausted")
+            raise PlannerBoundsExhaustedError("campaign model-cost bound exhausted")
 
     def _actual_budget_exceeded(self) -> bool:
         budget = self.configuration.budget

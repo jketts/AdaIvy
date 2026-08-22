@@ -202,6 +202,7 @@ REFUSAL_LEDGER_INVALID = "campaign_ledger_failed_provenance_validation"
 REFUSAL_CONFIG_REJECTED = "campaign_configuration_rejected"
 REFUSAL_DURABLE_IO = "campaign_durable_write_failed"
 REFUSAL_ACTION_REJECTED = "campaign_action_rejected_mid_run"
+REFUSAL_PLANNER_REJECTED = "campaign_planner_rejected_mid_run"
 REFUSAL_REPLAY_PERFORMED_WORK = (
     "campaign_replay_performed_model_tool_or_network_work"
 )
@@ -331,7 +332,16 @@ FIXTURE_REPORT_TEXT = (
 #: Terminal reasons that mean the campaign did not close cleanly. The ledger is
 #: still persisted -- the failure IS the record -- but the command exits 2 and
 #: names the terminal reason, so a caller cannot read a rejected run as a run.
-REFUSED_TERMINAL_REASONS = frozenset({"action_rejected"})
+#: Planner-side BOUND exhaustion (`planner_bounds_exhausted`,
+#: `context_bound_exhausted`) is deliberately NOT here: exhausting a declared
+#: budget is a legitimate terminal outcome of a bounded campaign, recorded with
+#: a complete ledger and exit 0.
+REFUSED_TERMINAL_REASONS = frozenset({"action_rejected", "planner_rejected"})
+#: Terminal reason -> machine-readable refusal name for the refused subset.
+_REFUSED_TERMINAL_REASON_NAMES = {
+    "action_rejected": REFUSAL_ACTION_REJECTED,
+    "planner_rejected": REFUSAL_PLANNER_REJECTED,
+}
 
 
 class CampaignConfigurationError(ValueError):
@@ -2012,7 +2022,9 @@ def _run_measured(args: argparse.Namespace) -> int:
         return 2
     if completed.terminal_reason in REFUSED_TERMINAL_REASONS:
         _print({
-            "status": "refused", "reason": REFUSAL_ACTION_REJECTED, **payload,
+            "status": "refused",
+            "reason": _REFUSED_TERMINAL_REASON_NAMES[completed.terminal_reason],
+            **payload,
         })
         return 2
     _print({"status": "recorded", **payload})

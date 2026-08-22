@@ -1219,6 +1219,145 @@ class CampaignActivationTests(unittest.TestCase):
         self.assertNotEqual(REFUSAL_ACTIVATION_FAILED, payload["terminal_reason"])
 
 
+class _StructuredGateway:
+    """A gateway stub returning one canned structured action per call."""
+
+    def __init__(self, outputs):
+        self.outputs = list(outputs)
+        self.requests = []
+
+    def prepare(self, request):
+        return None
+
+    def complete(self, request, preparation=None):
+        from math_research.phase2.records import (
+            ModelResult, ModelResultStatus, ModelUsage,
+        )
+
+        self.requests.append(request)
+        return ModelResult(
+            status=ModelResultStatus.SUCCEEDED, provider="azure_openai",
+            model_identifier="gpt-5.6-sol", capabilities=("structured_output",),
+            structured_output=self.outputs.pop(0), declared_rationale=None,
+            refusal=None,
+            usage=ModelUsage(
+                input_tokens=10, output_tokens=5, total_tokens=15,
+                usage_source="api_reported",
+            ),
+            retry_classification="none", provider_request_id="provider-1",
+        )
+
+
+def _derive_action_json() -> str:
+    from math_research.campaign.runner import ACTION_SCHEMA_VERSION
+
+    return json.dumps({
+        "schema_version": ACTION_SCHEMA_VERSION, "action_type": "derive",
+        "branch_id": "branch.main", "rationale": "live regression derive",
+        "artifact_text": "candidate text", "program_source": None,
+        "tool_request": None, "selected_candidate_hash": None,
+        "selected_tool_artifact_hashes": [], "report_text": None,
+    }, sort_keys=True, separators=(",", ":"))
+
+
+class CampaignLedgerDurabilityTests(unittest.TestCase):
+    """Slice 9 CLI gates: planner bound exhaustion leaves a complete durable
+    ledger, a terminal report, and exit 0 -- never a discarded run."""
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+        with no_effects():
+            self.config = write_config(self.root)
+            _, self.target = write_target(self.root)
+            self.recheck = write_novelty(self.root, self.target)
+
+    def _run_live_with_gateway(self, name, gateway, *, attempts, config=None):
+        live, pricing, live_path, pricing_path = live_pair(
+            self.root / name, attempts=attempts,
+        )
+        (self.root / name).mkdir(exist_ok=True)
+        root = self.root / f"{name}-run"
+        with (
+            observe_effects() as observed,
+            mock.patch.object(
+                campaign_cli, "build_gateway", lambda *_a, **_k: gateway,
+            ),
+            mock.patch.object(
+                campaign_cli, "static_provider_preflight",
+                lambda *_a, **_k: passed_static(live, pricing),
+            ),
+            mock.patch.object(
+                campaign_cli, "run_live_provider_probe",
+                lambda *_a, **_k: passed_activation(live, pricing),
+            ),
+        ):
+            code, payload = invoke(
+                "run", str(root), CAMPAIGN_ID,
+                "--config", str(config or self.config),
+                "--recorded-at", RUN_INSTANT,
+                "--novelty-recheck", str(self.recheck),
+                "--provider", "azure_openai", "--execute",
+                "--live-config", str(live_path),
+                "--pricing-snapshot", str(pricing_path),
+                "--activation-acknowledgement", LIVE_PROBE_ACKNOWLEDGEMENT,
+                "--action-schema",
+                str(REPO_ROOT / "schemas/model-campaign-action-v1.schema.json"),
+            )
+        if observed:
+            raise AssertionError(f"stubbed live harness performed: {observed}")
+        return code, payload, root
+
+    def test_attempt_exhaustion_mid_run_is_a_recorded_terminal_exit_zero(self):
+        gateway = _StructuredGateway([_derive_action_json()])
+        code, payload, root = self._run_live_with_gateway(
+            "attempts", gateway, attempts=2,
+        )
+        self.assertEqual(0, code, payload)
+        self.assertEqual("recorded", payload["status"])
+        self.assertEqual("planner_bounds_exhausted", payload["terminal_reason"])
+        export = verify_campaign_export((root / "campaign.json").read_bytes())
+        self.assertEqual(
+            ["plan", "derive", "plan"],
+            [item.action_type.value for item in export.actions],
+        )
+        self.assertEqual(RecordStatus.FAILED, export.actions[-1].status)
+        self.assertIn(
+            "model-attempt bound", export.actions[-1].declared_rationale,
+        )
+        # The paid activation and the one research call both survive.
+        self.assertEqual(2, export.usage["requests_attempted"])
+        # A terminal report was produced alongside the ledger.
+        self.assertIn("publication_draft", payload)
+        with no_effects():
+            replay_code, replay_payload = invoke("replay", str(root))
+        self.assertEqual(0, replay_code, replay_payload)
+        self.assertTrue(replay_payload["verified"])
+
+    def test_context_bound_exhaustion_is_a_recorded_terminal_exit_zero(self):
+        with no_effects():
+            tight = write_config(self.root / "tight", max_context_bytes=16)
+        gateway = _StructuredGateway([])
+        code, payload, root = self._run_live_with_gateway(
+            "context", gateway, attempts=4, config=tight,
+        )
+        self.assertEqual(0, code, payload)
+        self.assertEqual("recorded", payload["status"])
+        self.assertEqual("context_bound_exhausted", payload["terminal_reason"])
+        # The bound was enforced before any provider request left the process.
+        self.assertEqual([], gateway.requests)
+        export = verify_campaign_export((root / "campaign.json").read_bytes())
+        self.assertEqual(
+            ["plan", "plan"], [item.action_type.value for item in export.actions],
+        )
+        self.assertIn("byte bound", export.actions[-1].declared_rationale)
+        with no_effects():
+            replay_code, replay_payload = invoke("replay", str(root))
+        self.assertEqual(0, replay_code, replay_payload)
+        self.assertTrue(replay_payload["verified"])
+
+
 #: The real scripted planner, captured before any test patches the module
 #: attribute, so a wrapper can delegate to it without recursing.
 _REAL_SCRIPTED_PLANNER = campaign_cli.ScriptedCampaignPlanner
@@ -1658,7 +1797,11 @@ class CampaignRepairedDefectTests(unittest.TestCase):
                 self.assertEqual(expected, campaign_cli._rejection_reason(error))
         self.assertEqual(len(pairs), len({expected for _, expected in pairs}))
 
-    def test_a_planner_that_raises_is_reported_as_a_runner_rejection(self):
+    def test_a_planner_that_raises_is_recorded_not_discarded(self):
+        """Slice 9: a planner-side `CampaignRunnerError` no longer escapes
+        `run()` and discards the ledger; it is a recorded terminal reason.
+        """
+
         root = self.root / "planner-raises"
         with no_effects(), mock.patch.object(
             campaign_cli, "ScriptedCampaignPlanner", _RaisingPlanner,
@@ -1669,8 +1812,16 @@ class CampaignRepairedDefectTests(unittest.TestCase):
                 "--novelty-recheck", str(self.recheck),
             )
         self.assertEqual(2, code)
-        self.assertEqual(REFUSAL_RUNNER_REJECTED, payload["reason"])
-        self.assertIn("scripted planner refused to plan", payload["detail"])
+        self.assertEqual(campaign_cli.REFUSAL_PLANNER_REJECTED, payload["reason"])
+        self.assertEqual("planner_rejected", payload["terminal_reason"])
+        # The ledger is durable and closed even though the planner refused.
+        export = verify_campaign_export((root / "campaign.json").read_bytes())
+        self.assertEqual(["plan"], [a.action_type.value for a in export.actions])
+        self.assertEqual(RecordStatus.FAILED, export.actions[-1].status)
+        self.assertIn(
+            "scripted planner refused to plan",
+            export.actions[-1].declared_rationale,
+        )
 
     def test_a_ledger_provenance_failure_is_not_a_runner_rejection(self):
         root = self.root / "ledger-invalid"

@@ -7,7 +7,11 @@ can receive a request for that program.
 
 A rejected action is terminal and RETAINED rather than raised: `run` returns the
 partial ledger with `terminal_reason == "action_rejected"` and a `failed`
-action naming the refused planner output.  See `SequentialCampaignRunner.run`.
+action naming the refused planner output.  A planner-side bound exhaustion is
+likewise RETAINED: the planner call sits inside the same protective boundary,
+so `planner_bounds_exhausted`, `context_bound_exhausted` and `planner_rejected`
+are recorded terminal reasons with a complete ledger, never exceptions that
+discard one.  See `SequentialCampaignRunner.run`.
 """
 
 from __future__ import annotations
@@ -58,6 +62,24 @@ _SUPPORTED_ACTIONS = frozenset({
 
 class CampaignRunnerError(CampaignProvenanceError):
     """A planner action or effect request was rejected before execution."""
+
+
+class PlannerBoundsExhaustedError(CampaignRunnerError):
+    """The planner's own model-side budget forbids another call.
+
+    Raised by a planner port BEFORE any provider request is made.  The runner
+    records it as the terminal reason ``planner_bounds_exhausted`` and returns
+    the complete partial ledger rather than letting the exception discard it.
+    """
+
+
+class PlannerContextBoundExhaustedError(CampaignRunnerError):
+    """The planner context exceeds its byte bound and cannot be reduced.
+
+    Raised by a planner port BEFORE any provider request is made.  The runner
+    records it as the terminal reason ``context_bound_exhausted`` and returns
+    the complete partial ledger rather than letting the exception discard it.
+    """
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -505,9 +527,45 @@ class SequentialCampaignRunner:
                 actions_remaining=self.policy.max_actions - sequence + 1,
                 tool_runs_remaining=self.policy.max_tool_runs - len(tools),
             )
-            response = self.planner(context)
+            # The planner call sits INSIDE the no-lost-attempt boundary.  A
+            # planner-side bound exhaustion (model attempts, tokens, cost, or
+            # the context byte bound) is a terminal fact about this campaign,
+            # not a host fault: it is recorded as a terminal system action and
+            # the complete partial ledger is RETURNED, never discarded.
             action_id = f"action.{sequence}"
             call_id = f"call.{sequence}"
+            try:
+                response = self.planner(context)
+            except PlannerBoundsExhaustedError as exhaustion:
+                actions.append(self._planner_refusal_action(
+                    action_id=action_id, sequence=sequence, actions=actions,
+                    rationale=(
+                        "The planner refused another model call because its own "
+                        "budget bound is exhausted: " + str(exhaustion)[:1_000]
+                    ),
+                ))
+                terminal = "planner_bounds_exhausted"
+                break
+            except PlannerContextBoundExhaustedError as exhaustion:
+                actions.append(self._planner_refusal_action(
+                    action_id=action_id, sequence=sequence, actions=actions,
+                    rationale=(
+                        "The planner context exceeded its byte bound before any "
+                        "provider request was made: " + str(exhaustion)[:1_000]
+                    ),
+                ))
+                terminal = "context_bound_exhausted"
+                break
+            except CampaignRunnerError as refusal:
+                actions.append(self._planner_refusal_action(
+                    action_id=action_id, sequence=sequence, actions=actions,
+                    rationale=(
+                        "The planner port rejected this call before any provider "
+                        "request was made: " + str(refusal)[:1_000]
+                    ),
+                ))
+                terminal = "planner_rejected"
+                break
             # A mid-loop rejection must not discard the ledger: `_store` has
             # already written model-authored bytes to the artifact store by the
             # time most of these checks run, and AGENTS.md requires the failed
@@ -754,6 +812,32 @@ class SequentialCampaignRunner:
             report_artifact_hash=report_hash,
         )
 
+    def _planner_refusal_action(
+        self, *, action_id: str, sequence: int, actions: list[ActionRecord],
+        rationale: str,
+    ) -> ActionRecord:
+        """A terminal system action for a planner-side refusal.
+
+        No model call left the process and no bytes exist to store, so the
+        record carries no source records and no output artifacts; ledger
+        closure holds because it introduces nothing.
+        """
+
+        return ActionRecord(
+            action_id=action_id, campaign_id=self.campaign_id,
+            sequence=sequence, branch_id="branch.system",
+            action_type=ActionType.PLAN, actor_type=ActorType.SYSTEM,
+            actor_id="system.campaign-runner",
+            parent_action_ids=((actions[-1].action_id,) if actions else ()),
+            input_artifact_hashes=(
+                actions[-1].output_artifact_hashes if actions
+                else (self.target_hash, self.configuration_hash)
+            ),
+            source_record_ids=(), output_artifact_hashes=(),
+            status=RecordStatus.FAILED, declared_rationale=rationale,
+            recorded_at=self.recorded_at(),
+        ).finalized()
+
     @staticmethod
     def _planner_request_hash(context: PlannerContext) -> str:
         return canonical_hash({
@@ -894,6 +978,8 @@ __all__ = [
     "ACTION_SCHEMA_VERSION", "ArtifactStore", "CampaignAction",
     "CampaignExperimentRunner", "CampaignRun", "CampaignRunnerError",
     "CampaignRunnerPolicy", "ExperimentRequest", "ExperimentResult", "PlannerContext",
-    "PlannerPort", "PlannerResponse", "ResourceLimits", "SequentialCampaignRunner",
-    "ToolRequest", "VerificationRequest", "VerifierPort", "parse_campaign_action",
+    "PlannerPort", "PlannerResponse", "PlannerBoundsExhaustedError",
+    "PlannerContextBoundExhaustedError", "ResourceLimits",
+    "SequentialCampaignRunner", "ToolRequest", "VerificationRequest",
+    "VerifierPort", "parse_campaign_action",
 ]
