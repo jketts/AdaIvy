@@ -19,6 +19,8 @@ export PYTHONPATH := src
 PHASE5_INSTANT ?= 2026-08-20T12:00:00Z
 PHASE6_INSTANT ?= 2026-08-20T14:00:00Z
 INTAKE_INSTANT ?= 2026-08-21T00:00:00Z
+CAMPAIGN_RECHECK_INSTANT ?= 2026-08-22T00:00:00Z
+CAMPAIGN_INSTANT ?= 2026-08-22T00:10:00Z
 
 TMPROOT ?= $(shell printf '%s' "$${TMPDIR:-/tmp}")
 TYPESET_BIN ?= $(CURDIR)/work/toolchains/basictex-2026.0301/bin/universal-darwin
@@ -44,11 +46,11 @@ WORK ?= work/$(REPORT_STAMP)
 
 .PHONY: check check-all check-sealed check-gate setup-typeset check-typeset publication-build check-phase4b-oci \
         spike-phase5-sdp test phase0 phase1 problem-intake phase2 phase3a phase3b phase4a phase4b \
-        phase4c phase4d phase5 phase6 synthesis publication report clean help
+        phase4c phase4d phase5 phase6 synthesis campaign publication report clean help
 
 help:
 	@printf 'Targets:\n'
-	@printf '  check         offline suite: tests + phases 0,1,2,3A,4A,4B,4C,4D,5,6, problem intake, synthesis, publication\n'
+	@printf '  check         offline suite: tests + phases 0,1,2,3A,4A,4B,4C,4D,5,6, problem intake, synthesis, campaign, publication\n'
 	@printf '  check-sealed  phase 3B Lean formal checking (requires the ADR-0016 v5 image)\n'
 	@printf '  check-gate    phase 4 gate tests (requires the disposable jsonschema env)\n'
 	@printf '  setup-typeset acquire and hash-check BasicTeX under work/toolchains\n'
@@ -61,7 +63,7 @@ help:
 	@printf '                default OUT=reports/local/run-<stamp> (gitignored)\n'
 	@printf '  clean         remove __pycache__ and stray sqlite journals\n'
 
-check: test phase0 phase1 problem-intake phase2 phase3a phase4a phase4b phase4c phase4d phase5 phase6 synthesis publication
+check: test phase0 phase1 problem-intake phase2 phase3a phase4a phase4b phase4c phase4d phase5 phase6 synthesis campaign publication
 	@printf '\n== offline check complete ==\n'
 
 check-all: check check-sealed
@@ -307,6 +309,81 @@ synthesis:
 	  $(PY) -m math_research.synthesis_cli inspect \
 	    "$$d/synthesis-export.json" >/dev/null && \
 	  rm -rf "$$d" && printf 'synthesis ok\n'
+
+# ADR-0065 gives the ADR-0057 campaign the operator entrypoint it never had.
+# This target exercises ONLY the zero-network fixture dry path: a scripted
+# planner that holds no gateway and calls nothing, an experiment runner that
+# executes nothing, and a verifier that records its own absence. It needs no
+# network, no model provider, no container runtime and no third-party package,
+# it renders into a mktemp directory it deletes, and it never writes into a
+# tracked path.
+#
+# The recorded outcome is asserted rather than the exit status, so six things
+# must fail here rather than pass quietly: a fixture run that names a provider
+# other than `fixture`, a program that executes before the ADR-0066
+# experiment-sandbox gate passes, a verification that completes while no
+# isolated verifier is wired, a guardrail that turns true, a live provider that
+# starts without `--execute`, and a ledger whose bytes move between two runs on
+# identical inputs. The two frozen instants above are inputs, never clock reads;
+# a moving hash means the campaign is no longer reproducible from its inputs.
+campaign:
+	@printf '\n== ADR-0065 campaign operator entrypoint (offline fixture dry path) ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-campaign.XXXXXX") && \
+	  $(PY) -m math_research.cli campaign config-create "$$d/config.json" \
+	    --campaign-configuration-id config.campaign.offline.v1 \
+	    --allowed-tool exact_python \
+	    --max-actions 8 --max-tool-runs 3 --max-model-calls 8 \
+	    --max-input-tokens 20000 --max-output-tokens 20000 \
+	    --max-cost-microusd 1000000 --max-program-bytes 4096 \
+	    --max-artifact-bytes 65536 --max-context-bytes 65536 \
+	    --max-cpu-milliseconds 1000 --max-wall-milliseconds 2000 \
+	    --max-memory-bytes 67108864 --max-output-bytes 65536 \
+	    --max-process-count 1 >/dev/null && \
+	  $(PY) -m math_research.cli campaign target "$$d/target.json" >/dev/null && \
+	  pid=$$($(PY) -c 'import json,sys; print(json.load(open(sys.argv[1]))["problem_id"])' "$$d/target.json") && \
+	  shash=$$($(PY) -c 'import json,sys; print(json.load(open(sys.argv[1]))["dossier_content_hash"])' "$$d/target.json") && \
+	  ehash=$$($(PY) -c 'import hashlib,sys; print("sha256:" + hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$$d/target.json") && \
+	  $(PY) -m math_research.cli novelty create before_research "$$pid" "$$shash" \
+	    campaign.offline.fixture.v1 operator.repository-owner \
+	    $(CAMPAIGN_RECHECK_INSTANT) "$$d/novelty-recheck.json" \
+	    --recheck-id recheck.campaign.offline.v1 \
+	    --protocol-id protocol.offline.no-search.v1 \
+	    --query-term 'even sum' \
+	    --searched-source 'none: the offline fixture path performs no search' \
+	    --equivalence-check 'none: the offline fixture path performs no equivalent-formulation check' \
+	    --evidence-ref evidence.campaign.frozen-target "$$ehash" \
+	    --outcome inconclusive --prior-art-relationship unresolved \
+	    --prior-resolution unresolved --prior-resolution-verification unresolved \
+	    --limitation 'No literature search was performed; this record binds the offline acceptance run and asserts no novelty.' >/dev/null && \
+	  $(PY) -m math_research.cli campaign run "$$d/first" campaign.offline.fixture.v1 \
+	    --config "$$d/config.json" --recorded-at $(CAMPAIGN_INSTANT) \
+	    --novelty-recheck "$$d/novelty-recheck.json" >/dev/null && \
+	  $(PY) -m math_research.cli campaign run "$$d/second" campaign.offline.fixture.v1 \
+	    --config "$$d/config.json" --recorded-at $(CAMPAIGN_INSTANT) \
+	    --novelty-recheck "$$d/novelty-recheck.json" >/dev/null && \
+	  cmp -s "$$d/first/campaign.json" "$$d/second/campaign.json" && \
+	  cmp -s "$$d/first/campaign-facts.json" "$$d/second/campaign-facts.json" && \
+	  $(PY) -m math_research.cli campaign run "$$d/program" campaign.offline.fixture.v1 \
+	    --config "$$d/config.json" --recorded-at $(CAMPAIGN_INSTANT) \
+	    --novelty-recheck "$$d/novelty-recheck.json" \
+	    --fixture-script program-sandbox-refusal >/dev/null && \
+	  $(PY) -m math_research.cli campaign inspect "$$d/first" >/dev/null && \
+	  $(PY) -m math_research.cli campaign replay "$$d/first" > "$$d/first-replay.json" && \
+	  $(PY) -m math_research.cli campaign replay "$$d/program" > "$$d/program-replay.json" && \
+	  $(PY) -m math_research.cli campaign export "$$d/first" "$$d/campaign-export.json" >/dev/null && \
+	  cmp -s "$$d/first/campaign.json" "$$d/campaign-export.json" && \
+	  { $(PY) -m math_research.cli campaign run "$$d/live" campaign.offline.fixture.v1 \
+	      --config "$$d/config.json" --recorded-at $(CAMPAIGN_INSTANT) \
+	      --novelty-recheck "$$d/novelty-recheck.json" \
+	      --provider azure_openai > "$$d/live-refusal.json" || true; } && \
+	  { $(PY) -m math_research.cli campaign run "$$d/unbound" campaign.offline.fixture.v1 \
+	      --config "$$d/config.json" --recorded-at $(CAMPAIGN_INSTANT) \
+	      > "$$d/unbound-refusal.json" || true; } && \
+	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); p=json.load(open(sys.argv[2])); l=json.load(open(sys.argv[3])); u=json.load(open(sys.argv[4])); f=r["facts"]; g=p["facts"]; assert r["verified"] is True and p["verified"] is True, "campaign replay did not verify"; assert (r["model_calls_made"], r["provider_requests_made"], r["tool_calls_made"], r["subprocesses_opened"], r["network_requests"]) == (0, 0, 0, 0, 0), "campaign replay performed work: %s" % r; assert [i["passed"] for i in r["checks"]] == [True] * 7, "campaign replay check set moved: %s" % r["checks"]; assert f["providers"] == ["fixture"], "the offline campaign path named a provider: %s" % f["providers"]; assert f["measurement_status"] == "unavailable", "a scripted campaign reported measured usage: %s" % f["measurement_status"]; assert f["action_types"] == ["derive", "inspect_result", "verify", "report"] and f["terminal_action_type"] == "report", "campaign action ledger moved: %s" % f["action_types"]; assert f["isolated_verifier"] == {"status": "absent", "reason": "isolated_campaign_verifier_not_wired", "verifications_completed": 0, "verification_refusals_recorded": 1}, "campaign verified something with no isolated verifier: %s" % f["isolated_verifier"]; assert g["action_types"] == ["derive", "write_program", "run_program", "report"], "campaign program ledger moved: %s" % g["action_types"]; assert g["experiment_sandbox"] == {"status": "pending_gate", "blocking_decision": "ADR-0066", "reason": "experiment_sandbox_gate_not_passed_adr_0066", "programs_recorded": 1, "programs_executed": 0, "execution_refusals_recorded": 1}, "campaign executed generated code or lost its ADR-0066 refusal: %s" % g["experiment_sandbox"]; assert all(v is False or v == 0 for v in f["guardrails"].values()) and all(v is False or v == 0 for v in g["guardrails"].values()), "a campaign guardrail was set"; assert l["status"] == "refused" and l["reason"] == "live_campaign_requires_explicit_execute", "a live campaign started without --execute: %s" % l; assert u["status"] == "refused" and u["reason"] == "fresh_novelty_recheck_required_before_research", "a campaign started without a bound novelty re-check: %s" % u' \
+	    "$$d/first-replay.json" "$$d/program-replay.json" "$$d/live-refusal.json" \
+	    "$$d/unbound-refusal.json" && \
+	  rm -rf "$$d" && \
+	  printf 'campaign ok (4-action ledger closed and byte-reproducible; 0 programs executed pending ADR-0066; 0 verifications; replay made 0 model/tool/network/subprocess calls)\n'
 
 # ADR-0036: the publication projection renders the manuscript record set into a
 # content-addressed bundle and asserts the recorded outcome rather than the exit
