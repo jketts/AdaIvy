@@ -26,6 +26,14 @@ work/
 # never a source of truth, and never shared across providers or embedding models
 # (see AGENTS.md and TECHNICAL_BLUEPRINT.md 12.2.1). Committing one would let a
 # stale index outlive the corpus it was built from.
+#
+# An ADR-0062 vector ARTIFACT is not one of these and is deliberately tracked.
+# It is not rebuildable from the records: it required a provider call that is not
+# bit-reproducible, which is why TECHNICAL_BLUEPRINT.md:1667-1671 says to store
+# the bytes and have a rebuild replay them. That makes it primary evidence of a
+# disclosure, closer to an acquisition than to an index, so it lives in
+# `vector-artifacts/`. An index built OVER those artifacts is derived and belongs
+# to the names below.
 *.index.sqlite3
 *.derived.sqlite3
 vector-store/

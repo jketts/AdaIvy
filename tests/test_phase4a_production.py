@@ -24,9 +24,10 @@ from math_research.phase4a.interchange import (
 )
 from math_research.phase4a.content_store import ContentStoreError, read_interchange_file
 from math_research.phase4a.records import (
+    DISCLOSING_RIGHTS_USES, PROCESSOR_FORBIDDEN_REFUSAL, PROCESSOR_REQUIRED_REFUSAL,
     ActorKind, ApplicabilityOutcome, ApplicabilityReason, ApplicabilityStatus,
-    Authority, LifecycleType, RecordType, RightsOutcome, RightsReason, RightsUse,
-    RightsValue,
+    Authority, DisclosureKind, LifecycleType, Processor, RecordType, RightsOutcome,
+    RightsReason, RightsUse, RightsValue,
 )
 from math_research.phase4a.serialization import (
     canonical_bytes, expected_record_id, operational_envelope_hash, record_content_hash,
@@ -34,9 +35,10 @@ from math_research.phase4a.serialization import (
 )
 from math_research.phase4a.service import DeletionInterrupted, Phase4Service, RightsBlocked
 from math_research.phase4a.validation import (
-    PRODUCTION_SCHEMA_SHA256, Phase4ValidationError, validate_schema_contract,
-    verify_bytes,
+    PRODUCTION_SCHEMA_SHA256, Phase4ValidationError, schema_path, validate_durable_records,
+    validate_record_for_append, validate_schema_contract, verify_bytes,
 )
+from math_research.phase2 import SUPPORTED_LIVE_PROVIDERS
 from math_research.phase4a.workspace import Phase4Workspace
 
 T0 = "2026-08-20T00:00:00Z"
@@ -44,6 +46,24 @@ T1 = "2026-08-20T00:00:01Z"
 T2 = "2026-08-20T00:00:02Z"
 T3 = "2026-08-20T00:00:03Z"
 T4 = "2026-08-20T00:00:04Z"
+
+# ADR-0064 processors. One decision authorizes one processor, and a second
+# provider is a second decision, so these three identities stay distinct.
+EMBEDDING_PROCESSOR = Processor(
+    processor_id="processor.azure-openai.text-embedding-3-large",
+    provider="azure_openai", model_identifier="text-embedding-3-large",
+    disclosure_kind=DisclosureKind.TEXT_LEAVES_PROCESS,
+)
+SAME_PROVIDER_OTHER_MODEL = Processor(
+    processor_id="processor.azure-openai.text-embedding-3-small",
+    provider="azure_openai", model_identifier="text-embedding-3-small",
+    disclosure_kind=DisclosureKind.TEXT_LEAVES_PROCESS,
+)
+SECOND_PROVIDER_PROCESSOR = Processor(
+    processor_id="processor.openai.text-embedding-3-large",
+    provider="openai", model_identifier="text-embedding-3-large",
+    disclosure_kind=DisclosureKind.TEXT_LEAVES_PROCESS,
+)
 
 
 def run_canonical_workflow(fixture_path: Path, root: Path) -> dict[str, Any]:
@@ -75,6 +95,9 @@ def run_canonical_workflow(fixture_path: Path, root: Path) -> dict[str, Any]:
                 actor_id=value["actors"]["owner"], valid_from=decision["valid_from"],
                 valid_until=decision["valid_until"], recorded_at=decision["recorded_at"],
                 lifecycle_id=decision["lifecycle_id"],
+                # ADR-0064: read explicitly, so a fixture that omits the field
+                # fails here rather than silently defaulting to no processor.
+                processor=decision["processor"],
             )
         provenance = service.intake_local(
             source, source_id=source_value["id"], actor_id=value["actors"]["operator"],
@@ -139,6 +162,7 @@ class Phase4Fixture:
         self, use: RightsUse, value: RightsValue = RightsValue.ALLOWED,
         reason: RightsReason | None = None, *, at: str = T0,
         until: str | None = None, predecessor_id: str | None = None,
+        processor: Processor | dict[str, Any] | None = None,
     ):
         if reason is None:
             reason = RightsReason.PERMITTED if value is RightsValue.ALLOWED else (
@@ -148,7 +172,8 @@ class Phase4Fixture:
             source_id=self.source_id, intended_use=use, value=value, reason_code=reason,
             reason_detail=f"synthetic {use.value} decision", evidence_refs=(f"evidence.rights-{use.value.replace('_', '-')}",),
             actor_id="actor.owner", valid_from=T0, valid_until=until, recorded_at=at,
-            lifecycle_id=f"rights-lifecycle.{use.value}", predecessor_id=predecessor_id,
+            lifecycle_id=f"rights-lifecycle.{use.value}", processor=processor,
+            predecessor_id=predecessor_id,
         )
 
     def intake(self):
@@ -191,20 +216,44 @@ class Phase4ProductionTests(unittest.TestCase):
                 "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (absent,)
             ).fetchone())
 
-    def test_six_rights_outcomes_and_per_use_separation(self) -> None:
+    def test_seven_rights_outcomes_and_per_use_separation(self) -> None:
+        """Every `RightsOutcome` member is reachable, including ADR-0064's seventh."""
+
         service = self.fixture.service
         source = self.fixture.source_id
+        observed: set[RightsOutcome] = set()
         missing = service.evaluate_rights(source, RightsUse.ACQUISITION, at=T1)
         self.assertEqual(RightsOutcome.MISSING_OR_UNKNOWN, missing.outcome)
+        observed.add(missing.outcome)
         allowed = self.fixture.right(RightsUse.ACQUISITION)
         self.assertEqual(RightsOutcome.PERMITTED, service.evaluate_rights(source, RightsUse.ACQUISITION, at=T1).outcome)
+        observed.add(RightsOutcome.PERMITTED)
         self.assertEqual(RightsOutcome.REQUESTED_USE_INCOMPATIBLE, service.evaluate_rights(source, RightsUse.PUBLICATION, at=T1).outcome)
+        observed.add(RightsOutcome.REQUESTED_USE_INCOMPATIBLE)
         prohibited = self.fixture.right(RightsUse.PUBLICATION, RightsValue.PROHIBITED)
         self.assertEqual(RightsOutcome.EXPLICITLY_PROHIBITED, service.evaluate_rights(source, RightsUse.PUBLICATION, at=T1).outcome)
+        observed.add(RightsOutcome.EXPLICITLY_PROHIBITED)
         self.fixture.right(RightsUse.EXCERPTING, RightsValue.UNRESOLVED)
         self.assertEqual(RightsOutcome.MISSING_OR_UNKNOWN, service.evaluate_rights(source, RightsUse.EXCERPTING, at=T1).outcome)
         expired = self.fixture.right(RightsUse.PARSING, until=T0)
         self.assertEqual(RightsOutcome.EXPIRED, service.evaluate_rights(source, RightsUse.PARSING, at=T1).outcome)
+        observed.add(RightsOutcome.EXPIRED)
+        # ADR-0064. One embedding decision authorizes exactly one named processor.
+        self.fixture.right(RightsUse.EMBEDDING, processor=EMBEDDING_PROCESSOR)
+        self.assertEqual(
+            RightsOutcome.PERMITTED,
+            service.evaluate_rights(
+                source, RightsUse.EMBEDDING, at=T1,
+                processor_id=EMBEDDING_PROCESSOR.processor_id,
+            ).outcome,
+        )
+        not_authorized = service.evaluate_rights(
+            source, RightsUse.EMBEDDING, at=T1,
+            processor_id=SECOND_PROVIDER_PROCESSOR.processor_id,
+        )
+        self.assertEqual(RightsOutcome.PROCESSOR_NOT_AUTHORIZED, not_authorized.outcome)
+        self.assertFalse(not_authorized.allowed)
+        observed.add(not_authorized.outcome)
         # A lifecycle revocation is tested after source registration below.
         self.fixture.right(RightsUse.STORAGE_AND_RETENTION)
         self.fixture.right(RightsUse.PARSING, predecessor_id=expired.id)
@@ -216,6 +265,9 @@ class Phase4ProductionTests(unittest.TestCase):
             reason_code="rights_revoked", reason_detail="synthetic revocation", evidence_refs=("evidence.revocation",), recorded_at=T2,
         )
         self.assertEqual(RightsOutcome.REVOKED, service.evaluate_rights(source, RightsUse.ACQUISITION, at=T3).outcome)
+        observed.add(RightsOutcome.REVOKED)
+        self.assertEqual(set(RightsOutcome), observed, "an outcome is unreachable from the service")
+        self.assertEqual(7, len(set(RightsOutcome)))
 
     def test_local_intake_fails_closed_before_open_and_preserves_provenance(self) -> None:
         with self.assertRaises(RightsBlocked):
@@ -1565,6 +1617,287 @@ with tempfile.TemporaryDirectory() as directory:
             self.assertEqual(HARD_TIMEOUT_SECONDS, run.call_args.kwargs["timeout"])
         with self.assertRaises(ValueError):
             run_with_hard_timeout(["true"], timeout=599)
+
+
+class Phase4AEmbeddingProcessorProbeTests(unittest.TestCase):
+    """The nine ADR-0064 falsifiability probes, plus the rules they protect.
+
+    ADR-0026 makes the acceptance suite the executable record of a slice's
+    thresholds, so each probe mutates exactly ONE field of an otherwise valid
+    input and must produce the refusal ADR-0064 names. `probes_flipped ==
+    probes_total` is asserted below: a rule that cannot be made to fail proves
+    nothing.
+    """
+
+    # Probe name -> the token that must appear in the observed refusal. The
+    # tokens are the ADR's verbatim refusal codes wherever it fixes one.
+    PROBES = {
+        "pr.embedding-rights-require-processor": PROCESSOR_REQUIRED_REFUSAL,
+        "pr.acquisition-rights-forbid-processor": PROCESSOR_FORBIDDEN_REFUSAL,
+        "pr.processor-mismatch-blocks": RightsOutcome.PROCESSOR_NOT_AUTHORIZED.value,
+        "pr.processor-omitted-for-embedding-raises": PROCESSOR_REQUIRED_REFUSAL,
+        "pr.second-provider-not-inherited": RightsOutcome.PROCESSOR_NOT_AUTHORIZED.value,
+        "pr.unknown-provider-refused": "provider is not an admitted live provider",
+        "pr.expired-embedding-decision-blocks": RightsOutcome.EXPIRED.value,
+        "pr.nonhuman-embedding-decision-refused": "rights decisions require human final evidence",
+        "pr.processor-field-set-closed": "extra=['region']",
+    }
+
+    def fixture(self) -> Phase4Fixture:
+        fixture = Phase4Fixture(self)
+        self.addCleanup(fixture.close)
+        return fixture
+
+    def granted(self) -> Phase4Fixture:
+        """An intaken source with one live embedding decision naming one processor."""
+
+        fixture = self.fixture()
+        fixture.intake()
+        fixture.right(RightsUse.EMBEDDING, processor=EMBEDDING_PROCESSOR, at=T1)
+        return fixture
+
+    @staticmethod
+    def _refusal(call) -> str:
+        """Run one probe body and return the refusal it produced, or ``""``."""
+
+        try:
+            call()
+        except (Phase4ValidationError, RightsBlocked, ValueError) as error:
+            return f"{type(error).__name__}: {error}"
+        return ""
+
+    # -- the nine probes -------------------------------------------------
+
+    def probe_embedding_rights_require_processor(self) -> str:
+        fixture = self.fixture()
+        return self._refusal(lambda: fixture.right(RightsUse.EMBEDDING, processor=None))
+
+    def probe_acquisition_rights_forbid_processor(self) -> str:
+        fixture = self.fixture()
+        return self._refusal(
+            lambda: fixture.right(RightsUse.ACQUISITION, processor=EMBEDDING_PROCESSOR)
+        )
+
+    def probe_processor_mismatch_blocks(self) -> str:
+        fixture = self.granted()
+        evaluation = fixture.service.evaluate_rights(
+            fixture.source_id, RightsUse.EMBEDDING, at=T2,
+            processor_id=SAME_PROVIDER_OTHER_MODEL.processor_id,
+        )
+        self.assertFalse(evaluation.allowed)
+        self.assertNotEqual(RightsOutcome.PERMITTED, evaluation.outcome)
+        with self.assertRaises(RightsBlocked):
+            fixture.service.require_rights(
+                fixture.source_id, RightsUse.EMBEDDING, at=T2,
+                processor_id=SAME_PROVIDER_OTHER_MODEL.processor_id,
+            )
+        return evaluation.outcome.value
+
+    def probe_processor_omitted_for_embedding_raises(self) -> str:
+        fixture = self.granted()
+        return self._refusal(
+            lambda: fixture.service.require_rights(
+                fixture.source_id, RightsUse.EMBEDDING, at=T2,
+            )
+        )
+
+    def probe_second_provider_not_inherited(self) -> str:
+        fixture = self.granted()
+        evaluation = fixture.service.evaluate_rights(
+            fixture.source_id, RightsUse.EMBEDDING, at=T2,
+            processor_id=SECOND_PROVIDER_PROCESSOR.processor_id,
+        )
+        self.assertFalse(evaluation.allowed)
+        self.assertNotEqual(
+            EMBEDDING_PROCESSOR.provider, SECOND_PROVIDER_PROCESSOR.provider,
+        )
+        return evaluation.outcome.value
+
+    def probe_unknown_provider_refused(self) -> str:
+        fixture = self.fixture()
+        unknown = dict(EMBEDDING_PROCESSOR.as_payload(), provider="not-a-real-provider")
+        self.assertNotIn(unknown["provider"], SUPPORTED_LIVE_PROVIDERS)
+        return self._refusal(
+            lambda: fixture.right(RightsUse.EMBEDDING, processor=unknown)
+        )
+
+    def probe_expired_embedding_decision_blocks(self) -> str:
+        fixture = self.fixture()
+        fixture.right(RightsUse.EMBEDDING, processor=EMBEDDING_PROCESSOR, until=T0)
+        evaluation = fixture.service.evaluate_rights(
+            fixture.source_id, RightsUse.EMBEDDING, at=T1,
+            processor_id=EMBEDDING_PROCESSOR.processor_id,
+        )
+        self.assertFalse(evaluation.allowed)
+        self.assertNotEqual(RightsOutcome.PERMITTED, evaluation.outcome)
+        return evaluation.outcome.value
+
+    def probe_nonhuman_embedding_decision_refused(self) -> str:
+        fixture = self.granted()
+        decision = copy.deepcopy(
+            next(
+                record for record in fixture.workspace.records()
+                if record["record_type"] == RecordType.RIGHTS_DECISION.value
+                and record["payload"]["intended_use"] == RightsUse.EMBEDDING.value
+            )
+        )
+        decision["actor_kind"] = ActorKind.MODEL.value
+        decision["authority"] = Authority.PROPOSAL.value
+        # Fully re-derive identity and hash, so the refusal is the authority rule
+        # and not an incidental hash mismatch.
+        decision["content_hash"] = record_content_hash(decision)
+        decision["id"] = expected_record_id(decision)
+        decision["content_hash"] = record_content_hash(decision)
+        return self._refusal(lambda: validate_record_for_append(decision))
+
+    def probe_processor_field_set_closed(self) -> str:
+        fixture = self.fixture()
+        extra = dict(EMBEDDING_PROCESSOR.as_payload(), region="eastus")
+        return self._refusal(lambda: fixture.right(RightsUse.EMBEDDING, processor=extra))
+
+    # -- the gate --------------------------------------------------------
+
+    def test_every_adr_0061_probe_flips(self) -> None:
+        flipped = {}
+        for name, token in self.PROBES.items():
+            with self.subTest(probe=name):
+                method = getattr(self, "probe_" + name.removeprefix("pr.").replace("-", "_"))
+                observed = method()
+                self.assertIn(
+                    token, observed,
+                    f"{name} did not produce its named refusal; observed {observed!r}",
+                )
+                flipped[name] = observed
+        probes_total, probes_flipped = len(self.PROBES), len(flipped)
+        self.assertEqual(9, probes_total, "ADR-0064 names nine probes")
+        self.assertEqual(probes_total, probes_flipped)
+
+    # -- the positive side, so an all-reject implementation cannot pass ---
+
+    def test_a_named_processor_is_permitted_and_survives_export_replay(self) -> None:
+        fixture = self.granted()
+        evaluation = fixture.service.require_rights(
+            fixture.source_id, RightsUse.EMBEDDING, at=T2,
+            processor_id=EMBEDDING_PROCESSOR.processor_id,
+        )
+        self.assertEqual(RightsOutcome.PERMITTED, evaluation.outcome)
+        self.assertTrue(evaluation.allowed)
+        envelope = build_envelope(
+            fixture.workspace.records(), exported_at=T4,
+            source_path_hashes=fixture.workspace.source_path_hashes(),
+        )
+        snapshot = verify_bytes(canonical_bytes(envelope))
+        decisions = [
+            record for record in snapshot.value()["records"]
+            if record["record_type"] == RecordType.RIGHTS_DECISION.value
+        ]
+        embedding = [
+            record for record in decisions
+            if record["payload"]["intended_use"] == RightsUse.EMBEDDING.value
+        ]
+        self.assertEqual(
+            [EMBEDDING_PROCESSOR.as_payload()],
+            [record["payload"]["processor"] for record in embedding],
+        )
+        self.assertEqual(
+            [None] * (len(decisions) - 1),
+            [
+                record["payload"]["processor"] for record in decisions
+                if record["payload"]["intended_use"] != RightsUse.EMBEDDING.value
+            ],
+        )
+
+    def test_model_context_also_requires_its_own_processor(self) -> None:
+        fixture = self.fixture()
+        self.assertEqual(
+            {RightsUse.EMBEDDING, RightsUse.MODEL_CONTEXT}, set(DISCLOSING_RIGHTS_USES),
+        )
+        with self.assertRaises(Phase4ValidationError) as refused:
+            fixture.right(RightsUse.MODEL_CONTEXT, processor=None)
+        self.assertIn(PROCESSOR_REQUIRED_REFUSAL, str(refused.exception))
+        local = Processor(
+            processor_id="processor.local.exact-text-embedding",
+            provider="openai", model_identifier="local-exact-embedding",
+            disclosure_kind=DisclosureKind.TEXT_STAYS_LOCAL,
+        )
+        fixture.right(RightsUse.MODEL_CONTEXT, processor=local)
+        self.assertEqual(
+            RightsOutcome.PERMITTED,
+            fixture.service.evaluate_rights(
+                fixture.source_id, RightsUse.MODEL_CONTEXT, at=T1,
+                processor_id=local.processor_id,
+            ).outcome,
+        )
+
+    def test_every_non_disclosing_use_refuses_a_processor(self) -> None:
+        for use in RightsUse:
+            if use in DISCLOSING_RIGHTS_USES:
+                continue
+            with self.subTest(use=use.value):
+                fixture = self.fixture()
+                with self.assertRaises(Phase4ValidationError) as refused:
+                    fixture.right(use, processor=EMBEDDING_PROCESSOR)
+                self.assertIn(PROCESSOR_FORBIDDEN_REFUSAL, str(refused.exception))
+                # Naming a processor when asking is a programming error too.
+                with self.assertRaises(ValueError) as asked:
+                    fixture.service.evaluate_rights(
+                        fixture.source_id, use, at=T1,
+                        processor_id=EMBEDDING_PROCESSOR.processor_id,
+                    )
+                self.assertIn(PROCESSOR_FORBIDDEN_REFUSAL, str(asked.exception))
+
+    def test_both_validation_paths_close_the_field_set_together(self) -> None:
+        """A record that validates on append must not fail on durable re-verify.
+
+        ADR-0064 calls this out as load-bearing, so each mutation is asserted
+        against the append path AND the durable path.
+        """
+
+        fixture = self.granted()
+        records = [copy.deepcopy(record) for record in fixture.workspace.records()]
+        paths = fixture.workspace.source_path_hashes()
+        validate_durable_records(records, source_path_hashes=paths)
+        index = next(
+            position for position, record in enumerate(records)
+            if record["record_type"] == RecordType.RIGHTS_DECISION.value
+            and record["payload"]["intended_use"] == RightsUse.EMBEDDING.value
+        )
+        mutations = (
+            lambda payload: payload.__setitem__("processor", None),
+            lambda payload: payload["processor"].__setitem__("region", "eastus"),
+            lambda payload: payload["processor"].pop("disclosure_kind"),
+            lambda payload: payload["processor"].__setitem__("provider", "not-a-real-provider"),
+            lambda payload: payload["processor"].__setitem__("model_identifier", ""),
+            lambda payload: payload["processor"].__setitem__("disclosure_kind", "text_maybe_leaves"),
+            lambda payload: payload.__delitem__("processor"),
+        )
+        for position, mutate in enumerate(mutations):
+            with self.subTest(mutation=position):
+                mutated = [copy.deepcopy(record) for record in records]
+                mutate(mutated[index]["payload"])
+                mutated[index]["content_hash"] = record_content_hash(mutated[index])
+                with self.assertRaises(Phase4ValidationError):
+                    validate_record_for_append(mutated[index])
+                with self.assertRaises(Phase4ValidationError):
+                    validate_durable_records(mutated, source_path_hashes=paths)
+
+    def test_the_schema_processor_provider_enum_tracks_the_single_allowlist(self) -> None:
+        schema = json.loads(schema_path().read_text(encoding="utf-8"))
+        processor = schema["$defs"]["processor"]
+        self.assertEqual(
+            sorted(SUPPORTED_LIVE_PROVIDERS), sorted(processor["properties"]["provider"]["enum"]),
+            "the Phase 4A processor provider enum has drifted from SUPPORTED_LIVE_PROVIDERS",
+        )
+        self.assertEqual(
+            sorted(item.value for item in DisclosureKind),
+            sorted(processor["properties"]["disclosure_kind"]["enum"]),
+        )
+        self.assertEqual(
+            ["disclosure_kind", "model_identifier", "processor_id", "provider"],
+            sorted(processor["required"]),
+        )
+        self.assertIn("processor", schema["$defs"]["rights"]["required"])
+        self.assertEqual(PRODUCTION_SCHEMA_SHA256, validate_schema_contract())
 
 
 if __name__ == "__main__":

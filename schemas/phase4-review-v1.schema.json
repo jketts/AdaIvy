@@ -81,12 +81,28 @@
     },
     "rights": {
       "type": "object", "additionalProperties": false,
-      "required": ["source_id", "intended_use", "value", "valid_from", "valid_until", "lifecycle_id"],
+      "required": ["source_id", "intended_use", "value", "valid_from", "valid_until", "lifecycle_id", "processor"],
       "properties": {
         "source_id": {"$ref": "#/$defs/id"},
         "intended_use": {"enum": ["acquisition", "storage_and_retention", "parsing", "excerpting", "embedding", "model_context", "redistribution", "publication"]},
         "value": {"enum": ["allowed", "prohibited", "unresolved"]},
-        "valid_from": {"$ref": "#/$defs/timestamp"}, "valid_until": {"$ref": "#/$defs/nullable_timestamp"}, "lifecycle_id": {"$ref": "#/$defs/id"}
+        "valid_from": {"$ref": "#/$defs/timestamp"}, "valid_until": {"$ref": "#/$defs/nullable_timestamp"}, "lifecycle_id": {"$ref": "#/$defs/id"},
+        "processor": {"$ref": "#/$defs/nullable_processor"}
+      },
+      "allOf": [
+        {"if": {"properties": {"intended_use": {"enum": ["embedding", "model_context"]}}, "required": ["intended_use"]}, "then": {"required": ["processor"], "properties": {"processor": {"$ref": "#/$defs/processor"}}}},
+        {"if": {"properties": {"intended_use": {"enum": ["acquisition", "storage_and_retention", "parsing", "excerpting", "redistribution", "publication"]}}, "required": ["intended_use"]}, "then": {"required": ["processor"], "properties": {"processor": {"type": "null"}}}}
+      ]
+    },
+    "nullable_processor": {"oneOf": [{"$ref": "#/$defs/processor"}, {"type": "null"}]},
+    "processor": {
+      "type": "object", "additionalProperties": false,
+      "required": ["processor_id", "provider", "model_identifier", "disclosure_kind"],
+      "properties": {
+        "processor_id": {"$ref": "#/$defs/id"},
+        "provider": {"enum": ["anthropic", "azure_openai", "bedrock", "deepseek", "minimax", "openai", "qwen_dashscope"]},
+        "model_identifier": {"type": "string", "minLength": 1, "maxLength": 128},
+        "disclosure_kind": {"enum": ["text_leaves_process", "text_stays_local"]}
       }
     },
     "lifecycle": {
