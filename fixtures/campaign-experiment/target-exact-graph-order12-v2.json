@@ -1,0 +1,14 @@
+{
+  "schema_version": "adaivy.campaign-experiment-target.v1",
+  "target_id": "target.exact-graph-order12-workspace-v2",
+  "engine": "exact_graph_distance_and_invariant_space_v2",
+  "statement": "Exhibit a connected triangle-free graph of order 12 with exactly 18 edges whose graph-distance matrix has exactly 4 distinct eigenvalues and whose Inverse Even value under the even_excludes_v reading is exactly 7/4. This is a second in-class target: it exists to demonstrate that the ADR-0082 activation admits any target validating against the exact-graph schema class, not one fixture file's hash. No claim of satisfiability is made or implied.",
+  "order": 12,
+  "edge_count": 18,
+  "require_connected": true,
+  "require_triangle_free": true,
+  "distinct_distance_eigenvalues": 4,
+  "inverse_even_reading": "even_excludes_v",
+  "inverse_even_numerator": 7,
+  "inverse_even_denominator": 4
+}

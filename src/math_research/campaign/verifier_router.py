@@ -76,6 +76,38 @@ ROUTE_PHASE5_NONCOMMUTING = "phase5_noncommuting"
 ROUTE_FORMAL_CHECK = "phase3b_formal_check"
 ROUTE_UNSUPPORTED = "unsupported"
 
+#: ADR-0082 verifier-class registration path.  A new exact verifier class for
+#: a new problem family is added by a reviewed code change -- never at
+#: runtime -- in exactly four steps:
+#:
+#: 1. Implement the verifier as a host-process module over ``int`` and
+#:    ``fractions.Fraction`` only, importing no ``os``, ``subprocess``,
+#:    ``socket`` or ``ctypes`` module (the textual isolation probe in
+#:    ``experiment_sandbox/activation.py`` stays the enforcement pattern).
+#: 2. Define its :class:`~math_research.campaign.experiment_sandbox.target_schema.TargetSchemaClass`
+#:    with a closed field inventory and register it in
+#:    ``experiment_sandbox/target_schema.py``'s ``TARGET_SCHEMA_CLASSES``.
+#: 3. Map the class id to a route below, and add the candidate
+#:    ``schema_version`` dispatch in :meth:`CampaignVerifierRouter._dispatch`
+#:    with its handler.
+#: 4. Re-run the workspace activation gate so the new class definition hash is
+#:    bound into a fresh activation record; the old record does not admit the
+#:    new class.
+#:
+#: Verifiers stay host-side, outside every container, refusing floats.
+TARGET_CLASS_ROUTES: Mapping[str, str] = {
+    "adaivy.campaign-target-class.exact-graph.v2": ROUTE_EXACT_GRAPH,
+}
+
+
+def route_for_target_class(class_id: str) -> str:
+    """Resolve the admitted route for a registered target schema class."""
+
+    route = TARGET_CLASS_ROUTES.get(class_id)
+    if route is None:
+        raise ValueError("no_admitted_verifier_for_target_class")
+    return route
+
 UNSUPPORTED_OUTCOME = "unsupported"
 UNSUPPORTED_REASON = "no_admitted_verifier_for_candidate"
 FORMAL_CHECK_UNAVAILABLE_ADAPTER_ID = "formal_check_unavailable"
@@ -463,6 +495,7 @@ __all__ = [
     "FormalCheckerPort", "MAX_ROUTED_CANDIDATE_BYTES", "ROUTER_ADAPTER_ID",
     "ROUTER_ADAPTER_VERSION", "ROUTER_RESULT_SCHEMA", "ROUTE_EXACT_GRAPH",
     "ROUTE_FORMAL_CHECK", "ROUTE_PHASE5_DIAGONAL", "ROUTE_PHASE5_NONCOMMUTING",
-    "ROUTE_UNSUPPORTED", "UNSUPPORTED_OUTCOME", "UNSUPPORTED_REASON",
-    "UnavailableFormalChecker", "safe_finding_projection",
+    "ROUTE_UNSUPPORTED", "TARGET_CLASS_ROUTES", "UNSUPPORTED_OUTCOME",
+    "UNSUPPORTED_REASON", "UnavailableFormalChecker",
+    "route_for_target_class", "safe_finding_projection",
 ]

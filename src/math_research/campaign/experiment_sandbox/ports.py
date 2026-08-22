@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Protocol
 
 from .sandbox import SandboxExecution, SandboxProgramRequest
+from .workspace_sandbox import WorkspaceExecution
 
 
 class ExperimentSandboxPort(Protocol):
@@ -32,4 +34,31 @@ class ExperimentSandboxPort(Protocol):
     def run(self, request: SandboxProgramRequest) -> SandboxExecution: ...
 
 
-__all__ = ["ExperimentSandboxPort"]
+class WorkspaceSandboxPort(Protocol):
+    """One bounded v2 execution over the persistent campaign workspace.
+
+    The offline acceptance path injects a scripted implementation; the only
+    production implementation is
+    :class:`~math_research.campaign.experiment_sandbox.workspace_sandbox.WorkspaceSandbox`.
+    """
+
+    @property
+    def policy_sha256(self) -> str: ...
+
+    @property
+    def control_policy_sha256(self) -> str: ...
+
+    @property
+    def bootstrap_sha256(self) -> str: ...
+
+    @property
+    def environment_sha256(self) -> str: ...
+
+    def configuration_record(self) -> dict[str, Any]: ...
+
+    def run(
+        self, request: SandboxProgramRequest, workspace: Path,
+    ) -> WorkspaceExecution: ...
+
+
+__all__ = ["ExperimentSandboxPort", "WorkspaceSandboxPort"]

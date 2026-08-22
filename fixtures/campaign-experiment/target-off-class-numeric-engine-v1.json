@@ -1,0 +1,14 @@
+{
+  "schema_version": "adaivy.campaign-experiment-target.v1",
+  "target_id": "target.off-class-numeric-engine-v1",
+  "engine": "floating_point_distance_solver_v1",
+  "statement": "A deliberately off-class target: its engine names a numerical solver outside the registered exact-graph schema class. Schema-class admission must refuse it with a typed refusal; it exists only as the refusal fixture for the ADR-0082 admission tests.",
+  "order": 10,
+  "edge_count": 15,
+  "require_connected": true,
+  "require_triangle_free": true,
+  "distinct_distance_eigenvalues": 3,
+  "inverse_even_reading": "even_excludes_v",
+  "inverse_even_numerator": 5,
+  "inverse_even_denominator": 3
+}

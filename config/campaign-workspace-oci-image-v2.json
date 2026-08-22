@@ -1,0 +1,51 @@
+{
+  "schema_version": "adaivy.campaign-workspace-oci-image-lock.v2",
+  "image_reference": "registry.local/adaivy/campaign-workspace@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "oci_index_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "platform": "linux/arm64",
+  "platform_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "build_status": "pending_operator_build",
+  "build": {
+    "base_lock": "config/campaign-experiment-oci-image-v1.json",
+    "base_image_reference": "docker.io/library/python@sha256:6b8f06d04d5305c1d1288435388df9165ab41e681fae6439d6349d8053cc3f83",
+    "build_instructions": "On a linux/arm64 Docker host: (1) download each pinned wheel below from PyPI, verify its sha256, and replace every zero placeholder in this lock with the real digest, setting digest_status to pinned; (2) build FROM the digest-pinned base image and `pip install --no-index --no-deps` the verified wheels only -- no numpy, no scipy, nothing beyond the exact allowlist; (3) record image_reference, oci_index_digest and platform_manifest_digest from the built artifact; (4) set build_status to built_and_probed only after the sixteen-probe v2 activation gate passes and its content-hashed report is stored at probe_evidence_path. All-zero digests keep this lock pending; the loader and the activation gate refuse to execute anything against a pending lock.",
+    "probe_evidence_path": "reports/campaign-workspace-sandbox/v2/activation.json"
+  },
+  "inventory": {
+    "production_python_dependencies": [
+      {
+        "name": "gmpy2",
+        "version": "2.2.1",
+        "wheel_sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "license": "LGPL-3.0-or-later",
+        "source_url": "https://pypi.org/project/gmpy2/2.2.1/",
+        "digest_status": "placeholder_pending_operator_build"
+      },
+      {
+        "name": "networkx",
+        "version": "3.5",
+        "wheel_sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "license": "BSD-3-Clause",
+        "source_url": "https://pypi.org/project/networkx/3.5/",
+        "digest_status": "placeholder_pending_operator_build"
+      },
+      {
+        "name": "sympy",
+        "version": "1.14.0",
+        "wheel_sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "license": "BSD-3-Clause",
+        "source_url": "https://pypi.org/project/sympy/1.14.0/",
+        "digest_status": "placeholder_pending_operator_build"
+      }
+    ],
+    "forbidden_packages": ["numpy", "scipy"]
+  },
+  "authorization": {
+    "network_default": "none",
+    "pull_policy": "never",
+    "runtime_role": "campaign_workspace_sandbox_only",
+    "status": "pending_operator_build_and_probe",
+    "executes_untrusted_program": true,
+    "credentials_admitted": false
+  }
+}
