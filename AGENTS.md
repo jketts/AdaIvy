@@ -115,6 +115,19 @@ is absent, and mathematical warrant is `none`. It does not follow results,
 crawl, traverse citations, generate queries, use credentials, schedule work, or
 call a model. `make check` runs only its zero-network dry path.
 
+ADR-0067's bounded arXiv metadata corpus slice is implemented but its production
+activation remains pending owner approval. It admits descriptive metadata and
+abstracts only, under the recorded CC0 basis; full text, result following,
+citation traversal, crawling, credentials, autonomous archive selection, and
+more than one connection are absent. The first tranche is content-hashed and
+bounded to 2,040 mathematics records, requests are paced at no less than three
+seconds, and every document receives separate Phase 4A acquisition, retention,
+and parsing decisions. Offline replay reconstructs records from exact stored
+Atom bytes with zero network calls. Every record remains an
+`untrusted_inspiration_candidate`, applicability stays human-only, and reports
+state that this corpus is not wired into Phase 4C retrieval. `make check`
+exercises only the dry and replay paths and all 29 falsifiability probes.
+
 ADR-0055 adds a cross-phase lifecycle rule: every operator-chosen problem needs
 a human, evidence-linked novelty re-check immediately before research starts,
 and every non-null human publication approval needs a second distinct re-check

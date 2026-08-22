@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/">
+  <title>ADR-0067 project-authored corpus fixture</title>
+  <opensearch:totalResults>6</opensearch:totalResults>
+  <opensearch:itemsPerPage>3</opensearch:itemsPerPage>
+  <entry>
+    <id>http://arxiv.org/abs/9901.00001</id>
+    <updated>2026-01-15T00:00:00Z</updated>
+    <published>2026-01-14T00:00:00Z</published>
+    <title>A fixture identity for alternating sign matrices under a synthetic weight</title>
+    <summary>This project-authored fixture abstract describes an invented weight on alternating sign matrices and states a synthetic identity. It exists to exercise the corpus ingestion path and asserts nothing about mathematics.</summary>
+    <author>
+      <name>A. Fixture</name>
+    </author>
+    <author>
+      <name>B. Placeholder</name>
+    </author>
+    <arxiv:doi>10.1000/fixture.9901.00001</arxiv:doi>
+    <link href="http://arxiv.org/abs/9901.00001" rel="alternate" type="text/html"/>
+    <arxiv:primary_category xmlns:arxiv="http://arxiv.org/schemas/atom" term="math.CO" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="math.CO" scheme="http://arxiv.org/schemas/atom"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/9901.00002</id>
+    <updated>2026-01-15T00:00:00Z</updated>
+    <published>2026-01-14T00:00:00Z</published>
+    <title>Synthetic bounds for a fictional exponential sum</title>
+    <summary>A project-authored fixture abstract. It names a fictional exponential sum and a synthetic bound so that the parser, the record builder and the fair-quotation projection have text to operate on. No claim here is a mathematical claim.</summary>
+    <author>
+      <name>C. Invented</name>
+    </author>
+    <link href="http://arxiv.org/abs/9901.00002" rel="alternate" type="text/html"/>
+    <arxiv:primary_category xmlns:arxiv="http://arxiv.org/schemas/atom" term="math.NT" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="math.NT" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="math.CO" scheme="http://arxiv.org/schemas/atom"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/9901.00003</id>
+    <updated>2026-01-15T00:00:00Z</updated>
+    <published>2026-01-14T00:00:00Z</published>
+    <title>Spectral extent of a project-authored distance matrix family</title>
+    <summary>A fixture abstract long enough to be truncated by the pinned fair-quotation bound, so that the projection's truncation flag is exercised rather than asserted. It discusses an invented family of symmetric integer distance matrices, states a synthetic bound on the number of distinct eigenvalues, and deliberately continues past two hundred and forty characters so the reader-facing quotation must be cut and the record must still link out to its abstract page.</summary>
+    <author>
+      <name>D. Synthetic</name>
+    </author>
+    <author>
+      <name>E. Fabricated</name>
+    </author>
+    <author>
+      <name>F. Notional</name>
+    </author>
+    <link href="http://arxiv.org/abs/9901.00003" rel="alternate" type="text/html"/>
+    <arxiv:primary_category xmlns:arxiv="http://arxiv.org/schemas/atom" term="math.SP" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="math.SP" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.DM" scheme="http://arxiv.org/schemas/atom"/>
+  </entry>
+</feed>

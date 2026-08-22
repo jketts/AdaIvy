@@ -103,6 +103,13 @@ another model agrees with it.
   `not_assessed`; acquisition remains unauthorized and warrant remains `none`.
   Live execution requires an exact acknowledgement and grounded-query hash;
   `make check` exercises only the zero-network dry run.
+- **Bounded corpus ingestion** (ADR-0067) replays a content-hashed first tranche
+  of arXiv descriptive metadata and abstracts under per-document Phase 4A
+  rights decisions. Full text, crawling, result following, credentials, and
+  autonomous archive selection remain unavailable. Production activation is
+  still pending owner approval; `make check` runs only the zero-network dry and
+  stored-byte replay paths. Corpus size is reported separately from the count
+  of human applicability records, and this corpus is not wired into Phase 4C.
 - **Novelty checkpoints** (ADR-0055) fail closed at both vulnerable lifecycle
   transitions. Every operator-chosen problem needs a human, evidence-linked
   re-check no more than 24 hours before research starts, and every human

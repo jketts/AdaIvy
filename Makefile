@@ -46,7 +46,7 @@ WORK ?= work/$(REPORT_STAMP)
 
 .PHONY: check check-all check-sealed check-gate setup-typeset check-typeset publication-build check-phase4b-oci \
         check-embedding-live spike-phase5-sdp test phase0 phase1 problem-intake phase2 phase3a phase3b phase4a phase4b \
-        phase4c phase4d phase5 phase6 embedding synthesis campaign publication report clean help
+        phase4c phase4d phase5 phase6 embedding corpus synthesis campaign publication report clean help
 
 help:
 	@printf 'Targets:\n'
@@ -64,7 +64,7 @@ help:
 	@printf '                default OUT=reports/local/run-<stamp> (gitignored)\n'
 	@printf '  clean         remove __pycache__ and stray sqlite journals\n'
 
-check: test phase0 phase1 problem-intake phase2 phase3a phase4a phase4b phase4c phase4d phase5 phase6 embedding synthesis campaign publication
+check: test phase0 phase1 problem-intake phase2 phase3a phase4a phase4b phase4c phase4d phase5 phase6 embedding corpus synthesis campaign publication
 	@printf '\n== offline check complete ==\n'
 
 check-all: check check-sealed
@@ -346,6 +346,32 @@ embedding:
 	  test ! -e "$$d/must-not-exist.json" && \
 	  rm -rf "$$d" && \
 	  printf 'embedding ok (5 exact vectors replayed, 13/13 probes flipped, 0 provider calls; project_authored, not embedding-quality evidence)\n'
+
+# ADR-0067's offline path validates the pending production activation, proves
+# dry-run network inactivity, replays the exact stored Atom bytes through
+# per-document Phase 4A rights, and checks every falsifiability probe. It does
+# not activate live acquisition and it does not wire this corpus into Phase 4C.
+corpus:
+	@printf '\n== ADR-0067 bounded arXiv metadata corpus (offline replay) ==\n'
+	@d=$$(mktemp -d "$(TMPROOT)/adaivy-corpus.XXXXXX") && \
+	  $(PY) -m math_research.cli corpus acquire \
+	    config/corpus-arxiv-metadata-activation-v1.json \
+	    fixtures/corpus/fixture-tranche-plan-v1.json \
+	    --store-root "$$d/unused-store" --observed-at-epoch 0 \
+	    --output "$$d/dry.json" >/dev/null && \
+	  $(PY) -m math_research.cli corpus replay \
+	    config/corpus-arxiv-metadata-activation-v1.json \
+	    fixtures/corpus/fixture-tranche-plan-v1.json \
+	    --store-root fixtures/corpus/store-v1 --workspace "$$d/workspace" \
+	    --recorded-at 2026-08-22T12:00:00Z \
+	    --expect-manifest-hash sha256:c1f13ba27e6b3b7abc073683941994a7df023fd1d93e42629f65dfc3e1414bd9 \
+	    --output-dir "$$d/replay" >/dev/null && \
+	  $(PY) -m math_research.cli corpus inspect \
+	    "$$d/replay/report.json" "$$d/replay/ingestion.json" >/dev/null && \
+	  $(PY) -m math_research.cli corpus probes --output "$$d/probes.json" >/dev/null && \
+	  $(PY) -c 'import json,sys; d=json.load(open(sys.argv[1])); s=json.load(open(sys.argv[2])); p=json.load(open(sys.argv[3])); assert d["status"] == "not_executed" and d["network_requests"] == 0 and d["requests_made"] == 0, "the dry corpus path touched a network"; assert s["status"] == "replayed" and s["record_count"] == 6 and s["rights_records_written"] == 18 and s["network_requests"] == 0, "the replay facts moved: %s" % s; assert p["probes_total"] == p["probes_flipped"] == 29 and p["unflipped_probe_ids"] == [], "corpus probes moved: %s/%s %s" % (p["probes_flipped"], p["probes_total"], p["unflipped_probe_ids"])' "$$d/dry.json" "$$d/replay/summary.json" "$$d/probes.json" && \
+	  rm -rf "$$d" && \
+	  printf 'corpus ok (6 metadata records replayed; 18 per-document rights decisions; 29/29 probes flipped; 0 network requests; not wired into retrieval)\n'
 
 # Separate from `check`: ADR-0069 live ingestion needs a real credential and
 # bills a real provider. It is named for what it needs, like `check-sealed`.

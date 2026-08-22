@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/">
+  <title>ADR-0067 project-authored corpus fixture</title>
+  <opensearch:totalResults>6</opensearch:totalResults>
+  <opensearch:itemsPerPage>3</opensearch:itemsPerPage>
+  <entry>
+    <id>http://arxiv.org/abs/9901.00004</id>
+    <updated>2026-01-15T00:00:00Z</updated>
+    <published>2026-01-14T00:00:00Z</published>
+    <title>A notional graph invariant and its fixture inequality</title>
+    <summary>Project-authored fixture text describing a notional graph invariant. Included so a tranche spans more than one response page.</summary>
+    <author>
+      <name>G. Sample</name>
+    </author>
+    <link href="http://arxiv.org/abs/9901.00004" rel="alternate" type="text/html"/>
+    <arxiv:primary_category xmlns:arxiv="http://arxiv.org/schemas/atom" term="math.CO" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="math.CO" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="math.SP" scheme="http://arxiv.org/schemas/atom"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/math/9901001</id>
+    <updated>2026-01-15T00:00:00Z</updated>
+    <published>2026-01-14T00:00:00Z</published>
+    <title>An old-style identifier fixture for the corpus source-identity mapping</title>
+    <summary>This fixture carries a pre-2007 style arXiv identifier so the Phase 4A source-identity mapping from a slash-bearing identifier is exercised by the offline suite rather than only by inspection.</summary>
+    <author>
+      <name>H. Legacy</name>
+    </author>
+    <link href="http://arxiv.org/abs/math/9901001" rel="alternate" type="text/html"/>
+    <arxiv:primary_category xmlns:arxiv="http://arxiv.org/schemas/atom" term="math.NT" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="math.NT" scheme="http://arxiv.org/schemas/atom"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/9901.00006</id>
+    <updated>2026-01-15T00:00:00Z</updated>
+    <published>2026-01-14T00:00:00Z</published>
+    <title>A fixture record whose abstract is short</title>
+    <summary>Short project-authored fixture abstract, below the quotation bound.</summary>
+    <author>
+      <name>I. Terse</name>
+    </author>
+    <author>
+      <name>J. Brief</name>
+    </author>
+    <link href="http://arxiv.org/abs/9901.00006" rel="alternate" type="text/html"/>
+    <arxiv:primary_category xmlns:arxiv="http://arxiv.org/schemas/atom" term="math.SP" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="math.SP" scheme="http://arxiv.org/schemas/atom"/>
+  </entry>
+</feed>
