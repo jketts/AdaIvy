@@ -1,27 +1,42 @@
-"""ADR-0066 digest-pinned campaign experiment boundary."""
+"""ADR-0066 digest-pinned campaign experiment boundary.
 
-from .activation import (
-    PROBE_IDS,
-    load_campaign_experiment_activation,
-    run_campaign_experiment_activation,
-    verify_campaign_experiment_activation,
-)
-from .attestation import SandboxActivation
-from .image_lock import load_campaign_image_lock, load_phase4b_image_lock
-from .runner import (
-    ActivatedCampaignExperimentRunner,
-    ExactGraphCampaignVerifier,
-    build_activated_campaign_experiment_runner,
-)
-from .sandbox import CampaignSandboxLimits, OciExperimentSandbox, SandboxProgramRequest
-from .verifier import load_target, verify_candidate
+Exports are resolved lazily.  ``sandbox`` (and everything that imports it)
+holds a module-level ``import subprocess``, and the campaign operator
+entrypoint imports the pure exact verifier from this package on its default
+offline path.  Eager package imports would put the process-spawning module on
+that path for every command; lazy resolution keeps the container-requiring
+modules out of the import graph until an activated runner is actually wired.
+"""
 
-__all__ = [
-    "ActivatedCampaignExperimentRunner", "CampaignSandboxLimits",
-    "ExactGraphCampaignVerifier", "OciExperimentSandbox", "PROBE_IDS",
-    "SandboxActivation", "SandboxProgramRequest",
-    "build_activated_campaign_experiment_runner",
-    "load_campaign_experiment_activation", "load_campaign_image_lock",
-    "load_phase4b_image_lock", "load_target", "run_campaign_experiment_activation",
-    "verify_campaign_experiment_activation", "verify_candidate",
-]
+from __future__ import annotations
+
+from typing import Any
+
+_EXPORTS = {
+    "PROBE_IDS": "activation",
+    "load_campaign_experiment_activation": "activation",
+    "run_campaign_experiment_activation": "activation",
+    "verify_campaign_experiment_activation": "activation",
+    "SandboxActivation": "attestation",
+    "load_campaign_image_lock": "image_lock",
+    "load_phase4b_image_lock": "image_lock",
+    "ActivatedCampaignExperimentRunner": "runner",
+    "ExactGraphCampaignVerifier": "runner",
+    "build_activated_campaign_experiment_runner": "runner",
+    "CampaignSandboxLimits": "sandbox",
+    "OciExperimentSandbox": "sandbox",
+    "SandboxProgramRequest": "sandbox",
+    "load_target": "verifier",
+    "verify_candidate": "verifier",
+}
+
+__all__ = sorted(_EXPORTS)
+
+
+def __getattr__(name: str) -> Any:
+    module_name = _EXPORTS.get(name)
+    if module_name is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    from importlib import import_module
+
+    return getattr(import_module(f".{module_name}", __name__), name)

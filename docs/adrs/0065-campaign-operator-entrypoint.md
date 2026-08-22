@@ -1,8 +1,11 @@
 # ADR-0065: Give the ADR-0057 campaign an operator entrypoint
 
-- **Status:** accepted and implemented for the entrypoint slice; ADR-0066's OCI
-  component is activated, but this entrypoint still injects the pending runner
-  and absent verifier and therefore needs a later integration slice
+- **Status:** accepted and implemented for the entrypoint slice; the pending
+  runner and absent verifier this ADR describes were the deliberate state at
+  acceptance. ADR-0072 later wired the activated ADR-0066 runner (behind
+  activation-record matching) and replaced `AbsentVerifier` with the isolated
+  verifier router; the pending runner remains the recorded default when no
+  matching activation is supplied.
 - **Date:** 2026-08-22
 - **Blueprint requirement:** ADR-0057 §1--§4; ADR-0047 bounded runtime;
   ADR-0055 `before_research` checkpoint; ADR-0026 acceptance-suite rule

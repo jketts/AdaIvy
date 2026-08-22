@@ -13,9 +13,9 @@ operator path, and usable end to end.
 |---|---:|---:|---:|---|
 | Provider-neutral model gateway | Yes | Yes, explicit live opt-in | Yes | OpenAI, Azure OpenAI, Anthropic, Bedrock, DeepSeek, MiniMax, and Qwen/DashScope adapters under bounded configurations |
 | Central campaign loop | Yes | Yes | Yes | One sequential lead with a durable causal ledger and budget limits |
-| Generated-program OCI sandbox | Yes | Yes for one Linux/arm64 exact-graph target | **No** | The standalone gate passes, but `campaign run` still injects the pending runner |
-| Campaign verifier | Exact-graph adapter exists | Yes for its frozen target | **No** | `campaign run` still injects `AbsentVerifier` |
-| Lean checking | Yes | Separate sealed runtime | **No** | Single-shot checking and bounded proof-fragment repair; the campaign cannot call it |
+| Generated-program OCI sandbox | Yes | Yes for one Linux/arm64 exact-graph target | Yes, behind activation matching (ADR-0072) | `campaign run --experiment-activation` wires the activated runner only when the record re-verifies against the current locks; otherwise the pending runner remains with the reason recorded |
+| Campaign verifier | Yes: verifier router | Yes | Yes (ADR-0072) | Routes exact-graph, Phase 5 diagonal, and Phase 5 noncommuting candidates plus formal-check envelopes; anything else is an explicit `unsupported` failure |
+| Lean checking | Yes | Separate sealed runtime | Port wired; sealed adapter is an explicit opt-in | The router's formal-check route defaults to a recorded missing-tool result; `--formal-check-adapter sealed` uses the Phase 3B Docker Lean service |
 | Crossref discovery | Yes | Explicit one-request live opt-in | **No** | Operator-supplied grounded terms, at most ten metadata candidates |
 | Discovery-result following | Decision accepted | No | No | ADR-0068 and ADR-0072 are accepted; nothing is implemented |
 | Bulk corpus ingestion | Yes, bounded replay slice | Production activation pending | No | arXiv descriptive metadata and abstracts; no full text |
@@ -54,12 +54,14 @@ literature search -> acquisition -> persistent embedding/indexing -> retrieval
 ```
 
 The campaign entrypoint does not expose literature actions, does not read the
-acquired corpus, does not use the persistent vector artifacts, and does not wire
-the implemented sandbox or a verifier. ADR-0072 supersedes the ADR-0055
-`before_research` human re-check as a decision, but the entrypoint code still
-enforces it and continues to do so until the replacing recorded in-campaign
-search ships with its own gate. The human `before_announcement` re-check
-remains required unconditionally.
+acquired corpus, and does not use the persistent vector artifacts. The
+experiment sandbox and verifier router are wired, so the
+investigation-and-verification tail of this path runs inside one recorded
+campaign; the literature head does not exist yet. ADR-0072 supersedes the
+ADR-0055 `before_research` human re-check as a decision, but the entrypoint code
+still enforces it until the replacing recorded in-campaign search ships with
+its own gate. The human `before_announcement` re-check remains required
+unconditionally.
 
 ## Status vocabulary
 

@@ -3,9 +3,11 @@
 ADR-0065 is the wiring decision behind this module: the campaign ledger, the
 sequential runner, the live gateway planner, and strict replay were all accepted
 and implemented, and nothing could start them. This module is the front door and
-nothing more. It adds no record type, no action type, no adapter, no provider,
-no network surface beyond the Phase 2 gateway, and no authority for a model or
-tool result. It changes no file under ``campaign/``.
+nothing more. It adds no record type, no action type, no provider, no network
+surface beyond the Phase 2 gateway, and no authority for a model or tool
+result. ADR-0072 later wired two existing verified components through this
+door: the activated ADR-0066 experiment sandbox (only behind strict
+activation-record matching) and the isolated campaign verifier router.
 
 `--provider fixture` is the default: a scripted planner that holds no gateway,
 calls nothing, and needs no key, so the offline acceptance path is the default
@@ -15,10 +17,20 @@ and the exact activation acknowledgement; the shared ADR-0057 §3 activation
 service performs exactly one no-retry request through the same gateway the lead
 will use, and a failed activation is a terminal recorded activation failure.
 
-`run_program` is fail-closed here. The injected experiment runner executes
-nothing and names the pending ADR-0066 sandbox gate. This module imports no
-process, socket, or network module, and reads no clock: `--recorded-at` is an
-argument so the fixture path is byte-reproducible.
+`run_program` is fail-closed by default and wired by evidence, not by flag
+alone. Without `--experiment-activation` the injected experiment runner
+executes nothing and records why. With it, the recorded ADR-0066 activation is
+strictly re-verified and the activated OCI runner is wired ONLY when the
+activation's runtime identity and both image-lock hashes match the current
+repository locks; any mismatch keeps the pending runner and records the exact
+rejection reason. `verify` dispatches through the isolated
+`CampaignVerifierRouter`: the exact graph verifier for its frozen target, the
+Phase 5 exact verifiers for their fixture schemas, an injected Phase 3B
+formal-check port, and an explicit `unsupported` outcome when no verifier
+applies. A verifier rejection rejects that candidate, never the campaign;
+a sandbox execution failure remains terminal per ADR-0066. This module imports
+no process, socket, or network module on its default path, and reads no clock:
+`--recorded-at` is an argument so the fixture path is byte-reproducible.
 
 Process effects are MEASURED rather than asserted in prose. A CPython audit hook
 counts real interpreter `subprocess.*`, `os.*` and `socket.*` events, and the
@@ -70,7 +82,16 @@ from .campaign.runner import (
     PlannerResponse,
     ResourceLimits,
     SequentialCampaignRunner,
-    VerificationRequest,
+)
+from .campaign.verifier_router import (
+    CampaignVerifierRouter,
+    ROUTER_ADAPTER_ID,
+    UnavailableFormalChecker,
+)
+from .campaign.experiment_sandbox.verifier import (
+    ExperimentTarget,
+    VerifierError,
+    load_target as load_experiment_target,
 )
 from .domain.entities import ResearchDossier
 from .interchange import export_dossier_dict
@@ -105,7 +126,7 @@ from .runtime.lead import freeze_target
 
 CAMPAIGN_CONFIG_SCHEMA_VERSION = "adaivy.campaign-configuration.v1"
 CAMPAIGN_TARGET_SCHEMA_VERSION = "adaivy.campaign-target.v1"
-CAMPAIGN_FACTS_SCHEMA_VERSION = "adaivy.campaign-facts.v2"
+CAMPAIGN_FACTS_SCHEMA_VERSION = "adaivy.campaign-facts.v3"
 CAMPAIGN_REPLAY_SCHEMA_VERSION = "adaivy.campaign-replay.v1"
 CAMPAIGN_REFUSAL_SCHEMA_VERSION = "adaivy.campaign-refusal.v1"
 
@@ -193,17 +214,31 @@ REFUSAL_ARTIFACT_BYTES = "campaign_artifact_bytes_do_not_match_their_hash"
 REFUSAL_TARGET_MISMATCH = "campaign_target_record_does_not_hash_to_the_ledger_target"
 REFUSAL_CONFIG_MISMATCH = "campaign_configuration_hash_differs_from_the_ledger"
 
-#: ADR-0066 is the separate digest-pinned OCI experiment-sandbox gate. Until it
-#: passes, model-authored source is recorded and never executed.
+#: ADR-0066 is the separate digest-pinned OCI experiment-sandbox gate. A run
+#: executes model-authored source ONLY when the operator supplies the recorded
+#: activation and it strictly re-verifies against the current locks; otherwise
+#: the source is recorded and never executed, with the wiring reason retained.
 SANDBOX_GATE_DECISION = "ADR-0066"
-SANDBOX_REFUSAL_REASON = "experiment_sandbox_gate_not_passed_adr_0066"
+SANDBOX_REFUSAL_REASON = "experiment_sandbox_not_wired_for_this_run"
 SANDBOX_ADAPTER_ID = "experiment_sandbox_pending_gate"
+#: The production adapter identity, duplicated here so the default offline path
+#: never imports the sandbox module (which imports `subprocess`).  A test
+#: asserts it equals `experiment_sandbox.runner.ADAPTER_ID`.
+SANDBOX_OCI_ADAPTER_ID = "campaign_exact_python"
 
-#: ADR-0057 §1 submits a selected candidate to an isolated verifier. No campaign
-#: verifier port implementation exists; this records the absence rather than
-#: approximating one.
-VERIFIER_ABSENT_REASON = "isolated_campaign_verifier_not_wired"
-VERIFIER_ADAPTER_ID = "isolated_verifier_absent"
+#: Experiment wiring vocabulary.  "activated_oci" is only reported after the
+#: stored ADR-0066 activation record re-verified byte-for-byte AND its runtime
+#: identity and both image-lock hashes matched the current repository locks.
+EXPERIMENT_WIRING_ACTIVATED = "activated_oci"
+EXPERIMENT_WIRING_PENDING = "pending"
+WIRING_REASON_NOT_SUPPLIED = "experiment_activation_record_not_supplied"
+WIRING_REASON_REJECTED_PREFIX = "experiment_activation_rejected"
+
+#: The frozen ADR-0066 experiment target admits the exact graph verifier route
+#: and, when the OCI runner is wired, binds the activation's `target_hash`.
+DEFAULT_EXPERIMENT_TARGET = Path(
+    "fixtures/campaign-experiment/target-exact-graph-distance-spectrum-v1.json"
+)
 
 #: The fixture provider has no live configuration and no pricing snapshot. The
 #: runner requires both identities to be sha256 hashes, so an explicit "absent"
@@ -217,7 +252,64 @@ FIXTURE_PRICING_SNAPSHOT_HASH = canonical_hash({
     "kind": "fixture_sentinel", "pricing_snapshot": "absent",
 })
 
-FIXTURE_SCRIPTS = ("derive-inspect-verify-report", "program-sandbox-refusal")
+FIXTURE_SCRIPTS = (
+    "derive-inspect-verify-report",
+    "program-sandbox-refusal",
+    "graph-candidate-verify-report",
+    "graph-rejected-candidate-continues",
+    "oci-experiment-verify-report",
+)
+
+#: The frozen ADR-0066 experiment target identity the graph fixture scripts
+#: address.  These edge lists are the canonical Petersen graph (satisfies the
+#: frozen target) and the pentagonal prism (same order and size, refuted by the
+#: exact distance-spectrum and Inverse Even recomputation).  Neither constant
+#: is tuned: both are the exact graphs the ADR-0066 gate itself uses.
+FIXTURE_GRAPH_TARGET_ID = "target.exact-graph-distance-spectrum-v1"
+_PETERSEN_EDGES = [
+    [0, 1], [0, 4], [0, 5], [1, 2], [1, 6], [2, 3], [2, 7], [3, 4],
+    [3, 8], [4, 9], [5, 7], [5, 8], [6, 8], [6, 9], [7, 9],
+]
+_PRISM_EDGES = [
+    [0, 1], [0, 4], [0, 5], [1, 2], [1, 6], [2, 3], [2, 7], [3, 4],
+    [3, 8], [4, 9], [5, 6], [5, 9], [6, 7], [7, 8], [8, 9],
+]
+
+
+def _fixture_graph_candidate(edges: list[list[int]], construction: str) -> str:
+    return json.dumps({
+        "asserted_construction": construction,
+        "asserted_satisfies_target": True,
+        "edges": edges,
+        "order": 10,
+        "schema_version": "adaivy.campaign-experiment-graph-candidate.v1",
+        "target_id": FIXTURE_GRAPH_TARGET_ID,
+    }, sort_keys=True, separators=(",", ":"))
+
+
+FIXTURE_GRAPH_CANDIDATE = _fixture_graph_candidate(_PETERSEN_EDGES, "petersen")
+FIXTURE_GRAPH_REFUTED_CANDIDATE = _fixture_graph_candidate(
+    _PRISM_EDGES, "pentagonal-prism",
+)
+
+#: A deterministic sandbox program for the OCI-gated fixture script: it emits
+#: the exact Petersen candidate as its bounded result artifact and asserts
+#: nothing about trust or measurement.  Only the activated ADR-0066 runner can
+#: execute it; on the offline path it is recorded, refused, and terminal.
+FIXTURE_OCI_PROGRAM_SOURCE = (
+    "import json\n"
+    f"edges = {_PETERSEN_EDGES!r}\n"
+    "value = {\n"
+    "    'asserted_construction': 'petersen',\n"
+    "    'asserted_satisfies_target': True,\n"
+    "    'edges': edges,\n"
+    "    'order': 10,\n"
+    "    'schema_version': 'adaivy.campaign-experiment-graph-candidate.v1',\n"
+    f"    'target_id': {FIXTURE_GRAPH_TARGET_ID!r},\n"
+    "}\n"
+    "payload = json.dumps(value, sort_keys=True, separators=(',', ':'))\n"
+    "open(ADAIVY_RESULT_PATH, 'wb').write(payload.encode('utf-8'))\n"
+)
 
 FIXTURE_CANDIDATE_TEXT = (
     "Scripted fixture candidate. This text is a placeholder proposal produced by "
@@ -689,23 +781,25 @@ class PendingSandboxExperimentRunner:
     """`CampaignExperimentRunner` that executes nothing (ADR-0057 §2, ADR-0066).
 
     Model-authored source is recorded by the runner and reaches this port; the
-    port refuses by name and the refusal is retained as a failed tool run rather
-    than discarded. No sandbox is implemented, stubbed, or approximated here and
-    no subprocess or socket is opened.
+    port refuses by name, carries the exact machine-readable reason the
+    activated runner was not wired, and the refusal is retained as a failed
+    tool run rather than discarded. No sandbox is stubbed or approximated here
+    and no subprocess or socket is opened.
     """
 
     adapter_id = SANDBOX_ADAPTER_ID
     reason = SANDBOX_REFUSAL_REASON
 
-    def __init__(self) -> None:
+    def __init__(self, *, wiring_reason: str = WIRING_REASON_NOT_SUPPLIED) -> None:
+        self.wiring_reason = wiring_reason
         self.requests: list[ExperimentRequest] = []
 
     def __call__(self, request: ExperimentRequest) -> ExperimentResult:
-        _METER.count("tool_calls_made")
         self.requests.append(request)
         payload = _refusal_payload(
             SANDBOX_REFUSAL_REASON,
             blocking_decision=SANDBOX_GATE_DECISION,
+            wiring_reason=self.wiring_reason,
             tool_id=request.tool_id,
             program_artifact_hash=request.program_artifact_hash,
         )
@@ -716,6 +810,7 @@ class PendingSandboxExperimentRunner:
                 "adapter": SANDBOX_ADAPTER_ID,
                 "blocking_decision": SANDBOX_GATE_DECISION,
                 "executes_generated_code": False,
+                "wiring_reason": self.wiring_reason,
             }),
             environment_hash=canonical_hash({
                 "environment": "none", "network": "none", "subprocess": "none",
@@ -732,48 +827,180 @@ class PendingSandboxExperimentRunner:
         )
 
 
-class AbsentVerifier:
-    """`VerifierPort` that records the absence of an isolated campaign verifier.
+class _MeteredToolPort:
+    """Counts real tool-port invocations for whatever port is injected.
 
-    ADR-0057 §1 submits a selected candidate to an isolated verifier. None is
-    wired in this repository and inventing one is a separate decision, so this
-    port produces a failed tool run naming the absence. It therefore cannot be
-    mistaken for verification and creates no warrant.
+    One wrapper for both the experiment runner and the verifier router, so
+    `tool_calls_made` is a measurement of this process rather than a claim by
+    any individual adapter.
     """
 
-    adapter_id = VERIFIER_ADAPTER_ID
-    reason = VERIFIER_ABSENT_REASON
+    def __init__(self, port: Any) -> None:
+        self._port = port
 
-    def __init__(self) -> None:
-        self.requests: list[VerificationRequest] = []
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._port, name)
 
-    def __call__(self, request: VerificationRequest) -> ExperimentResult:
+    def __call__(self, request: Any) -> ExperimentResult:
         _METER.count("tool_calls_made")
-        self.requests.append(request)
-        payload = _refusal_payload(
-            VERIFIER_ABSENT_REASON,
-            candidate_artifact_hash=request.candidate_artifact[0],
-            verification_performed=False,
+        return self._port(request)
+
+
+class _GuardedExperimentRunner:
+    """Converts an activated-runner refusal into a recorded campaign rejection.
+
+    The ADR-0066 adapter raises its own `ValueError` subclass for a request the
+    OCI profile cannot enforce (a sub-second limit, an unknown adapter). Left
+    unconverted, that exception would escape the sequential runner's rejection
+    handling and discard the ledger; as a `CampaignRunnerError` it is retained
+    as a terminal `action_rejected` with the reason recorded.
+    """
+
+    def __init__(self, runner: Any) -> None:
+        self._runner = runner
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._runner, name)
+
+    def __call__(self, request: ExperimentRequest) -> ExperimentResult:
+        try:
+            return self._runner(request)
+        except CampaignRunnerError:
+            raise
+        except (ValueError, OSError) as error:
+            raise CampaignRunnerError(
+                f"activated experiment sandbox refused the request: {error}"
+            ) from error
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ExperimentWiring:
+    """The recorded outcome of one experiment-runner wiring decision."""
+
+    runner: Any
+    status: str
+    adapter_id: str
+    reason: str | None
+    activation_content_hash: str | None
+
+    def to_record(self) -> dict[str, Any]:
+        return {
+            "activation_content_hash": self.activation_content_hash,
+            "adapter_id": self.adapter_id,
+            "reason": self.reason,
+            "status": self.status,
+        }
+
+
+def _pending_wiring(reason: str) -> ExperimentWiring:
+    return ExperimentWiring(
+        runner=PendingSandboxExperimentRunner(wiring_reason=reason),
+        status=EXPERIMENT_WIRING_PENDING, adapter_id=SANDBOX_ADAPTER_ID,
+        reason=reason, activation_content_hash=None,
+    )
+
+
+def _wire_experiment_runner(
+    args: argparse.Namespace, experiment_target: ExperimentTarget | None,
+) -> ExperimentWiring:
+    """Wire the activated OCI runner ONLY from a matching activation record.
+
+    Every mismatch keeps the pending runner and records the exact reason:
+    unreadable or non-canonical activation bytes, a blocked activation, a
+    runtime identity that differs from the recorded one, an image lock whose
+    hash moved since activation, or a frozen experiment target that differs
+    from the one the activation probed. Nothing here rounds toward execution.
+    """
+
+    if args.experiment_activation is None:
+        return _pending_wiring(WIRING_REASON_NOT_SUPPLIED)
+    if experiment_target is None:
+        return _pending_wiring(
+            f"{WIRING_REASON_REJECTED_PREFIX}: the frozen experiment target "
+            "is not readable, so the activation target_hash cannot be checked"
         )
-        return ExperimentResult(
-            adapter_id=VERIFIER_ADAPTER_ID,
-            adapter_version="0.0.0",
-            adapter_configuration_hash=canonical_hash({
-                "adapter": VERIFIER_ADAPTER_ID, "verifier_wired": False,
-            }),
-            environment_hash=canonical_hash({
-                "environment": "none", "network": "none", "subprocess": "none",
-            }),
-            status=RecordStatus.FAILED,
-            result=canonical_bytes(payload) + b"\n",
-            stdout=b"",
-            stderr=b"",
-            measurement_source=UsageSource.UNAVAILABLE,
-            cpu_milliseconds=None,
-            wall_milliseconds=None,
-            peak_memory_bytes=None,
-            output_bytes=None,
+    try:
+        data = args.experiment_activation.read_bytes()
+        # Lazy by design: these modules hold `import subprocess` and stay off
+        # the default offline import path.
+        from .campaign.experiment_sandbox.activation import (
+            load_campaign_experiment_activation,
         )
+        from .campaign.experiment_sandbox.runner import (
+            build_activated_campaign_experiment_runner,
+        )
+        from .phase4b.oci_parser_sandbox import OciRuntimeIdentity
+
+        report, activation = load_campaign_experiment_activation(data)
+        runtime_record = dict(report["environment"])
+        runtime_record["image_layers"] = tuple(runtime_record["image_layers"])
+        runtime = OciRuntimeIdentity(**runtime_record)
+        runner = build_activated_campaign_experiment_runner(
+            repository_root=args.experiment_repository_root,
+            runtime=runtime, activation=activation,
+            target_hash=experiment_target.target_hash,
+        )
+    except (OSError, ValueError, TypeError, KeyError) as error:
+        detail = str(error) or type(error).__name__
+        return _pending_wiring(f"{WIRING_REASON_REJECTED_PREFIX}: {detail}")
+    return ExperimentWiring(
+        runner=_GuardedExperimentRunner(runner),
+        status=EXPERIMENT_WIRING_ACTIVATED, adapter_id=SANDBOX_OCI_ADAPTER_ID,
+        reason=None, activation_content_hash=activation.content_hash,
+    )
+
+
+class _SealedFormalChecker:
+    """Phase 3B formal-check port over the sealed Docker Lean adapter.
+
+    Constructed only when the operator explicitly selects the sealed adapter,
+    because the Phase 3B adapter module imports `subprocess` and requires the
+    ADR-0016 sealed runtime image. `created_at` is the campaign's frozen
+    `--recorded-at` instant, never a clock read.
+    """
+
+    adapter_id = "phase3b_docker_lean"
+
+    def __init__(self, recorded_at: str) -> None:
+        from .phase3b.adapter import DockerLeanAdapter
+        from .phase3b.serialization import public_value
+        from .phase3b.service import FormalCheckingService
+
+        self._service = FormalCheckingService(DockerLeanAdapter())
+        self._public = public_value
+        self._recorded_at = recorded_at
+
+    def check(self, request_bytes: bytes) -> Mapping[str, Any]:
+        return self._public(
+            self._service.check(request_bytes, created_at=self._recorded_at)
+        )
+
+
+def _formal_checker(args: argparse.Namespace) -> Any:
+    if args.formal_check_adapter == "sealed":
+        return _SealedFormalChecker(args.recorded_at)
+    return UnavailableFormalChecker()
+
+
+def _build_verifier_router(
+    args: argparse.Namespace,
+    experiment_target: ExperimentTarget | None,
+    experiment_target_reason: str | None,
+) -> CampaignVerifierRouter:
+    """Reconstruct the verifier context from records alone.
+
+    The router receives the frozen experiment target bytes and an injected
+    formal-check port -- never the planner, the gateway, a credential, or a
+    corpus handle. Verifier results are recorded as tool runs; the sequential
+    runner does not feed them back into the planner context, so validator
+    diagnostics stay structurally isolated from the lead.
+    """
+
+    return CampaignVerifierRouter(
+        graph_target=experiment_target,
+        graph_target_reason=experiment_target_reason,
+        formal_checker=_formal_checker(args),
+    )
 
 
 def _action_json(kind: str, **updates: Any) -> bytes:
@@ -836,6 +1063,10 @@ class ScriptedCampaignPlanner:
         self.resource_limits = resource_limits
         self.contexts: list[PlannerContext] = []
         self.candidate_hash = _raw_hash(FIXTURE_CANDIDATE_TEXT.encode("utf-8"))
+        self.graph_candidate_hash = _raw_hash(FIXTURE_GRAPH_CANDIDATE.encode("utf-8"))
+        self.refuted_candidate_hash = _raw_hash(
+            FIXTURE_GRAPH_REFUTED_CANDIDATE.encode("utf-8")
+        )
 
     def __call__(self, context: PlannerContext) -> PlannerResponse:
         self.contexts.append(context)
@@ -860,14 +1091,60 @@ class ScriptedCampaignPlanner:
     def _steps(self) -> tuple[Callable[[PlannerContext], bytes], ...]:
         if self.script == "derive-inspect-verify-report":
             return (self._derive, self._inspect, self._verify, self._report)
+        if self.script == "graph-candidate-verify-report":
+            return (
+                self._derive_graph, self._inspect_graph, self._verify, self._report,
+            )
+        if self.script == "graph-rejected-candidate-continues":
+            # The first candidate is exactly refuted; the campaign CONTINUES,
+            # derives a second candidate, and verifies it. A verifier rejection
+            # rejects the candidate, never the campaign.
+            return (
+                self._derive_refuted, self._inspect_refuted, self._verify,
+                self._derive_graph, self._inspect_graph, self._verify,
+                self._report,
+            )
+        if self.script == "oci-experiment-verify-report":
+            return (
+                self._write_oci_program, self._run_program,
+                self._inspect_tool_candidate, self._verify, self._report,
+            )
         return (self._derive, self._write_program, self._run_program, self._report)
 
     def _derive(self, _context: PlannerContext) -> bytes:
         return _action_json("derive", artifact_text=FIXTURE_CANDIDATE_TEXT)
 
+    def _derive_graph(self, _context: PlannerContext) -> bytes:
+        return _action_json("derive", artifact_text=FIXTURE_GRAPH_CANDIDATE)
+
+    def _derive_refuted(self, _context: PlannerContext) -> bytes:
+        return _action_json("derive", artifact_text=FIXTURE_GRAPH_REFUTED_CANDIDATE)
+
     def _inspect(self, _context: PlannerContext) -> bytes:
         return _action_json(
             "inspect_result", selected_candidate_hash=self.candidate_hash,
+        )
+
+    def _inspect_graph(self, _context: PlannerContext) -> bytes:
+        return _action_json(
+            "inspect_result", selected_candidate_hash=self.graph_candidate_hash,
+        )
+
+    def _inspect_refuted(self, _context: PlannerContext) -> bytes:
+        return _action_json(
+            "inspect_result", selected_candidate_hash=self.refuted_candidate_hash,
+        )
+
+    def _inspect_tool_candidate(self, context: PlannerContext) -> bytes:
+        # The sandbox result is an untrusted candidate. Restating its exact
+        # bytes as the inspected candidate binds the same content hash, and the
+        # tool result artifact is selected alongside it.
+        if context.latest_tool_result is None or context.latest_tool_result_hash is None:
+            raise CampaignRunnerError("no tool result is available to inspect")
+        return _action_json(
+            "inspect_result",
+            artifact_text=context.latest_tool_result.decode("utf-8"),
+            selected_tool_artifact_hashes=[context.latest_tool_result_hash],
         )
 
     def _verify(self, context: PlannerContext) -> bytes:
@@ -879,6 +1156,9 @@ class ScriptedCampaignPlanner:
 
     def _write_program(self, _context: PlannerContext) -> bytes:
         return _action_json("write_program", program_source=FIXTURE_PROGRAM_SOURCE)
+
+    def _write_oci_program(self, _context: PlannerContext) -> bytes:
+        return _action_json("write_program", program_source=FIXTURE_OCI_PROGRAM_SOURCE)
 
     def _run_program(self, context: PlannerContext) -> bytes:
         if not context.recorded_program_hashes:
@@ -947,6 +1227,64 @@ def campaign_bound_compliance(
     }
 
 
+def _experiment_sandbox_facts(export: Any) -> dict[str, Any]:
+    """Derive the sandbox block from the ledger's own adapter identities.
+
+    `status` is a fact about what the recorded tool runs show, never an
+    assertion about what was configured: a ledger with no experiment tool run
+    is `not_exercised`, one whose runs carry the pending adapter is `pending`,
+    and one whose runs carry the ADR-0066 production adapter is
+    `activated_oci`. A ledger holding both is impossible for one run and is
+    reported as `activated_oci` with its refusal count intact.
+    """
+
+    pending = [
+        item for item in export.tool_runs if item.adapter_id == SANDBOX_ADAPTER_ID
+    ]
+    activated = [
+        item for item in export.tool_runs
+        if item.adapter_id == SANDBOX_OCI_ADAPTER_ID
+    ]
+    if activated:
+        status = EXPERIMENT_WIRING_ACTIVATED
+    elif pending:
+        status = EXPERIMENT_WIRING_PENDING
+    else:
+        status = "not_exercised"
+    return {
+        "activation_decision": SANDBOX_GATE_DECISION,
+        "status": status,
+        "programs_recorded": sum(
+            item.action_type is ActionType.WRITE_PROGRAM for item in export.actions
+        ),
+        "programs_executed": sum(
+            item.status is RecordStatus.COMPLETED for item in activated
+        ),
+        "executions_failed": sum(
+            item.status is not RecordStatus.COMPLETED for item in activated
+        ),
+        "execution_refusals_recorded": len(pending),
+    }
+
+
+def _isolated_verifier_facts(export: Any) -> dict[str, Any]:
+    """Derive the verifier block from the router's recorded tool runs."""
+
+    routed = [
+        item for item in export.tool_runs if item.adapter_id == ROUTER_ADAPTER_ID
+    ]
+    return {
+        "adapter_id": ROUTER_ADAPTER_ID,
+        "status": "router" if routed else "not_exercised",
+        "verifications_completed": sum(
+            item.status is RecordStatus.COMPLETED for item in routed
+        ),
+        "verifications_failed": sum(
+            item.status is not RecordStatus.COMPLETED for item in routed
+        ),
+    }
+
+
 def campaign_facts(
     export: Any, recheck: Any, configuration: CampaignConfiguration,
 ) -> dict[str, Any]:
@@ -985,34 +1323,8 @@ def campaign_facts(
         "providers": sorted({item.provider for item in export.model_calls}),
         "tool_adapters": sorted({item.adapter_id for item in export.tool_runs}),
         "usage": dict(export.usage),
-        "experiment_sandbox": {
-            "status": "pending_gate",
-            "blocking_decision": SANDBOX_GATE_DECISION,
-            "reason": SANDBOX_REFUSAL_REASON,
-            "programs_recorded": sum(
-                item.action_type is ActionType.WRITE_PROGRAM for item in actions
-            ),
-            "programs_executed": sum(
-                item.adapter_id == SANDBOX_ADAPTER_ID
-                and item.status is RecordStatus.COMPLETED
-                for item in export.tool_runs
-            ),
-            "execution_refusals_recorded": sum(
-                item.adapter_id == SANDBOX_ADAPTER_ID for item in export.tool_runs
-            ),
-        },
-        "isolated_verifier": {
-            "status": "absent",
-            "reason": VERIFIER_ABSENT_REASON,
-            "verifications_completed": sum(
-                item.adapter_id == VERIFIER_ADAPTER_ID
-                and item.status is RecordStatus.COMPLETED
-                for item in export.tool_runs
-            ),
-            "verification_refusals_recorded": sum(
-                item.adapter_id == VERIFIER_ADAPTER_ID for item in export.tool_runs
-            ),
-        },
+        "experiment_sandbox": _experiment_sandbox_facts(export),
+        "isolated_verifier": _isolated_verifier_facts(export),
         "bound_compliance": campaign_bound_compliance(export, configuration),
         "novelty_recheck": {
             "recheck_id": recheck.recheck_id,
@@ -1550,8 +1862,22 @@ def _run_measured(args: argparse.Namespace) -> int:
         return _refuse(str(error))
 
     configuration = inputs.configuration
-    experiment = PendingSandboxExperimentRunner()
-    verifier = AbsentVerifier()
+    try:
+        experiment_target: ExperimentTarget | None = load_experiment_target(
+            args.experiment_target.read_bytes()
+        )
+        experiment_target_reason: str | None = None
+    except (OSError, VerifierError) as error:
+        experiment_target = None
+        experiment_target_reason = (
+            f"experiment_target_unreadable: {error}" if str(error)
+            else "experiment_target_unreadable"
+        )
+    wiring = _wire_experiment_runner(args, experiment_target)
+    experiment = _MeteredToolPort(wiring.runner)
+    verifier = _MeteredToolPort(_build_verifier_router(
+        args, experiment_target, experiment_target_reason,
+    ))
     activation: LiveProviderProbeResult | None = None
     live_configuration_hash = FIXTURE_LIVE_CONFIGURATION_HASH
     pricing_snapshot_hash = FIXTURE_PRICING_SNAPSHOT_HASH
@@ -1661,6 +1987,15 @@ def _run_measured(args: argparse.Namespace) -> int:
         "terminal_reason": completed.terminal_reason,
         "provider": args.provider,
         "root": str(root),
+        "experiment_runner": wiring.to_record(),
+        "verifier_router": {
+            "adapter_id": ROUTER_ADAPTER_ID,
+            "graph_target_hash": (
+                None if experiment_target is None else experiment_target.target_hash
+            ),
+            "graph_target_reason": experiment_target_reason,
+            "formal_check_adapter": args.formal_check_adapter,
+        },
         "epistemic_warrant_created": completed.epistemic_warrant_created,
         "effects": _METER.snapshot(),
         "effect_measurement": effect_measurement(),
@@ -2041,6 +2376,21 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("schemas/model-campaign-action-v1.schema.json"),
     )
     run.add_argument("--execute", action="store_true")
+    # Slice 6 wiring (end-to-end runtime plan §3.6, ADR-0072). Without
+    # `--experiment-activation` the pending runner remains and records why; an
+    # activation record that does not strictly re-verify against the current
+    # locks also keeps the pending runner, with the rejection reason recorded.
+    run.add_argument("--experiment-activation", type=Path)
+    run.add_argument(
+        "--experiment-repository-root", type=Path, default=Path("."),
+    )
+    run.add_argument(
+        "--experiment-target", type=Path, default=DEFAULT_EXPERIMENT_TARGET,
+    )
+    run.add_argument(
+        "--formal-check-adapter", choices=("unavailable", "sealed"),
+        default="unavailable",
+    )
 
     inspect = commands.add_parser("inspect", help="verify and inspect a persisted campaign")
     inspect.add_argument("root", type=Path)

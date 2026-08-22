@@ -313,8 +313,12 @@ class ToolRunRecord:
         if self.measurement_source is UsageSource.UNAVAILABLE:
             if any(item is not None for item in observed):
                 raise CampaignProvenanceError("unavailable tool measurement cannot carry observations")
-        elif any(item is None for item in observed):
-            raise CampaignProvenanceError("locally measured tool run requires every resource observation")
+        elif all(item is None for item in observed):
+            # ADR-0066 records host-observed wall time and output bytes while
+            # deliberately keeping CPU and peak memory null rather than guessed,
+            # so a measured run carries the observations it honestly has -- but
+            # a "measured" claim with zero observations is still a lie.
+            raise CampaignProvenanceError("locally measured tool run requires at least one resource observation")
         if not isinstance(self.recorded_at, str) or not self.recorded_at:
             raise CampaignProvenanceError("recorded_at must be supplied")
 

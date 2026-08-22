@@ -213,11 +213,16 @@ currently perform the target product workflow:
 
 - its action schema contains no literature search, acquisition, embedding,
   index-refresh, or retrieval action;
-- `campaign run` still constructs `PendingSandboxExperimentRunner` and
-  `AbsentVerifier`;
-- the implemented OCI runner and exact-graph verifier are exercised by their
-  own gate, not by the production campaign entrypoint;
-- Phase 3B Lean checking is a separate command surface; and
+- `campaign run` wires the activated ADR-0066 OCI runner only when
+  `--experiment-activation` supplies a record that re-verifies against the
+  current image locks (ADR-0072); otherwise the pending runner remains with the
+  reason recorded, and generated source is never executed;
+- `verify` dispatches through the isolated `CampaignVerifierRouter` (exact
+  graph, Phase 5 exact domains, and a Phase 3B formal-check port); a candidate
+  no route admits is an explicit `unsupported` failure;
+- the sealed Phase 3B Lean adapter is an explicit opt-in
+  (`--formal-check-adapter sealed`); the offline default records a
+  machine-readable missing-tool outcome; and
 - a fresh human `before_research` novelty record is still required by ADR-0055.
 
 The end-to-end plan changes these boundaries through a superseding ADR. Until

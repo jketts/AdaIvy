@@ -61,9 +61,20 @@ from math_research.campaign_cli import (
     REFUSAL_ROOT_RECORDED,
     REFUSAL_RUNNER_REJECTED,
     REFUSAL_TARGET_MISMATCH,
+    EXPERIMENT_WIRING_ACTIVATED,
+    EXPERIMENT_WIRING_PENDING,
+    FIXTURE_GRAPH_CANDIDATE,
     SANDBOX_GATE_DECISION,
+    SANDBOX_OCI_ADAPTER_ID,
     SANDBOX_REFUSAL_REASON,
-    VERIFIER_ABSENT_REASON,
+    WIRING_REASON_NOT_SUPPLIED,
+    WIRING_REASON_REJECTED_PREFIX,
+)
+from math_research.campaign.verifier_router import (
+    ROUTER_ADAPTER_ID,
+    ROUTE_EXACT_GRAPH,
+    ROUTE_UNSUPPORTED,
+    UNSUPPORTED_REASON,
 )
 from math_research.campaign.records import CampaignProvenanceError, RecordStatus, UsageSource
 from math_research.campaign.runner import CampaignRunnerError, PlannerResponse
@@ -86,6 +97,15 @@ from math_research.provider_activation import (
 CAMPAIGN_ID = "campaign.offline.acceptance.v1"
 RECHECK_INSTANT = "2026-08-22T00:00:00Z"
 RUN_INSTANT = "2026-08-22T00:10:00Z"
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+EXPERIMENT_TARGET_PATH = (
+    REPO_ROOT
+    / "fixtures/campaign-experiment/target-exact-graph-distance-spectrum-v1.json"
+)
+RECORDED_ACTIVATION_PATH = (
+    REPO_ROOT / "reports/campaign-experiment-sandbox/v1/activation.json"
+)
 
 #: Bounds are derived from ADR-0065 ceilings, never tuned to a fixture.
 BOUNDS = {
@@ -323,6 +343,9 @@ class CampaignEntrypointFixtureTests(unittest.TestCase):
                 "--config", str(self.config),
                 "--recorded-at", RUN_INSTANT,
                 "--novelty-recheck", str(self.recheck),
+                # Absolute so the suite is cwd-independent; the CLI default is
+                # the same file relative to the repository root.
+                "--experiment-target", str(EXPERIMENT_TARGET_PATH),
                 *extra,
             )
         return code, payload, root
@@ -467,9 +490,9 @@ class CampaignEntrypointFixtureTests(unittest.TestCase):
         self.assertEqual(REFUSAL_BUDGET_EXCEEDS_CAP, payload["reason"])
         self.assertEqual(["max_attempts"], payload["exceeded_bounds"])
 
-    # --- gate 6: run_program fails closed and names its gate ---
+    # --- gate 6: run_program fails closed and records why it was not wired ---
 
-    def test_run_program_fails_closed_citing_the_pending_sandbox_gate(self):
+    def test_run_program_fails_closed_recording_the_unwired_sandbox(self):
         code, payload, root = self.run_campaign(
             "program", "--fixture-script", "program-sandbox-refusal",
         )
@@ -478,15 +501,23 @@ class CampaignEntrypointFixtureTests(unittest.TestCase):
         self.assertEqual(
             ["derive", "write_program", "run_program"], facts["action_types"],
         )
+        # ADR-0066: a sandbox execution failure is TERMINAL, never repair fuel.
+        self.assertEqual("experiment_failed", payload["terminal_reason"])
         self.assertEqual({
-            "status": "pending_gate",
-            "blocking_decision": SANDBOX_GATE_DECISION,
-            "reason": SANDBOX_REFUSAL_REASON,
+            "activation_decision": SANDBOX_GATE_DECISION,
+            "status": EXPERIMENT_WIRING_PENDING,
             "programs_recorded": 1,
             "programs_executed": 0,
+            "executions_failed": 0,
             "execution_refusals_recorded": 1,
         }, facts["experiment_sandbox"])
         self.assertEqual("ADR-0066", SANDBOX_GATE_DECISION)
+        self.assertEqual(
+            EXPERIMENT_WIRING_PENDING, payload["experiment_runner"]["status"],
+        )
+        self.assertEqual(
+            WIRING_REASON_NOT_SUPPLIED, payload["experiment_runner"]["reason"],
+        )
         export = verify_campaign_export((root / "campaign.json").read_bytes())
         run = next(
             item for item in export.tool_runs
@@ -500,25 +531,204 @@ class CampaignEntrypointFixtureTests(unittest.TestCase):
         )
         self.assertEqual(SANDBOX_REFUSAL_REASON, result["reason"])
         self.assertEqual(SANDBOX_GATE_DECISION, result["blocking_decision"])
+        self.assertEqual(WIRING_REASON_NOT_SUPPLIED, result["wiring_reason"])
         self.assertFalse(result["executed"])
         self.assertFalse(result["subprocess_opened"])
         self.assertFalse(result["epistemic_warrant_created"])
 
-    # --- gate 7: the isolated verifier is recorded as absent ---
+    def test_matching_activation_record_wires_the_activated_oci_runner(self):
+        """Runner activation matching: recorded runtime and locks re-verify.
 
-    def test_verify_records_the_absent_isolated_verifier(self):
+        The committed ADR-0066 activation record re-verifies byte-for-byte
+        against the current repository image locks, so wiring succeeds -- and
+        because this script performs no `run_program`, wiring costs zero
+        subprocesses, which `no_effects` measures.
+        """
+
+        code, payload, _ = self.run_campaign(
+            "wired", "--fixture-script", "graph-candidate-verify-report",
+            "--experiment-activation", str(RECORDED_ACTIVATION_PATH),
+            "--experiment-repository-root", str(REPO_ROOT),
+        )
+        self.assertEqual(0, code, payload)
+        wiring = payload["experiment_runner"]
+        self.assertEqual(EXPERIMENT_WIRING_ACTIVATED, wiring["status"])
+        self.assertEqual(SANDBOX_OCI_ADAPTER_ID, wiring["adapter_id"])
+        self.assertIsNone(wiring["reason"])
+        self.assertTrue(str(wiring["activation_content_hash"]).startswith("sha256:"))
+
+    def test_mismatched_activation_record_keeps_the_pending_runner_with_reason(self):
+        tampered = self.root / "tampered-activation.json"
+        tampered.write_bytes(
+            RECORDED_ACTIVATION_PATH.read_bytes().replace(
+                b'"activated"', b'"activatex"', 1,
+            )
+        )
+        code, payload, root = self.run_campaign(
+            "mismatch", "--fixture-script", "program-sandbox-refusal",
+            "--experiment-activation", str(tampered),
+            "--experiment-repository-root", str(REPO_ROOT),
+        )
+        self.assertEqual(0, code, payload)
+        wiring = payload["experiment_runner"]
+        self.assertEqual(EXPERIMENT_WIRING_PENDING, wiring["status"])
+        self.assertTrue(
+            str(wiring["reason"]).startswith(WIRING_REASON_REJECTED_PREFIX),
+            wiring,
+        )
+        # The reason is durable: the pending refusal in the ledger carries it.
+        export = verify_campaign_export((root / "campaign.json").read_bytes())
+        run = next(
+            item for item in export.tool_runs
+            if item.adapter_id == campaign_cli.SANDBOX_ADAPTER_ID
+        )
+        result = json.loads(
+            (root / "artifacts" / ("sha256-" + run.result_hash[len("sha256:"):]))
+            .read_text(encoding="utf-8")
+        )
+        self.assertTrue(
+            str(result["wiring_reason"]).startswith(WIRING_REASON_REJECTED_PREFIX)
+        )
+
+    def test_production_adapter_identity_matches_the_sandbox_module(self):
+        from math_research.campaign.experiment_sandbox.runner import ADAPTER_ID
+
+        self.assertEqual(ADAPTER_ID, SANDBOX_OCI_ADAPTER_ID)
+
+    # --- gate 7: the verifier router dispatches, refuses, and never grants ---
+
+    def test_verify_of_an_inapplicable_candidate_is_an_explicit_unsupported(self):
         _, payload, root = self.run_campaign("verified")
         self.assertEqual({
-            "status": "absent",
-            "reason": VERIFIER_ABSENT_REASON,
+            "adapter_id": ROUTER_ADAPTER_ID,
+            "status": "router",
             "verifications_completed": 0,
-            "verification_refusals_recorded": 1,
+            "verifications_failed": 1,
         }, payload["facts"]["isolated_verifier"])
         export = verify_campaign_export((root / "campaign.json").read_bytes())
         verify_action = next(
             item for item in export.actions if item.action_type.value == "verify"
         )
         self.assertEqual("failed", verify_action.status.value)
+        run = next(
+            item for item in export.tool_runs
+            if item.adapter_id == ROUTER_ADAPTER_ID
+        )
+        result = json.loads(
+            (root / "artifacts" / ("sha256-" + run.result_hash[len("sha256:"):]))
+            .read_text(encoding="utf-8")
+        )
+        self.assertEqual(ROUTE_UNSUPPORTED, result["route"])
+        self.assertEqual("unsupported", result["outcome"])
+        # The fixture candidate is prose, so the router names the more precise
+        # unsupported code; a JSON candidate with an unadmitted schema names
+        # `no_admitted_verifier_for_candidate` (covered in the router tests).
+        self.assertEqual("candidate_is_not_a_json_object", result["refusal_code"])
+        self.assertIn(
+            UNSUPPORTED_REASON, ("no_admitted_verifier_for_candidate",),
+        )
+        self.assertFalse(result["epistemic_warrant_created"])
+        # An unsupported candidate rejects that candidate, not the campaign.
+        self.assertEqual("reported", payload["terminal_reason"])
+
+    def test_verify_submits_the_selected_candidate_to_the_exact_graph_verifier(self):
+        code, payload, root = self.run_campaign(
+            "graph-verified", "--fixture-script", "graph-candidate-verify-report",
+        )
+        self.assertEqual(0, code, payload)
+        self.assertEqual("reported", payload["terminal_reason"])
+        self.assertEqual({
+            "adapter_id": ROUTER_ADAPTER_ID,
+            "status": "router",
+            "verifications_completed": 1,
+            "verifications_failed": 0,
+        }, payload["facts"]["isolated_verifier"])
+        export = verify_campaign_export((root / "campaign.json").read_bytes())
+        verify_action = next(
+            item for item in export.actions if item.action_type.value == "verify"
+        )
+        self.assertEqual("completed", verify_action.status.value)
+        run = next(
+            item for item in export.tool_runs
+            if item.adapter_id == ROUTER_ADAPTER_ID
+        )
+        result = json.loads(
+            (root / "artifacts" / ("sha256-" + run.result_hash[len("sha256:"):]))
+            .read_text(encoding="utf-8")
+        )
+        self.assertEqual(ROUTE_EXACT_GRAPH, result["route"])
+        self.assertEqual("target_satisfied", result["outcome"])
+        self.assertEqual(
+            "sha256:" + __import__("hashlib").sha256(
+                FIXTURE_GRAPH_CANDIDATE.encode("utf-8")
+            ).hexdigest(),
+            result["candidate_hash"],
+        )
+        # A completed exact verdict still grants nothing.
+        self.assertFalse(result["epistemic_warrant_created"])
+        self.assertFalse(result["trust"]["graph_admission"])
+        self.assertEqual("not_assessed", result["trust"]["novelty_status"])
+        self.assertFalse(payload["epistemic_warrant_created"])
+
+    def test_rejected_candidate_leaves_the_campaign_continuing(self):
+        code, payload, root = self.run_campaign(
+            "rejected-continues",
+            "--fixture-script", "graph-rejected-candidate-continues",
+        )
+        self.assertEqual(0, code, payload)
+        facts = payload["facts"]
+        self.assertEqual(
+            [
+                "derive", "inspect_result", "verify",
+                "derive", "inspect_result", "verify", "report",
+            ],
+            facts["action_types"],
+        )
+        self.assertEqual("reported", payload["terminal_reason"])
+        self.assertEqual(1, facts["isolated_verifier"]["verifications_completed"])
+        self.assertEqual(1, facts["isolated_verifier"]["verifications_failed"])
+        export = verify_campaign_export((root / "campaign.json").read_bytes())
+        verifies = [
+            item for item in export.actions if item.action_type.value == "verify"
+        ]
+        self.assertEqual(["failed", "completed"], [v.status.value for v in verifies])
+        first_run = next(
+            item for item in export.tool_runs
+            if item.action_id == verifies[0].action_id
+        )
+        result = json.loads(
+            (root / "artifacts" / ("sha256-" + first_run.result_hash[len("sha256:"):]))
+            .read_text(encoding="utf-8")
+        )
+        self.assertEqual("target_not_satisfied", result["outcome"])
+        self.assertTrue(result["detail"]["verdict"]["claim_refuted"])
+
+    def test_verifier_results_never_enter_the_planner_context(self):
+        """Isolation probe: the lead sees action status, not verifier payloads.
+
+        `latest_tool_result` is populated by `run_program` alone; a verify
+        result reaches the ledger as a tool run and its artifact, and no
+        planner context carries its bytes -- so validator diagnostics stay
+        structurally isolated from the lead.
+        """
+
+        planner = campaign_cli.ScriptedCampaignPlanner(
+            script="graph-rejected-candidate-continues", tool_id="exact_python",
+            resource_limits=campaign_cli.ResourceLimits(
+                cpu_milliseconds=1_000, wall_milliseconds=2_000,
+                memory_bytes=67_108_864, output_bytes=65_536, process_count=1,
+            ),
+        )
+        with mock.patch.object(
+            campaign_cli, "ScriptedCampaignPlanner", return_value=planner,
+        ):
+            _, payload, _ = self.run_campaign(
+                "isolation", "--fixture-script", "graph-rejected-candidate-continues",
+            )
+        self.assertEqual("reported", payload["terminal_reason"])
+        for context in planner.contexts:
+            self.assertIsNone(context.latest_tool_result)
+            self.assertIsNone(context.latest_tool_result_hash)
 
     # --- gate 8: ADR-0055 binds before research starts ---
 

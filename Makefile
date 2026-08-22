@@ -132,12 +132,17 @@ phase3a:
 
 # Separate from `check`: needs the exact ADR-0016 v5 container image. Without it
 # the adapter fails closed and this target reports a failed status by design.
+# The second step is ADR-0072's campaign boundary: the same sealed service is
+# reached through the isolated verifier router's formal-check route, and the
+# recorded finding must be kernel-checked, code-only (no wrapper source or
+# execution diagnostics), and warrant-free.
 phase3b check-sealed:
 	@printf '\n== phase 3B sealed Lean runtime (requires ADR-0016 v5 image) ==\n'
 	@d=$$(mktemp -d "$(TMPROOT)/adaivy-p3b.XXXXXX") && \
 	  $(PY) -m math_research.cli phase3b demo "$$d/workspace" --output-dir "$$d/out" >/dev/null && \
 	  $(PY) -m math_research.cli phase3b inspect "$$d/out/formal-checking.json" >/dev/null && \
-	  rm -rf "$$d" && printf 'phase 3B ok\n'
+	  $(PY) -c 'import json,hashlib; from math_research.campaign_cli import _SealedFormalChecker; from math_research.campaign.verifier_router import CampaignVerifierRouter, FORMAL_CHECK_ENVELOPE_SCHEMA; from math_research.campaign.records import RecordStatus, canonical_bytes; from math_research.campaign.runner import VerificationRequest; request=json.load(open("fixtures/phase3b/valid.json")); candidate=canonical_bytes({"request": request, "schema_version": FORMAL_CHECK_ENVELOPE_SCHEMA}); h="sha256:"+hashlib.sha256(candidate).hexdigest(); router=CampaignVerifierRouter(graph_target=None, formal_checker=_SealedFormalChecker("2026-08-22T00:10:00Z")); result=router(VerificationRequest(campaign_id="campaign.sealed.router", action_id="action.1", target_hash="sha256:"+"0"*64, candidate_artifact=(h,candidate), tool_artifacts=())); value=json.loads(result.result); finding=value["detail"]["finding"]; assert result.status is RecordStatus.COMPLETED and value["route"]=="phase3b_formal_check" and value["outcome"]=="formal_check_verified", value; assert finding["outcome"] in ("kernel_checked","kernel_checked_approved_standard_axioms"), finding; assert "wrapper_manifest" not in finding and "execution" not in finding and finding["diagnostics_isolated"] is True, finding; assert value["epistemic_warrant_created"] is False and finding["epistemic_warrant_created"] is False, value' && \
+	  rm -rf "$$d" && printf 'phase 3B ok (sealed kernel check reached through the campaign verifier router; diagnostics isolated; no warrant)\n'
 
 phase4a:
 	@printf '\n== phase 4A local rights and applicability ==\n'
@@ -504,25 +509,29 @@ synthesis:
 	    "$$d/synthesis-export.json" >/dev/null && \
 	  rm -rf "$$d" && printf 'synthesis ok\n'
 
-# ADR-0065 gives the ADR-0057 campaign the operator entrypoint it never had.
-# This target exercises ONLY the zero-network fixture dry path: a scripted
-# planner that holds no gateway and calls nothing, an experiment runner that
-# executes nothing, and a verifier that records its own absence. It needs no
-# network, no model provider, no container runtime and no third-party package,
-# it renders into a mktemp directory it deletes, and it never writes into a
-# tracked path.
+# ADR-0065 gives the ADR-0057 campaign the operator entrypoint it never had;
+# slice 6 of the end-to-end runtime plan wires its verifier router. This target
+# exercises ONLY the zero-network fixture dry path: a scripted planner that
+# holds no gateway and calls nothing, an experiment runner that executes
+# nothing and records why it was not wired, and the isolated verifier router
+# over the frozen exact-graph target. It needs no network, no model provider,
+# no container runtime and no third-party package, it renders into a mktemp
+# directory it deletes, and it never writes into a tracked path.
 #
-# The recorded outcome is asserted rather than the exit status, so nine things
-# must fail here rather than pass quietly: a fixture run that names a provider
-# other than `fixture`, a program that executes before the ADR-0066
-# experiment-sandbox gate passes, a verification that completes while no
-# isolated verifier is wired, a guardrail that turns true, a live provider that
-# starts without `--execute`, a fixture run that silently accepts a live
-# activation flag, a replay whose effect counters were not actually measured, a
-# recorded campaign that exceeded one of its own configured bounds, and a ledger
-# whose bytes move between two runs on identical inputs. The two frozen instants
-# above are inputs, never clock reads; a moving hash means the campaign is no
-# longer reproducible from its inputs.
+# The recorded outcome is asserted rather than the exit status, so eleven
+# things must fail here rather than pass quietly: a fixture run that names a
+# provider other than `fixture`, a program that executes with no matching
+# ADR-0066 activation record supplied, a prose candidate whose verification
+# reads as anything but an explicit unsupported failure, an exactly refuted
+# candidate that terminates the campaign instead of leaving it continuing, a
+# satisfied exact-graph candidate that fails to verify, a guardrail that turns
+# true, a live provider that starts without `--execute`, a fixture run that
+# silently accepts a live activation flag, a replay whose effect counters were
+# not actually measured, a recorded campaign that exceeded one of its own
+# configured bounds, and a ledger whose bytes move between two runs on
+# identical inputs. The two frozen instants above are inputs, never clock
+# reads; a moving hash means the campaign is no longer reproducible from its
+# inputs.
 #
 # The five replay effect counters below are MEASURED by a CPython audit hook and
 # by the injected ports. They used to be literal zeroes compared here against a
@@ -569,6 +578,14 @@ campaign:
 	    --config "$$d/config.json" --recorded-at $(CAMPAIGN_INSTANT) \
 	    --novelty-recheck "$$d/novelty-recheck.json" \
 	    --fixture-script program-sandbox-refusal >/dev/null && \
+	  $(PY) -m math_research.cli campaign run "$$d/graph" campaign.offline.fixture.v1 \
+	    --config "$$d/config.json" --recorded-at $(CAMPAIGN_INSTANT) \
+	    --novelty-recheck "$$d/novelty-recheck.json" \
+	    --fixture-script graph-candidate-verify-report > "$$d/graph-run.json" && \
+	  $(PY) -m math_research.cli campaign run "$$d/rejected" campaign.offline.fixture.v1 \
+	    --config "$$d/config.json" --recorded-at $(CAMPAIGN_INSTANT) \
+	    --novelty-recheck "$$d/novelty-recheck.json" \
+	    --fixture-script graph-rejected-candidate-continues > "$$d/rejected-run.json" && \
 	  $(PY) -m math_research.cli campaign inspect "$$d/first" >/dev/null && \
 	  $(PY) -m math_research.cli campaign replay "$$d/first" > "$$d/first-replay.json" && \
 	  $(PY) -m math_research.cli campaign replay "$$d/program" > "$$d/program-replay.json" && \
@@ -585,11 +602,12 @@ campaign:
 	      --config "$$d/config.json" --recorded-at $(CAMPAIGN_INSTANT) \
 	      --novelty-recheck "$$d/novelty-recheck.json" --execute \
 	      > "$$d/fixture-live-refusal.json" || true; } && \
-	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); p=json.load(open(sys.argv[2])); l=json.load(open(sys.argv[3])); u=json.load(open(sys.argv[4])); x=json.load(open(sys.argv[5])); f=r["facts"]; g=p["facts"]; assert r["verified"] is True and p["verified"] is True, "campaign replay did not verify"; assert (r["model_calls_made"], r["provider_requests_made"], r["tool_calls_made"], r["subprocesses_opened"], r["network_requests"]) == (0, 0, 0, 0, 0), "campaign replay performed work: %s" % r; assert r["effect_measurement"]["audit_hook_installed"] is True and r["effect_measurement"]["mechanism"] == "sys.addaudithook", "campaign replay effect counters were not measured: %s" % r["effect_measurement"]; assert [i["passed"] for i in r["checks"]] == [True] * 10, "campaign replay check set moved: %s" % r["checks"]; assert f["providers"] == ["fixture"], "the offline campaign path named a provider: %s" % f["providers"]; assert f["measurement_status"] == "unavailable", "a scripted campaign reported measured usage: %s" % f["measurement_status"]; assert f["bound_compliance"]["status"] == "within_bounds" and f["bound_compliance"]["exceeded_bounds"] == [] and g["bound_compliance"]["status"] == "within_bounds", "a recorded campaign exceeded its own configured bounds: %s" % f["bound_compliance"]; assert f["action_types"] == ["derive", "inspect_result", "verify", "report"] and f["terminal_action_type"] == "report", "campaign action ledger moved: %s" % f["action_types"]; assert f["isolated_verifier"] == {"status": "absent", "reason": "isolated_campaign_verifier_not_wired", "verifications_completed": 0, "verification_refusals_recorded": 1}, "campaign verified something with no isolated verifier: %s" % f["isolated_verifier"]; assert g["action_types"] == ["derive", "write_program", "run_program"], "campaign program ledger moved: %s" % g["action_types"]; assert g["experiment_sandbox"] == {"status": "pending_gate", "blocking_decision": "ADR-0066", "reason": "experiment_sandbox_gate_not_passed_adr_0066", "programs_recorded": 1, "programs_executed": 0, "execution_refusals_recorded": 1}, "campaign executed generated code or lost its ADR-0066 refusal: %s" % g["experiment_sandbox"]; assert all(v is False or v == 0 for v in f["guardrails"].values()) and all(v is False or v == 0 for v in g["guardrails"].values()), "a campaign guardrail was set"; assert l["status"] == "refused" and l["reason"] == "live_campaign_requires_explicit_execute", "a live campaign started without --execute: %s" % l; assert u["status"] == "refused" and u["reason"] == "fresh_novelty_recheck_required_before_research", "a campaign started without a bound novelty re-check: %s" % u; assert x["status"] == "refused" and x["reason"] == "fixture_provider_refuses_live_activation_flags", "the fixture provider silently accepted a live activation flag: %s" % x' \
+	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); p=json.load(open(sys.argv[2])); l=json.load(open(sys.argv[3])); u=json.load(open(sys.argv[4])); x=json.load(open(sys.argv[5])); gr=json.load(open(sys.argv[6])); rj=json.load(open(sys.argv[7])); f=r["facts"]; g=p["facts"]; assert r["verified"] is True and p["verified"] is True, "campaign replay did not verify"; assert (r["model_calls_made"], r["provider_requests_made"], r["tool_calls_made"], r["subprocesses_opened"], r["network_requests"]) == (0, 0, 0, 0, 0), "campaign replay performed work: %s" % r; assert r["effect_measurement"]["audit_hook_installed"] is True and r["effect_measurement"]["mechanism"] == "sys.addaudithook", "campaign replay effect counters were not measured: %s" % r["effect_measurement"]; assert [i["passed"] for i in r["checks"]] == [True] * 10, "campaign replay check set moved: %s" % r["checks"]; assert f["providers"] == ["fixture"], "the offline campaign path named a provider: %s" % f["providers"]; assert f["measurement_status"] == "unavailable", "a scripted campaign reported measured usage: %s" % f["measurement_status"]; assert f["bound_compliance"]["status"] == "within_bounds" and f["bound_compliance"]["exceeded_bounds"] == [] and g["bound_compliance"]["status"] == "within_bounds", "a recorded campaign exceeded its own configured bounds: %s" % f["bound_compliance"]; assert f["action_types"] == ["derive", "inspect_result", "verify", "report"] and f["terminal_action_type"] == "report", "campaign action ledger moved: %s" % f["action_types"]; assert f["isolated_verifier"] == {"adapter_id": "campaign_verifier_router", "status": "router", "verifications_completed": 0, "verifications_failed": 1}, "a prose candidate did not fail as an explicit unsupported verification: %s" % f["isolated_verifier"]; assert g["action_types"] == ["derive", "write_program", "run_program"], "campaign program ledger moved: %s" % g["action_types"]; assert g["experiment_sandbox"] == {"status": "pending", "activation_decision": "ADR-0066", "programs_recorded": 1, "programs_executed": 0, "executions_failed": 0, "execution_refusals_recorded": 1}, "campaign executed generated code without a wired activation or lost its refusal: %s" % g["experiment_sandbox"]; assert p["facts"]["terminal_action_status"] == "failed", "a refused program run did not record its failure"; assert gr["status"] == "recorded" and gr["terminal_reason"] == "reported" and gr["facts"]["isolated_verifier"]["verifications_completed"] == 1 and gr["facts"]["isolated_verifier"]["verifications_failed"] == 0, "the exact-graph candidate did not verify through the router: %s" % gr["facts"]["isolated_verifier"]; assert gr["experiment_runner"]["status"] == "pending" and gr["experiment_runner"]["reason"] == "experiment_activation_record_not_supplied", "an unwired run stopped recording why: %s" % gr["experiment_runner"]; assert rj["status"] == "recorded" and rj["terminal_reason"] == "reported" and rj["facts"]["isolated_verifier"] == {"adapter_id": "campaign_verifier_router", "status": "router", "verifications_completed": 1, "verifications_failed": 1} and rj["facts"]["action_types"] == ["derive", "inspect_result", "verify", "derive", "inspect_result", "verify", "report"], "a rejected candidate did not leave the campaign continuing: %s" % rj["facts"]["action_types"]; assert gr["epistemic_warrant_created"] is False and rj["epistemic_warrant_created"] is False, "a router verification created warrant"; assert all(v is False or v == 0 for v in f["guardrails"].values()) and all(v is False or v == 0 for v in g["guardrails"].values()) and all(v is False or v == 0 for v in gr["facts"]["guardrails"].values()), "a campaign guardrail was set"; assert l["status"] == "refused" and l["reason"] == "live_campaign_requires_explicit_execute", "a live campaign started without --execute: %s" % l; assert u["status"] == "refused" and u["reason"] == "fresh_novelty_recheck_required_before_research", "a campaign started without a bound novelty re-check: %s" % u; assert x["status"] == "refused" and x["reason"] == "fixture_provider_refuses_live_activation_flags", "the fixture provider silently accepted a live activation flag: %s" % x' \
 	    "$$d/first-replay.json" "$$d/program-replay.json" "$$d/live-refusal.json" \
-	    "$$d/unbound-refusal.json" "$$d/fixture-live-refusal.json" && \
+	    "$$d/unbound-refusal.json" "$$d/fixture-live-refusal.json" \
+	    "$$d/graph-run.json" "$$d/rejected-run.json" && \
 	  rm -rf "$$d" && \
-	  printf 'campaign ok (failed sandbox run terminates after 3 actions; 0 programs executed on the offline path; replay MEASURED 0 model/tool/network/subprocess calls)\n'
+	  printf 'campaign ok (unwired sandbox refused with its reason recorded; exact-graph candidate verified through the router; a refuted candidate left the campaign continuing; replay MEASURED 0 model/tool/network/subprocess calls)\n'
 
 # ADR-0036: the publication projection renders the manuscript record set into a
 # content-addressed bundle and asserts the recorded outcome rather than the exit
@@ -762,8 +780,43 @@ check-campaign-experiment-oci:
 	    --output "$$d/activation.json" > "$$d/summary.json" && \
 	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["status"] == "activated"; assert r["probes_flipped"] == r["probes_total"] == 16' \
 	    "$$d/activation.json" && \
+	  $(PY) -m math_research.cli campaign config-create "$$d/config.json" \
+	    --campaign-configuration-id config.campaign.oci.v1 \
+	    --allowed-tool campaign_exact_python \
+	    --max-actions 8 --max-tool-runs 3 --max-model-calls 8 \
+	    --max-input-tokens 20000 --max-output-tokens 20000 \
+	    --max-cost-microusd 1000000 --max-program-bytes 8192 \
+	    --max-artifact-bytes 65536 --max-context-bytes 65536 \
+	    --max-cpu-milliseconds 10000 --max-wall-milliseconds 60000 \
+	    --max-memory-bytes 268435456 --max-output-bytes 65536 \
+	    --max-process-count 4 >/dev/null && \
+	  $(PY) -m math_research.cli campaign target "$$d/target.json" >/dev/null && \
+	  pid=$$($(PY) -c 'import json,sys; print(json.load(open(sys.argv[1]))["problem_id"])' "$$d/target.json") && \
+	  shash=$$($(PY) -c 'import json,sys; print(json.load(open(sys.argv[1]))["dossier_content_hash"])' "$$d/target.json") && \
+	  ehash=$$($(PY) -c 'import hashlib,sys; print("sha256:" + hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$$d/target.json") && \
+	  $(PY) -m math_research.cli novelty create before_research "$$pid" "$$shash" \
+	    campaign.oci.fixture.v1 operator.repository-owner \
+	    $(CAMPAIGN_RECHECK_INSTANT) "$$d/novelty-recheck.json" \
+	    --recheck-id recheck.campaign.oci.v1 \
+	    --protocol-id protocol.offline.no-search.v1 \
+	    --query-term 'even sum' \
+	    --searched-source 'none: the OCI gate path performs no search' \
+	    --equivalence-check 'none: the OCI gate path performs no equivalent-formulation check' \
+	    --evidence-ref evidence.campaign.frozen-target "$$ehash" \
+	    --outcome inconclusive --prior-art-relationship unresolved \
+	    --prior-resolution unresolved --prior-resolution-verification unresolved \
+	    --limitation 'No literature search was performed; this record binds the OCI gate run and asserts no novelty.' >/dev/null && \
+	  $(PY) -m math_research.cli campaign run "$$d/oci" campaign.oci.fixture.v1 \
+	    --config "$$d/config.json" --recorded-at $(CAMPAIGN_INSTANT) \
+	    --novelty-recheck "$$d/novelty-recheck.json" \
+	    --fixture-script oci-experiment-verify-report \
+	    --experiment-activation "$$d/activation.json" \
+	    --experiment-repository-root . > "$$d/oci-run.json" && \
+	  $(PY) -m math_research.cli campaign replay "$$d/oci" >/dev/null && \
+	  $(PY) -c 'import json,sys; p=json.load(open(sys.argv[1])); f=p["facts"]; assert p["status"] == "recorded" and p["terminal_reason"] == "reported", "the wired OCI campaign did not close: %s" % p.get("terminal_reason"); assert p["experiment_runner"]["status"] == "activated_oci", "the recorded activation did not wire the OCI runner: %s" % p["experiment_runner"]; assert f["action_types"] == ["write_program", "run_program", "inspect_result", "verify", "report"], "the OCI campaign ledger moved: %s" % f["action_types"]; assert f["experiment_sandbox"] == {"status": "activated_oci", "activation_decision": "ADR-0066", "programs_recorded": 1, "programs_executed": 1, "executions_failed": 0, "execution_refusals_recorded": 0}, "the sandbox facts moved: %s" % f["experiment_sandbox"]; assert f["isolated_verifier"] == {"adapter_id": "campaign_verifier_router", "status": "router", "verifications_completed": 1, "verifications_failed": 0}, "the router facts moved: %s" % f["isolated_verifier"]; assert p["epistemic_warrant_created"] is False and all(v is False or v == 0 for v in f["guardrails"].values()), "the wired OCI campaign asserted trust"' \
+	    "$$d/oci-run.json" && \
 	  rm -rf "$$d" && \
-	  printf 'campaign experiment OCI gate ok (16/16 probes flipped)\n'
+	  printf 'campaign experiment OCI gate ok (16/16 probes flipped; one generated program executed in the pinned sandbox; the exact-graph router verified the selected candidate; no warrant created)\n'
 
 clean:
 	find . -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
