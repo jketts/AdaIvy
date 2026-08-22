@@ -16,6 +16,35 @@ from .phase4d.discovery import (
     CAPABILITY_ID, LIVE_ACKNOWLEDGEMENT, MAX_CONFIG_BYTES, MAX_REPORT_BYTES,
     MAX_SOURCE_BYTES, GroundedQuery, dry_run, load_config, search, verify_report,
 )
+from .phase4d.discovery_v2 import MAX_REPORT_BYTES_V2, verify_report_v2
+from .phase4d.policy import validate_policy
+
+
+def _strict_json(data: bytes, maximum: int, label: str) -> dict[str, object]:
+    def pairs(items: list[tuple[str, object]]) -> dict[str, object]:
+        value: dict[str, object] = {}
+        for key, item in items:
+            if key in value:
+                raise ValueError(f"{label} contains a duplicate key")
+            value[key] = item
+        return value
+
+    if not data or len(data) > maximum:
+        raise ValueError(f"{label} byte bound differs")
+    try:
+        value = json.loads(
+            data.decode("utf-8", "strict"), object_pairs_hook=pairs,
+            parse_constant=lambda token: (_ for _ in ()).throw(
+                ValueError(f"non-finite JSON value forbidden: {token}")
+            ),
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"{label} JSON is invalid") from error
+    if not isinstance(value, dict) or data not in {
+        canonical_bytes(value), canonical_bytes(value) + b"\n",
+    }:
+        raise ValueError(f"{label} is not canonical")
+    return value
 
 
 def _strict_report(data: bytes) -> dict[str, object]:
@@ -64,7 +93,32 @@ def main(argv: list[str] | None = None) -> int:
     discover.add_argument("--confirm-query-hash")
     inspect = commands.add_parser("inspect", help="verify a canonical discovery report")
     inspect.add_argument("path", type=Path)
+    inspect_v2 = commands.add_parser(
+        "inspect-v2",
+        help="verify a canonical paginated v2 discovery report against its policy",
+    )
+    inspect_v2.add_argument("path", type=Path)
+    inspect_v2.add_argument("--policy", type=Path, required=True)
     args = parser.parse_args(argv)
+
+    if args.command == "inspect-v2":
+        policy = validate_policy(_strict_json(
+            read_interchange_file(args.policy, max_bytes=MAX_CONFIG_BYTES),
+            MAX_CONFIG_BYTES, "discovery v2 policy",
+        ))
+        value = verify_report_v2(_strict_json(
+            read_interchange_file(args.path, max_bytes=MAX_REPORT_BYTES_V2),
+            MAX_REPORT_BYTES_V2, "discovery v2 report",
+        ), policy)
+        print(json.dumps({
+            "status": value["status"], "content_hash": value["content_hash"],
+            "policy_hash": value["policy_hash"],
+            "requests": value["totals"]["requests"],
+            "response_bytes": value["totals"]["response_bytes"],
+            "candidate_count": value["totals"]["candidates"],
+            "inspiration_only": value["inspiration_only"],
+        }, indent=2, sort_keys=True))
+        return 0
 
     if args.command == "inspect":
         value = verify_report(_strict_report(

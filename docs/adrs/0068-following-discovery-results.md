@@ -7,6 +7,8 @@
   part by ADR-0072: the "does not license query generation" boundary, the
   `pr.follow-query-not-generated` probe, and the machine-generated-queries
   revisit item are superseded; all six controls and every other clause stand.
+  Implemented by ADR-0081 (2026-08-22) in
+  `src/math_research/phase4d/following.py` with all six controls enforced.
 - **Date:** 2026-08-22
 - **Blueprint requirement:** Section 7.1 (crawlers produce candidates, not
   trusted documents); Section 15 (`:1801` prompt injection inside retrieved

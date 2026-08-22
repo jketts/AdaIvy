@@ -10,7 +10,7 @@ capability is summarized separately in
 - ADR-0029: central research lead and selectively activated search complexity
 - ADR-0047: bounded central-lead runtime
 - ADR-0051: bounded public scholarly web discovery (Crossref, superseded in
-  part by ADR-0068 and ADR-0072)
+  part by ADR-0068, ADR-0072, and ADR-0081)
 - ADR-0055: two human novelty checkpoints; the `before_research` check is
   superseded in part by ADR-0072 for campaign runs, the `before_announcement`
   check stands
@@ -20,8 +20,8 @@ capability is summarized separately in
 - ADR-0065: campaign operator entrypoint
 - ADR-0066: bounded campaign experiment sandbox
 - ADR-0067: bounded corpus ingestion
-- ADR-0068: accepted depth-one discovery-result following; implemented in the
-  ADR-0075 offline end-to-end runtime
+- ADR-0068: accepted depth-one discovery-result following; implemented by
+  ADR-0081
 - ADR-0069: embedding provider and immutable vector artifacts
 - ADR-0070: fixture-scoped semantic retrieval signal
 - ADR-0071: terminal campaign resume and automatic unapproved LaTeX draft
@@ -40,6 +40,11 @@ capability is summarized separately in
   actions, ordered refresh/retrieval, exact model-context rights, refute/repair/
   verify continuation, safe takedown authority, sealed resume configuration,
   cross-campaign vector reuse, and provenance-closed report generation
+- ADR-0081: literature discovery at scale — paginated multi-provider v2
+  discovery under one policy-level authorization and budget, depth-one result
+  following (implements ADR-0068), and batch public acquisition under one
+  plan-level human approval; supersedes ADR-0051's per-search acknowledgement
+  and single-request configuration for the v2 capability only
 
 The end-to-end integration is documented in
 [`../END_TO_END_RESEARCH_RUNTIME_PLAN.md`](../END_TO_END_RESEARCH_RUNTIME_PLAN.md).

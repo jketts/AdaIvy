@@ -5,7 +5,11 @@
   operator-grounded query terms, the per-request human acknowledgement, and
   the query-generation/scheduling/model-call exclusions, for campaign runs);
   the Crossref-only origin, untrusted-candidate status, transport controls,
-  and no-inference-from-rank rules stand.
+  and no-inference-from-rank rules stand. Superseded in part by ADR-0081
+  (2026-08-22): the per-search human acknowledgement, per-query confirmed
+  hash, hash-pinned single-request configuration, ten-result cap, and
+  Crossref-only provider scope are superseded for the separate v2 capability;
+  this v1 capability, its records, and its remaining rules stand unchanged.
 - **Date:** 2026-08-21
 - **Blueprint requirement:** Phase 4 terminology expansion and literature
   discovery; ADR-0050 revisit trigger
