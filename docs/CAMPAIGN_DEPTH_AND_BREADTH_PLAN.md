@@ -1,6 +1,8 @@
 # Campaign Depth and Breadth Plan
 
-**Status:** proposed roadmap; requires new ADRs before implementation
+**Status:** implementation roadmap; ADRs 0077, 0078, 0080, 0081, and 0082
+govern Slices 10, 11, 13, 14, and 15 respectively; ADR-0079 remains required
+before Slice 12 is integrated
 **Date:** 2026-08-22
 **Predecessor:** [`END_TO_END_RESEARCH_RUNTIME_PLAN.md`](END_TO_END_RESEARCH_RUNTIME_PLAN.md)
 (Slices 1–8, closed offline at `main@953e7a7`)
@@ -100,7 +102,10 @@ Numbering continues from the predecessor plan.
   that exceeds `max_context_bytes` must both leave a complete ledger, a
   terminal report, and exit 0.
 
-Exit: no code path can lose a partially completed campaign's records.
+Exit: planner-side exhaustion and rejection cannot lose a partially completed
+campaign's records. Each later effect boundary retains its own corresponding
+no-lost-attempt acceptance tests; this hotfix does not claim to prove every
+future adapter exception-safe.
 
 ### Slice 10 — Problem-visible context and durable model memory
 
@@ -136,8 +141,9 @@ verifier counterexample.
   deterministic rolling-window policy over `previous_actions`: older actions
   collapse to hash + rationale summaries, recoverable via `read_artifact`).
 - Malformed actions get a bounded repair loop: the validation error is echoed
-  to the model and the same sequence number is retried up to N times before
-  `action_rejected` becomes terminal.
+  to the model and a new append-only sequence records each retry, up to N
+  consecutive refusals before `action_rejected` becomes terminal. Sequence
+  identifiers are never reused.
 - A failed experiment (`run_program` non-completion) is a recorded non-terminal
   outcome while tool-run and campaign budgets remain; its diagnostic enters the
   next context (Slice 10). Determinism-refusals likewise.
@@ -162,9 +168,12 @@ result under one budget.
   guards that survive are "a recorded search precedes the first substantive
   research action" and "retrieval evidence used in planning must come from a
   published generation."
-- Literature effects execute asynchronously against the persistent corpus
-  service; new generations appear at explicit `refresh_corpus` actions exactly
-  as today.
+- Literature effects may execute as durable jobs against the persistent corpus
+  service. Every job has a checkpointed intent and terminal record; an
+  ambiguous paid or irreversible intent is never repeated automatically. The
+  central campaign remains sequential and observes new generations only at
+  explicit `refresh_corpus` actions. A first implementation may execute these
+  jobs synchronously while preserving the same durable boundary.
 
 Exit: one small-budget live campaign in which every action is model-chosen
 executes literature → retrieval → experiment → exact verification end to end,
@@ -173,7 +182,8 @@ and the offline `make check` gate still passes unchanged.
 ### Slice 13 — Real ingestion: fetcher, PDF/LaTeX parsing, bulk rights
 
 *ADR required: supersedes the no-fetcher and metadata-only clauses of
-ADR-0067; activates the corpus-service snapshot gate.*
+ADR-0067; implements the corpus-service snapshot gate without claiming that
+the shipped pending activation has crossed it.*
 
 - Implement the snapshot fetcher behind the existing
   `pending_owner_activation` gate: allowlisted open-access origins (e.g. arXiv
@@ -193,9 +203,11 @@ ADR-0067; activates the corpus-service snapshot gate.*
   cards; raise the per-tranche ceiling from 2,048 documents to an
   operator-budgeted value.
 
-Exit: one operator command ingests several hundred licensed full-text papers
-from an allowlisted snapshot into a retrievable generation, and a second run
-ingests only deltas.
+Exit: one explicit operator workflow (a composed command, or documented
+`acquire` then `ingest` commands sharing the same sealed manifest) ingests
+several hundred licensed full-text papers from an allowlisted snapshot into a
+retrievable generation, and a second run ingests only deltas. Offline
+acceptance uses a fake transport; live activation remains separately recorded.
 
 ### Slice 14 — Discovery at scale, campaign-generated queries
 
@@ -218,10 +230,12 @@ implements ADR-0068 (result following).*
   replacing the one human-typed URL, with the same no-redirect/no-header
   discipline.
 
-Exit: a dry-run campaign against an Erdős-class target discovers and ranks
-several hundred candidates, acquires the licensed subset (≥100 documents)
-without per-search human interaction, and every request is attributable to a
-ledgered query with recorded grounding.
+Exit: an offline fake-transport campaign discovers and ranks several hundred
+candidates and exercises acquisition of a licensed subset (≥100 documents);
+every simulated request is attributable to a ledgered query whose exact span
+is independently checked against content-addressed grounding bytes. A separate
+authorized live gate demonstrates real requests without describing that run as
+dry-run evidence.
 
 ### Slice 15 — Exact scientific workspace sandbox
 
@@ -229,9 +243,12 @@ ledgered query with recorded grounding.
 clauses.*
 
 - Fork the sandbox image: a new digest-pinned image with a small allowlisted
-  set of **exact** packages (e.g. `sympy`, `gmpy2`, `networkx`; explicitly no
-  numpy/scipy on the candidate path), installed offline with recorded hashes
-  per the Phase 4A dependency standard. New lock, new 16-probe activation.
+  exploratory package set (e.g. `sympy`, `gmpy2`, `networkx`; explicitly no
+  numpy/scipy dependency on the candidate path), installed offline with
+  recorded hashes per the Phase 4A dependency standard. These libraries can
+  still perform floating-point operations; exactness comes from candidate
+  schema rejection and independent host-side re-derivation, not from the
+  package names. New lock, new 16-probe activation.
 - Multi-file workspace: a campaign-scoped writable volume (still
   network-none, still credential-free) that persists across `run_program`
   calls within one campaign, so programs can build on earlier outputs and
@@ -264,8 +281,11 @@ verifier.
 - Update shipped Makefile/live configs to the new defaults so the checked-in
   configuration can actually execute the protocol it documents.
 
-Exit: a fresh operator can run one live campaign to a genuine terminal
-condition, and no document overstates or understates what is activated.
+Exit has two separately reported milestones: (1) the gate definition, command,
+and fail-closed configuration ship and are offline-tested; (2) an authorized
+operator executes it and records real activation evidence. A fresh operator
+can run one live campaign to a genuine terminal condition, and no document
+overstates or understates which milestone has actually occurred.
 
 ## 4. Ordering and dependencies
 
@@ -275,13 +295,17 @@ Slice 10 (context/memory) ──┐   │
 Slice 11 (economics/retry) ─┴─► Slice 12 (model-driven v2)
 Slice 13 (ingestion) ───────┐
 Slice 14 (discovery) ───────┴─► feed Slice 12 campaigns at scale
-Slice 15 (workspace sandbox) ─► independent; lands before or after 12
+Slice 15 (workspace sandbox) ─► code may develop independently, but its
+                                iterative campaign acceptance depends on 11/12
                                 All ─► Slice 16 (live gate + docs)
 ```
 
 Slice 9 is immediate. Slices 10 and 11 are the depth unlock and can proceed in
-parallel. Slice 12 depends on both. Slices 13–15 are independent tracks.
-Slice 16 closes the phase.
+parallel. Slice 12 depends on both. Slices 13–15 may develop as separate code
+tracks, but their campaign-level acceptance is integrated through Slice 12.
+Every slice receives an adversarial audit before integration. Slice 16 closes
+the phase, while keeping gate definition distinct from authorized live
+execution.
 
 ## 5. Explicit non-goals
 
