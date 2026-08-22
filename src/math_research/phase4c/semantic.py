@@ -1,6 +1,6 @@
 """Signal 4: exact-cosine semantic tiering over one replayed vector partition.
 
-ADR-0066. This module is the second of `TECHNICAL_BLUEPRINT.md` Section 7.3's
+ADR-0070. This module is the second of `TECHNICAL_BLUEPRINT.md` Section 7.3's
 seven candidate-generation signals. Five remain unbuilt, and that is the honest
 measure of how far this architecture is from "wide".
 
@@ -28,7 +28,7 @@ constraints agree.
 
 WHY THE QUERY VECTOR IS READ AND NEVER COMPUTED. Computing a query vector inside
 `evaluate_hybrid` would need a provider, which is the rejected option in
-ADR-0066's table. So a query is addressed by the identifier under which its
+ADR-0070's table. So a query is addressed by the identifier under which its
 vector was frozen, and a query the partition does not carry is a refusal rather
 than a query scored against a fallback.
 
@@ -349,7 +349,7 @@ class SemanticPartitionSignal:
 class DisabledSemanticSignal:
     """A `SemanticSignal` that reads no partition and credits nothing.
 
-    This is the ADR-0066 "signal disabled" case, and it is recorded as a
+    This is the ADR-0070 "signal disabled" case, and it is recorded as a
     substituted signal rather than presented as an empty partition. With it
     installed every fused score equals the ADR-0032 three-signal value exactly,
     which `pr.semantic-disabled-is-a-true-noop` asserts.

@@ -257,7 +257,7 @@ def evaluate_hybrid(
         tuple(object_level_cues) if object_level_cues is not None else OBJECT_LEVEL_CUES
     )
     points = ALIAS_PHRASE_POINTS if alias_phrase_points is None else alias_phrase_points
-    # ADR-0066 freezes the tier points before measurement, so there is no
+    # ADR-0070 freezes the tier points before measurement, so there is no
     # override parameter for them: the only way to change the semantic
     # contribution is to edit the frozen constant, which is a reviewable act.
     tier_points = BOUNDS.semantic_tier_points
@@ -506,7 +506,7 @@ def evaluate_hybrid(
             ),
             "gold_queries_hash": sha256_bytes((fixtures / GOLD_QUERIES_NAME).read_bytes()),
             "name_aliases_hash": sha256_bytes((fixtures / NAME_ALIASES_NAME).read_bytes()),
-            # ADR-0066: the partition binds report identity. A report built
+            # ADR-0070: the partition binds report identity. A report built
             # against a different partition is a different report, so both the
             # key and the manifest hash sit inside `content_hash` alongside the
             # corpus, gold-query, and alias fixture hashes.

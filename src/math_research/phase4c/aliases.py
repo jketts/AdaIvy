@@ -40,7 +40,7 @@ is recorded here rather than repaired by retuning.** ADR-0032 argued the weight
 was inert because "every renamed-control query's fused candidate set is smaller
 than its top-k of ten, so `renamed_known_result_recall_at_10` is invariant to any
 strictly positive value". That reasoning depended on the top-k cutoff never
-binding, and ADR-0066 makes it bind: the semantic signal names ten candidates for
+binding, and ADR-0070 makes it bind: the semantic signal names ten candidates for
 every query, so every renamed control now has at least ten fused candidates. At a
 weight of `0.001` the alias contribution is smaller than a single semantic tier
 point, the two semantically-unreachable renamed golds fall out of the top ten,

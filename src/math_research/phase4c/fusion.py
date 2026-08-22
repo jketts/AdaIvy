@@ -13,7 +13,7 @@ monotone, so BM25 margins are preserved exactly.
     fused_score = lexical_relevance + alias_points + semantic_points
     ordering    = fused_score DESC, document_id ASC
 
-ADR-0066 adds `semantic_points = semantic_tier_points * tier_credit`, in the same
+ADR-0070 adds `semantic_points = semantic_tier_points * tier_credit`, in the same
 additive position as `alias_phrase_points * phrase_count`. The credit is a
 function of the semantic signal's exact-cosine RANK and is re-derived here from
 `bounds.semantic_tier_credit`, so a signal cannot assert a magnitude of its own:

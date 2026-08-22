@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from .serialization import canonical_bytes, sha256_bytes
 
 
-# ADR-0066 adds a fourth signal, so every hit gains semantic fields and the
+# ADR-0070 adds a fourth signal, so every hit gains semantic fields and the
 # report gains two partition-identity fields. That is a report-shape change,
 # and the shape is versioned rather than extended in place.
 SCHEMA_VERSION = "adaivy.phase4c-hybrid-retrieval.v3"
@@ -55,7 +55,7 @@ APPLICABILITY_CLASSES = (
 )
 
 # --------------------------------------------------------------------------
-# ADR-0066: the semantic signal's declared partition and its frozen tiering.
+# ADR-0070: the semantic signal's declared partition and its frozen tiering.
 #
 # THESE CONSTANTS WERE FIXED BEFORE ANY GATE WAS MEASURED AND ARE NOT TO BE
 # ADJUSTED AFTER SEEING A GATE RESULT. If a gate regresses, the regression is
@@ -161,7 +161,7 @@ class HybridRetrievalBounds:
     max_derived_db_bytes: int = 2_097_152
     max_elapsed_ms: int = 10_000
     duplicate_cutoff: int = 5
-    # ADR-0066, frozen before measurement. The semantic signal asks for ten
+    # ADR-0070, frozen before measurement. The semantic signal asks for ten
     # candidates and each carries at most three points.
     semantic_candidate_limit: int = 10
     semantic_tier_points: int = 1

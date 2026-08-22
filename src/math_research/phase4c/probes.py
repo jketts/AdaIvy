@@ -1,6 +1,6 @@
-"""The ten ADR-0066 falsifiability probes for the semantic signal.
+"""The ten ADR-0070 falsifiability probes for the semantic signal.
 
-ADR-0034 established the standard and ADR-0066 restates it: `probes_flipped ==
+ADR-0034 established the standard and ADR-0070 restates it: `probes_flipped ==
 probes_total` gates the slice, because a rule that cannot be made to fail proves
 nothing.
 
@@ -441,7 +441,7 @@ def _three_signal_scores(fixtures: Path) -> dict[str, float]:
 
     Recomputed from the signals rather than read back off a four-signal report,
     so `pr.semantic-disabled-is-a-true-noop` compares the disabled run against
-    an independently produced pre-ADR-0066 value and not against itself.
+    an independently produced pre-ADR-0070 value and not against itself.
     """
 
     documents = load_corpus(fixtures)

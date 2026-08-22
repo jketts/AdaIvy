@@ -1,4 +1,4 @@
-"""Acceptance suite for the ADR-0066 Phase 4C semantic signal.
+"""Acceptance suite for the ADR-0070 Phase 4C semantic signal.
 
 The ADR requires `probes_flipped == probes_total` and requires each named
 boundary to be demonstrated rather than asserted, so this suite is written as
@@ -17,7 +17,7 @@ properties over the whole frozen query set and the whole frozen partition:
 * the report stays inside `max_report_bytes` with all five semantic fields on
   every hit of every query.
 
-Measured values here are OBSERVATIONS. The three regressions ADR-0066 did not
+Measured values here are OBSERVATIONS. The three regressions ADR-0070 did not
 predict are pinned in `RECORDED_REGRESSIONS` and asserted, because a slice that
 quietly made its numbers look good would be a failure even with every gate
 green.
@@ -209,7 +209,7 @@ MEASURED_SEMANTIC_CANDIDATES = {
     ),
 }
 
-# The three movements ADR-0066 did not predict, pinned so the slice cannot be
+# The three movements ADR-0070 did not predict, pinned so the slice cannot be
 # read as an unqualified improvement.
 RECORDED_REGRESSIONS = {
     # query -> (gold, rank under three signals, rank under four)
@@ -481,7 +481,7 @@ class SemanticFrozenConstantTests(unittest.TestCase):
         )
 
     def test_there_is_no_override_for_the_tier_points(self) -> None:
-        # ADR-0066 freezes the tier points before measurement, so unlike the
+        # ADR-0070 freezes the tier points before measurement, so unlike the
         # alias weight there is no constructor parameter that can move them.
         import inspect
 
@@ -883,7 +883,7 @@ class SemanticReportIdentityTests(unittest.TestCase):
     def test_the_report_stays_inside_its_byte_bound_with_four_signals(self) -> None:
         size = len(canonical_bytes(frozen_report()))
         self.assertLessEqual(size, BOUNDS.max_report_bytes)
-        # Recorded, because ADR-0066 named this a real risk worth measuring
+        # Recorded, because ADR-0070 named this a real risk worth measuring
         # early: the fourth signal roughly triples the report.
         self.assertGreater(size, len(canonical_bytes(three_signal_report())))
         self.assertLess(size, 200_000)
@@ -1219,14 +1219,14 @@ class SemanticPartitionRefusalTests(PartitionStaging):
 
 
 # --------------------------------------------------------------------------
-# 9. The recorded regressions. ADR-0066 got these wrong.
+# 9. The recorded regressions. ADR-0070 got these wrong.
 # --------------------------------------------------------------------------
 
 
 class SemanticRecordedRegressionTests(unittest.TestCase):
     """The findings this slice reports AGAINST itself.
 
-    ADR-0066's recorded prediction was that the two vocabulary-mismatch gates
+    ADR-0070's recorded prediction was that the two vocabulary-mismatch gates
     improve or hold, the other three hold, and `duplicate_rate_at_5` is the live
     risk. All seven gates pass. Three things the gates do not measure moved in
     the wrong direction, and they are asserted here so the slice cannot be read
@@ -1261,7 +1261,7 @@ class SemanticRecordedRegressionTests(unittest.TestCase):
     def test_the_adr_0066_inversion_claim_holds_only_for_bm25_carried_golds(
         self,
     ) -> None:
-        """ADR-0066 says three points "cannot on its own invert a lexical gold
+        """ADR-0070 says three points "cannot on its own invert a lexical gold
         ordering" because three is below the 4.4 smallest BM25 gold margin. That
         is true of the BM25-carried golds and FALSE of the alias-carried ones:
         the renamed controls sit at rank one on alias margins near 1.5.

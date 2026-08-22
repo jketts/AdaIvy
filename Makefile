@@ -170,7 +170,7 @@ phase4b:
 	  rm -rf "$$d" && printf 'phase 4B ok\n'
 
 # Phase 4C measures all seven gates as passing under ADR-0032 and, since
-# ADR-0066, with a FOURTH signal: exact-integer-cosine tiering over one declared
+# ADR-0070, with a FOURTH signal: exact-integer-cosine tiering over one declared
 # project-authored vector partition, replayed from bytes with no provider call
 # and no float on the ranking path. Same corpus, same queries: 19 documents,
 # 17 queries, six of them applicability.
@@ -181,13 +181,13 @@ phase4b:
 # regression. `verified` covers the canonical report hash, so a failing gate is
 # never counted as a pass and a broken hash is never ignored.
 #
-# THREE ASSERTIONS BELOW MOVED FOR ADR-0066. Each is a re-measured observation
+# THREE ASSERTIONS BELOW MOVED FOR ADR-0070. Each is a re-measured observation
 # and each is moved deliberately, with the reason stated:
 #
 #  1. `duplicate_rate_at_5` support moves from 1/50 to 1/85. The semantic signal
 #     names ten candidates for every query, so all 17 five-document windows now
 #     fill and the denominator reaches its maximum of 17 * 5 = 85. The NUMERATOR
-#     IS UNCHANGED AT 1. ADR-0066 named this gate the live risk; it did not
+#     IS UNCHANGED AT 1. ADR-0070 named this gate the live risk; it did not
 #     regress, and the fall from 0.02 to 0.0118 is denominator dilution rather
 #     than fewer duplicate hits. Both numbers are asserted so neither reading can
 #     be mistaken for the other.
@@ -198,7 +198,7 @@ phase4b:
 #     `applicability_precision_at_5` still reads 1.0 because it is precision over
 #     RELEVANT retrieved documents, so no gate can see this. It is asserted here
 #     so the harm is measured instead of invisible.
-#  3. A new assertion requires 10/10 ADR-0066 probes to flip and pins the
+#  3. A new assertion requires 10/10 ADR-0070 probes to flip and pins the
 #     partition key and manifest hash that bind report identity.
 #
 # Nothing was retuned to make a number fit. `semantic_candidate_limit`,
@@ -216,10 +216,10 @@ phase4c:
 	    --output "$$d/phase4c-probes.json" >/dev/null && \
 	  $(PY) -c 'import json,sys; r=json.load(open(sys.argv[1])); s=r["gate_summary"]; m=r["metrics"]; assert r.get("verified") is True, "phase 4C canonical report hash did not verify"; assert (s["pass"], s["fail"], s["undetermined"]) == (7, 0, 0), "phase 4C gate summary moved: %s" % s; assert r["failing_gates"] == [] and r["undetermined_gates"] == [], "phase 4C gate status moved: %s" % r["gate_status"]; assert r["queries"] == 17, "phase 4C query count moved: %s" % r["queries"]; assert m["applicability_precision_at_5"] == 1.0, "phase 4C applicability precision moved: %s" % m["applicability_precision_at_5"]; assert r["metric_support"]["duplicate_rate_at_5"] == {"numerator": 1, "denominator": 85, "defined": True}, "phase 4C duplicate support moved: %s" % r["metric_support"]["duplicate_rate_at_5"]; assert len(r["queries_with_inapplicable_hits"]) == 11, "phase 4C non-applicable-document retrievals moved: %s" % r["queries_with_inapplicable_hits"]; assert len(r["queries_with_semantic_introductions"]) == 17, "phase 4C semantic introductions moved: %s" % r["queries_with_semantic_introductions"]; assert r["semantic_partition_key"] == "fixture_synthetic~adaivy-cooccurrence-anchor-v1~d32~round_half_even_scale_2p30", "phase 4C semantic partition key moved: %s" % r["semantic_partition_key"]; assert r["semantic_partition_manifest_hash"] == "sha256:0011f3288f2429571528842b276b01a340254e5138e2ebb188a59a0cb2fbbb94", "phase 4C semantic partition manifest hash moved: %s" % r["semantic_partition_manifest_hash"]' \
 	    "$$d/phase4c-verified.json" && \
-	  $(PY) -c 'import json,sys; p=json.load(open(sys.argv[1])); assert p["probes_total"] == 10 and p["probes_flipped"] == 10, "ADR-0066 probes moved: %s of %s flipped, unflipped %s" % (p["probes_flipped"], p["probes_total"], p["unflipped_probe_ids"]); assert p["maximum_semantic_contribution"] == 3, "the frozen semantic ceiling moved: %s" % p["maximum_semantic_contribution"]; assert p["measured_minimum_lexical_gold_margin"]["margin"] > p["maximum_semantic_contribution"], "the semantic ceiling is no longer below the measured BM25 gold margin: %s" % p["measured_minimum_lexical_gold_margin"]; assert p["external_spend_usd"] == 0 and p["network_calls"] == 0 and p["model_or_api_calls"] == 0, "a probe run reported external cost: %s" % p; assert p["creates_epistemic_warrant"] is False and p["asserts_source_applicability"] is False, "a probe run claimed an epistemic effect"' \
+	  $(PY) -c 'import json,sys; p=json.load(open(sys.argv[1])); assert p["probes_total"] == 10 and p["probes_flipped"] == 10, "ADR-0070 probes moved: %s of %s flipped, unflipped %s" % (p["probes_flipped"], p["probes_total"], p["unflipped_probe_ids"]); assert p["maximum_semantic_contribution"] == 3, "the frozen semantic ceiling moved: %s" % p["maximum_semantic_contribution"]; assert p["measured_minimum_lexical_gold_margin"]["margin"] > p["maximum_semantic_contribution"], "the semantic ceiling is no longer below the measured BM25 gold margin: %s" % p["measured_minimum_lexical_gold_margin"]; assert p["external_spend_usd"] == 0 and p["network_calls"] == 0 and p["model_or_api_calls"] == 0, "a probe run reported external cost: %s" % p; assert p["creates_epistemic_warrant"] is False and p["asserts_source_applicability"] is False, "a probe run claimed an epistemic effect"' \
 	    "$$d/phase4c-probes.json" && \
 	  rm -rf "$$d" && \
-	  printf 'phase 4C ok (4 signals; 7 gates hold; 10/10 ADR-0066 probes flipped;\n'; \
+	  printf 'phase 4C ok (4 signals; 7 gates hold; 10/10 ADR-0070 probes flipped;\n'; \
 	  printf '  duplicate rate 1/85 by window dilution at an unchanged numerator of 1;\n'; \
 	  printf '  RECORDED REGRESSION: 11 queries now retrieve a non-applicable document\n'; \
 	  printf '  and 3 renamed golds lost rank one -- no gate measures either)\n'

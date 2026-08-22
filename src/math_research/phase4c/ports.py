@@ -16,13 +16,13 @@ The ports also record the direction of each signal in the type system:
   candidate: it returns no scores and no documents, so no implementation is
   able to raise a fused score or add a candidate. Fusion applies the removal,
   and it leaves every score exactly as the lexical and alias signals set it.
-* `SemanticSignal` (ADR-0066) may introduce a document, and only through a
+* `SemanticSignal` (ADR-0070) may introduce a document, and only through a
   bounded integer tier credit derived from its exact-cosine RANK. It never
   asserts a score of its own: the credit is a function of the rank, so no
   implementation can hand fusion an arbitrary magnitude.
 
 `SemanticSignal` is keyed on the gold-query IDENTIFIER, not the query text, and
-that asymmetry with the other three ports is deliberate. ADR-0066 forbids
+that asymmetry with the other three ports is deliberate. ADR-0070 forbids
 computing a query vector inside the retrieval path, so the only query vector
 that exists is the one ADR-0065 already froze in the partition, and it is
 addressed by the identifier under which it was frozen. A port taking query text
@@ -99,7 +99,7 @@ class SemanticPartitionIdentity:
     """The declared partition, as read from bytes. Binds report identity.
 
     `manifest_hash` is `None` only for a signal that reads no partition at all,
-    which is the ADR-0066 "signal disabled" case and is recorded as such rather
+    which is the ADR-0070 "signal disabled" case and is recorded as such rather
     than presented as a partition that happened to be empty.
     """
 

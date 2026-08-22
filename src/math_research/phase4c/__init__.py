@@ -2,17 +2,17 @@
 
 Four deterministic offline signals, fused in score space: an FTS5/BM25 lexical
 baseline, an exclusion-only evidentiary self-disclaimer signal, a content-keyed
-alias expansion signal, and (ADR-0066) an exact-integer-cosine semantic signal
+alias expansion signal, and (ADR-0070) an exact-integer-cosine semantic signal
 over one declared ADR-0065 vector partition. Standard library only, plus the
 in-repo `embedding` read path. No network, no model call, no provider call, no
 third-party dependency.
 
-ADR-0066 adds the second of `TECHNICAL_BLUEPRINT.md` Section 7.3's seven
+ADR-0070 adds the second of `TECHNICAL_BLUEPRINT.md` Section 7.3's seven
 candidate-generation signals. Five remain unbuilt. The corpus, not the signal,
 is the binding limit: nineteen documents with project-authored synthetic vectors
 is a better-measured benchmark and never a literature search.
 
-Scope per ADR-0031, ADR-0032 and ADR-0066: this package reads the
+Scope per ADR-0031, ADR-0032 and ADR-0070: this package reads the
 project-authored Phase 4C benchmark fixtures and one project-authored vector
 partition replayed from bytes, and nothing else. It consumes no Phase 4B parse
 projection, reads no Phase 4A rights decision, touches no deletable content or
