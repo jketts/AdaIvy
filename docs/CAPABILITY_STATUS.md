@@ -17,16 +17,16 @@ operator path, and usable end to end.
 | Campaign verifier | Exact-graph adapter exists | Yes for its frozen target | **No** | `campaign run` still injects `AbsentVerifier` |
 | Lean checking | Yes | Separate sealed runtime | **No** | Single-shot checking and bounded proof-fragment repair; the campaign cannot call it |
 | Crossref discovery | Yes | Explicit one-request live opt-in | **No** | Operator-supplied grounded terms, at most ten metadata candidates |
-| Discovery-result following | Decision accepted | No | No | ADR-0068 is not implemented |
+| Discovery-result following | Decision accepted | No | No | ADR-0068 and ADR-0072 are accepted; nothing is implemented |
 | Bulk corpus ingestion | Yes, bounded replay slice | Production activation pending | No | arXiv descriptive metadata and abstracts; no full text |
-| Embedding ingestion | Yes | Explicit live opt-in | No | Operator-supplied local documents with processor-bound rights |
+| Embedding ingestion | Yes | Explicit live opt-in | No | Operator-supplied local documents with processor-bound rights; ADR-0072's policy-derived per-document rights are accepted but not implemented, and the code still requires human-authored decisions |
 | Persistent vector artifacts | Yes | Yes | No | Immutable exact vector artifacts; caller supplies the storage root |
 | Semantic retrieval | Yes | Offline fixture only | No | Fourth Phase 4C signal over 19 project-authored documents and 17 queries |
-| Retrieval over acquired corpus | **No** | No | No | Corpus records are deliberately marked `retrieval_indexed: false` |
-| Campaign literature/embedding actions | **No** | No | No | The campaign action schema has no search, acquire, embed, index, or retrieve action |
+| Retrieval over acquired corpus | **No** | No | No | Accepted by ADR-0072 (Slice 4); corpus records remain marked `retrieval_indexed: false` |
+| Campaign literature/embedding actions | **No** | No | No | Accepted by ADR-0072 (Slice 5); the campaign action schema still has no search, acquire, embed, index, or retrieve action |
 | Terminal campaign resume | Yes | Yes | Yes | Idempotently verifies a complete terminal ledger and finishes its draft; it does not yet resume a partial paid run |
 | Automatic campaign LaTeX draft | Yes | Yes | Yes | Every terminal run attempts a claim-free, unapproved `paper.tex` bundle; PDF typesetting remains an explicit gate |
-| End-to-end autonomous research run | **No** | No | No | Components remain separate; no single command performs the complete loop |
+| End-to-end autonomous research run | **No** | No | No | Decision-authorized by ADR-0072; components remain separate and no single command performs the complete loop |
 
 ## What works today
 
@@ -53,8 +53,11 @@ literature search -> acquisition -> persistent embedding/indexing -> retrieval
 
 The campaign entrypoint does not expose literature actions, does not read the
 acquired corpus, does not use the persistent vector artifacts, and does not wire
-the implemented sandbox or a verifier. A fresh human novelty re-check is still
-required before every campaign under ADR-0055.
+the implemented sandbox or a verifier. ADR-0072 supersedes the ADR-0055
+`before_research` human re-check as a decision, but the entrypoint code still
+enforces it and continues to do so until the replacing recorded in-campaign
+search ships with its own gate. The human `before_announcement` re-check
+remains required unconditionally.
 
 ## Status vocabulary
 

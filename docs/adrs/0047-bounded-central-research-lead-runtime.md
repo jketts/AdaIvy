@@ -1,7 +1,11 @@
 # ADR-0047: Bounded central research lead runtime
 
 - **Status:** accepted for the bounded runtime slice; implemented 21 August
-  2026 with an offline rehearsal gateway and an explicit live-provider gate
+  2026 with an offline rehearsal gateway and an explicit live-provider gate.
+  Superseded in part by ADR-0072, which supplies the "later decision" the
+  Explicit deferrals clause requires for retrieval scheduling, experiment
+  scheduling, branch-selection policy, and Phase 3B proof-repair orchestration
+  inside a campaign; every other clause of this record stands.
 - **Date:** 2026-08-21
 - **Blueprint requirement:** Sections 6, 8, 12, and 17; ADR-0029 central-lead
   baseline; ADR-0041 Phase 2 refinement boundary

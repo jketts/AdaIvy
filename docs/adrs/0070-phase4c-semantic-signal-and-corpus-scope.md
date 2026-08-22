@@ -2,7 +2,11 @@
 
 - **Status:** accepted and implemented; third of three slices. Requires
   ADR-0064 and ADR-0069. The signal remains fixture-scoped and is not connected
-  to the acquired corpus or campaign.
+  to the acquired corpus or campaign. Superseded in part by ADR-0072: the
+  one-URL-at-a-time corpus path description, the corpus-widening revisit item,
+  and the gold-queries-only embedding deferral are superseded; the frozen
+  19-document benchmark, the frozen constants, and the no-float no-network
+  retrieval path stand.
 - **Date:** 2026-08-22
 - **Blueprint requirement:** Section 7.3 (retrieval strategy); Section 12.2
   (rebuildable projections); the decision row at `TECHNICAL_BLUEPRINT.md:70`;

@@ -3,7 +3,10 @@
 - **Status:** accepted but not implemented, by owner decision on 2026-08-22,
   **over a recorded recommendation against it**. The recommendation and the
   residual risk are retained below rather than removed, because an overridden
-  objection that disappears from the record cannot be revisited.
+  objection that disappears from the record cannot be revisited. Superseded in
+  part by ADR-0072: the "does not license query generation" boundary, the
+  `pr.follow-query-not-generated` probe, and the machine-generated-queries
+  revisit item are superseded; all six controls and every other clause stand.
 - **Date:** 2026-08-22
 - **Blueprint requirement:** Section 7.1 (crawlers produce candidates, not
   trusted documents); Section 15 (`:1801` prompt injection inside retrieved
