@@ -43,5 +43,4 @@ Phase 2 demonstration configurations.
    changes the sealed status through the repository's activation process,
    supplies all named evidence, uses the exact acknowledgement, and records
    the resulting campaign artifacts and costs. Human publication approval
-   remains separate and mandatory.
-
+remains separate and mandatory.

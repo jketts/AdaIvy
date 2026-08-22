@@ -67,4 +67,3 @@ published-generation retrieval, a failed non-terminal experiment, a durable
 human interruption/resume, a second literature cycle, and a terminal report.
 It also proves that retrieval against an unobserved generation is refused and
 that resume does not repeat completed paid planner calls.
-
