@@ -133,6 +133,50 @@ class SnapshotActivationInvalidError(CorpusServiceError):
     code = "snapshot_activation_invalid"
 
 
+# -- snapshot fetcher (ADR-0080) -------------------------------------------------
+
+class SnapshotOriginNotAllowlistedError(CorpusServiceError):
+    """A fetch origin outside the pinned allowlist refuses before any request."""
+
+    code = "snapshot_origin_not_allowlisted"
+
+
+class SnapshotFetchFailedError(CorpusServiceError):
+    """A transport failure; recorded in the fetch ledger and resumable."""
+
+    code = "snapshot_fetch_failed"
+
+
+class SnapshotFetchBoundExceededError(CorpusServiceError):
+    """The activation record bounds live acquisition volume."""
+
+    code = "snapshot_fetch_bound_exceeded"
+
+
+# -- extraction (ADR-0080) --------------------------------------------------------
+
+class ExtractorNotPinnedError(CorpusServiceError):
+    """The pinned external extraction tool is absent or differs from its pin."""
+
+    code = "extractor_not_pinned"
+
+
+class ExtractorRegistryInvalidError(CorpusServiceError):
+    code = "extractor_registry_invalid"
+
+
+# -- silo bridge (ADR-0080) -------------------------------------------------------
+
+class BridgeRecordInvalidError(CorpusServiceError):
+    code = "bridge_record_invalid"
+
+
+class BridgeMetadataFullTextForbiddenError(CorpusServiceError):
+    """arXiv descriptive metadata never authorizes full-text storage."""
+
+    code = "bridge_metadata_full_text_forbidden"
+
+
 # -- spans ---------------------------------------------------------------------
 
 class SpansInvalidError(CorpusServiceError):

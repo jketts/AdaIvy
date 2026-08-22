@@ -21,7 +21,7 @@ from .constants import (
     MAX_ARCHIVE_MANIFEST_BYTES,
     MAX_DOCUMENT_BYTES,
     MAX_TRANCHE_CONFIG_BYTES,
-    MAX_TRANCHE_DOCUMENTS,
+    MAX_TRANCHE_DOCUMENTS_STRUCTURAL_CEILING,
     MAX_TRANCHE_TOTAL_BYTES,
     PROVIDER,
     RELATIVE_PATH_PATTERN_TEXT,
@@ -175,7 +175,11 @@ def validate_tranche_config(value: Mapping[str, Any]) -> dict[str, Any]:
         if not isinstance(config[key], str) or HASH_PATTERN.fullmatch(config[key]) is None:
             raise TrancheConfigInvalidError(f"snapshot tranche {key} differs")
     bounds = (
-        ("max_documents", MAX_TRANCHE_DOCUMENTS),
+        # ADR-0080: max_documents is operator-budgeted; the structural
+        # ceiling is pinned in code and never widened by a config.  Live
+        # acquisition volume stays separately bounded by the activation
+        # record's own (smaller) max_tranche_documents pin.
+        ("max_documents", MAX_TRANCHE_DOCUMENTS_STRUCTURAL_CEILING),
         ("max_total_bytes", MAX_TRANCHE_TOTAL_BYTES),
         ("max_document_bytes", MAX_DOCUMENT_BYTES),
     )

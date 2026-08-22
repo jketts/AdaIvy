@@ -18,15 +18,33 @@ from .service import (  # noqa: E402
     load_retrieval_result,
     retrieve_evidence,
 )
+from .chunked import (  # noqa: E402
+    CHUNKED_EVIDENCE_CARD_SCHEMA_VERSION,
+    CHUNKED_PROJECTION_SCHEMA_VERSION,
+    ChunkingConfig,
+    build_chunked_projection,
+    chunk_spans,
+    embed_chunked_query,
+    load_chunked_projection,
+    retrieve_chunked_evidence,
+)
 
 __all__ = [
+    "CHUNKED_EVIDENCE_CARD_SCHEMA_VERSION",
+    "CHUNKED_PROJECTION_SCHEMA_VERSION",
+    "ChunkingConfig",
     "CorpusRetrievalError",
     "EVIDENCE_CARD_SCHEMA_VERSION",
     "PROJECTION_SCHEMA_VERSION",
     "Projection",
+    "build_chunked_projection",
     "build_projection",
+    "chunk_spans",
+    "embed_chunked_query",
     "embed_query",
+    "load_chunked_projection",
     "load_projection",
     "load_retrieval_result",
+    "retrieve_chunked_evidence",
     "retrieve_evidence",
 ]

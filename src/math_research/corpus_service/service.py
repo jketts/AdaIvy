@@ -47,6 +47,12 @@ from .derivation import (
     verify_derived_decision,
 )
 from .errors import ArchiveDocumentMismatchError, CorpusServiceError
+from .extraction import (
+    ExtractionFailure,
+    ExtractorRegistry,
+    default_registry,
+    verify_extractor_identity,
+)
 from .generation import (
     latest_generation_id,
     publish_generation,
@@ -98,12 +104,19 @@ def _latest_rights_state(root: Path) -> dict[str, dict[str, Any]]:
     return state
 
 
-def _spans_by_document(root: Path) -> dict[tuple[str, str], str]:
-    found: dict[tuple[str, str], str] = {}
+def _spans_by_document(root: Path) -> dict[tuple[str, str], dict[str, Any]]:
+    """(document_id, acquired source sha256) -> the spans_parsed payload.
+
+    The payload carries ``spans_sha256`` plus, since ADR-0080, the
+    ``extracted_sha256`` the spans index and the ``extractor`` identity that
+    produced the extracted text.
+    """
+
+    found: dict[tuple[str, str], dict[str, Any]] = {}
     for record in read_ledger(root, "rights"):
         if record["kind"] == "spans_parsed":
             payload = record["payload"]
-            found[(payload["document_id"], payload["source_sha256"])] = payload["spans_sha256"]
+            found[(payload["document_id"], payload["source_sha256"])] = dict(payload)
     return found
 
 
@@ -149,6 +162,7 @@ def build_current_generation(root: Path) -> dict[str, Any]:
             })
             continue
         uses = decision["uses"]
+        spans_payload = spans.get((document_id, payload["source_sha256"]))
         entries.append({
             "document_id": document_id,
             "source_id": decision["source_id"],
@@ -160,8 +174,18 @@ def build_current_generation(root: Path) -> dict[str, Any]:
             "rule_id": decision["rule_id"],
             "decision_content_hash": decision["content_hash"],
             "phase4a_decision_ids": sorted(state["phase4a_decision_ids"]),
-            "spans_sha256": spans.get((document_id, payload["source_sha256"])),
-            "full_text_stored": (document_id, payload["source_sha256"]) in spans,
+            "spans_sha256": (
+                None if spans_payload is None else spans_payload["spans_sha256"]
+            ),
+            "extracted_sha256": (
+                None if spans_payload is None
+                else spans_payload["extracted_sha256"]
+            ),
+            "extraction": (
+                None if spans_payload is None
+                else verify_extractor_identity(spans_payload["extractor"])
+            ),
+            "full_text_stored": spans_payload is not None,
             "embedding": {
                 "value": uses["embedding"]["value"],
                 "processor_id": (
@@ -197,9 +221,13 @@ def build_current_generation(root: Path) -> dict[str, Any]:
 def _ingest_tranche_unlocked(
     root: Path, *, policy: Mapping[str, Any], archive: ArchiveSource,
     tranche_config: Mapping[str, Any], run_id: str, recorded_at: str,
+    extractors: ExtractorRegistry | None = None,
 ) -> dict[str, Any]:
     """Ingest one bounded tranche; returns the sealed run report."""
 
+    if extractors is None:
+        extractors = default_registry()
+    parsable_media_types = extractors.media_types()
     open_data_root(root)
     run_id = _identifier(run_id, "run_id")
     recorded_at = _recorded_at(recorded_at)
@@ -298,7 +326,10 @@ def _ingest_tranche_unlocked(
             })
             documents_acquired += 1
 
-        decision = derive_document_rights(validated_policy, document)
+        decision = derive_document_rights(
+            validated_policy, document,
+            parsable_media_types=parsable_media_types,
+        )
         if decision["status"] == STATUS_DERIVED:
             rule = next(
                 item for item in validated_policy["rules"]
@@ -309,30 +340,58 @@ def _ingest_tranche_unlocked(
                 and (document_id, document["sha256"]) not in spans_by_document
             ):
                 body = archive.document_bytes(document["relative_path"])
-                try:
-                    spans_doc = parse_spans(
-                        body, document_id=document_id,
-                        source_sha256=document["sha256"],
-                    )
-                except ParseFailure as failure:
+                extractor = extractors.extractor_for(document["media_type"])
+                if extractor is None:
+                    # Unreachable when rights derivation used the same
+                    # registry, kept as a fail-closed backstop.
                     decision = quarantine_decision(
-                        validated_policy, document, "parse_failure",
+                        validated_policy, document, "unsupported_media_type",
                     )
-                    quarantine_reasons[document_id] = (
-                        f"parse_failure: {failure.reason}"
-                    )
+                    quarantine_reasons[document_id] = "unsupported_media_type"
                 else:
-                    spans_sha256 = write_object(
-                        root, canonical_bytes(spans_doc) + b"\n",
+                    extractor_identity = verify_extractor_identity(
+                        extractor.identity()
                     )
-                    append_ledger(root, "rights", kind="spans_parsed", recorded_at=recorded_at, payload={
-                        "document_id": document_id,
-                        "source_sha256": document["sha256"],
-                        "spans_sha256": spans_sha256,
-                        "span_count": spans_doc["span_count"],
-                        "transformation": spans_doc["transformation"],
-                    })
-                    spans_by_document[(document_id, document["sha256"])] = spans_sha256
+                    try:
+                        extracted_text = extractor.extract(
+                            body, media_type=document["media_type"],
+                        )
+                        extracted_bytes = extracted_text.encode("utf-8")
+                        extracted_sha256 = sha256_bytes(extracted_bytes)
+                        spans_doc = parse_spans(
+                            extracted_bytes, document_id=document_id,
+                            source_sha256=extracted_sha256,
+                        )
+                    except (ExtractionFailure, ParseFailure) as failure:
+                        decision = quarantine_decision(
+                            validated_policy, document, "parse_failure",
+                        )
+                        quarantine_reasons[document_id] = (
+                            f"parse_failure: {failure.reason}"
+                        )
+                    else:
+                        write_object(root, extracted_bytes)
+                        spans_sha256 = write_object(
+                            root, canonical_bytes(spans_doc) + b"\n",
+                        )
+                        append_ledger(root, "rights", kind="spans_parsed", recorded_at=recorded_at, payload={
+                            "document_id": document_id,
+                            "source_sha256": document["sha256"],
+                            "extracted_sha256": extracted_sha256,
+                            "extractor": extractor_identity,
+                            "spans_sha256": spans_sha256,
+                            "span_count": spans_doc["span_count"],
+                            "transformation": spans_doc["transformation"],
+                        })
+                        spans_by_document[(document_id, document["sha256"])] = {
+                            "document_id": document_id,
+                            "source_sha256": document["sha256"],
+                            "extracted_sha256": extracted_sha256,
+                            "extractor": extractor_identity,
+                            "spans_sha256": spans_sha256,
+                            "span_count": spans_doc["span_count"],
+                            "transformation": spans_doc["transformation"],
+                        }
 
         existing = rights_state.get(document_id)
         if existing is None or existing["decision"]["content_hash"] != decision["content_hash"]:
@@ -429,6 +488,7 @@ def _ingest_tranche_unlocked(
 def ingest_tranche(
     root: Path, *, policy: Mapping[str, Any], archive: ArchiveSource,
     tranche_config: Mapping[str, Any], run_id: str, recorded_at: str,
+    extractors: ExtractorRegistry | None = None,
 ) -> dict[str, Any]:
     """Serialize a whole ingestion transaction and replay duplicate run ids."""
 
@@ -441,7 +501,7 @@ def ingest_tranche(
             return _ingest_tranche_unlocked(
                 root, policy=policy, archive=archive,
                 tranche_config=tranche_config, run_id=run_id,
-                recorded_at=recorded_at,
+                recorded_at=recorded_at, extractors=extractors,
             )
         finally:
             fcntl.flock(lock.fileno(), fcntl.LOCK_UN)

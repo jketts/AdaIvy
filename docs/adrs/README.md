@@ -40,11 +40,19 @@ capability is summarized separately in
   actions, ordered refresh/retrieval, exact model-context rights, refute/repair/
   verify continuation, safe takedown authority, sealed resume configuration,
   cross-campaign vector reuse, and provenance-closed report generation
+- ADR-0077: problem-visible planner context and durable model memory
+- ADR-0078: bounded call economics, repair, and non-terminal experiment failure
+- ADR-0080: real corpus ingestion — gated snapshot fetcher, PDF/LaTeX
+  extraction toolchain with recorded extractor identity, bulk licence-table
+  rights, the arXiv-metadata silo bridge, and chunked retrieval; supersedes
+  ADR-0067's no-fetcher and metadata-only clauses
 - ADR-0081: literature discovery at scale — paginated multi-provider v2
   discovery under one policy-level authorization and budget, depth-one result
   following (implements ADR-0068), and batch public acquisition under one
   plan-level human approval; supersedes ADR-0051's per-search acknowledgement
   and single-request configuration for the v2 capability only
+- ADR-0082: exact scientific workspace sandbox v2, still fail-closed pending
+  its pinned image build and activation evidence
 
 The end-to-end integration is documented in
 [`../END_TO_END_RESEARCH_RUNTIME_PLAN.md`](../END_TO_END_RESEARCH_RUNTIME_PLAN.md).

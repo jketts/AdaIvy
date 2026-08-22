@@ -40,14 +40,17 @@ ARCHIVE_MANIFEST_SCHEMA_VERSION = "adaivy.corpus-service-snapshot-archive-manife
 TRANCHE_CONFIG_SCHEMA_VERSION = "adaivy.corpus-service-tranche-config.v1"
 DERIVED_DECISION_SCHEMA_VERSION = "adaivy.corpus-service-derived-rights-decision.v1"
 PARSED_SPANS_SCHEMA_VERSION = "adaivy.corpus-service-parsed-spans.v1"
-GENERATION_SCHEMA_VERSION = "adaivy.corpus-service-generation-manifest.v1"
+#: v2 (ADR-0080): entries carry the extracted-text hash and extractor identity.
+GENERATION_SCHEMA_VERSION = "adaivy.corpus-service-generation-manifest.v2"
 RUN_REPORT_SCHEMA_VERSION = "adaivy.corpus-service-ingest-run-report.v1"
 SNAPSHOT_ACTIVATION_SCHEMA_VERSION = "adaivy.corpus-service-snapshot-acquisition-activation.v1"
+FETCH_REPORT_SCHEMA_VERSION = "adaivy.corpus-service-snapshot-fetch-report.v1"
 
 __all__ = [
     "ARCHIVE_MANIFEST_SCHEMA_VERSION",
     "DATA_ROOT_SCHEMA_VERSION",
     "DERIVED_DECISION_SCHEMA_VERSION",
+    "FETCH_REPORT_SCHEMA_VERSION",
     "GENERATION_SCHEMA_VERSION",
     "LEDGER_SCHEMA_VERSION",
     "PARSED_SPANS_SCHEMA_VERSION",

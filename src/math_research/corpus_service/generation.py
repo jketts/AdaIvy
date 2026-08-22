@@ -61,8 +61,10 @@ _ENTRY_FIELDS = frozenset({
     "document_id", "source_id", "source_sha256", "byte_count", "media_type",
     "licence_inputs", "policy_content_hash", "rule_id",
     "decision_content_hash", "phase4a_decision_ids", "spans_sha256",
-    "full_text_stored", "embedding", "model_context",
+    "extracted_sha256", "extraction", "full_text_stored", "embedding",
+    "model_context",
 })
+_EXTRACTION_FIELDS = frozenset({"tool", "version", "binary_sha256"})
 _QUARANTINED_FIELDS = frozenset({
     "document_id", "source_sha256", "quarantine_reason", "policy_content_hash",
     "licence_inputs", "decision_content_hash",
@@ -145,6 +147,36 @@ def verify_generation(value: Mapping[str, Any]) -> dict[str, Any]:
         if entry["full_text_stored"] and entry["spans_sha256"] is None:
             raise GenerationInvalidError(
                 f"entry {document_id} stores full text without exact spans"
+            )
+        extraction = entry["extraction"]
+        extracted = entry["extracted_sha256"]
+        if entry["full_text_stored"]:
+            if not isinstance(extracted, str) or HASH_PATTERN.fullmatch(extracted) is None:
+                raise GenerationInvalidError(
+                    f"entry {document_id} stores full text without the "
+                    "extracted-text hash (ADR-0080)"
+                )
+            if (
+                not isinstance(extraction, Mapping)
+                or set(extraction) != _EXTRACTION_FIELDS
+                or not isinstance(extraction["tool"], str) or not extraction["tool"]
+                or not isinstance(extraction["version"], str) or not extraction["version"]
+                or (
+                    extraction["binary_sha256"] is not None
+                    and (
+                        not isinstance(extraction["binary_sha256"], str)
+                        or HASH_PATTERN.fullmatch(extraction["binary_sha256"]) is None
+                    )
+                )
+            ):
+                raise GenerationInvalidError(
+                    f"entry {document_id} stores full text without a recorded "
+                    "extractor identity (ADR-0080)"
+                )
+        elif extracted is not None or extraction is not None:
+            raise GenerationInvalidError(
+                f"entry {document_id} carries extraction provenance without "
+                "stored full text"
             )
         if not isinstance(entry["rule_id"], str) or IDENTIFIER_PATTERN.fullmatch(
             entry["rule_id"]
@@ -344,10 +376,19 @@ def record_takedown(
     source_hashes = sorted({record["payload"]["source_sha256"] for record in acquisitions})
     spans_sha256 = None
     span_hashes: set[str] = set()
+    extracted_hashes: set[str] = set()
+    other_extracted_hashes: set[str] = set()
     for record in read_ledger(root, "rights"):
-        if record["kind"] == "spans_parsed" and record["payload"]["document_id"] == document_id:
+        if record["kind"] != "spans_parsed":
+            continue
+        payload_extracted = record["payload"].get("extracted_sha256")
+        if record["payload"]["document_id"] == document_id:
             spans_sha256 = record["payload"]["spans_sha256"]
             span_hashes.add(spans_sha256)
+            if payload_extracted is not None:
+                extracted_hashes.add(payload_extracted)
+        elif payload_extracted is not None:
+            other_extracted_hashes.add(payload_extracted)
 
     dependent = sorted(
         record["payload"]["generation_id"]
@@ -380,6 +421,17 @@ def record_takedown(
                 if entry["document_id"] == document_id:
                     vector_hashes.add(entry["artifact_object_hash"])
 
+        from ..corpus_retrieval.chunked import load_chunked_projection
+
+        for projection_path in sorted(retrieval_dir.glob("chunkgen.*.json")):
+            try:
+                chunked = load_chunked_projection(root, projection_path.stem)
+            except (CorpusRetrievalError, OSError, KeyError, TypeError, ValueError):
+                continue
+            for entry in chunked["vectors"]:
+                if entry["document_id"] == document_id:
+                    vector_hashes.add(entry["artifact_object_hash"])
+
     from .derivation import source_id_for
     source_id = source_id_for(document_id)
     revocation_record_ids: list[str] = []
@@ -406,7 +458,11 @@ def record_takedown(
         and record["payload"]["document_id"] != document_id
         and record["payload"]["document_id"] not in tombstoned_document_ids(root)
     }
-    for digest in (*source_hashes, *sorted(span_hashes), *sorted(vector_hashes)):
+    still_referenced |= other_extracted_hashes
+    for digest in (
+        *source_hashes, *sorted(span_hashes), *sorted(extracted_hashes),
+        *sorted(vector_hashes),
+    ):
         if digest is None or digest in still_referenced:
             continue
         path = object_path(root, digest)
@@ -418,6 +474,7 @@ def record_takedown(
         "source_sha256_history": source_hashes,
         "spans_sha256": spans_sha256,
         "spans_sha256_history": sorted(span_hashes),
+        "extracted_sha256_history": sorted(extracted_hashes),
         "vector_artifact_hashes_removed": sorted(vector_hashes),
         "reason_detail": reason_detail,
         "actor_id": actor_id,

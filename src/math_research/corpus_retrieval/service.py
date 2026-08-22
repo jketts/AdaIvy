@@ -224,6 +224,50 @@ def _prior_vectors(root: Path, key: PartitionKey) -> dict[tuple[str, str], dict[
     return found
 
 
+def require_document_embedding_rights(
+    root: Path, *, document: Mapping[str, Any], key: PartitionKey,
+    processor_id: str, recorded_at: str,
+) -> None:
+    """Fail closed unless the exact processor/provider/model route is allowed."""
+
+    rights = document["embedding"]
+    decision = next((
+        record["payload"]["decision"]
+        for record in reversed(read_ledger(root, "rights"))
+        if record["kind"] == "rights_derived"
+        and record["payload"]["decision"]["document_id"] == document["document_id"]
+    ), None)
+    processor = None if decision is None else decision["uses"]["embedding"]["processor"]
+    if (
+        rights["value"] != "allowed"
+        or rights["processor_id"] != processor_id
+        or processor is None
+        or processor["processor_id"] != processor_id
+        or processor["provider"] != key.provider
+        or processor["model_identifier"] != key.model_identifier
+    ):
+        raise CorpusRetrievalError(
+            f"embedding rights for {document['document_id']} do not authorize "
+            "the exact processor/provider/model partition"
+        )
+    writer = PolicyDerivedRightsWriter(
+        root, actor_id=decision["authored_by"]["actor_id"],
+        valid_from=recorded_at, valid_until=None,
+    )
+    shard = writer.locate(document["source_id"])
+    if shard is None:
+        raise CorpusRetrievalError("no current Phase 4A rights record exists")
+    try:
+        with Phase4Workspace(writer.shard_root(shard)) as workspace:
+            Phase4Service(workspace).require_rights(
+                document["source_id"], RightsUse.EMBEDDING,
+                at=recorded_at, processor_id=processor_id,
+                provider=key.provider, model_identifier=key.model_identifier,
+            )
+    except RightsBlocked as error:
+        raise CorpusRetrievalError("current embedding rights refuse disclosure") from error
+
+
 def build_projection(
     root: Path, *, generation_id: str, key: PartitionKey,
     gateway: EmbeddingGateway, processor_id: str, max_input_tokens: int,
@@ -240,42 +284,17 @@ def build_projection(
     for document in generation["entries"]:
         if not document["full_text_stored"] or document["spans_sha256"] is None:
             continue
-        rights = document["embedding"]
-        decision = next((
-            record["payload"]["decision"]
-            for record in reversed(read_ledger(root, "rights"))
-            if record["kind"] == "rights_derived"
-            and record["payload"]["decision"]["document_id"] == document["document_id"]
-        ), None)
-        processor = None if decision is None else decision["uses"]["embedding"]["processor"]
-        if (
-            rights["value"] != "allowed"
-            or rights["processor_id"] != processor_id
-            or processor is None
-            or processor["processor_id"] != processor_id
-            or processor["provider"] != key.provider
-            or processor["model_identifier"] != key.model_identifier
-        ):
+        extracted = document.get("extracted_sha256")
+        if extracted is not None and extracted != document["source_sha256"]:
             raise CorpusRetrievalError(
-                f"embedding rights for {document['document_id']} do not authorize "
-                "the exact processor/provider/model partition"
+                f"document {document['document_id']} carries extractor-derived "
+                "text; a whole-document v1 projection covers identity-extracted "
+                "documents only — build a chunked projection (ADR-0080)"
             )
-        writer = PolicyDerivedRightsWriter(
-            root, actor_id=decision["authored_by"]["actor_id"],
-            valid_from=recorded_at, valid_until=None,
+        require_document_embedding_rights(
+            root, document=document, key=key, processor_id=processor_id,
+            recorded_at=recorded_at,
         )
-        shard = writer.locate(document["source_id"])
-        if shard is None:
-            raise CorpusRetrievalError("no current Phase 4A rights record exists")
-        try:
-            with Phase4Workspace(writer.shard_root(shard)) as workspace:
-                Phase4Service(workspace).require_rights(
-                    document["source_id"], RightsUse.EMBEDDING,
-                    at=recorded_at, processor_id=processor_id,
-                    provider=key.provider, model_identifier=key.model_identifier,
-                )
-        except RightsBlocked as error:
-            raise CorpusRetrievalError("current embedding rights refuse disclosure") from error
         reuse = prior.get((document["document_id"], document["source_sha256"]))
         if reuse is not None:
             artifact = _vector_from_object(
@@ -759,5 +778,6 @@ def load_retrieval_result(root: Path, retrieval_id: str) -> dict[str, Any]:
 
 __all__ = [
     "CorpusRetrievalError", "Projection", "build_projection", "embed_query",
-    "load_projection", "load_retrieval_result", "retrieve_evidence",
+    "load_projection", "load_retrieval_result",
+    "require_document_embedding_rights", "retrieve_evidence",
 ]

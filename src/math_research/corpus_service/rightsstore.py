@@ -72,6 +72,11 @@ class PolicyDerivedRightsWriter:
         self.actor_id = actor_id
         self.valid_from = valid_from
         self.valid_until = valid_until
+        # Per-instance shard-membership cache.  A writer instance is scoped to
+        # one transaction (ingest holds the exclusive ingest lock), so the
+        # cache is populated once from a fully verified scan and then updated
+        # by this instance's own writes; it never persists past the instance.
+        self._counts_cache: dict[str, set[str]] | None = None
 
     def shard_root(self, shard_name: str) -> Path:
         return self.root.joinpath(shard_name)
@@ -85,6 +90,8 @@ class PolicyDerivedRightsWriter:
         ))
 
     def _shard_document_counts(self) -> dict[str, set[str]]:
+        if self._counts_cache is not None:
+            return self._counts_cache
         counts: dict[str, set[str]] = {}
         for shard_name in self.existing_shards():
             with Phase4Workspace(self.shard_root(shard_name)) as workspace:
@@ -93,6 +100,7 @@ class PolicyDerivedRightsWriter:
                     if record["record_type"] == RecordType.RIGHTS_DECISION.value
                 }
             counts[shard_name] = subjects
+        self._counts_cache = counts
         return counts
 
     def locate(self, source_id: str) -> str | None:
@@ -190,6 +198,8 @@ class PolicyDerivedRightsWriter:
                     predecessor_id=prior["id"] if prior is not None else None,
                 )
                 ids.append(record.id)
+        if self._counts_cache is not None:
+            self._counts_cache.setdefault(shard_name, set()).add(source_id)
         return shard_name, tuple(sorted(ids))
 
     def record_takedown(

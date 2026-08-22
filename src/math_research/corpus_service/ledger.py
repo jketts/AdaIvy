@@ -25,7 +25,7 @@ from .serialization import (
     canonical_bytes, sealed, strict_canonical_object, verify_sealed,
 )
 
-LEDGER_NAMES = ("acquisitions", "rights", "lineage", "tombstones", "usage")
+LEDGER_NAMES = ("acquisitions", "fetches", "rights", "lineage", "tombstones", "usage")
 
 RECORD_FIELDS = frozenset({
     "schema_version", "ledger", "sequence", "prev_content_hash", "kind",
@@ -100,6 +100,42 @@ def read_ledger(root: Path, name: str) -> list[dict[str, Any]]:
     return records
 
 
+def _verified_tail(root: Path, name: str) -> dict[str, Any] | None:
+    """The verified last record, or None for an empty history.
+
+    Appends verify the tail they chain onto; the FULL chain is re-verified by
+    :func:`read_ledger` on every read path, so an in-place edit anywhere in
+    the file still surfaces as ``corpus_ledger_chain_broken`` before the
+    history is used.  Verifying only the tail here keeps a bulk ingest linear
+    instead of quadratic without weakening what any reader ever trusts.
+    """
+
+    path = ledger_path(root, name)
+    if not path.exists():
+        return None
+    with path.open("rb") as handle:
+        handle.seek(0, 2)
+        size = handle.tell()
+        if size == 0:
+            return None
+        block = 65_536
+        buffer = b""
+        position = size
+        while position > 0:
+            step = min(block, position)
+            position -= step
+            handle.seek(position)
+            buffer = handle.read(step) + buffer
+            stripped = buffer.rstrip(b"\n")
+            if b"\n" in stripped or position == 0:
+                break
+        last_line = buffer.rstrip(b"\n").rsplit(b"\n", 1)[-1]
+    return _verify_record(strict_canonical_object(
+        last_line + b"\n", maximum=MAX_LEDGER_RECORD_BYTES,
+        label=f"{name} ledger tail", code=LedgerInvalidError.code,
+    ), name=name)
+
+
 def append_ledger(
     root: Path, name: str, *, kind: str, recorded_at: str,
     payload: Mapping[str, Any],
@@ -112,12 +148,12 @@ def append_ledger(
     with lock_path.open("a+b") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
         # Sequence allocation and append are one single-writer critical section.
-        existing = read_ledger(root, name)
-        prev_hash = existing[-1]["content_hash"] if existing else None
+        tail = _verified_tail(root, name)
+        prev_hash = tail["content_hash"] if tail else None
         record = _verify_record(sealed({
             "schema_version": LEDGER_SCHEMA_VERSION,
             "ledger": name,
-            "sequence": len(existing),
+            "sequence": tail["sequence"] + 1 if tail else 0,
             "prev_content_hash": prev_hash,
             "kind": kind,
             "recorded_at": recorded_at,

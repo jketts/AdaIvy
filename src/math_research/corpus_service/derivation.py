@@ -118,8 +118,14 @@ def quarantine_decision(
 
 def derive_document_rights(
     policy: Mapping[str, Any], document: Mapping[str, Any],
+    *, parsable_media_types: frozenset[str] = PARSABLE_MEDIA_TYPES,
 ) -> dict[str, Any]:
-    """One deterministic decision per archive document. Pure, no clock."""
+    """One deterministic decision per archive document. Pure, no clock.
+
+    ``parsable_media_types`` is supplied by the extraction registry in use
+    (ADR-0080); the default is the built-in identity set so a caller without a
+    registry keeps the pre-ADR-0080 behavior exactly.
+    """
 
     base = _base(policy, document)
     licence_inputs = base["licence_inputs"]
@@ -137,7 +143,7 @@ def derive_document_rights(
         and licence_inputs["licence_url"] != rule["licence_url"]
     ):
         return quarantine_decision(policy, document, "licence_conflicting")
-    if rule["full_text"] and document["media_type"] not in PARSABLE_MEDIA_TYPES:
+    if rule["full_text"] and document["media_type"] not in parsable_media_types:
         return quarantine_decision(policy, document, "unsupported_media_type")
     uses = {
         "acquisition": {"value": "allowed", "processor": None},

@@ -17,10 +17,14 @@ from ..corpus.constants import (  # noqa: F401 -- re-exported pinned patterns
 
 PROVIDER = "open_access_snapshot"
 
-#: ADR-0067 option C: the bounded first tranche is "low thousands of documents
-#: at most".  These ceilings bound the operator-configured tranche; a tranche
-#: config may pin smaller values, never larger.
+#: ADR-0067 option C pinned the bounded first tranche at "low thousands of
+#: documents at most"; ADR-0080 makes the per-tranche document ceiling an
+#: operator-budgeted config value.  ``MAX_TRANCHE_DOCUMENTS`` stays the shipped
+#: default and the ceiling the LIVE acquisition activation record pins; the
+#: structural ceiling below bounds what any operator config may state.  A
+#: config states a bound, it never widens one past the structural ceiling.
 MAX_TRANCHE_DOCUMENTS = 2_048
+MAX_TRANCHE_DOCUMENTS_STRUCTURAL_CEILING = 65_536
 MAX_TRANCHE_TOTAL_BYTES = 268_435_456
 MAX_DOCUMENT_BYTES = 8_388_608
 MAX_DOCUMENT_CHARS = 2_097_152
@@ -33,9 +37,47 @@ MAX_GENERATION_BYTES = 67_108_864
 MAX_LEDGER_RECORD_BYTES = 1_048_576
 MAX_ACTIVATION_BYTES = 16_384
 
-#: Only these media types have an exact parser in this slice.  Anything else is
+#: Media types the built-in identity extractor accepts (the pre-ADR-0080
+#: behavior).  The full parsable set is now supplied by the extraction
+#: registry (:mod:`.extraction`); anything the registry cannot extract is
 #: quarantined as ``unsupported_media_type`` — recorded, retained, excluded.
 PARSABLE_MEDIA_TYPES = frozenset({"text/plain", "text/markdown"})
+
+#: Media types the deterministic in-repo LaTeX-source extractor accepts.
+LATEX_MEDIA_TYPES = frozenset({"application/x-latex", "text/x-tex"})
+
+#: The single media type the pinned external PDF extractor accepts.
+PDF_MEDIA_TYPE = "application/pdf"
+
+#: ADR-0080 snapshot fetcher: the closed origin allowlist, pinned in code.  A
+#: fetch config names one of these exactly; anything else refuses before any
+#: request is made, and the refusal is itself ledgered.
+ALLOWLISTED_SNAPSHOT_ORIGINS = (
+    "https://arxiv.org",
+    "https://export.arxiv.org",
+    "https://openalex.org",
+    "https://api.openalex.org",
+)
+
+#: Pinned snapshot-fetch pacing: at most one connection, at least this many
+#: milliseconds between requests.  Not configurable; a config may only slow it.
+FETCH_MIN_REQUEST_INTERVAL_MILLISECONDS = 3_000
+FETCH_MAX_CONCURRENT_CONNECTIONS = 1
+FETCH_TIMEOUT_MILLISECONDS = 30_000
+
+#: Closed vocabulary of per-request fetch outcomes recorded in the run ledger.
+FETCH_OUTCOMES = (
+    "fetched",
+    "hash_mismatch",
+    "refused_off_allowlist",
+    "transport_error",
+)
+
+#: Chunked-embedding bounds (ADR-0080): deterministic fixed-size character
+#: windows with declared overlap over the extracted text.
+CHUNKING_POLICY = "fixed_char_window_v1"
+MAX_CHUNK_WINDOW_CHARS = 8_192
+MAX_CHUNKS_PER_DOCUMENT = 4_096
 
 #: The exact span transformation identifier (ADR-0060 conventions): character
 #: offsets into the strict UTF-8 decode of the immutable source bytes, exact
@@ -81,11 +123,22 @@ RELATIVE_PATH_PATTERN_TEXT = r"^[a-z0-9][a-z0-9._/-]{0,255}$"
 DATE_PATTERN_TEXT = r"^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:[0-2][0-9]|3[01])$"
 
 __all__ = [
+    "ALLOWLISTED_SNAPSHOT_ORIGINS",
     "APPLICABILITY_CEILING",
     "CANDIDATE_STATUS",
     "CAPABILITY_ID",
+    "CHUNKING_POLICY",
     "DATE_PATTERN_TEXT",
+    "FETCH_MAX_CONCURRENT_CONNECTIONS",
+    "FETCH_MIN_REQUEST_INTERVAL_MILLISECONDS",
+    "FETCH_OUTCOMES",
+    "FETCH_TIMEOUT_MILLISECONDS",
     "HASH_PATTERN",
+    "LATEX_MEDIA_TYPES",
+    "MAX_CHUNKS_PER_DOCUMENT",
+    "MAX_CHUNK_WINDOW_CHARS",
+    "MAX_TRANCHE_DOCUMENTS_STRUCTURAL_CEILING",
+    "PDF_MEDIA_TYPE",
     "IDENTIFIER_PATTERN",
     "LIVE_SNAPSHOT_ACKNOWLEDGEMENT",
     "MAX_ACTIVATION_BYTES",
